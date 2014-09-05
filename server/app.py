@@ -3,7 +3,7 @@
 # All rights reserved.                                                       #
 #                                                                            #
 # This file is part of H5Serv (HDF5 REST Server) Service, Libraries and      #
-# Utilities.  The full HDF5 REST Server copyright notice, including         #
+# Utilities.  The full HDF5 REST Server copyright notice, including          #
 # terms governing use, modification, and redistribution, is contained in     #
 # the file COPYING, which can be found at the root of the source code        #
 # distribution tree.  If you do not have access to this file, you may        #
@@ -12,11 +12,10 @@
 import time
 import signal
 import logging
-import uuid
-import h5py
 import os
 import os.path as op
 import posixpath as pp
+import json
 import tornado.httpserver
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
@@ -85,7 +84,7 @@ def verifyFile(filePath, writable=False):
     logging.info("filePath: " + filePath)
     if not op.isfile(filePath):
         raise HTTPError(404)  # not found
-    if not h5py.is_hdf5(filePath):
+    if not Hdf5db.isHDF5File(filePath):
         logging.warning('this is not a hdf5 file!')
         raise HTTPError(404)
     if writable and not os.access(filePath, os.W_OK):
@@ -122,19 +121,44 @@ class DefaultHandler(RequestHandler):
         
 class LinkHandler(RequestHandler):
     def getRequestId(self, uri):
+        # helper method
         # uri should be in the form: /group/<uuid>/links
         # extract the <uuid>
-        npos1 = uri.rfind('/')
-        if npos1 <= 0:
-            raise HTTPError(500)  # should not get routed to GroupHandler in this case
-        pre = uri[:npos1]
-        npos2 = pre.rfind('/')
-        if npos2 <= 0 or npos2 == len(pre) - 1:
-            raise HTTPError(500)  # should not get routed to GroupHandler in this case
-        id = pre[npos2+1:] 
+        uri = self.request.uri
+        if uri[:len('/group/')] != '/group/':
+            # should get here!
+            logging.error("unexpected uri: " + uri)
+            raise HTTPError(500)
+        uri = uri[len('/group/'):]  # get stuff after /group/
+        npos = uri.find('/')
+        if npos <= 0:
+            logging.info("bad uri")
+            raise HTTPError(400)  
+        id = uri[:npos]
+         
         logging.info('got id: [' + id + ']')
     
         return id
+        
+    def getName(self, uri):
+        # helper method
+        # uri should be in the form: /group/<uuid>/links/<name>
+        # this method returns name
+        npos = uri.find('/links/')
+        if npos < 0:
+            # shouldn't be possible to get here
+            logging.info("unexpected uri")
+            raise HTTPError(500)
+        if npos+len('/links/') >= len(uri):
+            # no name specified
+            logging.info("no name specified")
+            raise HTTPError(400)
+        linkName = uri[npos+len('/links/'):]
+        if linkName.find('/') >= 0:
+            # can't have '/' in link name
+            logging.info("invalid linkname")
+            raise HTTPError(400)
+        return linkName
         
     def get(self):
         logging.info('LinkHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
@@ -184,43 +208,34 @@ class LinkHandler(RequestHandler):
         logging.info('LinkHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         # put - create a new link
         # patterns are:
-        # PUT /group/<id>/links/<name>?id=<id> 
-        # PUT /group/<id>/links/<name>?h5path=<path> 
-        # PUT /group/<id>/links/<name>?href=<href>
+        # PUT /group/<id>/links/<name> {id: <id> } 
+        # PUT /group/<id>/links/<name> {h5path: <path> } 
+        # PUT /group/<id>/links/<name> {href: <href> }
         uri = self.request.uri
-        npos = uri.rfind('?')
-        if npos < 0 or npos == len(uri) - 1:
-            logging.info("no query parameter for link put request")
-            raise HTTPError(400) # Bad request
-        query = uri[npos+1:]
-        pre = uri[:npos]
-        npos = pre.rfind('/')
-        if npos == len(pre) - 1:
-            logging.info("no name specified for link")
-            raise HTTPError(400) # bad request
-        linkname = pre[npos+1:]
-        uriLoc = uri[:npos]
-        parentUuid = self.getRequestId(uriLoc)
-        npos = query.find('=')
-        if npos <= 0 or npos == len(query) - 1:
-            logging.info("bad query syntax: [" + query + "]")
-            raise HTTPError(400)
+        reqUuid = self.getRequestId(self.request.uri)
+        
+        linkName = self.getName(self.request.uri)
+        
+        print "name: ", linkName, "parentUuid:", reqUuid
+        
+        body = json.loads(self.request.body)
+        
         childUuid = None
-        querytype = query[:npos]
-        queryarg = query[npos+1:]
-        if querytype == "id":
-            childUuid = queryarg
-        elif querytype == "h5path":
+        h5path = None
+        
+        if "id" in body:
+            childUuid = body["id"]
+        elif "h5path" in body:
             # todo
-            raise HTTPError(500)
-        elif querytype == "href":
+            h5path = body["h5path"]
+        elif "href" in body:
             #todo
-            raise HTTPError(500)
+            raise HTTPError(501)   # not implemented
         else: 
-            logging.info("bad query syntax: [" + query + "]")
+            logging.info("bad query syntax: [" + self.request.body + "]")
             raise HTTPError(400)
                         
-        print "name: ", linkname, "query:", query, "parentUuid:", parentUuid
+        
         domain = self.request.host
         filePath = getFilePath(domain) 
         
@@ -231,16 +246,41 @@ class LinkHandler(RequestHandler):
         verifyFile(filePath)
         items = None
         with Hdf5db(filePath) as db:
-            ok = db.linkObject(parentUuid, childUuid, linkname)
+            if childUuid:
+                ok = db.linkObject(reqUuid, childUuid, linkName)
+            elif h5path:
+                ok = db.createSoftLink(reqUuid, h5path, linkName)
+            else:
+                raise HTTPError(500)
             if not ok:
                 httpStatus = 500
                 if db.httpStatus != 200:
                     httpStatus = db.httpStatus
                 raise HTTPError(httpStatus)
+            
+        response['title'] = linkName
+        response['idref'] = childUuid
+        self.write(response)    
         
-        response['title'] = linkname
-        response['idref'] = query
-        self.write(response)       
+    def delete(self): 
+        logging.info('LinkHandler.delete ' + self.request.host)   
+        print "uri: ", self.request.uri 
+        reqUuid = self.getRequestId(self.request.uri)
+        
+        linkName = self.getName(self.request.uri)
+        
+        print "name: ", linkName, "parentUuid:", reqUuid
+           
+        domain = self.request.host
+        filePath = getFilePath(domain)
+        verifyFile(filePath, True)
+        with Hdf5db(filePath) as db:
+            ok = db.unlinkItem(reqUuid, linkName)
+            if not ok:
+                httpStatus = db.httpStatus
+                if httpStatus == 200:
+                    httpStatus = 500
+                raise HTTPError(httpStatus)   
         
          
 class GroupHandler(RequestHandler):
@@ -404,8 +444,9 @@ class RootHandler(RequestHandler):
         # create directories as needed
         makeDirs(op.dirname(filePath))
         logging.info("creating file: [" + filePath + "]")
-        f = h5py.File(filePath, 'w')
-        f.close()  # getResponse() will re-open the file
+        if not Hdf5db.createHDF5File(filePath):
+            logging.error("unexpected error creating HDF5: " + filePath)
+            raise HTTPError(500)
         response = self.getRootResponse(filePath)
         
         self.write(response)

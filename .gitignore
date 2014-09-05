@@ -1,0 +1,6 @@
+.DS_Store
+*.pyc
+data/*.h5
+data/*.db
+test/unit/*.h5
+test/unit/*.db

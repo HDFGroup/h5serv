@@ -3,7 +3,7 @@
 # All rights reserved.                                                       #
 #                                                                            #
 # This file is part of H5Serv (HDF5 REST Server) Service, Libraries and      #
-# Utilities.  The full HDF5 REST Server copyright notice, including         #
+# Utilities.  The full HDF5 REST Server copyright notice, including          #
 # terms governing use, modification, and redistribution, is contained in     #
 # the file COPYING, which can be found at the root of the source code        #
 # distribution tree.  If you do not have access to this file, you may        #
@@ -71,6 +71,21 @@ def visitObj(path, obj):
     hdf5db.visit(path, obj)
     
 class Hdf5db:
+    @staticmethod
+    def isHDF5File(filePath):
+        return h5py.is_hdf5(filePath)
+        
+    @staticmethod
+    def createHDF5File(filePath):
+        # create an "empty" hdf5 file
+        if op.isfile(filePath):
+            # already a file there!
+            return False
+        f = h5py.File(filePath, 'w')
+        f.close()
+        return True
+           
+        
     def __init__(self, filePath):
         if os.access(filePath, os.W_OK):         
             mode = 'r+'
@@ -275,7 +290,7 @@ class Hdf5db:
             items.append(item)
         return items
         
-    def linkObject(self, parentUUID, childUUID, linkname):
+    def linkObject(self, parentUUID, childUUID, linkName):
         self.initFile()
         if self.readonly:
             self.httpStatus = 403  # Forbidden
@@ -295,14 +310,29 @@ class Hdf5db:
             self.httpStatus = 404 # Not found
             self.httpMessage = "Child object not found"
             return False
-        if linkname in parentObj:
+        if linkName in parentObj:
             # link already exists
-            print "linkname already exists!"
-            if parentObj[linkname] == childObj:
-                print "same object just ignore"
-                return True  # don't need to do anything, link is already there
-            del parentObj[linkname]  # delete old link
-        parentObj[linkname] = childObj
+            logging.info("linkname already exists, deleting")
+            del parentObj[linkName]  # delete old link
+        parentObj[linkName] = childObj
+        return True
+        
+    def createSoftLink(self, parentUUID, linkPath, linkName):
+        self.initFile()
+        if self.readonly:
+            self.httpStatus = 403  # Forbidden
+            self.httpMessage = "Updates are not allowed"
+            return False    
+        parentObj = self.getGroupByUuid(parentUUID)
+        if parentObj == None:
+            self.httpStatus = 404 # Not found
+            self.httpMessage = "Parent Group not found"
+            return False
+        if linkName in parentObj:
+            # link already exists
+            logging.info("linkname already exists, deleting")
+            del parentObj[linkName]  # delete old link
+        parentObj[linkName] = h5py.SoftLink(linkPath)
         return True
         
     def unlinkItem(self, grpUuid, linkName):
