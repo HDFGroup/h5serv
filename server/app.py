@@ -19,6 +19,7 @@ import json
 import tornado.httpserver
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
+from tornado.escape import json_encode, json_decode, url_escape, url_unescape
 import config
 from hdf5db import Hdf5db
 
@@ -162,13 +163,23 @@ class LinkHandler(RequestHandler):
         
     def get(self):
         logging.info('LinkHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
-        print self.request
-        print "uri: ", self.request.uri    
+         
         
         reqUuid = self.getRequestId(self.request.uri)
         domain = self.request.host
         filePath = getFilePath(domain) 
         
+        # Get optional query parameters
+        limit = self.get_query_argument("Limit", 0)
+        if type(limit) is not int:
+            try:
+                limit = int(limit)
+            except ValueError:
+                logging.info("expected int type for limit")
+                raise HTTPError(400) 
+        marker = self.get_query_argument("Marker", None)
+        classFilter = self.get_query_argument("ClassFilter", None)
+                
         ctime = op.getctime(filePath)
         mtime = ctime
         response = { }
@@ -176,7 +187,7 @@ class LinkHandler(RequestHandler):
         verifyFile(filePath)
         items = None
         with Hdf5db(filePath) as db:
-            items = db.getItems(reqUuid)
+            items = db.getItems(reqUuid, classFilter, marker, limit)
             if items == None:
                 httpError = 404  # not found
                 #todo: return 410 if the group was recently deleted
@@ -187,19 +198,31 @@ class LinkHandler(RequestHandler):
         links = [ ]
         for item in items:
             href = self.request.protocol + '://' + domain + '/'
-            if item['type'] == 'Dataset':
-                href += 'datasets/' 
-            elif item['type'] == 'Group':
-                href += 'groups/'
-            elif item['type'] == 'Datatype':
-                href += 'datatypes/'
+            selfref = href + 'groups/' + reqUuid + '/links/' + item['name']
+            if item['class'] == 'Dataset':
+                href += 'datasets/' + item['uuid']
+                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Dataset',
+                    'self': selfref, 'href': href, 'attributeCount': item['attributeCount']})
+            elif item['class'] == 'Group':
+                href += 'groups/' + item['uuid']
+                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Group',
+                    'self': selfref, 'href': href, 'attributeCount': item['attributeCount']})
+            elif item['class'] == 'Datatype':
+                href += 'datatypes/' + item['uuid']
+                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Datatype',
+                    'self': selfref, 'href': href})
+            elif item['class'] == 'SoftLink':
+                href += 'search?hdf5={' + item['path'] + '}'
+                links.append({'name': item['name'], 'rel': 'SoftLink', 'self': selfref,
+                    'href': href})
+            elif item['class'] == 'ExternalLink':
+                href = 'external link' # todo
+                links.append({'name': item['name'], 'rel': 'ExternalLink', 'self': selfref,
+                    'href': href})
             else:
-                logging.error("unexpecte group item type: " + item['type'])
+                logging.error("unexpected group item class: " + item['class'])
                 raise HTTPError(500);
-            href += item['uuid']
-            links.append({'id': item['uuid'], 'name': item['name'], 'rel': item['type'],
-            'attributeCount': item['attributeCount'], 'href': href })
-        
+             
         response['links'] = links
         
         self.write(response)
@@ -214,9 +237,9 @@ class LinkHandler(RequestHandler):
         uri = self.request.uri
         reqUuid = self.getRequestId(self.request.uri)
         
-        linkName = self.getName(self.request.uri)
+        linkName = url_unescape(self.getName(self.request.uri))
         
-        print "name: ", linkName, "parentUuid:", reqUuid
+        print "name: [", linkName, "] parentUuid:", reqUuid
         
         body = json.loads(self.request.body)
         
@@ -245,6 +268,7 @@ class LinkHandler(RequestHandler):
         
         verifyFile(filePath)
         items = None
+        rootUUID = None
         with Hdf5db(filePath) as db:
             if childUuid:
                 ok = db.linkObject(reqUuid, childUuid, linkName)
@@ -257,9 +281,22 @@ class LinkHandler(RequestHandler):
                 if db.httpStatus != 200:
                     httpStatus = db.httpStatus
                 raise HTTPError(httpStatus)
+            rootUUID = db.getUUIDByPath('/')
             
         response['title'] = linkName
-        response['idref'] = childUuid
+        if childUuid:
+            response['idref'] = childUuid
+        elif h5path:
+            response['hdf5'] = h5path
+        else:
+            pass   # todo - external link
+        links = []
+        href = self.request.protocol + '://' + domain + '/groups/'
+        links.append({'rel': 'group', 'href': href + reqUuid})
+        links.append({'rel': 'links', 'href': href + reqUuid + '/links'})
+        links.append({'rel': 'root',  'href': href + rootUUID})
+        links.append({'rel': 'self',  'href': href +  reqUuid + '/links/' + linkName})
+        response['links'] = links
         self.write(response)    
         
     def delete(self): 
@@ -269,7 +306,7 @@ class LinkHandler(RequestHandler):
         
         linkName = self.getName(self.request.uri)
         
-        print "name: ", linkName, "parentUuid:", reqUuid
+        logging.info( " delete link  name[: " + linkName + "] parentUuid: " + reqUuid)
            
         domain = self.request.host
         filePath = getFilePath(domain)

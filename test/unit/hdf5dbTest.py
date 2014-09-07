@@ -40,12 +40,12 @@ class Hdf5dbTest(unittest.TestCase):
         super(Hdf5dbTest, self).__init__(*args, **kwargs)
         # main
         logging.info('init!')
+        getFile('tall.h5')
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
     
     def testGetUUIDByPath(self):
         # get test file
-        getFile('tall.h5')
         g1Uuid = None
         with Hdf5db('tall.h5') as db:
             g1Uuid = db.getUUIDByPath('/g1')
@@ -54,10 +54,10 @@ class Hdf5dbTest(unittest.TestCase):
             self.failUnlessEqual(obj.name, '/g1')
             for name in obj:
                 g = obj[name]
-            g1links = db.getLinksByUuid(g1Uuid)
+            g1links = db.getItems(g1Uuid)
             self.failUnlessEqual(len(g1links), 2)
-            for uuid in g1links:
-                self.failUnlessEqual(len(uuid), config.get('uuidlen'))
+            for item in g1links:
+                self.failUnlessEqual(len(item['uuid']), config.get('uuidlen'))
           
         # end of with will close file
         # open again and verify we can get obj by name
@@ -68,22 +68,19 @@ class Hdf5dbTest(unittest.TestCase):
                
     def testGroupOperations(self):
         # get test file
-        getFile('tall.h5')
         with Hdf5db('tall.h5') as db:
             rootuuid = db.getUUIDByPath('/')
             root = db.getGroupByUuid(rootuuid)
             self.failUnlessEqual('/', root.name)
-            rootLinks = db.getLinksByUuid(rootuuid)
+            rootLinks = db.getItems(rootuuid)
             self.failUnlessEqual(len(rootLinks), 2)
             g1uuid = db.getUUIDByPath("/g1")
             self.failUnlessEqual(len(g1uuid), config.get('uuidlen'))
-            g1Links = db.getLinksByUuid(g1uuid)
+            g1Links = db.getItems(g1uuid)
             self.failUnlessEqual(len(g1Links), 2)
             
             g11uuid = db.getUUIDByPath("/g1/g1.1")
             db.deleteGroup(g11uuid)
-            #g1Links = db.getLinksByUuid(g1uuid)
-            #self.failUnlessEqual(len(g1Links), 1)
             
     def testCreateGroup(self):
         # get test file
@@ -99,7 +96,38 @@ class Hdf5dbTest(unittest.TestCase):
             numRootChildren = len(db.getItems(rootUuid))
             self.assertEqual(numRootChildren, 3)
             # verify linkObject can be called idempotent-ly 
-            db.linkObject(rootUuid, newGrpUuid, 'g3')   
+            db.linkObject(rootUuid, newGrpUuid, 'g3')
+            
+    def testGetItemsBatch(self):
+        # get test file
+        getFile('group100.h5')
+        marker = None
+        count = 0
+        with Hdf5db('group100.h5') as db:
+            rootUuid = db.getUUIDByPath('/')
+            while True:
+                # get items 13 at a time
+                batch = db.getItems(rootUuid, None, marker, 13) 
+                if len(batch) == 0:
+                    break   # done!
+                count += len(batch)
+                lastItem = batch[len(batch) - 1]
+                marker = lastItem['name']
+        self.assertEqual(count, 100)
+        
+    def testGetItemsSoftlink(self):
+        items = None
+        with Hdf5db('tall.h5') as db:
+            grpUuid = db.getUUIDByPath('/g1/g1.2/g1.2.1')
+            items = db.getItems(grpUuid)
+            self.assertEqual(len(items), 1)
+            item = items[0]
+            self.assertTrue('uuid' not in item)
+            self.assertEqual(item['name'], 'slink')
+            self.assertEqual(item['class'], 'SoftLink')
+            self.assertEqual(item['path'], 'somevalue')
+    
+             
             
     def testDeleteLink(self): 
         # get test file
@@ -129,10 +157,10 @@ class Hdf5dbTest(unittest.TestCase):
             obj = db.getGroupByUuid(g1Uuid) 
             g1 = db.getObjByPath('/g1')
             self.failUnlessEqual(obj, g1)
-            g1links = db.getLinksByUuid(g1Uuid)
+            g1links = db.getItems(g1Uuid)
             self.failUnlessEqual(len(g1links), 2)
-            for uuid in g1links:
-                self.failUnlessEqual(len(uuid), config.get('uuidlen'))
+            for item in g1links:
+                self.failUnlessEqual(len(item['uuid']), config.get('uuidlen'))
     
 if __name__ == '__main__':
     #setup test files

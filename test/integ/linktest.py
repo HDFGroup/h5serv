@@ -53,6 +53,46 @@ class LinkTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.failUnlessEqual(rsp.status_code, 200)
         
+    def testGetBatch(self):
+        logging.info("LinkTest.testGetBatch")
+        domain = 'group1k.' + config.get('domain')   
+        rootUUID = self.getRootId(domain)     
+        req = self.endpoint + "/group/" + rootUUID + "/links"
+        headers = {'host': domain}
+        params = {'Limit': 50 }
+        names = set()
+        # get links in 20 batches of 50 links each
+        lastName = None
+        for batchno in range(20):
+            if lastName:
+                params['Marker'] = lastName
+            rsp = requests.get(req, headers=headers, params=params)
+            self.failUnlessEqual(rsp.status_code, 200)
+            if rsp.status_code != 200:
+                break
+            rspJson = json.loads(rsp.text)
+            links = rspJson['links']
+            self.failUnlessEqual(len(links) <= 50, True)
+            for link in links:
+                lastName = link['name']
+                names.add(lastName)
+            if len(links) == 0:
+                break
+        self.failUnlessEqual(len(names), 1000)  # should get 1000 unique links
+        
+    def testGetBadParam(self):
+        logging.info("LinkTest.testGetBatchBadParam")
+        domain = 'group1k.' + config.get('domain')   
+        rootUUID = self.getRootId(domain)     
+        req = self.endpoint + "/group/" + rootUUID + "/links"
+        headers = {'host': domain}
+        params = {'Limit': 'abc' }
+        rsp = requests.get(req, headers=headers, params=params)
+        self.failUnlessEqual(rsp.status_code, 400)
+    
+            
+    
+        
     def testPut(self):
         logging.info("LinkTest.testPut")
         domain = 'tall.' + config.get('domain') 
@@ -68,6 +108,19 @@ class LinkTest(unittest.TestCase):
         # make a request second time (verify idempotent)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
+        
+    def testPutNameWithSpaces(self):
+        logging.info("LinkTest.testPutNameWithSpaces")
+        domain = 'tall.' + config.get('domain') 
+        grpId = self.createGroup(domain)
+        rootId = self.getRootId(domain)   
+        name = 'name with spaces'
+        req = self.endpoint + "/group/" + rootId + "/links/" + name 
+        payload = {"id": grpId}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
         
     def testPutBadReqId(self):
         logging.info("LinkTest.testPutBadReqId")

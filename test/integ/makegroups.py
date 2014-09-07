@@ -1,4 +1,3 @@
-#!/bin/sh 
 ##############################################################################
 # Copyright by The HDF Group.                                                #
 # All rights reserved.                                                       #
@@ -10,30 +9,13 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
-#todo - verify that current directory is the same as the script
-if [ $# -ne 1 ] || [ $1 != '-f' ]
-then
-    echo "this will remove all files from ../../data and repopulate using files from ../../testdata!  run with -f to proceed"
-    exit 1
-fi
-export SRC="../../testfiles/"
-export DES="../../data"
-rm -rf $DES/*
-mkdir $DES/subdir
-mkdir $DES/subdir/subsubdir
-cp $SRC/tall.h5 $DES
-cp $SRC/notahdf5file.h5 $DES
-cp $SRC/zerodim.h5 $DES/"filename with space.h5"
-cp $SRC/zerodim.h5 $DES/subdir
-cp $SRC/zerodim.h5 $DES/subdir/subsubdir
-cp $SRC/zerodim.h5 $DES/deleteme.h5
-cp $SRC/zerodim.h5 $DES/subdir/deleteme.h5
-cp $SRC/zerodim.h5 $DES/readonly.h5
-chmod -w $DES/readonly.h5
-python makegroups.py  # creates 'group1k.h5'
-mv group1k.h5 $DES
-
-
+import h5py
+f = h5py.File("group1k.h5", "w")
+for i in range(1000):
+    name = 'g{:04d}'.format(i)
+    f.create_group(name)
+f.close()
+ 
 
 
 

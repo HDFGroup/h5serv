@@ -267,27 +267,68 @@ class Hdf5db:
             self.httpMessage = "Resource not found"
         return obj
         
-    def getItems(self, grpUuid):
+    def getItems(self, grpUuid, classFilter=None, marker=None, limit=0):
+        logging.info("db.getItems(" + grpUuid + ")")
+        if classFilter:
+            logging.info("...classFilter: " + classFilter)
+        if marker:
+            logging.info("...marker: " + marker)
+        if limit:
+            logging.info("...limit: " + str(limit))
+        
         self.initFile()
         parent = self.getGroupByUuid(grpUuid)
         if parent == None:
             return None
-        items = [ ]
+        items = []
+        gotMarker = True
+        if marker != None:
+            gotMarker = False
+        count = 0
         for k in parent:
             if k == "__db__":
                 continue
-            grp = parent[k]
-            addr = h5py.h5o.get_info(grp.id).addr
-            grpUuid = self.getUUIDByAddress(addr)
-            name = grp.name
-            npos = name.rfind('/')
-            if npos >= 0:
-                name = name[npos+1:]  # strip off the path part
-            attributeCount = len(grp.attrs)
-            objType = grp.__class__.__name__
-            item = {'uuid': grpUuid, 'name': name, 'type': objType, 
-            'attributeCount': attributeCount }
+            if not gotMarker:
+                if k == marker:
+                    gotMarker = True
+                    continue  # start filling in result on next pass
+                else:
+                    continue  # keep going!
+            item = { 'name': k } 
+            # get the link object, one of HardLink, SoftLink, or ExternalLink
+            linkObj = parent.get(k, None, False, True)
+            linkClass = linkObj.__class__.__name__
+            if linkClass == 'SoftLink':
+                if classFilter and classFilter != 'SoftLink':
+                    continue
+                item['class'] = 'SoftLink'
+                item['path'] = linkObj.path
+            elif linkClass == 'ExternalLink':
+                if typeFilter and typeFilter != 'ExternalLink':
+                    continue
+                item['class'] = 'ExternalLink'
+                item['path'] = linkObj.path
+                item['filename'] = linkObj.path
+            elif linkClass == 'HardLink':
+                # Hardlink doesn't have any properties itself, just get the linked
+                # object
+                obj = parent[k]
+                objClass = obj.__class__.__name__
+                if classFilter and objClass != classFilter:
+                    continue  # not what we are looking for
+                addr = h5py.h5o.get_info(obj.id).addr
+                item['class'] = objClass
+                item['uuid'] = self.getUUIDByAddress(addr)
+                item['attributeCount'] = len(obj.attrs)
+            else:
+                logging.error("unexpected classname: " + objClass)
+                continue
+                           
             items.append(item)
+            count += 1
+            print "Limit:", limit, "limittype:", type(limit), "count:", count
+            if limit > 0 and count == limit:
+                break  # return what we got
         return items
         
     def linkObject(self, parentUUID, childUUID, linkName):
@@ -351,15 +392,14 @@ class Hdf5db:
         
     def unlinkObject(self, parentGrp, tgtObj):
         for name in parentGrp:
-            # print "name: ", name
-            try:
+            linkObj = parentGrp.get(name, None, False, True)
+            linkClass = linkObj.__class__.__name__
+            # only deal with HardLinks
+            if linkClass == 'HardLink':
                 obj = parentGrp[name]
                 if obj == tgtObj:
-                    del parentGrp[name]
-            except KeyError:
-                #todo - need to handle softlink's which don't reference an object
-                logging.warning("KeyError getting item: [" + name + "]")
-                     
+                    logging.info("deleting link: [" + name + "] from: " + parentGrp.name)
+                    del parentGrp[name]                 
         return True
         
     def createGroup(self):
@@ -407,22 +447,6 @@ class Hdf5db:
         groups = self.dbGrp["{groups}"]
         return len(groups) + 1  # add one for root group
            
-        
-    def getLinksByUuid(self, objUuid):
-        self.initFile()
-        logging.info('getLinksByUuid' + objUuid)
-        grp = self.getGroupByUuid(objUuid)
-        uuids = []
-        for name in grp:
-            if name == '__db__':
-                continue  # root will have this as a link
-            obj = grp[name]
-            objid = h5py._objects.ObjectID(obj.id.id)
-            addr = h5py.h5o.get_info(obj.id).addr
-            objUuid =  self.getUUIDByAddress(addr)
-            uuids.append(objUuid)            
-            
-        return uuids
         
     def getNumberOfDatasets(self):
         self.initFile()
