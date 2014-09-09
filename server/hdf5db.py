@@ -216,7 +216,7 @@ class Hdf5db:
         obj = self.f[path]  # will throw KeyError if object doesn't exist
         return obj
         
-    def getDatasetByUuid(self, objUuid):
+    def getDatasetObjByUuid(self, objUuid):
         self.initFile()
         obj = None
         if not self.readonly:
@@ -240,8 +240,81 @@ class Hdf5db:
             self.httpMessage = "Resource not found"
         return obj
         
-    def getGroupByUuid(self, objUuid):
-        logging.info("getGroupByUuid(" + objUuid + ")")
+    def getDatasetItemByUuid(self, objUuid):
+        dset = self.getDatasetObjByUuid(objUuid)
+        if dset == None:
+            return None
+        item = { 'id': objUuid }
+        item['attributeCount'] = len(dset.attrs)
+        item['type'] = dset.dtype.name  # todo - compound types
+        item['shape'] = dset.shape
+        
+        return item
+        
+    def createDataset(self, shape, type):
+        self.initFile()
+        if self.readonly:
+            self.httpStatus = 403  # Forbidden
+            self.httpMessage = "Updates are not allowed"
+            return None   
+        datasets = self.dbGrp["{datasets}"]
+        objUuid = str(uuid.uuid1())
+        # print 'shape:', shape
+        # print 'shape type:', type(shape)
+        newDataset = datasets.create_dataset(objUuid, shape, type)
+        # store reverse map as an attribute
+        addr = h5py.h5o.get_info(newDataset.id).addr
+        addrGrp = self.dbGrp["{addr}"]
+        addrGrp.attrs[str(addr)] = objUuid
+        return objUuid
+     
+    """
+    Delete Dataset or Group by UUID
+    """    
+    def deleteObjectByUuid(self, objUuid):
+        self.initFile()
+        if self.readonly:
+            self.httpStatus = 403  # Forbidden
+            self.httpMessage = "Updates are not allowed"
+            return False   
+            
+        if objUuid == self.dbGrp.attrs["rootUUID"]:
+            # can't delete root group
+            self.httpStatus = 403
+            self.httpMessage = "Root group can not be deleted"
+            return False
+        
+        tgt = self.getDatasetObjByUuid(objUuid)
+        
+        if tgt == None:
+            #maybe this is a group...
+            tgt = self.getGroupObjectByUuid(objUuid)
+            
+        # todo - delete for datatypes
+        if not tgt:
+            return False  
+        self.unlinkObject(self.f['/'], tgt)  # unlink from root (if present)
+        groups = self.dbGrp["{groups}"]
+        # iterate through each group in the file and unlink tgt if it is linked
+        # by the group
+        for uuidName in groups:
+            grp = groups[uuidName]
+            self.unlinkObject(grp, tgt) 
+                  
+        addr = h5py.h5o.get_info(tgt.id).addr
+        addrGrp = self.dbGrp["{addr}"] 
+        del addrGrp.attrs[str(addr)]  # remove reverse map
+        if tgt.__class__.__name__ == "Dataset":
+            datasets = self.dbGrp["{datasets}"]
+            del datasets[objUuid]
+        else:
+            del groups[objUuid]
+        return True
+        
+        
+        
+    def getGroupObjectByUuid(self, objUuid):
+        logging.info("getGroupObjectByUuid(" + objUuid + ")")
         self.initFile()
         obj = None
         if objUuid == self.dbGrp.attrs["rootUUID"]:
@@ -267,6 +340,21 @@ class Hdf5db:
             self.httpMessage = "Resource not found"
         return obj
         
+    def getGroupItemByUuid(self, objUuid):
+        grp = self.getGroupObjectByUuid(objUuid)
+        if grp == None:
+            return None
+        
+        linkCount = len(grp)    
+        if "__db__" in grp:
+                linkCount -= 1  # don't include the db group
+        
+        item = { 'id': objUuid }
+        item['attributeCount'] = len(grp.attrs)
+        item['linkCount'] = linkCount
+        
+        return item
+        
     def getItems(self, grpUuid, classFilter=None, marker=None, limit=0):
         logging.info("db.getItems(" + grpUuid + ")")
         if classFilter:
@@ -277,7 +365,7 @@ class Hdf5db:
             logging.info("...limit: " + str(limit))
         
         self.initFile()
-        parent = self.getGroupByUuid(grpUuid)
+        parent = self.getGroupObjectByUuid(grpUuid)
         if parent == None:
             return None
         items = []
@@ -326,7 +414,6 @@ class Hdf5db:
                            
             items.append(item)
             count += 1
-            print "Limit:", limit, "limittype:", type(limit), "count:", count
             if limit > 0 and count == limit:
                 break  # return what we got
         return items
@@ -337,15 +424,15 @@ class Hdf5db:
             self.httpStatus = 403  # Forbidden
             self.httpMessage = "Updates are not allowed"
             return False    
-        parentObj = self.getGroupByUuid(parentUUID)
+        parentObj = self.getGroupObjectByUuid(parentUUID)
         if parentObj == None:
             self.httpStatus = 404 # Not found
             self.httpMessage = "Parent Group not found"
             return False
-        childObj = self.getDatasetByUuid(childUUID)
+        childObj = self.getDatasetObjByUuid(childUUID)
         if childObj == None:
             # maybe it's a group...
-            childObj = self.getGroupByUuid(childUUID)
+            childObj = self.getGroupObjectByUuid(childUUID)
         if childObj == None:
             # todo - can a group link to anything else?
             self.httpStatus = 404 # Not found
@@ -364,7 +451,7 @@ class Hdf5db:
             self.httpStatus = 403  # Forbidden
             self.httpMessage = "Updates are not allowed"
             return False    
-        parentObj = self.getGroupByUuid(parentUUID)
+        parentObj = self.getGroupObjectByUuid(parentUUID)
         if parentObj == None:
             self.httpStatus = 404 # Not found
             self.httpMessage = "Parent Group not found"
@@ -377,7 +464,7 @@ class Hdf5db:
         return True
         
     def unlinkItem(self, grpUuid, linkName):
-        grp = self.getGroupByUuid(grpUuid)
+        grp = self.getGroupObjectByUuid(grpUuid)
         if grp == None:
             logging.info("parent group not found")
             self.httpStatus = 404 # not found
@@ -417,31 +504,7 @@ class Hdf5db:
         addrGrp.attrs[str(addr)] = objUuid
         return objUuid
         
-    def deleteGroup(self, objUuid):
-        self.initFile()
-        if self.readonly:
-            self.httpStatus = 403  # Forbidden
-            self.httpMessage = "Updates are not allowed"
-            return False   
-        if objUuid == self.dbGrp.attrs["rootUUID"]:
-            self.httpStatus = 403  # Forbidden
-            self.httpMessage = "Can't delete root group"
-            return False  
-        tgtGrp = self.getGroupByUuid(objUuid)
-        if not tgtGrp:
-            return False  # httpStatus should be set by getGroupByUUID
-        self.unlinkObject(self.f['/'], tgtGrp)  # unlink from root
-        groups = self.dbGrp["{groups}"]
-        # iterate through each group in the file
-        for uuidName in groups:
-            grp = groups[uuidName]
-            self.unlinkObject(grp, tgtGrp) 
-                  
-        addr = h5py.h5o.get_info(tgtGrp.id).addr
-        addrGrp = self.dbGrp["{addr}"] 
-        del addrGrp.attrs[str(addr)]  # remove reverse map
-        del groups[objUuid]
-        
+    
     def getNumberOfGroups(self):
         self.initFile()
         groups = self.dbGrp["{groups}"]

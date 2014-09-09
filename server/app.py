@@ -123,14 +123,14 @@ class DefaultHandler(RequestHandler):
 class LinkHandler(RequestHandler):
     def getRequestId(self, uri):
         # helper method
-        # uri should be in the form: /group/<uuid>/links
+        # uri should be in the form: /groups/<uuid>/links
         # extract the <uuid>
         uri = self.request.uri
-        if uri[:len('/group/')] != '/group/':
+        if uri[:len('/groups/')] != '/groups/':
             # should get here!
             logging.error("unexpected uri: " + uri)
             raise HTTPError(500)
-        uri = uri[len('/group/'):]  # get stuff after /group/
+        uri = uri[len('/groups/'):]  # get stuff after /groups/
         npos = uri.find('/')
         if npos <= 0:
             logging.info("bad uri")
@@ -318,6 +318,135 @@ class LinkHandler(RequestHandler):
                 if httpStatus == 200:
                     httpStatus = 500
                 raise HTTPError(httpStatus)   
+                
+class DatasetHandler(RequestHandler):
+    def getRequestId(self):
+        uri = self.request.uri
+        npos = uri.rfind('/')
+        if npos < 0:
+            raise HTTPError(500)  # should not get routed to GroupHandler in this case
+        if npos == len(uri) - 1:
+            raise HTTPError(400, message="missing id")
+        id = uri[(npos+1):]
+        logging.info('got id: [' + id + ']')
+    
+        return id
+        
+    def get(self):
+        logging.info('DatasetHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        
+        reqUuid = self.getRequestId()
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        #todo - use the real object creation times
+        ctime = op.getctime(filePath)
+        mtime = ctime
+        response = { }
+        links = []
+        rootUUID = None
+        item = None
+        with Hdf5db(filePath) as db:
+            item = db.getDatasetItemByUuid(reqUuid)
+            if item == None:
+                httpError = 404  # not found
+                if db.httpStatus != 200:
+                    httpError = db.httpStatus # library may have more specific error code
+                logging.info("dataset: [" + reqUuid + "] not found");
+                raise HTTPError(httpError)
+            rootUUID = db.getUUIDByPath('/')
+                         
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/'
+        links.append({'rel:': 'self',       'href': href + 'datasets/' + reqUuid})
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes'})        
+        response['id'] = reqUuid
+        response['type'] = item['type']
+        response['shape'] = item['shape']
+        response['created'] = ctime
+        response['lastModified'] = mtime
+        response['attributeCount'] = item['attributeCount']
+        response['links'] = links
+        
+        self.write(response)
+        
+    def post(self):
+        logging.info('DatasetHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        print self.request
+        print "uri: ", self.request.uri 
+        if self.request.uri != '/datasets/':
+            logging.info('bad datasets post request')
+            raise HTTPError(405)  # Method not allowed
+               
+        domain = self.request.host
+        filePath = getFilePath(domain)
+        verifyFile(filePath, True)
+        
+        body = json.loads(self.request.body)
+        
+        if "shape" not in body:
+            logging.info("Shape not supplied")
+            raise HTTPError(400)  # missing shape
+            
+        if "type" not in body:
+            logging.info("Type not supplied")
+            raise HTTPError(400)  # missing type
+            
+        shape = body["shape"]
+        print 'shape:', shape
+        print 'type-shape:', type(shape)
+        datatype = body["type"]
+        if type(shape) == int:
+            dim1 = shape
+            shape = []
+            shape = [dim1]
+        elif type(shape) == list or type(shape) == tuple: 
+            pass # can use as is
+        else:
+            logging.info("invalid shape argument")
+            raise HTTPError(400)
+        
+        with Hdf5db(filePath) as db:
+            rootUUID = db.getUUIDByPath('/')
+            dsetUUID = db.createDataset(shape, datatype)
+                
+        ctime = time.time()
+        mtime = ctime
+         
+        response = { }
+      
+        # got everything we need, put together the response
+        links = [ ]
+        href = self.request.protocol + '://' + domain + '/'
+        links.append({'rel:': 'self',       'href': href + 'datasets/' + dsetUUID})
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})        
+        response['id'] = dsetUUID
+        response['created'] = ctime
+        response['lastModified'] = mtime
+        response['attributeCount'] = 0
+        response['linkCount'] = 0
+        response['links'] = links
+        
+        self.write(response)  
+        
+    def delete(self): 
+        logging.info('DatasetHandler.delete ' + self.request.host)   
+        uuid = self.getRequestId()
+        domain = self.request.host
+        filePath = getFilePath(domain)
+        verifyFile(filePath, True)
+        with Hdf5db(filePath) as db:
+            ok = db.deleteObjectByUuid(uuid)
+            if not ok:
+                httpStatus = db.httpStatus
+                if httpStatus == 200:
+                    httpStatus = 500
+                raise HTTPError(httpStatus)  
+        
+        
         
          
 class GroupHandler(RequestHandler):
@@ -340,27 +469,24 @@ class GroupHandler(RequestHandler):
         reqUuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain) 
+        verifyFile(filePath)
         
+        #todo - use the real object creation times
         ctime = op.getctime(filePath)
         mtime = ctime
         response = { }
-        
-        verifyFile(filePath)
+             
         links = []
-        linkCount = 0
-        attrCount = 0
+        rootUUID = None
+        item = None
         with Hdf5db(filePath) as db:
-            grp = db.getGroupByUuid(reqUuid)
-            if grp == None:
+            item = db.getGroupItemByUuid(reqUuid)
+            if item == None:
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
                 logging.info("group: [" + reqUuid + "] not found");
                 raise HTTPError(httpError)
-            linkCount = len(grp)
-            attrCount = len(grp.attrs)
-            if "__db__" in grp:
-                linkCount -= 1  # don't include the db group
             rootUUID = db.getUUIDByPath('/')
                          
         # got everything we need, put together the response
@@ -372,8 +498,8 @@ class GroupHandler(RequestHandler):
         response['id'] = reqUuid
         response['created'] = ctime
         response['lastModified'] = mtime
-        response['attributeCount'] = attrCount
-        response['linkCount'] = linkCount
+        response['attributeCount'] = item['attributeCount']
+        response['linkCount'] = item['linkCount']
         response['links'] = links
         
         self.write(response)
@@ -382,7 +508,7 @@ class GroupHandler(RequestHandler):
         logging.info('GroupHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         print self.request
         print "uri: ", self.request.uri 
-        if self.request.uri != '/group/':
+        if self.request.uri != '/groups/':
             logging.info('bad group post request')
             raise HTTPError(405)  # Method not allowed
                
@@ -423,7 +549,7 @@ class GroupHandler(RequestHandler):
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         with Hdf5db(filePath) as db:
-            ok = db.deleteGroup(uuid)
+            ok = db.deleteObjectByUuid(uuid)
             if not ok:
                 httpStatus = db.httpStatus
                 if httpStatus == 200:
@@ -448,7 +574,7 @@ class RootHandler(RequestHandler):
         links.append({'rel:': 'database', 'href': href + 'datasets'})
         links.append({'rel:': 'linkbase', 'href': href + 'groups'})
         links.append({'rel:': 'typebase', 'href': href + 'datatypes' })
-        links.append({'rel:': 'root',     'href': href + 'group/' + rootUUID})
+        links.append({'rel:': 'root',     'href': href + 'groups/' + rootUUID})
             
         response = {  }
         response['created'] = op.getctime(filePath)
@@ -487,11 +613,7 @@ class RootHandler(RequestHandler):
         response = self.getRootResponse(filePath)
         
         self.write(response)
-        
-    def post(self):
-        logging.info('RootHandler post')
-        # todo - same as put?
-        
+          
     def delete(self): 
         logging.info('RootHandler.delete ' + self.request.host)   
         filePath = getFilePath(self.request.host)
@@ -537,10 +659,12 @@ def make_app():
     if config.get('debug'):
         isDebug = True
     app = Application( [
-        url(r"/group/.*/links", LinkHandler),
-        url(r"/group/.*/links/.*", LinkHandler),
-        url(r"/group/", GroupHandler), 
-        url(r"/group/.*", GroupHandler), 
+        url(r"/datasets/.*", DatasetHandler),
+        url(r"/datasets/", DatasetHandler),
+        url(r"/groups/.*/links", LinkHandler),
+        url(r"/groups/.*/links/.*", LinkHandler),
+        url(r"/groups/", GroupHandler), 
+        url(r"/groups/.*", GroupHandler), 
         url(r"/", RootHandler),
         url(r".*", DefaultHandler)
     ],

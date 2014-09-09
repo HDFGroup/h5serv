@@ -11,6 +11,7 @@
 ##############################################################################
 import requests
 import config
+import helper
 import unittest
 import json
 
@@ -26,7 +27,7 @@ class RootTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.failUnlessEqual(len(rspJson["root"]), 36)
+        helper.validateId(rspJson["root"])
         self.failUnlessEqual(rspJson["groupCount"], 6)
         self.failUnlessEqual(rspJson["datasetCount"], 4)
         

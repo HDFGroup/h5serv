@@ -11,6 +11,7 @@
 ##############################################################################
 import requests
 import config
+import helper
 import unittest
 import json
 
@@ -27,17 +28,26 @@ class GroupTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         rootUUID = rspJson["root"]
-        self.assertTrue(len(rootUUID) == 36)
+        self.assertTrue(helper.validateId(rootUUID))
         self.failUnlessEqual(rspJson["groupCount"], 6)
         self.failUnlessEqual(rspJson["datasetCount"], 4)
         
-        req = self.endpoint + "/group/" + rootUUID
+        req = self.endpoint + "/groups/" + rootUUID
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.failUnlessEqual(rspJson["linkCount"], 2)
         self.failUnlessEqual(rspJson["attributeCount"], 2)
         self.failUnlessEqual(rsp.status_code, 200)
+        
+    def testGetGroups(self):
+        domain = 'tall.' + config.get('domain')    
+        headers = {'host': domain}
+        req = self.endpoint + "/groups/" 
+        rsp = requests.get(req, headers=headers)
+        # to do - implement groups (iterate through all groups)
+        # self.failUnlessEqual(rsp.status_code, 200)
+        # rspJson = json.loads(rsp.text)
           
     def testPost(self):
         # test PUT_root
@@ -46,26 +56,38 @@ class GroupTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)   
-        req = self.endpoint + "/group/"
+        req = self.endpoint + "/groups/"
         headers = {'host': domain}
         # create a new group
         rsp = requests.post(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200) 
         rspJson = json.loads(rsp.text)
         id = rspJson["id"]
-        self.assertTrue(len(id) == 36)   
+        self.assertTrue(helper.validateId(id))   
        
     def testBadPost(self):
         domain = 'tall.' + config.get('domain')    
-        req = self.endpoint + "/group/dff53814-2906-11e4-9f76-3c15c2da029e"
+        req = self.endpoint + "/groups/dff53814-2906-11e4-9f76-3c15c2da029e"
         headers = {'host': domain}
         rsp = requests.post(req, headers=headers)
         # post is not allowed to provide uri, so should fail
         self.failUnlessEqual(rsp.status_code, 405) 
         
+    def testDelete(self):
+        domain = 'tall_g2_deleted.' + config.get('domain')  
+        rootUUID = helper.getRootUUID(domain)
+        helper.validateId(rootUUID)
+        g2UUID = helper.getUUID(domain, rootUUID, 'g2')
+        self.assertTrue(helper.validateId(g2UUID))
+        req = self.endpoint + "/groups/" + g2UUID
+        headers = {'host': domain}
+        rsp = requests.delete(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        
     def testDeleteBadUUID(self):
-        domain = 'tall.' + config.get('domain')    
-        req = self.endpoint + "/group/dff53814-2906-11e4-9f76-3c15c2da029e"
+        domain = 'tall_g2_deleted.' + config.get('domain')    
+        req = self.endpoint + "/groups/dff53814-2906-11e4-9f76-3c15c2da029e"
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 404)
@@ -78,7 +100,7 @@ class GroupTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         rootUUID = rspJson["root"]
-        req = self.endpoint + "/group/" + rootUUID
+        req = self.endpoint + "/groups/" + rootUUID
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 403)
         

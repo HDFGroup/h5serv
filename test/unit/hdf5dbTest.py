@@ -62,7 +62,7 @@ class Hdf5dbTest(unittest.TestCase):
         # end of with will close file
         # open again and verify we can get obj by name
         with Hdf5db('tall.h5') as db:
-            obj = db.getGroupByUuid(g1Uuid) 
+            obj = db.getGroupObjectByUuid(g1Uuid) 
             g1 = db.getObjByPath('/g1')
             self.failUnlessEqual(obj, g1)
                
@@ -70,7 +70,7 @@ class Hdf5dbTest(unittest.TestCase):
         # get test file
         with Hdf5db('tall.h5') as db:
             rootuuid = db.getUUIDByPath('/')
-            root = db.getGroupByUuid(rootuuid)
+            root = db.getGroupObjectByUuid(rootuuid)
             self.failUnlessEqual('/', root.name)
             rootLinks = db.getItems(rootuuid)
             self.failUnlessEqual(len(rootLinks), 2)
@@ -80,7 +80,7 @@ class Hdf5dbTest(unittest.TestCase):
             self.failUnlessEqual(len(g1Links), 2)
             
             g11uuid = db.getUUIDByPath("/g1/g1.1")
-            db.deleteGroup(g11uuid)
+            db.deleteObjectByUuid(g11uuid)
             
     def testCreateGroup(self):
         # get test file
@@ -90,7 +90,7 @@ class Hdf5dbTest(unittest.TestCase):
             numRootChildren = len(db.getItems(rootUuid))
             self.assertEqual(numRootChildren, 2)
             newGrpUuid = db.createGroup()
-            newGrp = db.getGroupByUuid(newGrpUuid)
+            newGrp = db.getGroupObjectByUuid(newGrpUuid)
             self.assertNotEqual(newGrp, None)
             db.linkObject(rootUuid, newGrpUuid, 'g3')
             numRootChildren = len(db.getItems(rootUuid))
@@ -154,7 +154,7 @@ class Hdf5dbTest(unittest.TestCase):
         # end of with will close file
         # open again and verify we can get obj by name
         with Hdf5db('tall_ro.h5') as db:
-            obj = db.getGroupByUuid(g1Uuid) 
+            obj = db.getGroupObjectByUuid(g1Uuid) 
             g1 = db.getObjByPath('/g1')
             self.failUnlessEqual(obj, g1)
             g1links = db.getItems(g1Uuid)

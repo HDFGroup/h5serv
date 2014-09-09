@@ -21,6 +21,7 @@ cd ../integ
 python roottest.py
 python grouptest.py
 python linktest.py
+python datasettest.py
 cd ..
 echo "Done!"
  
