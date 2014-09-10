@@ -261,7 +261,16 @@ class Hdf5db:
         objUuid = str(uuid.uuid1())
         # print 'shape:', shape
         # print 'shape type:', type(shape)
-        newDataset = datasets.create_dataset(objUuid, shape, type)
+        dt = None
+        if type == "vlen_bytes":
+            dt = h5py.special_dtype(vlen=bytes)
+        elif type == "vlen_unicode":
+            dt = h5py.special_dtype(vlen=unicode)
+        else:
+            # just use the type string as type
+            dt = type
+            
+        newDataset = datasets.create_dataset(objUuid, shape, dt)
         # store reverse map as an attribute
         addr = h5py.h5o.get_info(newDataset.id).addr
         addrGrp = self.dbGrp["{addr}"]

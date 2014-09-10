@@ -12,6 +12,7 @@
 import requests
 import config
 import unittest
+import helper
 import json
 import logging
 
@@ -19,33 +20,11 @@ class LinkTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(LinkTest, self).__init__(*args, **kwargs)
         self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))
-        
-    def getRootId(self, domain):
-        req = self.endpoint + "/"
-        headers = {'host': domain}
-        rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        rspJson = json.loads(rsp.text)
-        rootUUID = rspJson["root"]
-        self.assertTrue(len(rootUUID) == 36)
-        return rootUUID
-            
-    def createGroup(self, domain):
-        # test PUT_root
-        req = self.endpoint + "/groups/"
-        headers = {'host': domain}
-        # create a new group
-        rsp = requests.post(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200) 
-        rspJson = json.loads(rsp.text)
-        id = rspJson["id"]
-        self.assertTrue(len(id) == 36) 
-        return id
        
     def testGet(self):
         logging.info("LinkTest.testGet")
         domain = 'tall.' + config.get('domain')   
-        rootUUID = self.getRootId(domain)     
+        rootUUID = helper.getRootUUID(domain)     
         req = self.endpoint + "/groups/" + rootUUID + "/links"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
@@ -56,8 +35,8 @@ class LinkTest(unittest.TestCase):
     def testGetBatch(self):
         logging.info("LinkTest.testGetBatch")
         domain = 'group1k.' + config.get('domain')   
-        rootUUID = self.getRootId(domain)     
-        req = self.endpoint + "/groups/" + rootUUID + "/links"
+        rootUUID = helper.getRootUUID(domain)     
+        req = helper.getEndpoint() + "/groups/" + rootUUID + "/links"
         headers = {'host': domain}
         params = {'Limit': 50 }
         names = set()
@@ -83,8 +62,8 @@ class LinkTest(unittest.TestCase):
     def testGetBadParam(self):
         logging.info("LinkTest.testGetBatchBadParam")
         domain = 'group1k.' + config.get('domain')   
-        rootUUID = self.getRootId(domain)     
-        req = self.endpoint + "/groups/" + rootUUID + "/links"
+        rootUUID = helper.getRootUUID(domain)     
+        req = helper.getEndpoint() + "/groups/" + rootUUID + "/links"
         headers = {'host': domain}
         params = {'Limit': 'abc' }
         rsp = requests.get(req, headers=headers, params=params)
@@ -94,10 +73,10 @@ class LinkTest(unittest.TestCase):
     def testPut(self):
         logging.info("LinkTest.testPut")
         domain = 'tall.' + config.get('domain') 
-        grpId = self.createGroup(domain)
-        rootId = self.getRootId(domain)   
+        grpId = helper.createGroup(domain)
+        rootId = helper.getRootUUID(domain)   
         name = 'g3'
-        req = self.endpoint + "/groups/" + rootId + "/links/" + name 
+        req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -110,10 +89,10 @@ class LinkTest(unittest.TestCase):
     def testPutNameWithSpaces(self):
         logging.info("LinkTest.testPutNameWithSpaces")
         domain = 'tall.' + config.get('domain') 
-        grpId = self.createGroup(domain)
-        rootId = self.getRootId(domain)   
+        grpId = helper.createGroup(domain)
+        rootId = helper.getRootUUID(domain)   
         name = 'name with spaces'
-        req = self.endpoint + "/groups/" + rootId + "/links/" + name 
+        req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -123,10 +102,10 @@ class LinkTest(unittest.TestCase):
     def testPutBadReqId(self):
         logging.info("LinkTest.testPutBadReqId")
         domain = 'tall.' + config.get('domain') 
-        grpId = self.createGroup(domain)
+        grpId = helper.createGroup(domain)
         badReqId  = 'b2771194-347f-11e4-bb67-3c15c2da029e' # doesn't exist in tall.h5
         name = 'g3'
-        req = self.endpoint + "/groups/" + badReqId + "/links/" + name 
+        req = helper.getEndpoint() + "/groups/" + badReqId + "/links/" + name 
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -135,11 +114,11 @@ class LinkTest(unittest.TestCase):
     def testPutBadLinkId(self):
         logging.info("LinkTest.testPutBadLinkId")
         domain = 'tall.' + config.get('domain') 
-        grpId = self.createGroup(domain)
-        rootId = self.getRootId(domain)  
+        grpId = helper.createGroup(domain)
+        rootId = helper.getRootUUID(domain)  
         badLinkId  = 'b2771194-347f-11e4-bb67-3c15c2da029e' # doesn't exist in tall.h5
         name = 'g3'
-        req = self.endpoint + "/groups/" + rootId + "/links/" + name 
+        req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
         payload = {"id": badLinkId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -148,9 +127,9 @@ class LinkTest(unittest.TestCase):
     def testPutNoName(self):
         logging.info("LinkTest.testPutNoName")
         domain = 'tall.' + config.get('domain') 
-        grpId = self.createGroup(domain)
-        rootId = self.getRootId(domain)   
-        req = self.endpoint + "/groups/" + rootId + "/links/"  
+        grpId = helper.createGroup(domain)
+        rootId = helper.getRootUUID(domain)   
+        req = helper.getEndpoint() + "/groups/" + rootId + "/links/"  
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -159,10 +138,10 @@ class LinkTest(unittest.TestCase):
     def testPutBadName(self):
         logging.info("LinkTest.testPutBadName")
         domain = 'tall.' + config.get('domain') 
-        grpId = self.createGroup(domain)
-        rootId = self.getRootId(domain)   
+        grpId = helper.createGroup(domain)
+        rootId = helper.getRootUUID(domain)   
         name = 'bad/name'  # forward slash not allowed
-        req = self.endpoint + "/groups/" + rootId + "/links/" + name 
+        req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -171,10 +150,10 @@ class LinkTest(unittest.TestCase):
     def testPutSoftLink(self):
         logging.info("LinkTest.testPutSoftLink")
         domain = 'tall.' + config.get('domain') 
-        grpId = self.createGroup(domain)
-        rootId = self.getRootId(domain)   
+        grpId = helper.createGroup(domain)
+        rootId = helper.getRootUUID(domain)   
         name = 'softlink'
-        req = self.endpoint + "/groups/" + rootId + "/links/" + name 
+        req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
         payload = {"h5path": "/somewhere"}
         headers = {'host': domain}
         # make request
@@ -188,10 +167,10 @@ class LinkTest(unittest.TestCase):
     def testDelete(self):
         logging.info("LinkTest.testDelete")
         domain = 'tall.' + config.get('domain') 
-        grpId = self.createGroup(domain)
-        rootId = self.getRootId(domain)   
+        grpId = helper.createGroup(domain)
+        rootId = helper.getRootUUID(domain)   
         name = 'deleteme'
-        req = self.endpoint + "/groups/" + rootId + "/links/" + name 
+        req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)

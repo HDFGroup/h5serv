@@ -9,6 +9,7 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
+import sys
 cfg = {
     'port':   5000,
     'debug':  True,
@@ -18,7 +19,7 @@ cfg = {
     'objectdb': 'objectdb.h5'
 }
    
-def get(x):
+def get(x):     
     return cfg[x]
 
   

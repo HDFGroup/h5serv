@@ -20,6 +20,7 @@ import tornado.httpserver
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, json_decode, url_escape, url_unescape
+from sets import Set
 import config
 from hdf5db import Hdf5db
 
@@ -320,6 +321,13 @@ class LinkHandler(RequestHandler):
                 raise HTTPError(httpStatus)   
                 
 class DatasetHandler(RequestHandler):
+    # supported datatypes
+    _dtypes = Set([    'int8',        'int16',   'int32',  'int64',
+                      'uint8',       'uint16',  'uint32', 'uint64',
+                    'float16',      'float32', 'float64',
+                  'complex64',   'complex128',
+                 'vlen_bytes', 'vlen_unicode'])
+    # or 'Snn' for fixed string or 'vlen_bytes' for variable 
     def getRequestId(self):
         uri = self.request.uri
         npos = uri.rfind('/')
@@ -374,8 +382,6 @@ class DatasetHandler(RequestHandler):
         
     def post(self):
         logging.info('DatasetHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
-        print self.request
-        print "uri: ", self.request.uri 
         if self.request.uri != '/datasets/':
             logging.info('bad datasets post request')
             raise HTTPError(405)  # Method not allowed
@@ -395,8 +401,6 @@ class DatasetHandler(RequestHandler):
             raise HTTPError(400)  # missing type
             
         shape = body["shape"]
-        print 'shape:', shape
-        print 'type-shape:', type(shape)
         datatype = body["type"]
         if type(shape) == int:
             dim1 = shape
@@ -407,6 +411,31 @@ class DatasetHandler(RequestHandler):
         else:
             logging.info("invalid shape argument")
             raise HTTPError(400)
+            
+        # validate type
+        isValid = False 
+        if datatype in DatasetHandler._dtypes:
+            isValid = True
+        elif len(datatype) > 1 and datatype[0] == 'S':
+            # Fixed ascii datatype, very the text after 'S' is a positive int
+            try:
+                nwidth = int(datatype[1:])
+                if nwidth > 0:
+                    isValid = True              
+            except ValueError:
+                logging.info("can't convert text after 'S' in: " + datatype + " to int")           
+        else:
+            logging.info("invalid type argument: " + datatype);
+            raise HTTPError(400)
+            
+        # validate shape
+        for extent in shape:
+            if type(extent) != int:
+                logging.info("invalid shape type")
+                raise HTTPError(400)
+            if extent < 0:
+                logging.info("invalid shape (negative extent)")
+                raise HTTPError(400)           
         
         with Hdf5db(filePath) as db:
             rootUUID = db.getUUIDByPath('/')
