@@ -39,7 +39,7 @@ class RootTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 404)
         
     def testWrongTopLevelDomain(self):
-        domain = "www.hfgroup.org"    
+        domain = "www.hdfgroup.org"    
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)

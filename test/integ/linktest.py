@@ -72,7 +72,7 @@ class LinkTest(unittest.TestCase):
         
     def testPut(self):
         logging.info("LinkTest.testPut")
-        domain = 'tall.' + config.get('domain') 
+        domain = 'tall_updated.' + config.get('domain') 
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)   
         name = 'g3'
@@ -88,7 +88,7 @@ class LinkTest(unittest.TestCase):
         
     def testPutNameWithSpaces(self):
         logging.info("LinkTest.testPutNameWithSpaces")
-        domain = 'tall.' + config.get('domain') 
+        domain = 'tall_updated.' + config.get('domain') 
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)   
         name = 'name with spaces'
@@ -101,7 +101,7 @@ class LinkTest(unittest.TestCase):
         
     def testPutBadReqId(self):
         logging.info("LinkTest.testPutBadReqId")
-        domain = 'tall.' + config.get('domain') 
+        domain = 'tall_updated.' + config.get('domain') 
         grpId = helper.createGroup(domain)
         badReqId  = 'b2771194-347f-11e4-bb67-3c15c2da029e' # doesn't exist in tall.h5
         name = 'g3'
@@ -113,7 +113,7 @@ class LinkTest(unittest.TestCase):
         
     def testPutBadLinkId(self):
         logging.info("LinkTest.testPutBadLinkId")
-        domain = 'tall.' + config.get('domain') 
+        domain = 'tall_updated.' + config.get('domain') 
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)  
         badLinkId  = 'b2771194-347f-11e4-bb67-3c15c2da029e' # doesn't exist in tall.h5
@@ -126,7 +126,7 @@ class LinkTest(unittest.TestCase):
         
     def testPutNoName(self):
         logging.info("LinkTest.testPutNoName")
-        domain = 'tall.' + config.get('domain') 
+        domain = 'tall_updated.' + config.get('domain') 
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)   
         req = helper.getEndpoint() + "/groups/" + rootId + "/links/"  
@@ -137,7 +137,7 @@ class LinkTest(unittest.TestCase):
         
     def testPutBadName(self):
         logging.info("LinkTest.testPutBadName")
-        domain = 'tall.' + config.get('domain') 
+        domain = 'tall_updated.' + config.get('domain') 
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)   
         name = 'bad/name'  # forward slash not allowed
@@ -149,7 +149,7 @@ class LinkTest(unittest.TestCase):
         
     def testPutSoftLink(self):
         logging.info("LinkTest.testPutSoftLink")
-        domain = 'tall.' + config.get('domain') 
+        domain = 'tall_updated.' + config.get('domain') 
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)   
         name = 'softlink'
@@ -166,7 +166,7 @@ class LinkTest(unittest.TestCase):
         
     def testDelete(self):
         logging.info("LinkTest.testDelete")
-        domain = 'tall.' + config.get('domain') 
+        domain = 'tall_updated.' + config.get('domain') 
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)   
         name = 'deleteme'

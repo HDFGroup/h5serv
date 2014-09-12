@@ -68,7 +68,8 @@ class Hdf5dbTest(unittest.TestCase):
                
     def testGroupOperations(self):
         # get test file
-        with Hdf5db('tall.h5') as db:
+        getFile('tall.h5', 'tall_del_g11.h5')
+        with Hdf5db('tall_del_g11.h5') as db:
             rootuuid = db.getUUIDByPath('/')
             root = db.getGroupObjectByUuid(rootuuid)
             self.failUnlessEqual('/', root.name)
@@ -126,7 +127,14 @@ class Hdf5dbTest(unittest.TestCase):
             self.assertEqual(item['name'], 'slink')
             self.assertEqual(item['class'], 'SoftLink')
             self.assertEqual(item['path'], 'somevalue')
-    
+            
+    def testGetItemsUDlink(self):
+        items = None
+        with Hdf5db('tall.h5') as db:
+            grpUuid = db.getUUIDByPath('/g2')
+            # /g2 has a UDLink, but it shouldn't be returned as an item
+            items = db.getItems(grpUuid)
+            self.assertEqual(len(items), 2)
              
             
     def testDeleteLink(self): 
@@ -147,6 +155,7 @@ class Hdf5dbTest(unittest.TestCase):
         g1Uuid = None
         with Hdf5db('tall_ro.h5') as db:
             g1Uuid = db.getUUIDByPath('/g1')
+            print g1Uuid
             self.failUnlessEqual(len(g1Uuid), config.get('uuidlen'))
             obj = db.getObjByPath('/g1')
             self.failUnlessEqual(obj.name, '/g1')
@@ -161,6 +170,25 @@ class Hdf5dbTest(unittest.TestCase):
             self.failUnlessEqual(len(g1links), 2)
             for item in g1links:
                 self.failUnlessEqual(len(item['uuid']), config.get('uuidlen'))
+                
+    def testReadDataset(self):
+    # getDatasetValuesByUuid(self, objUuid, slice=None):
+         getFile('tall.h5')
+         d111_values = None
+         d112_values = None
+         with Hdf5db('tall.h5') as db:
+            d111Uuid = db.getUUIDByPath('/g1/g1.1/dset1.1.1')
+            self.failUnlessEqual(len(d111Uuid), config.get('uuidlen'))
+            d111_values = db.getDatasetValuesByUuid(d111Uuid)
+            
+            d112Uuid = db.getUUIDByPath('/g1/g1.1/dset1.1.2')
+            self.failUnlessEqual(len(d112Uuid), config.get('uuidlen'))
+            d112_values = db.getDatasetValuesByUuid(d112Uuid)
+            
+            
+         print "dset1.1.1:", d111_values
+         print "dset1.1.2:", d112_values
+            
     
 if __name__ == '__main__':
     #setup test files

@@ -250,6 +250,40 @@ class Hdf5db:
         item['shape'] = dset.shape
         
         return item
+    """
+    Get values from dataset identified by objUuid.
+    If slice is provided, it is expected to be an array
+    of dict elements in the form { 'start': n, 'end': m, 'stride': l}
+    (with the number of elements equal to the rank of the array).
+    If any keys or missing the following defaults will be used:
+       start: 0
+       end: extent of dimension
+       stride: 1
+    """    
+    def getDatasetValuesByUuid(self, objUuid, slices=None):
+        dset = self.getDatasetObjByUuid(objUuid)
+        if dset == None:
+            return None
+        values = None
+        if slice == None:
+            # just return the entire array as a list
+            values = dset[()].tolist()
+            return values
+        else:
+            if type(slices) != list and type(slices) != tuple:
+                logging.error("getDatasetValuesByUuid: bad type for dim parameter")
+                return None
+            rank = len(dset.shape)
+            
+            if len(slices) != rank:
+                logging.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
+                return None 
+            if rank == 0:
+                logging.error("selection passed to zero-dim dataseet")
+                return None
+            else:      
+                values = dset[slices].tolist()
+        return values 
         
     def createDataset(self, shape, type):
         self.initFile()
@@ -393,8 +427,12 @@ class Hdf5db:
                     continue  # keep going!
             item = { 'name': k } 
             # get the link object, one of HardLink, SoftLink, or ExternalLink
-            linkObj = parent.get(k, None, False, True)
-            linkClass = linkObj.__class__.__name__
+            try:
+                linkObj = parent.get(k, None, False, True)
+                linkClass = linkObj.__class__.__name__
+            except TypeError:
+                # UDLink? Ignore for now
+                continue
             if linkClass == 'SoftLink':
                 if classFilter and classFilter != 'SoftLink':
                     continue
@@ -488,7 +526,12 @@ class Hdf5db:
         
     def unlinkObject(self, parentGrp, tgtObj):
         for name in parentGrp:
-            linkObj = parentGrp.get(name, None, False, True)
+            try:
+                linkObj = parentGrp.get(name, None, False, True)
+            except TypeError:
+                # user defined link?
+                logging.info("Unknown link type for item: " + name)
+                continue
             linkClass = linkObj.__class__.__name__
             # only deal with HardLinks
             if linkClass == 'HardLink':

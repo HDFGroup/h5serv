@@ -128,7 +128,7 @@ class LinkHandler(RequestHandler):
         # extract the <uuid>
         uri = self.request.uri
         if uri[:len('/groups/')] != '/groups/':
-            # should get here!
+            # should not get here!
             logging.error("unexpected uri: " + uri)
             raise HTTPError(500)
         uri = uri[len('/groups/'):]  # get stuff after /groups/
@@ -329,10 +329,11 @@ class DatasetHandler(RequestHandler):
                  'vlen_bytes', 'vlen_unicode'])
     # or 'Snn' for fixed string or 'vlen_bytes' for variable 
     def getRequestId(self):
+        # request is in the form /datasets/<id>, return <id>
         uri = self.request.uri
         npos = uri.rfind('/')
         if npos < 0:
-            raise HTTPError(500)  # should not get routed to GroupHandler in this case
+            raise HTTPError(500)  # should not get routed to ValueHandler in this case
         if npos == len(uri) - 1:
             raise HTTPError(400, message="missing id")
         id = uri[(npos+1):]
@@ -474,9 +475,104 @@ class DatasetHandler(RequestHandler):
                 if httpStatus == 200:
                     httpStatus = 500
                 raise HTTPError(httpStatus)  
+                
+class ValueHandler(RequestHandler):
+    """
+    Helper method - return slice for dim based on query params
+    """
+    def getSliceQueryParam(self, dim, extent):
+        # Get optional query parameters for given dim
+        dimQuery = 'dim' + str(dim + 1)
+        try:
+            start = int(self.get_query_argument(dimQuery + '_start', 0))
+            stop =  int(self.get_query_argument(dimQuery + '_stop', extent))
+            step =  int(self.get_query_argument(dimQuery + '_step', 1))
+        except ValueError:
+            logging.info("invalid selection parameter (can't convert to int)");
+            raise HTTPError(400)
+        if start < 0 or start > extent:
+            logging.info("bad selection start parameter for dimension: " + dimQuery)
+            raise HTTPError(400)
+        if stop > extent:
+            logging.info("bad selection stop parameter for dimension: " + dimQuery)
+            raise HTTPError(400)
+        if step == 0:
+            logging.info("bad selection step parameter for dimension: " + dimQuery)
+            raise HTTPError(400)
+        s = slice(start, stop, step)
+        logging.info(dimQuery + " start: " + str(start) + " stop: " + str(stop) + " step: " + 
+            str(step)) 
+        return s
         
+    """
+    Helper method - get uuid for the dataset
+    """    
+    def getRequestId(self):
+        # request is in the form /datasets/<id>/value?xxx, return <id>
+        uri = self.request.uri
+        if uri[:len('/datasets/')] != '/datasets/':
+            # should not get here!
+            logging.error("unexpected uri: " + uri)
+            raise HTTPError(500)
+        uri = uri[len('/datasets/'):]  # get stuff after /datasets/
+        npos = uri.find('/')
+        if npos <= 0:
+            logging.info("bad uri")
+            raise HTTPError(400)  
+        id = uri[:npos]
+         
+        logging.info('got id: [' + id + ']')
+    
+        return id
         
+    def get(self):
+        logging.info('ValueHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         
+        reqUuid = self.getRequestId()
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        #todo - use the real object creation times
+        ctime = op.getctime(filePath)
+        mtime = ctime
+        response = { }
+        links = []
+        rootUUID = None
+        item = None
+        values = None
+        with Hdf5db(filePath) as db:
+            item = db.getDatasetItemByUuid(reqUuid)
+            if item == None:
+                httpError = 404  # not found
+                if db.httpStatus != 200:
+                    httpError = db.httpStatus # library may have more specific error code
+                logging.info("dataset: [" + reqUuid + "] not found");
+                raise HTTPError(httpError)
+            shape = item['shape']
+            rank = len(shape)
+            slices = []
+            for dim in range(rank):
+                slice = self.getSliceQueryParam(dim, shape[dim])
+                slices.append(slice)
+         
+            values = db.getDatasetValuesByUuid(reqUuid, tuple(slices))  
+            rootUUID = db.getUUIDByPath('/')
+                         
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/'
+        links.append({'rel:': 'self',       'href': href + 'datasets/' + reqUuid})
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes'})        
+        response['id'] = reqUuid
+        response['type'] = item['type']
+        response['shape'] = item['shape']
+        response['created'] = ctime
+        response['lastModified'] = mtime
+        response['values'] = values
+        response['links'] = links
+        
+        self.write(response)   
          
 class GroupHandler(RequestHandler):
     def getRequestId(self):
@@ -688,6 +784,8 @@ def make_app():
     if config.get('debug'):
         isDebug = True
     app = Application( [
+        url(r"/datasets/.*/value", ValueHandler),
+        url(r"/datasets/.*/value\?.*", ValueHandler),
         url(r"/datasets/.*", DatasetHandler),
         url(r"/datasets/", DatasetHandler),
         url(r"/groups/.*/links", LinkHandler),
