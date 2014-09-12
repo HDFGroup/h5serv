@@ -198,6 +198,7 @@ class Hdf5db:
         
     def getUUIDByPath(self, path):
         self.initFile()
+        logging.info("getUUIDByPath: [" + path + "]")
         if len(path) >= 6 and path[:6] == '__db__':
             logging.error("getUUIDByPath called with invalid path: [" + path + "]")
             raise Exception
@@ -265,7 +266,7 @@ class Hdf5db:
         if dset == None:
             return None
         values = None
-        if slice == None:
+        if slices == None:
             # just return the entire array as a list
             values = dset[()].tolist()
             return values

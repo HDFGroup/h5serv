@@ -78,7 +78,6 @@ class GroupTest(unittest.TestCase):
         rootUUID = helper.getRootUUID(domain)
         helper.validateId(rootUUID)
         g2UUID = helper.getUUID(domain, rootUUID, 'g2')
-        print 'g2uuid', g2UUID
         self.assertTrue(helper.validateId(g2UUID))
         req = self.endpoint + "/groups/" + g2UUID
         headers = {'host': domain}

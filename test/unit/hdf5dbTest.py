@@ -172,7 +172,6 @@ class Hdf5dbTest(unittest.TestCase):
                 self.failUnlessEqual(len(item['uuid']), config.get('uuidlen'))
                 
     def testReadDataset(self):
-    # getDatasetValuesByUuid(self, objUuid, slice=None):
          getFile('tall.h5')
          d111_values = None
          d112_values = None
@@ -181,15 +180,31 @@ class Hdf5dbTest(unittest.TestCase):
             self.failUnlessEqual(len(d111Uuid), config.get('uuidlen'))
             d111_values = db.getDatasetValuesByUuid(d111Uuid)
             
+            self.assertEqual(len(d111_values), 10)  
+            for i in range(10):
+                arr = d111_values[i]
+                self.assertEqual(len(arr), 10)
+                for j in range(10):
+                    self.assertEqual(arr[j], i*j)
+            
             d112Uuid = db.getUUIDByPath('/g1/g1.1/dset1.1.2')
             self.failUnlessEqual(len(d112Uuid), config.get('uuidlen'))
-            d112_values = db.getDatasetValuesByUuid(d112Uuid)
-            
-            
-         print "dset1.1.1:", d111_values
-         print "dset1.1.2:", d112_values
-            
-    
+            d112_values = db.getDatasetValuesByUuid(d112Uuid) 
+            self.assertEqual(len(d112_values), 20)
+            for i in range(20):
+                self.assertEqual(d112_values[i], i)
+                
+    def testReadZeroDimDataset(self):
+         getFile('zerodim.h5')
+         d111_values = None
+         d112_values = None
+         with Hdf5db('zerodim.h5') as db:
+            dsetUuid = db.getUUIDByPath('/dset')
+            self.failUnlessEqual(len(dsetUuid), config.get('uuidlen'))
+            dset_value = db.getDatasetValuesByUuid(dsetUuid)
+            self.assertEqual(type(dset_value), int)
+            self.assertEqual(dset_value, 42)
+             
 if __name__ == '__main__':
     #setup test files
     
