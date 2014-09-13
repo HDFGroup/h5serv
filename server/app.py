@@ -556,7 +556,8 @@ class ValueHandler(RequestHandler):
                 slice = self.getSliceQueryParam(dim, shape[dim])
                 slices.append(slice)
          
-            values = db.getDatasetValuesByUuid(reqUuid, tuple(slices))  
+            values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
+            print 'slices:', tuple(slices) 
             rootUUID = db.getUUIDByPath('/')
                          
         # got everything we need, put together the response

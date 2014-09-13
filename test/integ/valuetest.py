@@ -68,6 +68,28 @@ class ValueTest(unittest.TestCase):
             self.assertEqual(len(arr), 10)
             for j in range(10):
                 self.assertEqual(arr[j], i*j)
+                
+    def testGetZeroDim(self):
+        domain = 'zerodim.subdir.' + config.get('domain')  
+        rootUUID = helper.getRootUUID(domain)
+        dsetUUID = helper.getUUID(domain, rootUUID, 'dset')
+               
+        # rank 0 dataset
+        req = helper.getEndpoint() + "/datasets/" + dsetUUID
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(rspJson['id'], dsetUUID)
+        self.assertEqual(rspJson['type'], 'int64')
+        self.assertEqual(len(rspJson['shape']), 0)
+        req = helper.getEndpoint() + "/datasets/" + dsetUUID + "/value"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        data = rspJson['values'] 
+        self.assertEqual(data, 42)
+         
         
     def testGetSelection(self):
         domain = 'tall.' + config.get('domain')  

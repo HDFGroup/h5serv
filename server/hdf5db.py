@@ -279,9 +279,6 @@ class Hdf5db:
             if len(slices) != rank:
                 logging.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
                 return None 
-            if rank == 0:
-                logging.error("selection passed to zero-dim dataseet")
-                return None
             else:      
                 values = dset[slices].tolist()
         return values 
