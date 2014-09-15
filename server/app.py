@@ -192,7 +192,7 @@ class LinkHandler(RequestHandler):
             if items == None:
                 httpError = 404  # not found
                 #todo: return 410 if the group was recently deleted
-                logging.info("group: [" + reqUuid + "] not found");
+                logging.info("group: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
                          
         # got everything we need, put together the response
@@ -222,7 +222,7 @@ class LinkHandler(RequestHandler):
                     'href': href})
             else:
                 logging.error("unexpected group item class: " + item['class'])
-                raise HTTPError(500);
+                raise HTTPError(500)
              
         response['links'] = links
         
@@ -362,7 +362,7 @@ class DatasetHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("dataset: [" + reqUuid + "] not found");
+                logging.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
                          
@@ -426,7 +426,7 @@ class DatasetHandler(RequestHandler):
             except ValueError:
                 logging.info("can't convert text after 'S' in: " + datatype + " to int")           
         else:
-            logging.info("invalid type argument: " + datatype);
+            logging.info("invalid type argument: " + datatype)
             raise HTTPError(400)
             
         # validate shape
@@ -488,7 +488,7 @@ class ValueHandler(RequestHandler):
             stop =  int(self.get_query_argument(dimQuery + '_stop', extent))
             step =  int(self.get_query_argument(dimQuery + '_step', 1))
         except ValueError:
-            logging.info("invalid selection parameter (can't convert to int)");
+            logging.info("invalid selection parameter (can't convert to int)")
             raise HTTPError(400)
         if start < 0 or start > extent:
             logging.info("bad selection start parameter for dimension: " + dimQuery)
@@ -547,7 +547,7 @@ class ValueHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("dataset: [" + reqUuid + "] not found");
+                logging.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             shape = item['shape']
             rank = len(shape)
@@ -570,10 +570,100 @@ class ValueHandler(RequestHandler):
         response['shape'] = item['shape']
         response['created'] = ctime
         response['lastModified'] = mtime
-        response['values'] = values
+        response['value'] = values
         response['links'] = links
         
         self.write(response)   
+    
+    def put(self):
+        logging.info('ValueHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        
+        reqUuid = self.getRequestId()
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        body = json.loads(self.request.body)
+        
+        if "shape" not in body:
+            logging.info("Shape not supplied")
+            raise HTTPError(400)  # missing shape
+            
+        if "type" not in body:
+            logging.info("Type not supplied")
+            raise HTTPError(400)  # missing type
+            
+        if "value" not in body:
+            logging.info("Value not supplied")
+            raise HTTPError(400) # missing data
+            
+        reqshape = body["shape"]
+        reqtype = body["type"]
+        data = body["value"]
+        
+        if type(reqshape) == int:
+            dim1 = reqshape
+            reqshape = []
+            reqshape = [dim1]
+        elif type(reqshape) == list or type(reqshape) == tuple: 
+            pass # can use as is
+        else:
+            logging.info("invalid shape argument")
+            raise HTTPError(400)
+            
+        # validate type
+        isValid = False 
+        if reqtype in DatasetHandler._dtypes:
+            isValid = True
+        elif len(reqtype) > 1 and reqtype[0] == 'S':
+            # Fixed ascii datatype, very the text after 'S' is a positive int
+            try:
+                nwidth = int(reqtype[1:])
+                if nwidth > 0:
+                    isValid = True              
+            except ValueError:
+                logging.info("can't convert text after 'S' in: " + reqtype + " to int")           
+        else:
+            logging.info("invalid type argument: " + reqtype)
+            raise HTTPError(400)
+            
+        # validate shape
+        for extent in reqshape:
+            if type(extent) != int:
+                logging.info("invalid shape type")
+                raise HTTPError(400)
+            if extent < 0:
+                logging.info("invalid shape (negative extent)")
+                raise HTTPError(400)   
+                
+        with Hdf5db(filePath) as db:
+            item = db.getDatasetItemByUuid(reqUuid)
+            if item == None:
+                httpError = 404  # not found
+                if db.httpStatus != 200:
+                    httpError = db.httpStatus # library may have more specific error code
+                logging.info("dataset: [" + reqUuid + "] not found")
+                raise HTTPError(httpError)
+            dsetshape = item['shape']
+            rank = len(dsetshape) 
+            if len(reqshape) != rank:
+                # ranks don't match
+                logging.info("request shape doesn't match dataset shape")
+                raise HTTPError(400)
+            for dim in range(rank):
+                if reqshape[dim] != dsetshape[dim]:
+                    logging.info("request extent doesn't match dataset extent for dim: " +
+                        str(dim))
+            # todo - check that the types are compatible
+            ok = db.setDatasetValuesByUuid(reqUuid, data)
+            if not ok:
+                httpError = 500  # internal error
+                if db.httpStatus != 200:
+                    httpError = db.httpStatus # library may have more specific error code
+                logging.info("dataset put error")
+                raise HTTPError(httpError)      
+           
+        
          
 class GroupHandler(RequestHandler):
     def getRequestId(self):
@@ -611,7 +701,7 @@ class GroupHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("group: [" + reqUuid + "] not found");
+                logging.info("group: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
                          

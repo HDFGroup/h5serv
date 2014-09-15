@@ -22,6 +22,7 @@ python roottest.py
 python grouptest.py
 python linktest.py
 python datasettest.py
+python valuetest.py
 cd ..
 echo "Done!"
  

@@ -244,6 +244,8 @@ class Hdf5db:
     def getDatasetItemByUuid(self, objUuid):
         dset = self.getDatasetObjByUuid(objUuid)
         if dset == None:
+            logging.info("dataset: " + objUuid + " not found")
+            self.httpStatus = 404  # not found
             return None
         item = { 'id': objUuid }
         item['attributeCount'] = len(dset.attrs)
@@ -253,13 +255,8 @@ class Hdf5db:
         return item
     """
     Get values from dataset identified by objUuid.
-    If slice is provided, it is expected to be an array
-    of dict elements in the form { 'start': n, 'end': m, 'stride': l}
-    (with the number of elements equal to the rank of the array).
-    If any keys or missing the following defaults will be used:
-       start: 0
-       end: extent of dimension
-       stride: 1
+    If a slices list or tuple is provided, it should have the same
+    number of elements as the rank of the dataset.
     """    
     def getDatasetValuesByUuid(self, objUuid, slices=None):
         dset = self.getDatasetObjByUuid(objUuid)
@@ -282,6 +279,17 @@ class Hdf5db:
             else:      
                 values = dset[slices].tolist()
         return values 
+        
+    def setDatasetValuesByUuid(self, objUuid, data, slices=None):
+        dset = self.getDatasetObjByUuid(objUuid)
+        if dset == None:
+            logging.info("dataset: " + objUuid + " not found")
+            self.httpStatus = 404  # not found
+            return False
+        if slices == None:
+            # write entire dataset
+            dset[()] = data
+        return True
         
     def createDataset(self, shape, type):
         self.initFile()

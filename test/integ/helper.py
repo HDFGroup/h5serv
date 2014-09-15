@@ -68,14 +68,31 @@ def getUUID(domain, parentUuid, name):
 Helper function - create an anonymous group
 """    
 def createGroup(domain):
-        # test PUT_root
-        req = getEndpoint() + "/groups/"
-        headers = {'host': domain}
-        # create a new group
-        rsp = requests.post(req, headers=headers)
-        if rsp.status_code != 200:
-            return None
-        rspJson = json.loads(rsp.text)
-        id = rspJson["id"] 
-        return id
+    # test PUT_root
+    req = getEndpoint() + "/groups/"
+    headers = {'host': domain}
+    # create a new group
+    rsp = requests.post(req, headers=headers)
+    if rsp.status_code != 200:
+        return None
+    rspJson = json.loads(rsp.text)
+    id = rspJson["id"] 
+    return id
+        
+"""
+Helper function - link given object/name
+"""
+def linkObject(domain, objUuid, name, parentUuid=None):
+    if parentUuid == None:
+        # use root as parent if not specified
+        parentUuid = getRootUUID(domain)
+    req = getEndpoint() + "/groups/" + parentUuid + "/links/" + name 
+    payload = {"id": objUuid}
+    headers = {'host': domain}
+    rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+    if rsp.status_code == 200:
+        return True
+    else: 
+        return False
+    
             

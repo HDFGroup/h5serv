@@ -41,7 +41,7 @@ class ValueTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        data = rspJson['values'] 
+        data = rspJson['value'] 
         self.assertEqual(len(data), 20)
         for i in range(20):
             self.assertEqual(data[i], i)
@@ -61,7 +61,7 @@ class ValueTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        data = rspJson['values'] 
+        data = rspJson['value'] 
         self.assertEqual(len(data), 10)  
         for i in range(10):
             arr = data[i]
@@ -87,7 +87,7 @@ class ValueTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        data = rspJson['values'] 
+        data = rspJson['value'] 
         self.assertEqual(data, 42)
          
         
@@ -109,7 +109,7 @@ class ValueTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        data = rspJson['values']  # should be [2, 3, 4, ..., 19]
+        data = rspJson['value']  # should be [2, 3, 4, ..., 19]
         self.assertEqual(len(data), 18)
         self.assertEqual(data, range(2, 20))
         
@@ -119,7 +119,7 @@ class ValueTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        data = rspJson['values']  # should be [2, 3, 4, ..., 9]
+        data = rspJson['value']  # should be [2, 3, 4, ..., 9]
         self.assertEqual(len(data), 8)
         self.assertEqual(data, range(2, 10))
         
@@ -129,7 +129,7 @@ class ValueTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        data = rspJson['values']  # should be [2, 4, 6, 8]
+        data = rspJson['value']  # should be [2, 4, 6, 8]
         self.assertEqual(len(data), 4)
         self.assertEqual(data, range(2, 9, 2))
         
@@ -144,7 +144,7 @@ class ValueTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        data = rspJson['values']   
+        data = rspJson['value']   
         self.assertEqual(len(data), 10)  
         for i in range(10):
             arr = data[i]
@@ -158,7 +158,7 @@ class ValueTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        data = rspJson['values']   
+        data = rspJson['value']   
         self.assertEqual(len(data), 9)  
         for i in range(9):
             arr = data[i]
@@ -186,8 +186,64 @@ class ValueTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
              "?dim1_start=2&dim1_step=0"
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)       
+        self.failUnlessEqual(rsp.status_code, 400)   
         
+    def testPut(self):
+        # create domain
+        domain = 'valueput.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200) # creates domain
+        
+        #create 1d dataset
+        payload = {'type': 'int32', 'shape': 10}
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset1UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset1UUID))
+         
+        # link new dataset as 'dset1'
+        ok = helper.linkObject(domain, dset1UUID, 'dset1')
+        self.assertTrue(ok)
+        
+        req = self.endpoint + "/datasets/" + dset1UUID + "/value" 
+        data = [2,3,5,7,11,13,17,19,23,29]
+        payload = {'type': 'int32', 'shape': 10, 'value': data }
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        #create 2d dataset
+        payload = {'type': 'int32', 'shape': (10,10)}
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset2UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset2UUID))
+         
+        # link new dataset as 'dset2'
+        ok = helper.linkObject(domain, dset2UUID, 'dset2')
+        self.assertTrue(ok)
+        
+        req = self.endpoint + "/datasets/" + dset2UUID + "/value" 
+        data = []
+        for i in range(10):
+            row = []
+            for j in range(10):
+                row.append(i*10 + j)
+            data.append(row)
+        payload = {'type': 'int32', 'shape': [10, 10], 'value': data }
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        
+        
+         
      
         
 if __name__ == '__main__':
