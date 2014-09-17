@@ -94,5 +94,19 @@ def linkObject(domain, objUuid, name, parentUuid=None):
         return True
     else: 
         return False
+        
+"""
+Helper function - return data from dataset
+"""
+def readDataset(domain, dsetUuid):
+    req = getEndpoint() + "/datasets/" + dsetUuid + "/value"
+    headers = {'host': domain}
+    rsp = requests.get(req, headers=headers)
+    if rsp.status_code != 200:
+        return None
+    rspJson = json.loads(rsp.text)
+    data = rspJson['value']
+    return data
+         
     
             

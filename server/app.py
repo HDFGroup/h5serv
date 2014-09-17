@@ -650,12 +650,67 @@ class ValueHandler(RequestHandler):
                 # ranks don't match
                 logging.info("request shape doesn't match dataset shape")
                 raise HTTPError(400)
+            start = []
+            stop = []
+            step = []
+            if 'start' in body:
+                start = body['start']
+                if type(start) is not list:
+                    start = [start,]
+                if len(start) != rank:
+                    logging.info("request start array length not equal to dataset rank")
+                    raise HTTPError(400)
+                for dim in range(rank):
+                    if start[dim] < 0 or start[dim] >= dsetshape[dim]:
+                        logging.info("request start index invalid for dim: " + str(dim))
+                        raise HTTPError(400)
+            else:
+                for dim in range(rank):
+                    start.append(0)
+            if 'stop' in body:
+                stop = body['stop']
+                if type(stop) is not list:
+                    stop = [stop,]
+                if len(start) != rank:
+                    logging.info("request stop array length not equal to dataset rank")
+                    raise HTTPError(400)
+                for dim in range(rank):
+                    if stop[dim] < 0 or stop[dim] > dsetshape[dim]:
+                        logging.info("request stop index invalid for dim: " + str(dim))
+                        raise HTTPError(400)
+            else:
+                for dim in range(rank):
+                    stop.append(dsetshape[dim])
+            if 'step' in body:
+                step = body['step']
+                if type(step) is not list:
+                    step = [step,]
+                if len(step) != rank:
+                    logging.info("request step array length not equal to dataset rank")
+                    raise HTTPError(400)
+                for dim in range(rank):
+                    if step[dim] < 0 or step[dim] > dsetshape[dim]:
+                        logging.info("request step index invalid for dim: " + str(dim))
+                        raise HTTPError(400)
+            else:
+                for dim in range(rank):
+                    step.append(1)
+            
             for dim in range(rank):
                 if reqshape[dim] != dsetshape[dim]:
                     logging.info("request extent doesn't match dataset extent for dim: " +
                         str(dim))
+                        
+            slices = []
+            for dim in range(rank):
+                try:
+                    s = slice(int(start[dim]), int(stop[dim]), int(step[dim]))
+                except ValueError:
+                    logging.info("invalid start/stop/step value")
+                    raise HTTPError(400)
+                slices.append(s)
             # todo - check that the types are compatible
-            ok = db.setDatasetValuesByUuid(reqUuid, data)
+            ok = db.setDatasetValuesByUuid(reqUuid, data, tuple(slices))
             if not ok:
                 httpError = 500  # internal error
                 if db.httpStatus != 200:

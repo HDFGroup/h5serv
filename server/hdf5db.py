@@ -289,6 +289,22 @@ class Hdf5db:
         if slices == None:
             # write entire dataset
             dset[()] = data
+        else:
+            if type(slices) != tuple:
+                logging.error("getDatasetValuesByUuid: bad type for dim parameter")
+                return False
+            rank = len(dset.shape)
+            
+            if len(slices) != rank:
+                logging.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
+                return False 
+            else: 
+                if rank == 1:
+                    slice = slices[0]
+                    dset[slice] = data
+                else:
+                    dset[slices] = data     
+        
         return True
         
     def createDataset(self, shape, type):
