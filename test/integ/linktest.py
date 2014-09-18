@@ -23,14 +23,15 @@ class LinkTest(unittest.TestCase):
        
     def testGet(self):
         logging.info("LinkTest.testGet")
-        domain = 'tall.' + config.get('domain')   
-        rootUUID = helper.getRootUUID(domain)     
-        req = self.endpoint + "/groups/" + rootUUID + "/links"
-        headers = {'host': domain}
-        rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        rspJson = json.loads(rsp.text)
-        self.failUnlessEqual(rsp.status_code, 200)
+        for domain_name in ('tall', 'tall_ro'):
+            domain = domain_name + '.' + config.get('domain')   
+            rootUUID = helper.getRootUUID(domain)     
+            req = self.endpoint + "/groups/" + rootUUID + "/links"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.failUnlessEqual(rsp.status_code, 200)
         
     def testGetBatch(self):
         logging.info("LinkTest.testGetBatch")
@@ -177,8 +178,13 @@ class LinkTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         
         # now remove the link
-        #rsp = requests.delete(req, headers=headers)
-        #self.failUnlessEqual(rsp.status_code, 200)
+        rsp = requests.delete(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        # Group should still be accessible via uuid
+        req = self.endpoint + "/groups/" + grpId
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
     
        
 if __name__ == '__main__':

@@ -31,6 +31,17 @@ class RootTest(unittest.TestCase):
         self.failUnlessEqual(rspJson["groupCount"], 6)
         self.failUnlessEqual(rspJson["datasetCount"], 4)
         
+    def testGetReadOnly(self):
+        domain = 'tall_ro.' + config.get('domain')    
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        helper.validateId(rspJson["root"])
+        self.failUnlessEqual(rspJson["groupCount"], 6)
+        self.failUnlessEqual(rspJson["datasetCount"], 4)
+        
     def testGetNotFound(self):
         domain = 'doesnotexist.' + config.get('domain')    
         req = self.endpoint + "/"

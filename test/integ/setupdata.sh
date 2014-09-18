@@ -22,6 +22,7 @@ rm -rf $DES/*
 mkdir $DES/subdir
 mkdir $DES/subdir/subsubdir
 cp $SRC/tall.h5 $DES
+cp $SRC/tall.h5 $DES/tall_ro.h5
 cp $SRC/tall.h5 $DES/tall_updated.h5
 cp $SRC/tall.h5 $DES/tall_g2_deleted.h5
 cp $SRC/tall.h5 $DES/tall_dset112_deleted.h5
@@ -32,6 +33,7 @@ cp $SRC/zerodim.h5 $DES/subdir/subsubdir
 cp $SRC/zerodim.h5 $DES/deleteme.h5
 cp $SRC/zerodim.h5 $DES/subdir/deleteme.h5
 cp $SRC/zerodim.h5 $DES/readonly.h5
+chmod -w $DES/tall_ro.h5
 chmod -w $DES/readonly.h5
 python makegroups.py  # creates 'group1k.h5'
 mv group1k.h5 $DES

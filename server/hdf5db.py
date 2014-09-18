@@ -14,7 +14,7 @@
 This class is used to manage UUID lookup tables for primary HDF objects (Groups, Datasets,
  and Datatypes).  For HDF5 files that are read/write, this information is managed within 
  the file itself in the "__db__" group.  For read-only files, the data is managed in 
- an external file.
+ an external file (domain filename with ".db" extension).
  
  "___db__"  ("root" for read-only case) 
     description: Group object (member of root group). Only objects below this group are used 
@@ -23,28 +23,28 @@ This class is used to manage UUID lookup tables for primary HDF objects (Groups,
     attrs: 'rootUUID': UUID of the root group
     
 "{groups}"  
-    description: contains map of UUID->group objects  (read/write only)
-    members: group reference to each group (other than root and groups in __db__)
-        in the file.  Link name is the UUID
-    attrs: none
+    description: contains map of UUID->group objects  
+    members: hard link to each anonymous group (i.e. groups which are not
+        linked to by anywhere else).  Link name is the UUID
+    attrs: group reference (or path for read-only files) to the group (for non-
+        anonymous groups).
     
 "{datasets}"  
-    description: contains map of UUID->dataset objects  (read/write only)
-    members: dataset reference to each dataset  in the file.  Link name is the UUID.
-    attrs: none
+    description: contains map of UUID->dataset objects  
+    members: hard link to each anonymous dataset (i.e. datasets which are not
+        linked to by anywhere else).  Link name is the UUID
+    attrs: dataset reference (or path for read-only files) to the group (for non-
+        anonymous datasets).
     
 "{datatypes}"  
-    description: contains map of UUID->datatype objects  (read/write only)
-    members: dataset reference to each datatype in the file.  Link name is the UUID.
-    attrs: none
-    
-"{paths}"
-    description: contains map of UUID->paths (read-only)
-    members: none
-    attrs: map of UUID to path
+    description: contains map of UUID->datatyped objects
+    members: hard link to each anonymous datatype (i.e. datatypes which are not
+        linked to by anywhere else).  Link name is the UUID
+    attrs: datatype reference (or path for read-only files) to the datatype (for non-
+        anonymous datatypes).
 
 "{addr}"
-    description: contains map of file offset to UUID
+    description: contains map of file offset to UUID.
     members: none
     attrs: map of file offset to UUID
         
@@ -98,7 +98,11 @@ class Hdf5db:
         self.f = h5py.File(filePath, mode)
         
         if self.readonly:
-            dbFilePath = self.f.filename + ".db"
+            dbFilePath = self.f.filename
+            # remove the ".h5" extension if present
+            if dbFilePath[-3:]== ".h5":
+                dbFilePath = dbFilePath[:-3]
+            dbFilePath = dbFilePath + ".db"
             dbMode = 'r+'
             if not op.isfile(dbFilePath):
                 dbMode = 'w'
@@ -143,12 +147,10 @@ class Hdf5db:
            
         logging.info("initializing file") 
         self.dbGrp.attrs["rootUUID"] = str(uuid.uuid1())
-        grps = self.dbGrp.create_group("{groups}")
+        self.dbGrp.create_group("{groups}")
         self.dbGrp.create_group("{datasets}")
         self.dbGrp.create_group("{datatypes}")
         self.dbGrp.create_group("{addr}") # store object address
-        if self.readonly:
-            self.dbGrp.create_group("{paths}")  # store paths
             
         self.f.visititems(visitObj)
         
@@ -159,11 +161,11 @@ class Hdf5db:
         logging.info('visit: ' + path +' name: ' + name)
         col = None 
         if name == 'Group':
-            col = self.dbGrp["{groups}"]
+            col = self.dbGrp["{groups}"].attrs
         elif name == 'Dataset':
-            col = self.dbGrp["{datasets}"]
+            col = self.dbGrp["{datasets}"].attrs
         elif name == 'Datatype':
-            col = self.dbGrp["{datatypes}"]
+            col = self.dbGrp["{datatypes}"].attrs
         else:
             logging.error("unknown type: " + __name__)
             self.httpStatus = 500
@@ -174,14 +176,10 @@ class Hdf5db:
         addrGrp = self.dbGrp["{addr}"]
         if not self.readonly:
             # storing db in the file itself, so we can link to the object directly
-            col[id] = obj  # create new link to object
+            col[id] = obj.ref  # save attribute ref to object
         else:
-            #store id->path in paths group
-            if "{paths}" not in self.dbGrp:
-                logging.error("expected to find {paths} group")
-                raise Exception
-            paths = self.dbGrp["{paths}"]
-            paths.attrs[id] = obj.name
+            #store path to object
+            col[id] = obj.name
         addr = h5py.h5o.get_info(obj.id).addr
         # store reverse map as an attribute
         addrGrp.attrs[str(addr)] = id       
@@ -195,6 +193,48 @@ class Hdf5db:
         if str(addr) in addrGrp.attrs:
             objUuid = addrGrp.attrs[str(addr)] 
         return objUuid
+    
+        
+    """
+     Get the number of links in a group to an object
+    """
+    def getNumLinksToObjectInGroup(self, grp, obj):
+        print "get Links to:", grp.name
+        objAddr = h5py.h5o.get_info(obj.id).addr
+        numLinks = 0
+        for name in grp:
+            print 'got name:', name
+            try:
+                child = grp[name]
+            except KeyError:
+                # UDLink? Ignore for now
+                continue
+                
+            addr = h5py.h5o.get_info(child.id).addr
+            if addr == objAddr:
+                numLinks = numLinks + 1
+            
+        return numLinks  
+            
+    """
+     Get the number of links to the given object
+    """
+    def getNumLinksToObject(self, obj):
+        self.initFile()
+        groups = self.dbGrp["{groups}"]
+        numLinks = 0
+        # iterate through each group in the file and unlink tgt if it is linked
+        # by the group
+        for uuidName in groups:
+            grp = groups[uuidName]
+            nLinks = self.getNumLinksToObjectInGroup(grp, obj)
+            numLinks += nLinks
+        # finally, check the root group
+        root = self.getObjByPath("/")
+        nLinks = self.getNumLinksToObjectInGroup(root, obj)
+        numLinks += nLinks
+            
+        return numLinks   
         
     def getUUIDByPath(self, path):
         self.initFile()
@@ -220,22 +260,15 @@ class Hdf5db:
     def getDatasetObjByUuid(self, objUuid):
         self.initFile()
         obj = None
-        if not self.readonly:
-            # dataset references stored in file
-            datasets = self.dbGrp["{datasets}"]
-            if objUuid in datasets:
-                obj = datasets[objUuid]
-        else: 
-            if "{paths}" not in self.dbGrp:
-                raise Exception
-            paths = self.dbGrp["{paths}"]
-            if objUuid in paths.attrs:
-                path = paths.attrs[objUuid] 
-                obj = self.f[path]
-                # verify this is a dataset
-                if obj.__class__.__name__ != "Dataset":
-                    obj = None
-                                
+       
+        datasets = self.dbGrp["{datasets}"]
+        if objUuid in datasets.attrs:
+            ref = datasets.attrs[objUuid]
+            obj = self.f[ref]  # this works for read-only as well
+        elif objUuid in datasets: 
+            # anonymous object
+            obj = datasets[objUuid]
+                                 
         if obj == None:
             self.httpStatus = 404  # Not Found
             self.httpMessage = "Resource not found"
@@ -369,13 +402,19 @@ class Hdf5db:
         addr = h5py.h5o.get_info(tgt.id).addr
         addrGrp = self.dbGrp["{addr}"] 
         del addrGrp.attrs[str(addr)]  # remove reverse map
-        if tgt.__class__.__name__ == "Dataset":
-            datasets = self.dbGrp["{datasets}"]
-            del datasets[objUuid]
-        else:
-            del groups[objUuid]
+        # get {groups}, {datasets}, {datatypes} collections
+        dbCollections = self.getDBCollections()  
+        dbRemoved = False
+        for colName in dbCollections:  
+            dbCol = self.dbGrp[colName]  
+            if objUuid in dbCol.attrs:
+                del dbCol.attrs[objUuid]
+                dbRemoved = True
+                break
+             
+        if not dbRemoved:
+            logging.error("expected to find reference to: " + objUuid)
         return True
-        
         
         
     def getGroupObjectByUuid(self, objUuid):
@@ -384,21 +423,15 @@ class Hdf5db:
         obj = None
         if objUuid == self.dbGrp.attrs["rootUUID"]:
             obj = self.f['/']  # returns group instance
-        elif not self.readonly:
-            # group references stored in file
+        else:
             groups = self.dbGrp["{groups}"]
-            if objUuid in groups:
+            if objUuid in groups.attrs:
+                grpRef = groups.attrs[objUuid]
+                # grpRef could be a reference or (for read-only) a path
+                print "grpRef", grpRef
+                obj = self.f[grpRef]
+            elif objUuid in groups:
                 obj = groups[objUuid]
-        else: 
-            if "{paths}" not in self.dbGrp:
-                raise Exception
-            paths = self.dbGrp["{paths}"]
-            if objUuid in paths.attrs:
-                path = paths.attrs[objUuid] 
-                obj = self.f[path]
-                # verify this is a group
-                if obj.__class__.__name__ != "Group":
-                    obj = None
      
         if obj == None:
             self.httpStatus = 404  # Not Found
@@ -486,6 +519,99 @@ class Hdf5db:
             if limit > 0 and count == limit:
                 break  # return what we got
         return items
+      
+    def unlinkItem(self, grpUuid, linkName):
+        grp = self.getGroupObjectByUuid(grpUuid)
+        if grp == None:
+            logging.info("parent group not found")
+            self.httpStatus = 404 # not found
+            return False 
+            
+        if linkName not in grp:
+            logging.info("linkName not found")
+            return True
+         
+        obj = None   
+        try:
+            linkObj = grp.get(linkName, None, False, True)
+            linkClass = linkObj.__class__.__name__
+            if linkClass == 'HardLink':
+                # we can safely reference the object
+                obj = grp[linkName]
+        except TypeError:
+            # UDLink? Ignore for now
+            logging.warning("got type error in unlinkItem for: " + grpUuid + 
+                " linkName: " + linkName)
+        
+        linkDeleted = False
+        if obj != None:
+            linkDeleted = self.unlinkObjectItem(grp, obj, linkName)
+        else:
+            # SoftLink or External Link - we can just remove the key
+            del grp[linkName]
+            linkDeleted = True
+        return linkDeleted
+
+    
+    """
+      Get the DB Collection names
+    """
+    def getDBCollections(self):
+        return ("{groups}", "{datasets}", "{datatypes}")
+    
+    """
+        Return the db collection the uuid belongs to
+    """
+    def getDBCollection(self, objUuid):
+        dbCollections = self.getDBCollections()
+        for dbCollectionName in dbCollections:
+            col = self.dbGrp[dbCollectionName]
+            if objUuid in col or objUuid in col.attrs:
+                return col;
+        return None
+         
+    
+    def unlinkObjectItem(self, parentGrp, tgtObj, linkName):
+        if self.readonly:
+            self.httpStatus = 403  # Forbidden
+            self.httpMessage = "Updates are not allowed"
+            return None 
+        if linkName not in parentGrp:
+            logging.info("linkName: [" + linkName + "] not found")
+            return False
+        try:
+            linkObj = parentGrp.get(linkName, None, False, True)
+        except TypeError:
+            # user defined link?
+            logging.info("Unknown link type for item: " + name)
+            return False
+        linkClass = linkObj.__class__.__name__
+        # only deal with HardLinks
+        linkDeleted = False
+        if linkClass == 'HardLink':
+            obj = parentGrp[linkName]
+            if tgtObj == None or obj == tgtObj:
+                numlinks = self.getNumLinksToObject(obj)
+                if numlinks == 1:
+                    # last link to this object - convert to anonymous object
+                    # by creating link under {datasets} or {groups} or {datatypes}
+                    # also remove the attribute UUID key
+                    addr = h5py.h5o.get_info(obj.id).addr  
+                    objUuid = self.getUUIDByAddress(addr)
+                    logging.info("converting: " + objUuid + " to anonymouse obj")
+                    dbCol = self.getDBCollection(objUuid)
+                    del dbCol.attrs[objUuid]  # remove the object ref
+                    dbCol[objUuid] = obj      # add a hardlink        
+                logging.info("deleting link: [" + linkName + "] from: " + parentGrp.name)
+                del parentGrp[linkName]  
+                linkDeleted = True               
+        return linkDeleted
+        
+    def unlinkObject(self, parentGrp, tgtObj):
+        for name in parentGrp:
+            self.unlinkObjectItem(parentGrp, tgtObj, name)             
+        return True
+        
         
     def linkObject(self, parentUUID, childUUID, linkName):
         self.initFile()
@@ -510,8 +636,15 @@ class Hdf5db:
         if linkName in parentObj:
             # link already exists
             logging.info("linkname already exists, deleting")
-            del parentObj[linkName]  # delete old link
+            self.unlinkObjectItem(parentObj, None, linkName)
         parentObj[linkName] = childObj
+        
+        # convert this from an anonymous object to ref if needed
+        dbCol = self.getDBCollection(childUUID)
+        if childUUID in dbCol:
+            # convert to a ref
+            del dbCol[childUUID]  # remove hardlink
+            dbCol.attrs[childUUID] = childObj.ref # create a ref
         return True
         
     def createSoftLink(self, parentUUID, linkPath, linkName):
@@ -532,37 +665,7 @@ class Hdf5db:
         parentObj[linkName] = h5py.SoftLink(linkPath)
         return True
         
-    def unlinkItem(self, grpUuid, linkName):
-        grp = self.getGroupObjectByUuid(grpUuid)
-        if grp == None:
-            logging.info("parent group not found")
-            self.httpStatus = 404 # not found
-            return False 
-            
-        if linkName not in grp:
-            logging.info("linkName not found")
-            return True
-        
-        del grp[linkName]
-        return True
-        
-    def unlinkObject(self, parentGrp, tgtObj):
-        for name in parentGrp:
-            try:
-                linkObj = parentGrp.get(name, None, False, True)
-            except TypeError:
-                # user defined link?
-                logging.info("Unknown link type for item: " + name)
-                continue
-            linkClass = linkObj.__class__.__name__
-            # only deal with HardLinks
-            if linkClass == 'HardLink':
-                obj = parentGrp[name]
-                if obj == tgtObj:
-                    logging.info("deleting link: [" + name + "] from: " + parentGrp.name)
-                    del parentGrp[name]                 
-        return True
-        
+    
     def createGroup(self):
         self.initFile()
         if self.readonly:
@@ -581,16 +684,27 @@ class Hdf5db:
     
     def getNumberOfGroups(self):
         self.initFile()
+        count = 0
         groups = self.dbGrp["{groups}"]
-        return len(groups) + 1  # add one for root group
+        count += len(groups)        #anonymous groups
+        count += len(groups.attrs)  #linked groups
+        count += 1                  # add of for root group
+        
+        return count
            
         
     def getNumberOfDatasets(self):
         self.initFile()
+        count = 0
         datasets = self.dbGrp["{datasets}"]
-        return len(datasets)
+        count += len(datasets)        #anonymous datasets
+        count += len(datasets.attrs)  #linked datasets
+        return count
         
     def getNumberOfDatatypes(self):
         self.initFile()
+        count = 0
         datatypes = self.dbGrp["{datatypes}"]
-        return len(datatypes)
+        count += len(datatypes)        #anonymous datatypes
+        count += len(datatypes.attrs)  #linked datatypes
+        return count

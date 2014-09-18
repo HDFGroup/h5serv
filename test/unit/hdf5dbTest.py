@@ -65,6 +65,16 @@ class Hdf5dbTest(unittest.TestCase):
             obj = db.getGroupObjectByUuid(g1Uuid) 
             g1 = db.getObjByPath('/g1')
             self.failUnlessEqual(obj, g1)
+            
+    def testGetCounts(self):
+        with Hdf5db('tall.h5') as db:
+            cnt = db.getNumberOfGroups()
+            self.failUnlessEqual(cnt, 6)
+            cnt = db.getNumberOfDatasets()
+            self.failUnlessEqual(cnt, 4)
+            cnt = db.getNumberOfDatatypes()
+            self.failUnlessEqual(cnt, 0)
+            
                
     def testGroupOperations(self):
         # get test file
@@ -127,6 +137,13 @@ class Hdf5dbTest(unittest.TestCase):
             self.assertEqual(item['name'], 'slink')
             self.assertEqual(item['class'], 'SoftLink')
             self.assertEqual(item['path'], 'somevalue')
+            
+    def testGetNumLinks(self):
+        items = None
+        with Hdf5db('tall.h5') as db:
+            g1= db.getObjByPath('/g1')
+            numLinks = db.getNumLinksToObject(g1)
+            self.assertEqual(numLinks, 1)
             
     def testGetItemsUDlink(self):
         items = None

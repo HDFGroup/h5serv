@@ -21,24 +21,25 @@ class GroupTest(unittest.TestCase):
         self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))
        
     def testGet(self):
-        domain = 'tall.' + config.get('domain')    
-        req = self.endpoint + "/"
-        headers = {'host': domain}
-        rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        rspJson = json.loads(rsp.text)
-        rootUUID = rspJson["root"]
-        self.assertTrue(helper.validateId(rootUUID))
-        self.failUnlessEqual(rspJson["groupCount"], 6)
-        self.failUnlessEqual(rspJson["datasetCount"], 4)
+        for domain_name in ('tall', 'tall_ro'):
+            domain = domain_name + '.' + config.get('domain')    
+            req = self.endpoint + "/"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            rootUUID = rspJson["root"]
+            self.assertTrue(helper.validateId(rootUUID))
+            self.failUnlessEqual(rspJson["groupCount"], 6)
+            self.failUnlessEqual(rspJson["datasetCount"], 4)
         
-        req = self.endpoint + "/groups/" + rootUUID
-        rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        rspJson = json.loads(rsp.text)
-        self.failUnlessEqual(rspJson["linkCount"], 2)
-        self.failUnlessEqual(rspJson["attributeCount"], 2)
-        self.failUnlessEqual(rsp.status_code, 200)
+            req = self.endpoint + "/groups/" + rootUUID
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.failUnlessEqual(rspJson["linkCount"], 2)
+            self.failUnlessEqual(rspJson["attributeCount"], 2)
+            self.failUnlessEqual(rsp.status_code, 200)
         
     def testGetGroups(self):
         domain = 'tall.' + config.get('domain')    
