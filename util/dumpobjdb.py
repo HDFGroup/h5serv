@@ -14,7 +14,12 @@ import sys
 
 def dumpAttr(col):
     for k in col.attrs:
-        print '\t\tattr[' + k + ']: ' + col.attrs[k]
+        attr = col.attrs[k]
+        if attr.__class__.__name__ == 'Reference':
+            obj = col[attr]
+            print '\t\tattr[' + k + ']: ->' + obj.name
+        else:
+            print '\t\tattr[' + k + ']: ' + attr  # path
         
 def dumpCol(col):   
     if len(col) == 0:
@@ -31,11 +36,13 @@ def dumpCol(col):
 def dumpFile(filePath):
     print "db info for: ", filePath
     f = h5py.File(filePath, 'r')
-    if '__db__' not in f:
-        print "no db data!"
-        return
-    
-    dbGrp = f['__db__']
+    dbGrp = f['/']
+    if '__db__'  in f:
+        dbGrp = f['__db__']
+    else:
+        if '{groups}' not in f:
+            print "no db data found!"
+            return
     print '__db__', 'Group'
     dumpAttr(dbGrp)
     dumpCol(dbGrp['{groups}'])
