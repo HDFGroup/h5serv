@@ -286,6 +286,133 @@ class Hdf5db:
         item['shape'] = dset.shape
         
         return item
+        
+    def getObjectByUuid(self, col_type, objUuid):
+        #col_type should be either "datasets", "groups", or "datatypes"
+        if col_type not in ("datasets", "groups", "datatypes"):
+            logging.error("invalid col_type: [" + col_type + "]")
+            self.httpStatus = 500
+            return None
+        obj = None  # Group, Dataset, or Datatype
+        if col_type == "datasets" and objUuid in self.dbGrp["{datasets}"]:
+            obj = self.getDatasetObjByUuid(objUuid)
+        elif col_type == "groups" and (objUuid == self.dbGrp.attrs["rootUUID"] or
+            objUuid in self.dbGrp["{groups}"]):
+            obj = self.getGroupObjByUuid(objUuid)
+        elif col_type == "datatypes" and objuuid in self.dbGrp["{datatypes}"]:
+            obj = None   # todo - datatype operations
+         
+        return obj
+       
+    """
+      Get attribute given an object and name
+      returns: Json object 
+    """ 
+    def getAttributeItemByObj(self, obj, name, includeData=True):
+         
+        if name not in obj.attrs:
+            logging.info("attribute: [" + name + "] not found in object: " + objUuid)
+            self.httpStatus = 404  # not found
+            return None
+            
+        # get the attribute!
+        attrObj = h5py.h5a.open(obj.id, name)
+        attr = obj.attrs[name]  # returns a numpy array
+            
+        item = { 'name': name }
+        item['type'] = attrObj.dtype.name  # todo - compound types
+        item['shape'] = attrObj.shape
+        if includeData:
+            if len(attrObj.shape) == 0:
+                item['value'] = attr   # just copy value
+            else:
+                item['value'] = attr.tolist()  # convert to list 
+        
+        return item
+            
+    def getAttributeItems(self, col_type, objUuid, marker=None, limit=0):
+        logging.info("db.getAttributeItems(" + objUuid + ")")
+        if marker:
+            logging.info("...marker: " + marker)
+        if limit:
+            logging.info("...limit: " + str(limit))
+        
+        self.initFile()
+        obj = self.getObjectByUuid(col_type, objUuid)
+            
+        if obj == None:
+            logging.error("uuid: " + objUuid + " could not be loaded")
+            self.httpStatus = 404  # not found
+            return None
+            
+        items = []
+        gotMarker = True
+        if marker != None:
+            gotMarker = False
+        count = 0
+        for name in obj.attrs:
+            if not gotMarker:
+                if name == marker:
+                    gotMarker = True
+                    continue  # start filling in result on next pass
+                else:
+                    continue  # keep going!
+            
+            item = self.getAttributeItemByObj(obj, name, False)
+                           
+            items.append(item)
+            count += 1
+            if limit > 0 and count == limit:
+                break  # return what we got
+        return items
+            
+    def getAttributeItem(self, col_type, objUuid, name):
+        logging.info("getAttributeItemByUuid(" + col_type + ", " + objUuid + ", " + 
+            name + ")")
+        self.initFile()
+        obj = self.getObjectByUuid(col_type, objUuid)
+        item = self.getAttributeItemByObj(obj, name)
+            
+        return item
+        
+    def createAttribute(self, col_name, objUuid, attr_name, shape, attr_type, value):
+        self.initFile()
+        if self.readonly:
+            self.httpStatus = 403  # Forbidden
+            self.httpMessage = "Updates are not allowed"
+            return None   
+        obj = self.getObjectByUuid(col_name, objUuid)
+        
+        # print 'shape:', shape
+        # print 'shape type:', type(shape)
+        print 'type: ', attr_type
+        dt = None
+        if type == "vlen_bytes":
+            dt = h5py.special_dtype(vlen=bytes)
+        elif type == "vlen_unicode":
+            dt = h5py.special_dtype(vlen=unicode)
+        else:
+            # just use the type string as type
+            dt = attr_type
+            
+        newAttr = obj.attrs.create(attr_name, value, dtype=dt)
+        
+    def deleteAttribute(self, col_name, objUuid, attr_name):
+        self.initFile()
+        if self.readonly:
+            self.httpStatus = 403  # Forbidden
+            self.httpMessage = "Updates are not allowed"
+            return False   
+        obj = self.getObjectByUuid(col_name, objUuid)
+        
+        if attr_name not in obj.attrs:
+            self.httpStatus = 404 # not found
+            return False
+        
+        del obj.attrs[attr_name]
+        
+        return True
+         
     """
     Get values from dataset identified by objUuid.
     If a slices list or tuple is provided, it should have the same
@@ -359,6 +486,8 @@ class Hdf5db:
             # just use the type string as type
             dt = type
             
+        print 'type: ', dt
+            
         newDataset = datasets.create_dataset(objUuid, shape, dt)
         # store reverse map as an attribute
         addr = h5py.h5o.get_info(newDataset.id).addr
@@ -386,7 +515,7 @@ class Hdf5db:
         
         if tgt == None:
             #maybe this is a group...
-            tgt = self.getGroupObjectByUuid(objUuid)
+            tgt = self.getGroupObjByUuid(objUuid)
             
         # todo - delete for datatypes
         if not tgt:
@@ -417,8 +546,8 @@ class Hdf5db:
         return True
         
         
-    def getGroupObjectByUuid(self, objUuid):
-        logging.info("getGroupObjectByUuid(" + objUuid + ")")
+    def getGroupObjByUuid(self, objUuid):
+        logging.info("getGroupObjByUuid(" + objUuid + ")")
         self.initFile()
         obj = None
         if objUuid == self.dbGrp.attrs["rootUUID"]:
@@ -439,7 +568,7 @@ class Hdf5db:
         return obj
         
     def getGroupItemByUuid(self, objUuid):
-        grp = self.getGroupObjectByUuid(objUuid)
+        grp = self.getGroupObjByUuid(objUuid)
         if grp == None:
             return None
         
@@ -463,7 +592,7 @@ class Hdf5db:
             logging.info("...limit: " + str(limit))
         
         self.initFile()
-        parent = self.getGroupObjectByUuid(grpUuid)
+        parent = self.getGroupObjByUuid(grpUuid)
         if parent == None:
             return None
         items = []
@@ -521,7 +650,7 @@ class Hdf5db:
         return items
       
     def unlinkItem(self, grpUuid, linkName):
-        grp = self.getGroupObjectByUuid(grpUuid)
+        grp = self.getGroupObjByUuid(grpUuid)
         if grp == None:
             logging.info("parent group not found")
             self.httpStatus = 404 # not found
@@ -619,7 +748,7 @@ class Hdf5db:
             self.httpStatus = 403  # Forbidden
             self.httpMessage = "Updates are not allowed"
             return False    
-        parentObj = self.getGroupObjectByUuid(parentUUID)
+        parentObj = self.getGroupObjByUuid(parentUUID)
         if parentObj == None:
             self.httpStatus = 404 # Not found
             self.httpMessage = "Parent Group not found"
@@ -627,7 +756,7 @@ class Hdf5db:
         childObj = self.getDatasetObjByUuid(childUUID)
         if childObj == None:
             # maybe it's a group...
-            childObj = self.getGroupObjectByUuid(childUUID)
+            childObj = self.getGroupObjByUuid(childUUID)
         if childObj == None:
             # todo - can a group link to anything else?
             self.httpStatus = 404 # Not found
@@ -653,7 +782,7 @@ class Hdf5db:
             self.httpStatus = 403  # Forbidden
             self.httpMessage = "Updates are not allowed"
             return False    
-        parentObj = self.getGroupObjectByUuid(parentUUID)
+        parentObj = self.getGroupObjByUuid(parentUUID)
         if parentObj == None:
             self.httpStatus = 404 # Not found
             self.httpMessage = "Parent Group not found"

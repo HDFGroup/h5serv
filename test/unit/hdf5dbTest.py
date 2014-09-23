@@ -62,7 +62,7 @@ class Hdf5dbTest(unittest.TestCase):
         # end of with will close file
         # open again and verify we can get obj by name
         with Hdf5db('tall.h5') as db:
-            obj = db.getGroupObjectByUuid(g1Uuid) 
+            obj = db.getGroupObjByUuid(g1Uuid) 
             g1 = db.getObjByPath('/g1')
             self.failUnlessEqual(obj, g1)
             
@@ -81,7 +81,7 @@ class Hdf5dbTest(unittest.TestCase):
         getFile('tall.h5', 'tall_del_g11.h5')
         with Hdf5db('tall_del_g11.h5') as db:
             rootuuid = db.getUUIDByPath('/')
-            root = db.getGroupObjectByUuid(rootuuid)
+            root = db.getGroupObjByUuid(rootuuid)
             self.failUnlessEqual('/', root.name)
             rootLinks = db.getItems(rootuuid)
             self.failUnlessEqual(len(rootLinks), 2)
@@ -101,7 +101,7 @@ class Hdf5dbTest(unittest.TestCase):
             numRootChildren = len(db.getItems(rootUuid))
             self.assertEqual(numRootChildren, 2)
             newGrpUuid = db.createGroup()
-            newGrp = db.getGroupObjectByUuid(newGrpUuid)
+            newGrp = db.getGroupObjByUuid(newGrpUuid)
             self.assertNotEqual(newGrp, None)
             db.linkObject(rootUuid, newGrpUuid, 'g3')
             numRootChildren = len(db.getItems(rootUuid))
@@ -180,7 +180,7 @@ class Hdf5dbTest(unittest.TestCase):
         # end of with will close file
         # open again and verify we can get obj by name
         with Hdf5db('tall_ro.h5') as db:
-            obj = db.getGroupObjectByUuid(g1Uuid) 
+            obj = db.getGroupObjByUuid(g1Uuid) 
             g1 = db.getObjByPath('/g1')
             self.failUnlessEqual(obj, g1)
             g1links = db.getItems(g1Uuid)
@@ -221,6 +221,19 @@ class Hdf5dbTest(unittest.TestCase):
             dset_value = db.getDatasetValuesByUuid(dsetUuid)
             self.assertEqual(type(dset_value), int)
             self.assertEqual(dset_value, 42)
+            
+    def testReadAttribute(self):
+        # getAttributeItemByUuid
+        item = None
+        getFile('tall.h5')
+        with Hdf5db('tall.h5') as db:
+            rootUuid = db.getUUIDByPath('/')
+            self.failUnlessEqual(len(rootUuid), config.get('uuidlen'))
+            item = db.getAttributeItem("groups", rootUuid, "attr1")
+            print "return: ", db.httpStatus
+        print "item:", item
+            
+             
              
 if __name__ == '__main__':
     #setup test files

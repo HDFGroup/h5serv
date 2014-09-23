@@ -718,7 +718,268 @@ class ValueHandler(RequestHandler):
                 logging.info("dataset put error")
                 raise HTTPError(httpError)      
            
+class AttributeHandler(RequestHandler):
+    
+    def getRequestId(self):
+        # request is in the form /(datasets|groups|datatypes)/<id>/attributes(/<name>), 
+        # return <id>
+        uri = self.request.uri
+        idpart = None
+        if uri[:len('/datasets/')] == '/datasets/':
+            idpart = uri[len('/datasets/'):]  # get stuff after /datasets/
+        elif uri[:len('/groups/')] == '/groups/':
+            idpart = uri[len('/groups/'):]  # get stuff after /groups/
+        elif uri[:len('/datatypes/')] == '/datatypes/':
+            idpart = uri[len('/datatypes/'):]  # get stuff after /datatypes/
+        else:
+            # should not get here!
+            logging.error("unexpected uri: " + uri)
+            raise HTTPError(500)
         
+        npos = idpart.find('/')
+        if npos <= 0:
+            logging.info("bad uri")
+            raise HTTPError(400)  
+        id = idpart[:npos]
+         
+        logging.info('got id: [' + id + ']')
+    
+        return id
+        
+    def getRequestName(self):
+        # request is in the form /(datasets|groups|datatypes)/<id>/attributes(/<name>), 
+        # return <name>
+        # return None if the uri doesn't end with ".../<name>"
+        uri = self.request.uri
+        name = None
+        npos = uri.rfind('/attributes')
+        if npos <= 0:
+            logging.info("bad uri")
+            raise HTTPError(400)  
+        uri = uri[npos+len('/attributes'):]
+        if uri[0:1] == '/':
+            uri = uri[1:]
+            if len(uri) > 0:
+                name = uri  # todo: handle possible query string?
+                logging.info('got name: [' + name + ']')
+    
+        return name
+        
+    def getRequestCollectionName(self):
+        # request is in the form /(datasets|groups|datatypes)/<id>/attributes(/<name>), 
+        # return datasets | groups | datatypes
+        uri = self.request.uri
+        
+        npos = uri.find('/')
+        if npos < 0:
+            logging.info("bad uri")
+            raise HTTPError(400)  
+        uri = uri[(npos+1):]
+        npos = uri.find('/')  # second '/'
+        col_name = uri[:npos]
+         
+        logging.info('got collection name: [' + col_name + ']')
+        if col_name not in ('datasets', 'groups', 'datatypes'):
+            raise HTTPError(500)   # shouldn't get routed here in this case
+    
+        return col_name
+        
+        
+    def get(self):
+        logging.info('AttrbiuteHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        
+        reqUuid = self.getRequestId()
+        domain = self.request.host
+        col_name = self.getRequestCollectionName()
+        attr_name = self.getRequestName()
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        #todo - use the real object creation times
+        ctime = op.getctime(filePath)
+        mtime = ctime
+        response = { }
+        links = []
+        rootUUID = None
+        items = []
+        # Get optional query parameters
+        limit = self.get_query_argument("Limit", 0)
+        if type(limit) is not int:
+            try:
+                limit = int(limit)
+            except ValueError:
+                logging.info("expected int type for limit")
+                raise HTTPError(400) 
+        marker = self.get_query_argument("Marker", None)
+        with Hdf5db(filePath) as db:
+            if attr_name != None:
+                item = db.getAttributeItem(col_name, reqUuid, attr_name)
+                if item == None:
+                    httpError = 404  # not found
+                    if db.httpStatus != 200:
+                        httpError = db.httpStatus # library may have more specific error code
+                    logging.info("attribute: [" + reqUuid + "]/" + attr_name + " not found")
+                    raise HTTPError(httpError)
+                items.append(item)
+            else:
+                # get all attributes (but without data)
+                items = db.getAttributeItems(col_name, reqUuid, marker, limit)
+            rootUUID = db.getUUIDByPath('/')
+                         
+        
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/' 
+        root_href = href + 'groups/' + rootUUID
+        owner_href = href + col_name + '/' + reqUuid 
+        self_href = owner_href + '/attributes'
+        if attr_name != None:
+            self_href += '/' + attr_name
+    
+        responseItems = []
+        for item in items:
+            responseItem = {}
+            responseItem['name'] = item['name']
+            responseItem['type'] = item['type']
+            responseItem['shape'] = item['shape']
+            responseItem['created'] = ctime
+            responseItem['lastModified'] = mtime
+            responseItem['self'] = href + item['name']
+            if 'value' in item:
+                response['value'] = item['value']
+            responseItems.append(responseItem)
+            
+        links.append({'rel:': 'self',       'href': self_href})
+        links.append({'rel:': 'owner',      'href': owner_href })
+        links.append({'rel:': 'root',       'href': root_href }) 
+        
+            
+        if attr_name == None:
+            # specific attribute response
+            response['attributes'] = responseItems
+        else:
+            if len(responseItems) == 0:
+                # should have raised exception earlier
+                logging.error("attribute not found: " + attr_name) 
+                raise HTTPError(404)
+            responseItem = responseItems[0]
+            for k in responseItem:
+                response[k] = responseItem[k]
+        response['links'] = links    
+        self.write(response)
+        
+    def put(self):
+        logging.info('AttributeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        
+        domain = self.request.host
+        col_name = self.getRequestCollectionName()
+        reqUuid = self.getRequestId()
+        attr_name = self.getRequestName()
+        if attr_name == None:
+            logging.info("Attribute name not supplied")
+            raise HTTPError(400)
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        body = json.loads(self.request.body)
+        
+        if "shape" not in body:
+            logging.info("Shape not supplied")
+            raise HTTPError(400)  # missing shape
+            
+        if "type" not in body:
+            logging.info("Type not supplied")
+            raise HTTPError(400)  # missing type
+            
+        if "value" not in body:
+            logging.info("Value not supplied")
+            raise HTTPError(400)  # missing value
+            
+        shape = body["shape"]
+        datatype = body["type"]
+        value = body["value"]
+        if type(shape) == int:
+            dim1 = shape
+            shape = []
+            shape = [dim1]
+        elif type(shape) == list or type(shape) == tuple: 
+            pass # can use as is
+        else:
+            logging.info("invalid shape argument")
+            raise HTTPError(400)
+            
+        # validate type
+        isValid = False 
+        if datatype in DatasetHandler._dtypes:
+            isValid = True
+        elif len(datatype) > 1 and datatype[0] == 'S':
+            # Fixed ascii datatype, very the text after 'S' is a positive int
+            try:
+                nwidth = int(datatype[1:])
+                if nwidth > 0:
+                    isValid = True              
+            except ValueError:
+                logging.info("can't convert text after 'S' in: " + datatype + " to int")           
+        else:
+            logging.info("invalid type argument: " + datatype)
+            raise HTTPError(400)
+            
+        # validate shape
+        for extent in shape:
+            if type(extent) != int:
+                logging.info("invalid shape type")
+                raise HTTPError(400)
+            if extent < 0:
+                logging.info("invalid shape (negative extent)")
+                raise HTTPError(400)   
+                        
+        
+        with Hdf5db(filePath) as db:
+            db.createAttribute(col_name, reqUuid, attr_name, shape, datatype, value)
+            if db.httpStatus != 200:
+                raise HTTPError(db.httpStatus)
+            rootUUID = db.getUUIDByPath('/')
+                
+        ctime = time.time()
+        mtime = ctime
+         
+        response = { }
+      
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/' 
+        root_href = href + 'groups/' + rootUUID
+        owner_href = href + col_name + '/' + reqUuid 
+        self_href = owner_href + '/attributes'
+        if attr_name != None:
+            self_href += '/' + attr_name
+            
+        links = [ ]
+        links.append({'rel:': 'self',   'href': self_href})
+        links.append({'rel:': 'owner',  'href': owner_href })
+        links.append({'rel:': 'root',   'href': root_href }) 
+        response['links'] = links 
+        
+        self.write(response)  
+        
+    def delete(self): 
+        logging.info('AttributeHandler.delete ' + self.request.host)   
+        print "uri: ", self.request.uri    
+        obj_uuid = self.getRequestId()
+        domain = self.request.host
+        col_name = self.getRequestCollectionName()
+        attr_name = self.getRequestName()
+        if attr_name == None:
+            logging.info("Attribute name not supplied")
+            raise HTTPError(400)
+        filePath = getFilePath(domain)
+        verifyFile(filePath, True)
+        with Hdf5db(filePath) as db:
+            ok = db.deleteAttribute(col_name, obj_uuid, attr_name)
+            if not ok:
+                httpStatus = db.httpStatus
+                if httpStatus == 200:
+                    httpStatus = 500
+                raise HTTPError(httpStatus) 
+                
          
 class GroupHandler(RequestHandler):
     def getRequestId(self):
@@ -930,6 +1191,12 @@ def make_app():
     if config.get('debug'):
         isDebug = True
     app = Application( [
+        url(r"/datasets/.*/attributes/.*", AttributeHandler),
+        url(r"/groups/.*/attributes/.*", AttributeHandler),
+        url(r"/datatypes/.*/attributes/.*", AttributeHandler),
+        url(r"/datasets/.*/attributes", AttributeHandler),
+        url(r"/groups/.*/attributes", AttributeHandler),
+        url(r"/datatypes/.*/attributes", AttributeHandler),
         url(r"/datasets/.*/value", ValueHandler),
         url(r"/datasets/.*/value\?.*", ValueHandler),
         url(r"/datasets/.*", DatasetHandler),

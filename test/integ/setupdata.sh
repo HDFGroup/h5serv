@@ -37,6 +37,8 @@ chmod -w $DES/tall_ro.h5
 chmod -w $DES/readonly.h5
 python makegroups.py  # creates 'group1k.h5'
 mv group1k.h5 $DES
+python makeattr.py  # creates 'attr1k.h5'
+mv attr1k.h5 $DES
 
 
 
