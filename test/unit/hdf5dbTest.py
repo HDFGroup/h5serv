@@ -232,6 +232,25 @@ class Hdf5dbTest(unittest.TestCase):
             item = db.getAttributeItem("groups", rootUuid, "attr1")
             print "return: ", db.httpStatus
         print "item:", item
+        
+    def testGetCompoundType(self): 
+        # get test file
+        getFile('compound.h5')
+        typeItem = None
+        val = None
+        with Hdf5db('compound.h5') as db:
+             dset_uuid = db.getUUIDByPath('/dset')
+             dset = db.getDatasetObjByUuid(dset_uuid)
+             typeItem = db.getTypeItem(dset.dtype)
+             slices = []
+             slices.append(slice(1,2))
+             values = db.getDatasetValuesByUuid(dset_uuid, slices)
+        self.assertEqual(len(typeItem), 5)
+        self.assertEqual(typeItem[1]['time'], 'S6')
+        val = values[0]
+        self.assertEqual(len(val), 5)
+        self.assertEqual(val[0], 24)
+        self.assertEqual(val[4], 'SE 10')
             
              
              

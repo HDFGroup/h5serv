@@ -22,10 +22,10 @@ class DatasetTest(unittest.TestCase):
        
     def testGet(self):
         domain = 'tall.' + config.get('domain')  
-        rootUUID = helper.getRootUUID(domain)
-        g2UUID = helper.getUUID(domain, rootUUID, 'g2')
-        dset21UUID = helper.getUUID(domain, g2UUID, 'dset2.1') 
-        req = helper.getEndpoint() + "/datasets/" + dset21UUID
+        root_uuid = helper.getRootUUID(domain)
+        g2_uuid = helper.getUUID(domain, root_uuid, 'g2')
+        dset21_uuid = helper.getUUID(domain, g2_uuid, 'dset2.1') 
+        req = helper.getEndpoint() + "/datasets/" + dset21_uuid
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
@@ -33,7 +33,25 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(rspJson['type'], 'float32')
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 10)  
-        
+       
+    def testGetCompound(self):
+        domain = 'compound.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        # self.assertEqual(rspJson['type'], 'float32')
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 72)  
+        self.assertEqual(len(rspJson['type']), 5)
+        field0 = rspJson['type'][0]
+        self.assertEqual(field0['date'], 'int64')
+        field1 = rspJson['type'][1]
+        self.assertEqual(field1['time'], 'S6')
+    
     def testPost(self):
         domain = 'newdset.datasettest.' + config.get('domain')
         req = self.endpoint + "/"
@@ -46,14 +64,14 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)  # create dataset
         rspJson = json.loads(rsp.text)
-        dsetUUID = rspJson['id']
-        self.assertTrue(helper.validateId(dsetUUID))
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
          
         # link new dataset as 'dset1'
-        rootUUID = helper.getRootUUID(domain)
+        root_uuid = helper.getRootUUID(domain)
         name = 'dset1'
-        req = self.endpoint + "/groups/" + rootUUID + "/links/" + name 
-        payload = {"id": dsetUUID}
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
@@ -65,7 +83,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200) # creates domain
         
-        rootUUID = helper.getRootUUID(domain)
+        root_uuid = helper.getRootUUID(domain)
         
         # list of types supported
         # 'Sn' is supported for any positive n, so we'll just use 
@@ -76,26 +94,55 @@ class DatasetTest(unittest.TestCase):
                     'float16',      'float32', 'float64',
                   'complex64',   'complex128',
                  'vlen_bytes', 'vlen_unicode')
-        for datatype in datatypes:   
+        for datatype in datatypes:  
             payload = {'type': datatype, 'shape': 10}
             req = self.endpoint + "/datasets/"
             rsp = requests.post(req, data=json.dumps(payload), headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)  # create dataset
             rspJson = json.loads(rsp.text)
-            dsetUUID = rspJson['id']
-            self.assertTrue(helper.validateId(dsetUUID))
+            dset_uuid = rspJson['id']
+            self.assertTrue(helper.validateId(dset_uuid))
          
             # link new dataset using the type name
             name = datatype
-            req = self.endpoint + "/groups/" + rootUUID + "/links/" + name 
-            payload = {"id": dsetUUID}
+            req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+            payload = {"id": dset_uuid}
             headers = {'host': domain}
             rsp = requests.put(req, data=json.dumps(payload), headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
+            
+    def testPostCompoundType(self):
+        domain = 'compound.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200) # creates domain
+        
+        root_uuid = helper.getRootUUID(domain)
+        
+        datatype = ({'name': 'temp', 'type': 'int32'}, 
+                    {'name': 'pressure', 'type': 'float32'}) 
+        payload = {'type': datatype, 'shape': 10}
+        name = 'dset'
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link the new dataset 
+        name = "dset"
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
         
     def testPostInvalidType(self):
         domain = 'tall.' + config.get('domain')  
-        rootUUID = helper.getRootUUID(domain)
+        root_uuid = helper.getRootUUID(domain)
         payload = {'type': 'badtype', 'shape': 10}
         headers = {'host': domain}
         req = self.endpoint + "/datasets/"
@@ -104,7 +151,7 @@ class DatasetTest(unittest.TestCase):
         
     def testPostInvalidShape(self):
         domain = 'tall.' + config.get('domain')  
-        rootUUID = helper.getRootUUID(domain)
+        root_uuid = helper.getRootUUID(domain)
         payload = {'type': 'int32', 'shape': -5}
         headers = {'host': domain}
         req = self.endpoint + "/datasets/"
@@ -113,15 +160,15 @@ class DatasetTest(unittest.TestCase):
        
     def testDelete(self):
         domain = 'tall_dset112_deleted.' + config.get('domain')  
-        rootUUID = helper.getRootUUID(domain)
-        helper.validateId(rootUUID)
-        g1UUID = helper.getUUID(domain, rootUUID, 'g1')
-        self.assertTrue(helper.validateId(g1UUID))
-        g11UUID = helper.getUUID(domain, g1UUID, 'g1.1')
-        self.assertTrue(helper.validateId(g11UUID))
-        d112UUID = helper.getUUID(domain, g11UUID, 'dset1.1.2')
-        self.assertTrue(helper.validateId(d112UUID))
-        req = self.endpoint + "/datasets/" + d112UUID
+        root_uuid = helper.getRootUUID(domain)
+        helper.validateId(root_uuid)
+        g1_uuid = helper.getUUID(domain, root_uuid, 'g1')
+        self.assertTrue(helper.validateId(g1_uuid))
+        g11_uuid = helper.getUUID(domain, g1_uuid, 'g1.1')
+        self.assertTrue(helper.validateId(g11_uuid))
+        d112_uuid = helper.getUUID(domain, g11_uuid, 'dset1.1.2')
+        self.assertTrue(helper.validateId(d112_uuid))
+        req = self.endpoint + "/datasets/" + d112_uuid
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)

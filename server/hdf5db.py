@@ -54,6 +54,7 @@ This class is used to manage UUID lookup tables for primary HDF objects (Groups,
 """
 
 import h5py
+import numpy as np
 import shutil
 import uuid
 import logging
@@ -199,11 +200,9 @@ class Hdf5db:
      Get the number of links in a group to an object
     """
     def getNumLinksToObjectInGroup(self, grp, obj):
-        print "get Links to:", grp.name
         objAddr = h5py.h5o.get_info(obj.id).addr
         numLinks = 0
         for name in grp:
-            print 'got name:', name
             try:
                 child = grp[name]
             except KeyError:
@@ -274,6 +273,83 @@ class Hdf5db:
             self.httpMessage = "Resource not found"
         return obj
         
+    """
+        Return numpy type info.
+          For primitive types, return string with typename
+          For compound types return array of dictionary items
+    """
+    def getTypeItem(self, dt):
+        if len(dt) <= 1:
+            # primitive type
+            if dt.char == 'S':
+                # return 'Snn' rather than 'stringnn'
+                return 'S' + str(dt.itemsize)
+            return dt.name
+        names = dt.names
+        item = []
+        for name in names:
+            dsubtype = dt[name]
+            # recursively call for sub-types
+            item.append({name: self.getTypeItem(dsubtype)})
+        return item
+        
+    """
+      Create a type based on string or dictionary item (for compound types)
+       'int8',        'int16',   'int32',  'int64',
+                      'uint8',       'uint16',  'uint32', 'uint64',
+                    'float16',      'float32', 'float64',
+                  'complex64',   'complex128',
+                 'vlen_bytes', 'vlen_unicode'
+    """
+    
+    def createDatatype(self, typeItem):
+        logging.info("createDatatype(" + str(typeItem) + ") type: " + str(type(typeItem)))
+        primitiveTypes = { 'int8': np.int8, 'int32': np.int32, 'int64': np.int64,
+                'uint8': np.uint8, 'uint32': np.uint32, 'uint64': np.uint64,
+                'float16': np.float16, 'float32': np.float32, 'float64': np.float64,
+                'complex64': np.complex64, 'complex128': np.complex128 }
+        dtRet = None
+        if typeItem == "vlen_bytes":
+            dtRet = h5py.special_dtype(vlen=bytes)
+        elif typeItem == "vlen_unicode":
+            dtRet = h5py.special_dtype(vlen=unicode)
+        elif type(typeItem) == str or type(typeItem) == unicode:
+            # just use the type string as type
+            if typeItem in primitiveTypes:
+                dtRet = primitiveTypes[typeItem]
+            else:
+                dtRet = np.dtype(str(typeItem))   # todo catch TypeError for invalid types
+            
+            if dtRet == None:
+                logging.error("failed to create type for: " + typeItem)
+        elif type(typeItem) == tuple or type(typeItem) == list:
+            # non-primitive type, build up an array of sub-types
+            dtList = []
+            for item in typeItem:
+                # recursive call
+                if type(item) is not dict:
+                    logging.error("invalid datatype: " + str(item))
+                    raise Exception
+                if 'name' not in item:
+                    logging.error("expecting name member: " + str(item))
+                    raise Exception
+                if 'type' not in item:
+                    logging.error("expecting type member: " + str(item))
+                    raise Exception
+                dt = self.createDatatype(item['type'])
+                if dt == None:
+                    # invalid type
+                    return None
+                # note we need to ascii-fy the unicode name
+                # see numpy issue: https://github.com/numpy/numpy/issues/2407
+                fieldName = str(item['name'])
+                dtList.append((fieldName, dt))  # add a tuple of (name, dt) to list
+            dtRet = np.dtype(dtList)  # create a type out of our list of tuples
+        else:
+            logging.error("invalid datatype: " + str(typeItem))
+            raise Exception
+        return dtRet    
+        
     def getDatasetItemByUuid(self, objUuid):
         dset = self.getDatasetObjByUuid(objUuid)
         if dset == None:
@@ -282,7 +358,7 @@ class Hdf5db:
             return None
         item = { 'id': objUuid }
         item['attributeCount'] = len(dset.attrs)
-        item['type'] = dset.dtype.name  # todo - compound types
+        item['type'] = self.getTypeItem(dset.dtype)
         item['shape'] = dset.shape
         
         return item
@@ -385,7 +461,6 @@ class Hdf5db:
         
         # print 'shape:', shape
         # print 'shape type:', type(shape)
-        print 'type: ', attr_type
         dt = None
         if type == "vlen_bytes":
             dt = h5py.special_dtype(vlen=bytes)
@@ -467,7 +542,7 @@ class Hdf5db:
         
         return True
         
-    def createDataset(self, shape, type):
+    def createDataset(self, shape, datatype):
         self.initFile()
         if self.readonly:
             self.httpStatus = 403  # Forbidden
@@ -477,18 +552,16 @@ class Hdf5db:
         objUuid = str(uuid.uuid1())
         # print 'shape:', shape
         # print 'shape type:', type(shape)
-        dt = None
-        if type == "vlen_bytes":
-            dt = h5py.special_dtype(vlen=bytes)
-        elif type == "vlen_unicode":
-            dt = h5py.special_dtype(vlen=unicode)
-        else:
-            # just use the type string as type
-            dt = type
-            
-        print 'type: ', dt
+        dt = self.createDatatype(datatype);
+        if dt == None:
+            logging.error('no type returned')
+            return None  # invalid type
+       
             
         newDataset = datasets.create_dataset(objUuid, shape, dt)
+        if newDataset == None:
+            logging.error('unexpected failure to create dataset')
+            return None
         # store reverse map as an attribute
         addr = h5py.h5o.get_info(newDataset.id).addr
         addrGrp = self.dbGrp["{addr}"]
@@ -557,7 +630,6 @@ class Hdf5db:
             if objUuid in groups.attrs:
                 grpRef = groups.attrs[objUuid]
                 # grpRef could be a reference or (for read-only) a path
-                print "grpRef", grpRef
                 obj = self.f[grpRef]
             elif objUuid in groups:
                 obj = groups[objUuid]

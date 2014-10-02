@@ -188,7 +188,23 @@ class ValueTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
              "?dim1_start=2&dim1_step=0"
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)   
+        self.failUnlessEqual(rsp.status_code, 400)  
+        
+    def testGetCompound(self):
+        domain = 'compound.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        data = rspJson['value'] 
+        self.failUnlessEqual(len(data), 72)
+        first = data[0]
+        self.failUnlessEqual(len(first), 5)
+        self.failUnlessEqual(first[0], 24) 
+        self.failUnlessEqual(first[1], "13:53")  
         
     def testPut(self):
         # create domain

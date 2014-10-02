@@ -21,6 +21,18 @@ export DES="../../data"
 rm -rf $DES/*
 mkdir $DES/subdir
 mkdir $DES/subdir/subsubdir
+if [ ! -f $SRC/group1k.h5 ]
+then
+    echo "creating group1k.h5"
+    python makegroups.py  # creates 'group1k.h5'
+    mv group1k.h5 $SRC
+fi
+if [ ! -f $SRC/attr1k.h5 ]
+then
+    echo "creating attr1k.h5"
+    python makeattr.py  # creates 'attr1k.h5'
+    mv attr1k.h5 $SRC
+fi
 cp $SRC/tall.h5 $DES
 cp $SRC/tall.h5 $DES/tall_ro.h5
 cp $SRC/tall.h5 $DES/tall_updated.h5
@@ -33,15 +45,11 @@ cp $SRC/zerodim.h5 $DES/subdir/subsubdir
 cp $SRC/zerodim.h5 $DES/deleteme.h5
 cp $SRC/zerodim.h5 $DES/subdir/deleteme.h5
 cp $SRC/zerodim.h5 $DES/readonly.h5
+cp $SRC/group1k.h5 $DES
+cp $SRC/attr1k.h5 $DES
 chmod -w $DES/tall_ro.h5
 chmod -w $DES/readonly.h5
-python makegroups.py  # creates 'group1k.h5'
-mv group1k.h5 $DES
-python makeattr.py  # creates 'attr1k.h5'
-mv attr1k.h5 $DES
-
-
-
-
+cp $SRC/compound.h5 $DES
+cp $SRC/arraytype.h5 $DES
 
 

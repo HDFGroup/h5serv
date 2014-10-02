@@ -33,7 +33,6 @@ def getFileModCreateTimes(filePath):
     return (mtime, ctime)
 
 def getFilePath(host):
-    print 'host:', host
     topdomain = config.get('domain')
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
         raise HTTPError(403, message='top-level domain is not valid')
@@ -240,8 +239,6 @@ class LinkHandler(RequestHandler):
         
         linkName = url_unescape(self.getName(self.request.uri))
         
-        print "name: [", linkName, "] parentUuid:", reqUuid
-        
         body = json.loads(self.request.body)
         
         childUuid = None
@@ -302,7 +299,6 @@ class LinkHandler(RequestHandler):
         
     def delete(self): 
         logging.info('LinkHandler.delete ' + self.request.host)   
-        print "uri: ", self.request.uri 
         reqUuid = self.getRequestId(self.request.uri)
         
         linkName = self.getName(self.request.uri)
@@ -327,6 +323,43 @@ class DatasetHandler(RequestHandler):
                     'float16',      'float32', 'float64',
                   'complex64',   'complex128',
                  'vlen_bytes', 'vlen_unicode'])
+      
+    @staticmethod             
+    def verifyType(typeItem):
+        isValid = False
+        if type(typeItem) == tuple or type(typeItem) == list:
+            # a compound type - validate sub-types
+            for item in typeItem:
+                DatasetHandler.verifyType(item)  # we'll raise exception if not valid
+            isValid = True
+        elif type(typeItem) == dict:
+            # element of a compound type
+            if 'name' not in typeItem:
+                logging.info("no name member of type: " + str(typeItem))
+                raise HTTPError(400)
+            if 'type' not in typeItem:
+                logging.info("type not found in: " + str(typeItem))
+                raise HTTPError(400)
+            # make recursive call (type maybe compound type itself...)
+            DatasetHandler.verifyType(typeItem['type'])  
+            isValid = True
+        elif typeItem in DatasetHandler._dtypes:
+            isValid = True
+        elif len(typeItem) > 1 and typeItem[0] == 'S':
+            # Fixed ascii datatype, very the text after 'S' is a positive int
+            try:
+                nwidth = int(typeItem[1:])
+                if nwidth > 0:
+                    isValid = True              
+            except ValueError:
+                logging.info("can't convert text after 'S' in: " + typeItem + " to int") 
+                raise HTTPError(400)          
+        else:
+            logging.info("invalid type argument: " + typeItem)
+            raise HTTPError(400)
+        return isValid
+            
+        
     # or 'Snn' for fixed string or 'vlen_bytes' for variable 
     def getRequestId(self):
         # request is in the form /datasets/<id>, return <id>
@@ -412,22 +445,9 @@ class DatasetHandler(RequestHandler):
         else:
             logging.info("invalid shape argument")
             raise HTTPError(400)
-            
+           
         # validate type
-        isValid = False 
-        if datatype in DatasetHandler._dtypes:
-            isValid = True
-        elif len(datatype) > 1 and datatype[0] == 'S':
-            # Fixed ascii datatype, very the text after 'S' is a positive int
-            try:
-                nwidth = int(datatype[1:])
-                if nwidth > 0:
-                    isValid = True              
-            except ValueError:
-                logging.info("can't convert text after 'S' in: " + datatype + " to int")           
-        else:
-            logging.info("invalid type argument: " + datatype)
-            raise HTTPError(400)
+        DatasetHandler.verifyType(datatype)
             
         # validate shape
         for extent in shape:
@@ -441,6 +461,12 @@ class DatasetHandler(RequestHandler):
         with Hdf5db(filePath) as db:
             rootUUID = db.getUUIDByPath('/')
             dsetUUID = db.createDataset(shape, datatype)
+            if dsetUUID == None:
+                httpError = 500
+                if db.httpStatus != 200:
+                    httpError = db.httpStatus # library may have more specific error code
+                logging.info("failed to create dataset (httpError: " + str(httpError) + ")")
+                raise HTTPError(httpError)
                 
         ctime = time.time()
         mtime = ctime
@@ -452,12 +478,12 @@ class DatasetHandler(RequestHandler):
         href = self.request.protocol + '://' + domain + '/'
         links.append({'rel:': 'self',       'href': href + 'datasets/' + dsetUUID})
         links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})        
+        links.append({'rel:': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})   
+        links.append({'rel:': 'value', 'href': href + 'datasets/' + dsetUUID + '/value'})        
         response['id'] = dsetUUID
         response['created'] = ctime
         response['lastModified'] = mtime
         response['attributeCount'] = 0
-        response['linkCount'] = 0
         response['links'] = links
         
         self.write(response)  
@@ -557,7 +583,6 @@ class ValueHandler(RequestHandler):
                 slices.append(slice)
          
             values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
-            print 'slices:', tuple(slices) 
             rootUUID = db.getUUIDByPath('/')
                          
         # got everything we need, put together the response
@@ -962,7 +987,6 @@ class AttributeHandler(RequestHandler):
         
     def delete(self): 
         logging.info('AttributeHandler.delete ' + self.request.host)   
-        print "uri: ", self.request.uri    
         obj_uuid = self.getRequestId()
         domain = self.request.host
         col_name = self.getRequestCollectionName()
@@ -996,8 +1020,6 @@ class GroupHandler(RequestHandler):
             
     def get(self):
         logging.info('GroupHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
-        print self.request
-        print "uri: ", self.request.uri    
         reqUuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain) 
@@ -1038,8 +1060,6 @@ class GroupHandler(RequestHandler):
         
     def post(self):
         logging.info('GroupHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
-        print self.request
-        print "uri: ", self.request.uri 
         if self.request.uri != '/groups/':
             logging.info('bad group post request')
             raise HTTPError(405)  # Method not allowed
@@ -1075,7 +1095,6 @@ class GroupHandler(RequestHandler):
         
     def delete(self): 
         logging.info('GroupHandler.delete ' + self.request.host)   
-        print "uri: ", self.request.uri    
         uuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain)
