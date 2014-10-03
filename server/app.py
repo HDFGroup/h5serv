@@ -314,7 +314,170 @@ class LinkHandler(RequestHandler):
                 httpStatus = db.httpStatus
                 if httpStatus == 200:
                     httpStatus = 500
-                raise HTTPError(httpStatus)   
+                raise HTTPError(httpStatus)  
+                
+class TypeHandler(RequestHandler):
+    # supported datatypes
+    _dtypes = Set([    'int8',        'int16',   'int32',  'int64',
+                      'uint8',       'uint16',  'uint32', 'uint64',
+                    'float16',      'float32', 'float64',
+                  'complex64',   'complex128',
+                 'vlen_bytes', 'vlen_unicode'])
+      
+    @staticmethod             
+    def verifyType(typeItem):
+        isValid = False
+        if type(typeItem) == tuple or type(typeItem) == list:
+            # a compound type - validate sub-types
+            for item in typeItem:
+                DatasetHandler.verifyType(item)  # we'll raise exception if not valid
+            isValid = True
+        elif type(typeItem) == dict:
+            # element of a compound type
+            if 'name' not in typeItem:
+                logging.info("no name member of type: " + str(typeItem))
+                raise HTTPError(400)
+            if 'type' not in typeItem:
+                logging.info("type not found in: " + str(typeItem))
+                raise HTTPError(400)
+            # make recursive call (type maybe compound type itself...)
+            DatasetHandler.verifyType(typeItem['type'])  
+            isValid = True
+        elif typeItem in DatasetHandler._dtypes:
+            isValid = True
+        elif len(typeItem) > 1 and typeItem[0] == 'S':
+            # Fixed ascii datatype, very the text after 'S' is a positive int
+            try:
+                nwidth = int(typeItem[1:])
+                if nwidth > 0:
+                    isValid = True              
+            except ValueError:
+                logging.info("can't convert text after 'S' in: " + typeItem + " to int") 
+                raise HTTPError(400)          
+        else:
+            logging.info("invalid type argument: " + typeItem)
+            raise HTTPError(400)
+        return isValid
+            
+        
+    # or 'Snn' for fixed string or 'vlen_bytes' for variable 
+    def getRequestId(self):
+        # request is in the form /datatypes/<id>, return <id>
+        uri = self.request.uri
+        npos = uri.rfind('/')
+        if npos < 0:
+            raise HTTPError(500)  # should not get routed to ValueHandler in this case
+        if npos == len(uri) - 1:
+            raise HTTPError(400, message="missing id")
+        id = uri[(npos+1):]
+        logging.info('got id: [' + id + ']')
+    
+        return id
+        
+    def get(self):
+        logging.info('TypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        print 'typehandler GET'
+        reqUuid = self.getRequestId()
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        #todo - use the real object creation times
+        ctime = op.getctime(filePath)
+        mtime = ctime
+        response = { }
+        links = []
+        rootUUID = None
+        item = None
+        with Hdf5db(filePath) as db:
+            item = db.getCommittedTypeItemByUuid(reqUuid)
+            if item == None:
+                httpError = 404  # not found
+                if db.httpStatus != 200:
+                    httpError = db.httpStatus # library may have more specific error code
+                logging.info("dataset: [" + reqUuid + "] not found")
+                raise HTTPError(httpError)
+            rootUUID = db.getUUIDByPath('/')
+                         
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/'
+        links.append({'rel:': 'self',       'href': href + 'datasets/' + reqUuid})
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes'})        
+        response['id'] = reqUuid
+        response['type'] = item['type']
+        response['created'] = ctime
+        response['lastModified'] = mtime
+        response['attributeCount'] = item['attributeCount']
+        response['links'] = links
+        
+        self.write(response)
+        
+    def post(self):
+        logging.info('TypeHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        if self.request.uri != '/datatypes/':
+            logging.info('bad datatypes post request')
+            raise HTTPError(405)  # Method not allowed
+               
+        domain = self.request.host
+        filePath = getFilePath(domain)
+        verifyFile(filePath, True)
+        
+        body = json.loads(self.request.body)
+            
+        if "type" not in body:
+            logging.info("Type not supplied")
+            raise HTTPError(400)  # missing type
+            
+        datatype = body["type"]
+        
+        # validate type
+        TypeHandler.verifyType(datatype)
+              
+        
+        with Hdf5db(filePath) as db:
+            rootUUID = db.getUUIDByPath('/')
+            typeUUID = db.createCommittedType(datatype)
+            if typeUUID == None:
+                httpError = 500
+                if db.httpStatus != 200:
+                    httpError = db.httpStatus # library may have more specific error code
+                logging.info("failed to create type (httpError: " + str(httpError) + ")")
+                raise HTTPError(httpError)
+                
+        ctime = time.time()
+        mtime = ctime
+         
+        response = { }
+      
+        # got everything we need, put together the response
+        links = [ ]
+        href = self.request.protocol + '://' + domain + '/'
+        links.append({'rel:': 'self',       'href': href + 'datatypes/' + typeUUID})
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'attributes', 'href': href + 'datatypes/' + typeUUID + '/attributes'})   
+        response['id'] = typeUUID
+        response['created'] = ctime
+        response['lastModified'] = mtime
+        response['attributeCount'] = 0
+        response['links'] = links
+        
+        self.write(response)  
+        
+    def delete(self): 
+        logging.info('TypeHandler.delete ' + self.request.host)   
+        uuid = self.getRequestId()
+        domain = self.request.host
+        filePath = getFilePath(domain)
+        verifyFile(filePath, True)
+        with Hdf5db(filePath) as db:
+            ok = db.deleteObjectByUuid(uuid)
+            if not ok:
+                httpStatus = db.httpStatus
+                if httpStatus == 200:
+                    httpStatus = 500
+                raise HTTPError(httpStatus)  
+          
                 
 class DatasetHandler(RequestHandler):
     # supported datatypes
@@ -1216,6 +1379,8 @@ def make_app():
         url(r"/datasets/.*/attributes", AttributeHandler),
         url(r"/groups/.*/attributes", AttributeHandler),
         url(r"/datatypes/.*/attributes", AttributeHandler),
+        url(r"/datatypes/.*", TypeHandler),
+        url(r"/datatypes/", TypeHandler),
         url(r"/datasets/.*/value", ValueHandler),
         url(r"/datasets/.*/value\?.*", ValueHandler),
         url(r"/datasets/.*", DatasetHandler),

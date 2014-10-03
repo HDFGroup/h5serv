@@ -379,6 +379,73 @@ class Hdf5db:
             obj = None   # todo - datatype operations
          
         return obj
+        
+    """
+    createCommittedType - creates new named datatype  
+    Returns UUID
+    """   
+    def createCommittedType(self, datatype):
+        self.initFile()
+        if self.readonly:
+            self.httpStatus = 403  # Forbidden
+            self.httpMessage = "Updates are not allowed"
+            return None   
+        datatypes = self.dbGrp["{datatypes}"]
+        print "datatypes: " + str(datatypes)
+        objUuid = str(uuid.uuid1())
+        dt = self.createDatatype(datatype);
+        if dt == None:
+            logging.error('no type returned')
+            return None  # invalid type
+        print "got type: ", str(dt)     
+        datatypes[objUuid] = np.dtype(dt)  # dt
+        
+        if objUuid not in datatypes:
+            logging.error('unexpected failure to create named datatype')
+            return None
+        newType = datatypes[objUuid] # this will be a h5py Datatype class 
+        # store reverse map as an attribute
+        addr = h5py.h5o.get_info(newType.id).addr
+        addrGrp = self.dbGrp["{addr}"]
+        addrGrp.attrs[str(addr)] = objUuid
+        return objUuid
+      
+    """
+    getCommittedTypeObjByUuid - get obj from {datatypes} collection 
+    Returns type obj
+    """   
+    def getCommittedTypeObjByUuid(self, objUuid):
+        logging.info("getCommittedTypeObjByUuid(" + objUuid + ")")
+        self.initFile()
+        datatype = None
+        datatypesGrp = self.dbGrp["{datatypes}"]
+        if objUuid in datatypesGrp.attrs:
+            typeRef = datatypesGrp.attrs[objUuid]
+            # typeRef could be a reference or (for read-only) a path
+            datatype = self.f[typeRef]
+        elif objUuid in datatypesGrp:
+            datatype = datatypesGrp[objUuid]  # non-linked type
+     
+        return datatype
+        
+    """
+    getCommittedTypeItemByUuid - get json from {datatypes} collection 
+    Returns type obj
+    """   
+    def getCommittedTypeItemByUuid(self, objUuid):
+        logging.info("getCommittedTypeItemByUuid(" + objUuid + ")")
+        self.initFile()
+        datatype = self.getCommittedTypeObjByUuid(objUuid)
+         
+        if datatype == None:
+            self.httpStatus = 404  # Not Found
+            self.httpMessage = "Resource not found"
+            return None
+        item = { 'id': objUuid }
+        item['attributeCount'] = len(datatype.attrs)
+        item['type'] = self.getTypeItem(datatype.dtype) 
+        
+        return item
        
     """
       Get attribute given an object and name
@@ -541,7 +608,11 @@ class Hdf5db:
                     dset[slices] = data     
         
         return True
-        
+    
+    """
+    createDataset - creates new dataset given shape and datatype
+    Returns UUID
+    """   
     def createDataset(self, shape, datatype):
         self.initFile()
         if self.readonly:
@@ -569,10 +640,11 @@ class Hdf5db:
         return objUuid
      
     """
-    Delete Dataset or Group by UUID
+    Delete Dataset, Group or Datatype by UUID
     """    
     def deleteObjectByUuid(self, objUuid):
         self.initFile()
+        logging.info("delete uuid: " + objUuid)
         if self.readonly:
             self.httpStatus = 403  # Forbidden
             self.httpMessage = "Updates are not allowed"
@@ -590,8 +662,14 @@ class Hdf5db:
             #maybe this is a group...
             tgt = self.getGroupObjByUuid(objUuid)
             
-        # todo - delete for datatypes
-        if not tgt:
+        if tgt == None:
+            # ok - last chance - check for datatype
+            tgt = self.getCommittedTypeObjByUuid(objUuid)
+            
+        if tgt == None:
+            logging.info("delete uuid: " + objUuid + " not found")
+            self.httpStatus = 404  # Not Found
+            self.httpMessage = "id: " + objUuid + " was not found"
             return False  
         self.unlinkObject(self.f['/'], tgt)  # unlink from root (if present)
         groups = self.dbGrp["{groups}"]
@@ -830,7 +908,9 @@ class Hdf5db:
             # maybe it's a group...
             childObj = self.getGroupObjByUuid(childUUID)
         if childObj == None:
-            # todo - can a group link to anything else?
+            # or maybe it's a committed datatype...
+            childObj = self.getCommittedTypeObjByUuid(childUUID)
+        if childObj == None:
             self.httpStatus = 404 # Not found
             self.httpMessage = "Child object not found"
             return False
