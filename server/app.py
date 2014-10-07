@@ -120,6 +120,65 @@ class DefaultHandler(RequestHandler):
         logging.warning("got default delete request")
         logging.warning(self.request)
         
+class SearchHandler(RequestHandler):
+    def get(self):
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        
+        # Get query parameters
+        h5path = self.get_query_argument("path", "")
+        if len(h5path) == 0:
+            logging.info("expected path query arg")
+            raise HTTPError(400) 
+            
+        h5path = h5path.strip()   # trip tailing/leading whitespaces
+            
+        classFilter = self.get_query_argument("ClassFilter", None)       
+        
+        response = { }
+        
+        with Hdf5db(filePath) as db:
+            items = db.getItemsByPath(h5path, classFilter)
+            if items == None:
+                httpError = 404  # not found
+                #todo: return 410 if the group was recently deleted
+                logging.info("path: [" + h5path + "] not found")
+                raise HTTPError(httpError)
+                         
+        # got everything we need, put together the response
+        links = [ ]
+        for item in items:
+            print 'got item!'
+            href = self.request.protocol + '://' + domain + '/'
+            selfref = href + 'groups/' + item['parentUUID'] + '/links/' + item['name']
+            if item['class'] == 'Dataset':
+                href += 'datasets/' + item['uuid']
+                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Dataset',
+                    'self': selfref, 'href': href, 'attributeCount': item['attributeCount']})
+            elif item['class'] == 'Group':
+                href += 'groups/' + item['uuid']
+                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Group',
+                    'self': selfref, 'href': href, 'attributeCount': item['attributeCount']})
+            elif item['class'] == 'Datatype':
+                href += 'datatypes/' + item['uuid']
+                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Datatype',
+                    'self': selfref, 'href': href})
+            elif item['class'] == 'SoftLink':
+                href += 'search?hdf5={' + item['path'] + '}'
+                links.append({'name': item['name'], 'rel': 'SoftLink', 'self': selfref,
+                    'href': href})
+            elif item['class'] == 'ExternalLink':
+                href = 'external link' # todo
+                links.append({'name': item['name'], 'rel': 'ExternalLink', 'self': selfref,
+                    'href': href})
+            else:
+                logging.error("unexpected group item class: " + item['class'])
+                raise HTTPError(500)
+             
+        response['links'] = links
+        
+        self.write(response)
+        
 class LinkHandler(RequestHandler):
     def getRequestId(self, uri):
         # helper method
@@ -1298,6 +1357,7 @@ class RootHandler(RequestHandler):
         response['typeCount'] = datatypeCount
         response['root'] = rootUUID
         response['links'] = links
+        
       
         return response
         
@@ -1369,10 +1429,19 @@ def shutdown():
     logging.info("closing db")
 
 def make_app():
-    isDebug = False 
-    if config.get('debug'):
-        isDebug = True
+    settings = {
+        "static_path": os.path.join(os.path.dirname(__file__), "../static"),
+        # "cookie_secret": "__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
+        # "login_url": "/login",
+        # "xsrf_cookies": True,
+        "debug": config.get('debug')
+    }
+    print 'static_path:', settings['static_path']
+    print 'isdebug:', settings['debug']
+    
     app = Application( [
+        url(r"/search/.*", SearchHandler),
+        url(r"/search/", SearchHandler),
         url(r"/datasets/.*/attributes/.*", AttributeHandler),
         url(r"/groups/.*/attributes/.*", AttributeHandler),
         url(r"/datatypes/.*/attributes/.*", AttributeHandler),
@@ -1391,8 +1460,7 @@ def make_app():
         url(r"/groups/.*", GroupHandler), 
         url(r"/", RootHandler),
         url(r".*", DefaultHandler)
-    ],
-    debug=isDebug)
+    ],  **settings)
     return app
 
 def main():

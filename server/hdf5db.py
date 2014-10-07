@@ -732,6 +732,107 @@ class Hdf5db:
         
         return item
         
+    """
+    getItemsByPath - return object(s) that matches the given path
+      item info returned:
+      
+        item['parentUUID'] - UUID of parent group
+        item['uuid'] - items 
+        item['class'] - 'Dataset'|'Group'|'Datatype'|'SoftLink'|'ExternalLink'
+        item['name'] - object name
+
+    """
+    def getItemsByPath(self, h5path, classFilter=None, marker=None, limit=0):
+        logging.info("db.getItemsByPath(" + h5path + ")")
+        if classFilter:
+            logging.info("...classFilter: " + classFilter)
+        if marker:
+            logging.info("...marker: " + marker)
+        if limit:
+            logging.info("...limit: " + str(limit))
+            
+        # note: marker and limit will be used once we support reg-ex paths
+       
+        self.initFile()
+        
+        item = None
+    
+        
+        if h5path == '/':
+            # special case for root group
+            item = {}
+            root_uuid = self.dbGrp.attrs["rootUUID"]
+            item['parentUUID'] = root_uuid
+            item['uuid'] = root_uuid
+            item['class'] = 'Group'
+            item['name'] = ''
+        else:    
+            if h5path[0 : len('/__db__')] == '/__db__':
+                # don't return objects from db
+                self.httpStatus = 403  # forbidden
+                return None
+            path = h5path
+            if h5path[- 1] == '/':
+                path = h5path[:-1]  # trim off the trailing '/'
+            parent_path = op.dirname(h5path)
+            name = op.basename(h5path)
+        
+            try:
+                parent_uuid = self.getUUIDByPath(parent_path)
+            except KeyError:
+                self.httpStatus = 404
+                return None       
+        
+            parent = self.getGroupObjByUuid(parent_uuid)
+            
+            if name not in parent:
+                self.httpStatus = 404
+                return None
+                
+            item = {}
+            item['parentUUID'] = parent_uuid
+            item['name'] = name
+            
+            # get the link object, one of HardLink, SoftLink, or ExternalLink
+            try:
+                linkObj = parent.get(k, None, False, True)
+                linkClass = linkObj.__class__.__name__
+            except TypeError:
+                # UDLink? Ignore for now
+                self.httpStatus = 404
+                return None
+                
+            if linkClass == 'SoftLink':
+                if classFilter and classFilter != 'SoftLink':
+                    self.httpStatus = 404
+                    return None
+                item['class'] = 'SoftLink'
+            elif linkClass == 'ExternalLink':
+                if typeFilter and typeFilter != 'ExternalLink':
+                    self.httpStatus = 404
+                    return None
+                item['class'] = 'ExternalLink'
+            elif linkClass == 'HardLink':
+                # Hardlink doesn't have any properties itself, just get the linked
+                # object
+                obj = parent[k]
+                objClass = obj.__class__.__name__
+                if classFilter and objClass != classFilter:
+                    self.httpStatus = 404
+                    return None  # not what we are looking for
+                addr = h5py.h5o.get_info(obj.id).addr
+                item['class'] = objClass
+                item['uuid'] = self.getUUIDByAddress(addr)
+            else:
+                logging.error("unexpected classname: " + objClass)
+                self.httpStatus = 500
+                return None
+                
+        items = []
+        item.append(item)
+                           
+        return item
+        
     def getItems(self, grpUuid, classFilter=None, marker=None, limit=0):
         logging.info("db.getItems(" + grpUuid + ")")
         if classFilter:
