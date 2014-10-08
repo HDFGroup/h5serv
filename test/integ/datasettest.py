@@ -43,7 +43,6 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        # self.assertEqual(rspJson['type'], 'float32')
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 72)  
         self.assertEqual(len(rspJson['type']), 5)

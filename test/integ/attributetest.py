@@ -21,7 +21,7 @@ class AttributeTest(unittest.TestCase):
         self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))    
        
     def testGet(self):
-        for domain_name in ('tall',):  #  'tall_ro'):
+        for domain_name in ('tall', 'tall_ro'):
             domain = domain_name + '.' + config.get('domain') 
             rootUUID = helper.getRootUUID(domain)
             req = helper.getEndpoint() + "/groups/" + rootUUID + "/attributes/attr1"
@@ -58,7 +58,7 @@ class AttributeTest(unittest.TestCase):
             self.assertEqual(len(rspJson['links']), 3)
             
     def testGetAll(self):
-        for domain_name in ('tall',):  #  'tall_ro'):
+        for domain_name in ('tall', 'tall_ro'):
             domain = domain_name + '.' + config.get('domain') 
             rootUUID = helper.getRootUUID(domain)
             req = helper.getEndpoint() + "/groups/" + rootUUID + "/attributes"
@@ -99,6 +99,29 @@ class AttributeTest(unittest.TestCase):
                 break
         self.failUnlessEqual(len(names), 1000)  # should get 1000 unique attributes
         
+    def testGetCompound(self):
+        for domain_name in ('compound_attr', ):
+            domain = domain_name + '.' + config.get('domain') 
+            rootUUID = helper.getRootUUID(domain)
+            req = helper.getEndpoint() + "/groups/" + rootUUID + "/attributes/weather"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertEqual(rspJson['name'], 'weather')
+            self.assertEqual(len(rspJson['type']), 4)
+            field0 = rspJson['type'][0]
+            self.assertEqual(field0['time'], 'int64')
+            field1 = rspJson['type'][3]
+            self.assertEqual(field1['wind'], 'S6')
+            self.assertEqual(len(rspJson['shape']), 1)
+            self.assertEqual(rspJson['shape'][0], 1)
+            data = rspJson['value'] 
+            self.assertEqual(len(data), 1)
+            element = data[0]  # first and only array element
+            self.assertEqual(element[3], 'SE 8')
+            self.assertEqual(len(rspJson['links']), 3)
+        
     def testPut(self):
         domain = 'tall_updated.' + config.get('domain') 
         attr_name = 'attr3'
@@ -110,7 +133,21 @@ class AttributeTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)  # create attribute
         rspJson = json.loads(rsp.text)
-    
+        self.assertEqual(len(rspJson['links']), 3)
+        
+    def testPutCompound(self):
+        domain = 'tall_updated.' + config.get('domain')
+        attr_name = 'attr_compound'
+        root_uuid = helper.getRootUUID(domain)
+        headers = {'host': domain}
+        
+        datatype = ({'name': 'temp', 'type': 'int32'}, 
+                    {'name': 'pressure', 'type': 'float32'})
+        value = ((55, 32.34), (59, 29.34)) 
+        payload = {'type': datatype, 'shape': 2, 'value': value}
+        req = self.endpoint + "/groups/" + root_uuid + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # create attribute
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['links']), 3)
         

@@ -51,6 +51,8 @@ def getRootUUID(domain):
 Helper function - get uuid given parent group uuid and link name
 """
 def getUUID(domain, parentUuid, name):
+    if type(name) != str or len(name) == 0:
+        return None
     req = getEndpoint() + "/groups/" + parentUuid + "/links"
     headers = {'host': domain}
     rsp = requests.get(req, headers=headers)

@@ -109,19 +109,28 @@ def makeDirs(filePath):
     
 class DefaultHandler(RequestHandler):
     def put(self):
-        logging.warning("got default put request")
+        logging.warning("got default PUT request")
         logging.warning(self.request)
+        raise HTTPError(400) 
         
     def get(self):
-        logging.warning("got default get request")
+        logging.warning("got default GET request")
         logging.warning(self.request)
+        raise HTTPError(400) 
+        
+    def post(self):
+        logging.warning("got default POST request")
+        logging.warning(self.request)
+        raise HTTPError(400) 
         
     def delete(self):
-        logging.warning("got default delete request")
+        logging.warning("got default DELETE request")
         logging.warning(self.request)
+        raise HTTPError(400) 
         
 class SearchHandler(RequestHandler):
     def get(self):
+        logging.info('SearchHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         domain = self.request.host
         filePath = getFilePath(domain) 
         
@@ -148,17 +157,16 @@ class SearchHandler(RequestHandler):
         # got everything we need, put together the response
         links = [ ]
         for item in items:
-            print 'got item!'
             href = self.request.protocol + '://' + domain + '/'
             selfref = href + 'groups/' + item['parentUUID'] + '/links/' + item['name']
             if item['class'] == 'Dataset':
                 href += 'datasets/' + item['uuid']
                 links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Dataset',
-                    'self': selfref, 'href': href, 'attributeCount': item['attributeCount']})
+                    'self': selfref, 'href': href})
             elif item['class'] == 'Group':
                 href += 'groups/' + item['uuid']
                 links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Group',
-                    'self': selfref, 'href': href, 'attributeCount': item['attributeCount']})
+                    'self': selfref, 'href': href })
             elif item['class'] == 'Datatype':
                 href += 'datatypes/' + item['uuid']
                 links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Datatype',
@@ -221,8 +229,7 @@ class LinkHandler(RequestHandler):
         return linkName
         
     def get(self):
-        logging.info('LinkHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
-         
+        logging.info('LinkHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')       
         
         reqUuid = self.getRequestId(self.request.uri)
         domain = self.request.host
@@ -389,7 +396,7 @@ class TypeHandler(RequestHandler):
         if type(typeItem) == tuple or type(typeItem) == list:
             # a compound type - validate sub-types
             for item in typeItem:
-                DatasetHandler.verifyType(item)  # we'll raise exception if not valid
+                TypeHandler.verifyType(item)  # we'll raise exception if not valid
             isValid = True
         elif type(typeItem) == dict:
             # element of a compound type
@@ -400,9 +407,9 @@ class TypeHandler(RequestHandler):
                 logging.info("type not found in: " + str(typeItem))
                 raise HTTPError(400)
             # make recursive call (type maybe compound type itself...)
-            DatasetHandler.verifyType(typeItem['type'])  
+            TypeHandler.verifyType(typeItem['type'])  
             isValid = True
-        elif typeItem in DatasetHandler._dtypes:
+        elif typeItem in TypeHandler._dtypes:
             isValid = True
         elif len(typeItem) > 1 and typeItem[0] == 'S':
             # Fixed ascii datatype, very the text after 'S' is a positive int
@@ -435,7 +442,6 @@ class TypeHandler(RequestHandler):
         
     def get(self):
         logging.info('TypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
-        print 'typehandler GET'
         reqUuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain) 
@@ -539,50 +545,7 @@ class TypeHandler(RequestHandler):
           
                 
 class DatasetHandler(RequestHandler):
-    # supported datatypes
-    _dtypes = Set([    'int8',        'int16',   'int32',  'int64',
-                      'uint8',       'uint16',  'uint32', 'uint64',
-                    'float16',      'float32', 'float64',
-                  'complex64',   'complex128',
-                 'vlen_bytes', 'vlen_unicode'])
-      
-    @staticmethod             
-    def verifyType(typeItem):
-        isValid = False
-        if type(typeItem) == tuple or type(typeItem) == list:
-            # a compound type - validate sub-types
-            for item in typeItem:
-                DatasetHandler.verifyType(item)  # we'll raise exception if not valid
-            isValid = True
-        elif type(typeItem) == dict:
-            # element of a compound type
-            if 'name' not in typeItem:
-                logging.info("no name member of type: " + str(typeItem))
-                raise HTTPError(400)
-            if 'type' not in typeItem:
-                logging.info("type not found in: " + str(typeItem))
-                raise HTTPError(400)
-            # make recursive call (type maybe compound type itself...)
-            DatasetHandler.verifyType(typeItem['type'])  
-            isValid = True
-        elif typeItem in DatasetHandler._dtypes:
-            isValid = True
-        elif len(typeItem) > 1 and typeItem[0] == 'S':
-            # Fixed ascii datatype, very the text after 'S' is a positive int
-            try:
-                nwidth = int(typeItem[1:])
-                if nwidth > 0:
-                    isValid = True              
-            except ValueError:
-                logging.info("can't convert text after 'S' in: " + typeItem + " to int") 
-                raise HTTPError(400)          
-        else:
-            logging.info("invalid type argument: " + typeItem)
-            raise HTTPError(400)
-        return isValid
-            
-        
-    # or 'Snn' for fixed string or 'vlen_bytes' for variable 
+   
     def getRequestId(self):
         # request is in the form /datasets/<id>, return <id>
         uri = self.request.uri
@@ -669,7 +632,7 @@ class DatasetHandler(RequestHandler):
             raise HTTPError(400)
            
         # validate type
-        DatasetHandler.verifyType(datatype)
+        TypeHandler.verifyType(datatype)
             
         # validate shape
         for extent in shape:
@@ -859,20 +822,7 @@ class ValueHandler(RequestHandler):
             raise HTTPError(400)
             
         # validate type
-        isValid = False 
-        if reqtype in DatasetHandler._dtypes:
-            isValid = True
-        elif len(reqtype) > 1 and reqtype[0] == 'S':
-            # Fixed ascii datatype, very the text after 'S' is a positive int
-            try:
-                nwidth = int(reqtype[1:])
-                if nwidth > 0:
-                    isValid = True              
-            except ValueError:
-                logging.info("can't convert text after 'S' in: " + reqtype + " to int")           
-        else:
-            logging.info("invalid type argument: " + reqtype)
-            raise HTTPError(400)
+        TypeHandler.verifyType(reqtype)
             
         # validate shape
         for extent in reqshape:
@@ -966,6 +916,16 @@ class ValueHandler(RequestHandler):
                 raise HTTPError(httpError)      
            
 class AttributeHandler(RequestHandler):
+
+    # convert embedded list (list of lists) to tuples
+    def convertToTuple(self, data):
+        if type(data) == list or type(data) == tuple:
+            sublist = []
+            for e in data:
+                sublist.append(self.convertToTuple(e))
+            return tuple(sublist)
+        else:
+            return data
     
     def getRequestId(self):
         # request is in the form /(datasets|groups|datatypes)/<id>/attributes(/<name>), 
@@ -1155,20 +1115,7 @@ class AttributeHandler(RequestHandler):
             raise HTTPError(400)
             
         # validate type
-        isValid = False 
-        if datatype in DatasetHandler._dtypes:
-            isValid = True
-        elif len(datatype) > 1 and datatype[0] == 'S':
-            # Fixed ascii datatype, very the text after 'S' is a positive int
-            try:
-                nwidth = int(datatype[1:])
-                if nwidth > 0:
-                    isValid = True              
-            except ValueError:
-                logging.info("can't convert text after 'S' in: " + datatype + " to int")           
-        else:
-            logging.info("invalid type argument: " + datatype)
-            raise HTTPError(400)
+        TypeHandler.verifyType(datatype)
             
         # validate shape
         for extent in shape:
@@ -1178,10 +1125,13 @@ class AttributeHandler(RequestHandler):
             if extent < 0:
                 logging.info("invalid shape (negative extent)")
                 raise HTTPError(400)   
-                        
+                
+        # convert list values to tuples (otherwise h5py is not happy)
+        data = self.convertToTuple(value)
+                   
         
         with Hdf5db(filePath) as db:
-            db.createAttribute(col_name, reqUuid, attr_name, shape, datatype, value)
+            db.createAttribute(col_name, reqUuid, attr_name, shape, datatype, data)
             if db.httpStatus != 200:
                 raise HTTPError(db.httpStatus)
             rootUUID = db.getUUIDByPath('/')

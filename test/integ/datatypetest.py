@@ -25,7 +25,6 @@ class DatatypeTest(unittest.TestCase):
         root_uuid = helper.getRootUUID(domain)
         dtype_uuid = helper.getUUID(domain, root_uuid, 'dtype_simple')
         self.assertTrue(helper.validateId(dtype_uuid))
-        print 'uuid:', dtype_uuid
          
         req = helper.getEndpoint() + "/datatypes/" + dtype_uuid
         headers = {'host': domain}
@@ -148,6 +147,21 @@ class DatatypeTest(unittest.TestCase):
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 400)
+        
+    def testDelete(self):
+        domain = 'namedtype_deleted.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dtype_uuid = helper.getUUID(domain, root_uuid, 'dtype_simple')
+        self.assertTrue(helper.validateId(dtype_uuid))
+         
+        req = helper.getEndpoint() + "/datatypes/" + dtype_uuid
+        headers = {'host': domain}
+        rsp = requests.delete(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        # verify that it's gone
+        dtype_uuid = helper.getUUID(domain, root_uuid, 'dtype_simple')
+        self.failUnlessEqual(dtype_uuid, None)
         
     
      

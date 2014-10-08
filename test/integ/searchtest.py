@@ -26,7 +26,7 @@ class SearchTest(unittest.TestCase):
         for domain_name in ('tall',):
             domain = domain_name + '.' + config.get('domain')   
             rootUUID = helper.getRootUUID(domain)     
-            req = self.endpoint + "/search?path=/g1/g1.1/dset1.1.1" 
+            req = self.endpoint + "/search/?path=/g1/g1.1/dset1.1.1" 
             headers = {'host': domain}
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)

@@ -391,13 +391,11 @@ class Hdf5db:
             self.httpMessage = "Updates are not allowed"
             return None   
         datatypes = self.dbGrp["{datatypes}"]
-        print "datatypes: " + str(datatypes)
         objUuid = str(uuid.uuid1())
         dt = self.createDatatype(datatype);
         if dt == None:
             logging.error('no type returned')
             return None  # invalid type
-        print "got type: ", str(dt)     
         datatypes[objUuid] = np.dtype(dt)  # dt
         
         if objUuid not in datatypes:
@@ -454,7 +452,7 @@ class Hdf5db:
     def getAttributeItemByObj(self, obj, name, includeData=True):
          
         if name not in obj.attrs:
-            logging.info("attribute: [" + name + "] not found in object: " + objUuid)
+            logging.info("attribute: [" + name + "] not found in object: " + obj.name)
             self.httpStatus = 404  # not found
             return None
             
@@ -463,7 +461,7 @@ class Hdf5db:
         attr = obj.attrs[name]  # returns a numpy array
             
         item = { 'name': name }
-        item['type'] = attrObj.dtype.name  # todo - compound types
+        item['type'] = self.getTypeItem(attrObj.dtype) 
         item['shape'] = attrObj.shape
         if includeData:
             if len(attrObj.shape) == 0:
@@ -526,17 +524,12 @@ class Hdf5db:
             return None   
         obj = self.getObjectByUuid(col_name, objUuid)
         
-        # print 'shape:', shape
-        # print 'shape type:', type(shape)
-        dt = None
-        if type == "vlen_bytes":
-            dt = h5py.special_dtype(vlen=bytes)
-        elif type == "vlen_unicode":
-            dt = h5py.special_dtype(vlen=unicode)
-        else:
-            # just use the type string as type
-            dt = attr_type
-            
+        dt = self.createDatatype(attr_type);
+        if dt == None:
+            logging.error('no type returned')
+            return None  # invalid type
+        if type(value) == tuple:
+            value = list(value) 
         newAttr = obj.attrs.create(attr_name, value, dtype=dt)
         
     def deleteAttribute(self, col_name, objUuid, attr_name):
@@ -626,8 +619,7 @@ class Hdf5db:
         dt = self.createDatatype(datatype);
         if dt == None:
             logging.error('no type returned')
-            return None  # invalid type
-       
+            return None  # invalid type       
             
         newDataset = datasets.create_dataset(objUuid, shape, dt)
         if newDataset == None:
@@ -795,7 +787,7 @@ class Hdf5db:
             
             # get the link object, one of HardLink, SoftLink, or ExternalLink
             try:
-                linkObj = parent.get(k, None, False, True)
+                linkObj = parent.get(name, None, False, True)
                 linkClass = linkObj.__class__.__name__
             except TypeError:
                 # UDLink? Ignore for now
@@ -815,7 +807,7 @@ class Hdf5db:
             elif linkClass == 'HardLink':
                 # Hardlink doesn't have any properties itself, just get the linked
                 # object
-                obj = parent[k]
+                obj = parent[name]
                 objClass = obj.__class__.__name__
                 if classFilter and objClass != classFilter:
                     self.httpStatus = 404
@@ -829,9 +821,9 @@ class Hdf5db:
                 return None
                 
         items = []
-        item.append(item)
+        items.append(item)
                            
-        return item
+        return items
         
     def getItems(self, grpUuid, classFilter=None, marker=None, limit=0):
         logging.info("db.getItems(" + grpUuid + ")")

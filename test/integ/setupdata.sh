@@ -39,6 +39,7 @@ cp $SRC/tall.h5 $DES/tall_updated.h5
 cp $SRC/tall.h5 $DES/tall_g2_deleted.h5
 cp $SRC/tall.h5 $DES/tall_dset112_deleted.h5
 cp $SRC/namedtype.h5 $DES
+cp $SRC/namedtype.h5 $DES/namedtype_deleted.h5
 cp $SRC/notahdf5file.h5 $DES
 cp $SRC/zerodim.h5 $DES/"filename with space.h5"
 cp $SRC/zerodim.h5 $DES/subdir
@@ -51,6 +52,7 @@ cp $SRC/attr1k.h5 $DES
 chmod -w $DES/tall_ro.h5
 chmod -w $DES/readonly.h5
 cp $SRC/compound.h5 $DES
+cp $SRC/compound_attr.h5 $DES
 cp $SRC/arraytype.h5 $DES
 
 
