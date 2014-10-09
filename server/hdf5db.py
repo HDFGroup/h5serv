@@ -348,7 +348,9 @@ class Hdf5db:
         else:
             logging.error("invalid datatype: " + str(typeItem))
             raise Exception
-        return dtRet    
+        return dtRet  
+        
+    
         
     def getDatasetItemByUuid(self, objUuid):
         dset = self.getDatasetObjByUuid(objUuid)
@@ -360,6 +362,13 @@ class Hdf5db:
         item['attributeCount'] = len(dset.attrs)
         item['type'] = self.getTypeItem(dset.dtype)
         item['shape'] = dset.shape
+        maxshape = []
+        for i in range(len(dset.maxshape)):
+            extent = 0
+            if dset.maxshape[i] != None:
+                extent = dset.maxshape[i]
+            maxshape.append(extent)
+        item['maxshape'] = maxshape
         
         return item
         
@@ -606,7 +615,7 @@ class Hdf5db:
     createDataset - creates new dataset given shape and datatype
     Returns UUID
     """   
-    def createDataset(self, shape, datatype):
+    def createDataset(self, datatype, shape, max_shape=None):
         self.initFile()
         if self.readonly:
             self.httpStatus = 403  # Forbidden
@@ -621,7 +630,7 @@ class Hdf5db:
             logging.error('no type returned')
             return None  # invalid type       
             
-        newDataset = datasets.create_dataset(objUuid, shape, dt)
+        newDataset = datasets.create_dataset(objUuid, shape, dt, maxshape=max_shape)
         if newDataset == None:
             logging.error('unexpected failure to create dataset')
             return None
@@ -630,6 +639,41 @@ class Hdf5db:
         addrGrp = self.dbGrp["{addr}"]
         addrGrp.attrs[str(addr)] = objUuid
         return objUuid
+        
+    """
+    Resize existing Dataset
+    """
+    def  resizeDataset(self, objUuid, shape):
+        print "objUuid:", objUuid
+        logging.info("resizeDataset(") #  + objUuid + "): ") # + str(shape))
+        self.initFile()
+        self.httpStatus = 500  # will reset before returning
+        if self.readonly:
+            self.httpStatus = 403  # Forbidden
+            self.httpMessage = "Updates are not allowed"
+            return    
+        dset = self.getDatasetObjByUuid(objUuid)
+        if dset == None:
+            self.httpStatus = 404  # Not found
+            return
+        print 'shape:', shape
+        if len(shape) != len(dset.shape):
+            self.httpStatus = 400  
+            self.httpMessage = "Resize shape doesn't match dataset rank"
+            return
+        for i in range(len(shape)):
+            if shape[i] < dset.shape[i]:
+                self.httpStatus = 400  
+                self.httpMessage = "Resize cannot make extent smaller"
+                return
+            if dset.maxshape[i] != None and shape[i] > dset.maxshape[i]:
+                self.httpStatus = 400  
+                self.httpMessage = "Max extent exceeeded"
+                return
+        
+        dset.resize(shape)  # resize
+        self.httpStatus = 200
+        
      
     """
     Delete Dataset, Group or Datatype by UUID

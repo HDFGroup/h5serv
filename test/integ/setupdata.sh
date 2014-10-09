@@ -40,6 +40,8 @@ cp $SRC/tall.h5 $DES/tall_g2_deleted.h5
 cp $SRC/tall.h5 $DES/tall_dset112_deleted.h5
 cp $SRC/namedtype.h5 $DES
 cp $SRC/namedtype.h5 $DES/namedtype_deleted.h5
+cp $SRC/resizable.h5 $DES
+cp $SRC/resizable.h5 $DES/resized.h5
 cp $SRC/notahdf5file.h5 $DES
 cp $SRC/zerodim.h5 $DES/"filename with space.h5"
 cp $SRC/zerodim.h5 $DES/subdir

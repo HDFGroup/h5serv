@@ -33,6 +33,54 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(rspJson['type'], 'float32')
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 10)  
+        self.assertEqual(rspJson['maxshape'][0], 10)
+        
+    def testGetResizable(self):
+        domain = 'resizable.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        resizable_1d_uuid = helper.getUUID(domain, root_uuid, 'resizable_1d') 
+        req = helper.getEndpoint() + "/datasets/" + resizable_1d_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(rspJson['type'], 'int64')
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 10)  
+        self.assertEqual(rspJson['maxshape'][0], 20)
+        
+        resizable_2d_uuid = helper.getUUID(domain, root_uuid, 'resizable_2d') 
+        req = helper.getEndpoint() + "/datasets/" + resizable_2d_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(rspJson['type'], 'int64')
+        self.assertEqual(len(rspJson['shape']), 2)
+        self.assertEqual(rspJson['shape'][1], 10)  
+        self.assertEqual(rspJson['maxshape'][1], 20)
+        
+        unlimited_1d_uuid = helper.getUUID(domain, root_uuid, 'unlimited_1d') 
+        req = helper.getEndpoint() + "/datasets/" + unlimited_1d_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(rspJson['type'], 'int64')
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 10)  
+        self.assertEqual(rspJson['maxshape'][0], 0)
+        
+        unlimited_2d_uuid = helper.getUUID(domain, root_uuid, 'unlimited_2d') 
+        req = helper.getEndpoint() + "/datasets/" + unlimited_2d_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(rspJson['type'], 'int64')
+        self.assertEqual(len(rspJson['shape']), 2)
+        self.assertEqual(rspJson['shape'][1], 10)  
+        self.assertEqual(rspJson['maxshape'][1], 0)
        
     def testGetCompound(self):
         domain = 'compound.' + config.get('domain')  
@@ -136,6 +184,50 @@ class DatasetTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
+        
+    def testPostResizable(self):
+        domain = 'resizabledset.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200) # creates domain
+        
+        payload = {'type': 'float32', 'shape': 10, 'maxshape': 20}
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'resizable'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'resizable'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        # create a datataset with unlimited dimension
+        payload = {'type': 'float32', 'shape': 10, 'maxshape': 0}
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'resizable'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'unlimited'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+    
         
         
     def testPostInvalidType(self):

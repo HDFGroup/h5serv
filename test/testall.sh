@@ -25,7 +25,7 @@ python datasettest.py
 python valuetest.py
 python attributetest.py
 python datatypetest.py
-python searchtest.py
+python shapetest.py
 cd ..
 echo "Done!"
  

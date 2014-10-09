@@ -128,65 +128,6 @@ class DefaultHandler(RequestHandler):
         logging.warning(self.request)
         raise HTTPError(400) 
         
-class SearchHandler(RequestHandler):
-    def get(self):
-        logging.info('SearchHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
-        domain = self.request.host
-        filePath = getFilePath(domain) 
-        
-        # Get query parameters
-        h5path = self.get_query_argument("path", "")
-        if len(h5path) == 0:
-            logging.info("expected path query arg")
-            raise HTTPError(400) 
-            
-        h5path = h5path.strip()   # trip tailing/leading whitespaces
-            
-        classFilter = self.get_query_argument("ClassFilter", None)       
-        
-        response = { }
-        
-        with Hdf5db(filePath) as db:
-            items = db.getItemsByPath(h5path, classFilter)
-            if items == None:
-                httpError = 404  # not found
-                #todo: return 410 if the group was recently deleted
-                logging.info("path: [" + h5path + "] not found")
-                raise HTTPError(httpError)
-                         
-        # got everything we need, put together the response
-        links = [ ]
-        for item in items:
-            href = self.request.protocol + '://' + domain + '/'
-            selfref = href + 'groups/' + item['parentUUID'] + '/links/' + item['name']
-            if item['class'] == 'Dataset':
-                href += 'datasets/' + item['uuid']
-                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Dataset',
-                    'self': selfref, 'href': href})
-            elif item['class'] == 'Group':
-                href += 'groups/' + item['uuid']
-                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Group',
-                    'self': selfref, 'href': href })
-            elif item['class'] == 'Datatype':
-                href += 'datatypes/' + item['uuid']
-                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Datatype',
-                    'self': selfref, 'href': href})
-            elif item['class'] == 'SoftLink':
-                href += 'search?hdf5={' + item['path'] + '}'
-                links.append({'name': item['name'], 'rel': 'SoftLink', 'self': selfref,
-                    'href': href})
-            elif item['class'] == 'ExternalLink':
-                href = 'external link' # todo
-                links.append({'name': item['name'], 'rel': 'ExternalLink', 'self': selfref,
-                    'href': href})
-            else:
-                logging.error("unexpected group item class: " + item['class'])
-                raise HTTPError(500)
-             
-        response['links'] = links
-        
-        self.write(response)
-        
 class LinkHandler(RequestHandler):
     def getRequestId(self, uri):
         # helper method
@@ -542,7 +483,102 @@ class TypeHandler(RequestHandler):
                 if httpStatus == 200:
                     httpStatus = 500
                 raise HTTPError(httpStatus)  
-          
+                
+class ShapeHandler(RequestHandler):
+    def getRequestId(self):
+        # request is in the form /datasets/<id>/shape, return <id>
+        uri = self.request.uri
+        npos = uri.rfind('/shape')
+        if npos < 0:
+            raise HTTPError(500)  # should not get routed to ShapeHandler in this case
+        id_part = uri[:npos]
+        npos = id_part.rfind('/')
+        if npos < 0:
+            raise HTTPError(500)  # should not get routed to ShapeHandler in this case
+        
+        if npos == len(id_part) - 1:
+            raise HTTPError(400, message="missing id")
+        id = id_part[(npos+1):]
+        logging.info('got id: [' + id + ']')
+    
+        return id
+        
+    def get(self):
+        logging.info('ShapeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        
+        reqUuid = self.getRequestId()
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        #todo - use the real object creation times
+        ctime = op.getctime(filePath)
+        mtime = ctime
+        response = { }
+        links = []
+        rootUUID = None
+        item = None
+        with Hdf5db(filePath) as db:
+            item = db.getDatasetItemByUuid(reqUuid)
+            if item == None:
+                httpError = 404  # not found
+                if db.httpStatus != 200:
+                    httpError = db.httpStatus # library may have more specific error code
+                logging.info("dataset: [" + reqUuid + "] not found")
+                raise HTTPError(httpError)
+            rootUUID = db.getUUIDByPath('/')
+                         
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/'
+        links.append({'rel:': 'self',       'href': href + 'datasets/' + reqUuid + '/shape'})
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        response['shape'] = item['shape']
+        response['maxshape'] = item['maxshape']
+        response['links'] = links
+        
+        self.write(response)
+        
+    def put(self):
+        logging.info('ShapeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        reqUuid = self.getRequestId()       
+        domain = self.request.host
+        filePath = getFilePath(domain)
+        verifyFile(filePath, True)
+        
+        body = json.loads(self.request.body)
+        
+        if "shape" not in body:
+            logging.info("Shape not supplied")
+            raise HTTPError(400)  # missing shape
+            
+        shape = body["shape"]
+        if type(shape) == int:
+            dim1 = shape
+            shape = [dim1]
+        elif type(shape) == list or type(shape) == tuple: 
+            pass # can use as is
+        else:
+            logging.info("invalid shape argument")
+            raise HTTPError(400)
+            
+        # validate shape
+        for extent in shape:
+            if type(extent) != int:
+                logging.info("invalid shape type")
+                raise HTTPError(400)
+            if extent < 0:
+                logging.info("invalid shape (negative extent)")
+                raise HTTPError(400) 
+        
+        with Hdf5db(filePath) as db:
+            rootUUID = db.getUUIDByPath('/')
+            db.resizeDataset(reqUuid, shape)
+            
+            if db.httpStatus != 200:
+                httpError = db.httpStatus # library may have more specific error code
+                logging.info("failed to resize dataset (httpError: " + str(httpError) + ")")
+                raise HTTPError(httpError)
+        logging.info("resize OK")        
                 
 class DatasetHandler(RequestHandler):
    
@@ -592,6 +628,7 @@ class DatasetHandler(RequestHandler):
         response['id'] = reqUuid
         response['type'] = item['type']
         response['shape'] = item['shape']
+        response['maxshape'] = item['maxshape']
         response['created'] = ctime
         response['lastModified'] = mtime
         response['attributeCount'] = item['attributeCount']
@@ -620,16 +657,28 @@ class DatasetHandler(RequestHandler):
             raise HTTPError(400)  # missing type
             
         shape = body["shape"]
-        datatype = body["type"]
         if type(shape) == int:
             dim1 = shape
-            shape = []
             shape = [dim1]
         elif type(shape) == list or type(shape) == tuple: 
             pass # can use as is
         else:
             logging.info("invalid shape argument")
             raise HTTPError(400)
+            
+        datatype = body["type"]
+        
+        maxshape = None
+        if "maxshape" in body:
+            maxshape = body["maxshape"]
+            if type(maxshape) == int:
+                dim1 = maxshape
+                maxshape = [dim1]
+            elif type(maxshape) == list or type(maxshape) == tuple: 
+                pass # can use as is
+            else:
+                logging.info("invalid maxshape argument")
+                raise HTTPError(400)     
            
         # validate type
         TypeHandler.verifyType(datatype)
@@ -641,11 +690,23 @@ class DatasetHandler(RequestHandler):
                 raise HTTPError(400)
             if extent < 0:
                 logging.info("invalid shape (negative extent)")
-                raise HTTPError(400)           
+                raise HTTPError(400) 
+            
+        if maxshape:
+            if len(maxshape) != len(shape):
+                logging.info("invalid maxshape length")
+                raise HTTPError(400)
+            for i in range(len(shape)):
+                maxextent = maxshape[i]
+                if maxextent != 0 and maxextent < shape[i]:
+                    logging.info("invalid maxshape extent")
+                    raise HTTPError(400)
+                if maxextent == 0:
+                    maxshape[i] = None  # this indicates unlimited
         
         with Hdf5db(filePath) as db:
             rootUUID = db.getUUIDByPath('/')
-            dsetUUID = db.createDataset(shape, datatype)
+            dsetUUID = db.createDataset(datatype, shape, maxshape)
             if dsetUUID == None:
                 httpError = 500
                 if db.httpStatus != 200:
@@ -1390,8 +1451,7 @@ def make_app():
     print 'isdebug:', settings['debug']
     
     app = Application( [
-        url(r"/search/.*", SearchHandler),
-        url(r"/search/", SearchHandler),
+        url(r"/datasets/.*/shape", ShapeHandler),
         url(r"/datasets/.*/attributes/.*", AttributeHandler),
         url(r"/groups/.*/attributes/.*", AttributeHandler),
         url(r"/datatypes/.*/attributes/.*", AttributeHandler),
