@@ -212,13 +212,13 @@ class ValueTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200) # creates domain
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
         #create 1d dataset
         payload = {'type': 'int32', 'shape': 10}
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # create dataset
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
         rspJson = json.loads(rsp.text)
         dset1UUID = rspJson['id']
         self.assertTrue(helper.validateId(dset1UUID))
@@ -241,7 +241,7 @@ class ValueTest(unittest.TestCase):
         payload = {'type': 'int32', 'shape': (10,10)}
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # create dataset
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
         rspJson = json.loads(rsp.text)
         dset2UUID = rspJson['id']
         self.assertTrue(helper.validateId(dset2UUID))
@@ -271,13 +271,13 @@ class ValueTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200) # creates domain
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
         #create 1d dataset
         payload = {'type': 'int32', 'shape': 10}
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # create dataset
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
         rspJson = json.loads(rsp.text)
         dset1UUID = rspJson['id']
         self.assertTrue(helper.validateId(dset1UUID))

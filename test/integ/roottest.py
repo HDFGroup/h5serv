@@ -114,7 +114,7 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         self.failUnlessEqual(rspJson["groupCount"], 1)
         self.failUnlessEqual(rspJson["datasetCount"], 0)
@@ -124,7 +124,7 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         href = (rspJson["links"][0])[u"href"]
         self.failUnlessEqual(href, 
@@ -169,7 +169,7 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         self.failUnlessEqual(rspJson["groupCount"], 1)
         self.failUnlessEqual(rspJson["datasetCount"], 0)

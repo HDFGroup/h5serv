@@ -131,7 +131,7 @@ class AttributeTest(unittest.TestCase):
         payload = {'type': 'float32', 'shape': (0,), 'value': 3.12}
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # create attribute
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['links']), 3)
         
@@ -147,7 +147,7 @@ class AttributeTest(unittest.TestCase):
         payload = {'type': datatype, 'shape': 2, 'value': value}
         req = self.endpoint + "/groups/" + root_uuid + "/attributes/" + attr_name
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # create attribute
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['links']), 3)
         

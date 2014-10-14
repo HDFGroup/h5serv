@@ -56,12 +56,12 @@ class GroupTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)   
+        self.failUnlessEqual(rsp.status_code, 201)   
         req = self.endpoint + "/groups/"
         headers = {'host': domain}
         # create a new group
         rsp = requests.post(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200) 
+        self.failUnlessEqual(rsp.status_code, 201) 
         rspJson = json.loads(rsp.text)
         id = rspJson["id"]
         self.assertTrue(helper.validateId(id))   

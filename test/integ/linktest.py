@@ -81,11 +81,11 @@ class LinkTest(unittest.TestCase):
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         # make a request second time (verify idempotent)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
         
     def testPutNameWithSpaces(self):
         logging.info("LinkTest.testPutNameWithSpaces")
@@ -97,7 +97,7 @@ class LinkTest(unittest.TestCase):
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         
     def testPutBadReqId(self):
@@ -159,11 +159,11 @@ class LinkTest(unittest.TestCase):
         headers = {'host': domain}
         # make request
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         # verify idempotent
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
         
     def testDelete(self):
         logging.info("LinkTest.testDelete")
@@ -175,7 +175,7 @@ class LinkTest(unittest.TestCase):
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
         
         # now remove the link
         rsp = requests.delete(req, headers=headers)

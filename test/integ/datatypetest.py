@@ -56,12 +56,12 @@ class DatatypeTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200) # creates domain
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
         payload = {'type': 'float32'}
         req = self.endpoint + "/datatypes/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # create datatype
+        self.failUnlessEqual(rsp.status_code, 201)  # create datatype
         rspJson = json.loads(rsp.text)
         dtype_uuid = rspJson['id']
         self.assertTrue(helper.validateId(dtype_uuid))
@@ -73,7 +73,7 @@ class DatatypeTest(unittest.TestCase):
         payload = {'id': dtype_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
         
         
     def testPostTypes(self):
@@ -81,7 +81,7 @@ class DatatypeTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200) # creates domain
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
         root_uuid = helper.getRootUUID(domain)
         
@@ -99,7 +99,7 @@ class DatatypeTest(unittest.TestCase):
             payload = {'type': datatype}
             req = self.endpoint + "/datatypes/"
             rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)  # create datatypes
+            self.failUnlessEqual(rsp.status_code, 201)  # create datatypes
             rspJson = json.loads(rsp.text)
             dtype_uuid = rspJson['id']
             self.assertTrue(helper.validateId(dtype_uuid))
@@ -110,14 +110,14 @@ class DatatypeTest(unittest.TestCase):
             payload = {"id": dtype_uuid}
             headers = {'host': domain}
             rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.failUnlessEqual(rsp.status_code, 201)
             
     def testPostCompoundType(self):
         domain = 'compound.datatypetest.' + config.get('domain')
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200) # creates domain
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
         root_uuid = helper.getRootUUID(domain)
         
@@ -126,7 +126,7 @@ class DatatypeTest(unittest.TestCase):
         payload = {'type': datatype}
         req = self.endpoint + "/datatypes/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # create datatype
+        self.failUnlessEqual(rsp.status_code, 201)  # create datatype
         rspJson = json.loads(rsp.text)
         dtype_uuid = rspJson['id']
         self.assertTrue(helper.validateId(dtype_uuid))
@@ -137,7 +137,7 @@ class DatatypeTest(unittest.TestCase):
         payload = {"id": dtype_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.status_code, 201)
          
     def testPostInvalidType(self):
         domain = 'tall.' + config.get('domain')  

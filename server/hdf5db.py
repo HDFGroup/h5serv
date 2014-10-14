@@ -1063,6 +1063,7 @@ class Hdf5db:
             # convert to a ref
             del dbCol[childUUID]  # remove hardlink
             dbCol.attrs[childUUID] = childObj.ref # create a ref
+        self.htpStatus = 201 # set status to created
         return True
         
     def createSoftLink(self, parentUUID, linkPath, linkName):
@@ -1081,6 +1082,7 @@ class Hdf5db:
             logging.info("linkname already exists, deleting")
             del parentObj[linkName]  # delete old link
         parentObj[linkName] = h5py.SoftLink(linkPath)
+        self.htpStatus = 201 # set status to created
         return True
         
     

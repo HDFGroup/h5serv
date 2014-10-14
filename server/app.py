@@ -18,6 +18,7 @@ import posixpath as pp
 import json
 import tornado.httpserver
 from tornado.ioloop import IOLoop
+from tornado_cors import CorsMixin
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, json_decode, url_escape, url_unescape
 from sets import Set
@@ -283,7 +284,7 @@ class LinkHandler(RequestHandler):
                 raise HTTPError(500)
             if not ok:
                 httpStatus = 500
-                if db.httpStatus != 200:
+                if db.httpStatus != 201:
                     httpStatus = db.httpStatus
                 raise HTTPError(httpStatus)
             rootUUID = db.getUUIDByPath('/')
@@ -302,7 +303,8 @@ class LinkHandler(RequestHandler):
         links.append({'rel': 'root',  'href': href + rootUUID})
         links.append({'rel': 'self',  'href': href +  reqUuid + '/links/' + linkName})
         response['links'] = links
-        self.write(response)    
+        self.write(response)  
+        self.set_status(201)  
         
     def delete(self): 
         logging.info('LinkHandler.delete ' + self.request.host)   
@@ -469,6 +471,7 @@ class TypeHandler(RequestHandler):
         response['links'] = links
         
         self.write(response)  
+        self.set_status(201)  # resource created
         
     def delete(self): 
         logging.info('TypeHandler.delete ' + self.request.host)   
@@ -578,7 +581,8 @@ class ShapeHandler(RequestHandler):
                 httpError = db.httpStatus # library may have more specific error code
                 logging.info("failed to resize dataset (httpError: " + str(httpError) + ")")
                 raise HTTPError(httpError)
-        logging.info("resize OK")        
+        logging.info("resize OK")    
+        self.set_status(201)  # resource created    
                 
 class DatasetHandler(RequestHandler):
    
@@ -733,6 +737,7 @@ class DatasetHandler(RequestHandler):
         response['links'] = links
         
         self.write(response)  
+        self.set_status(201)  # resource created
         
     def delete(self): 
         logging.info('DatasetHandler.delete ' + self.request.host)   
@@ -974,7 +979,8 @@ class ValueHandler(RequestHandler):
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
                 logging.info("dataset put error")
-                raise HTTPError(httpError)      
+                raise HTTPError(httpError)   
+        logging.info("value post succeeded")   
            
 class AttributeHandler(RequestHandler):
 
@@ -1217,6 +1223,7 @@ class AttributeHandler(RequestHandler):
         response['links'] = links 
         
         self.write(response)  
+        self.set_status(201)  # resource created
         
     def delete(self): 
         logging.info('AttributeHandler.delete ' + self.request.host)   
@@ -1325,6 +1332,7 @@ class GroupHandler(RequestHandler):
         response['links'] = links
         
         self.write(response)  
+        self.set_status(201)  # resource created
         
     def delete(self): 
         logging.info('GroupHandler.delete ' + self.request.host)   
@@ -1340,7 +1348,30 @@ class GroupHandler(RequestHandler):
                     httpStatus = 500
                 raise HTTPError(httpStatus)     
         
-class RootHandler(RequestHandler):
+class RootHandler(CorsMixin, RequestHandler):
+    # Value for the Access-Control-Allow-Origin header.
+    # Default: None (no header).
+    CORS_ORIGIN = '*'
+
+    # Value for the Access-Control-Allow-Headers header.
+    # Default: None (no header).
+    CORS_HEADERS = 'Content-Type'
+
+    # Value for the Access-Control-Allow-Methods header.
+    # Default: Methods defined in handler class.
+    # None means no header.
+    # CORS_METHODS = GET
+
+    # Value for the Access-Control-Allow-Credentials header.
+    # Default: None (no header).
+    # None means no header.
+    CORS_CREDENTIALS = True
+
+    # Value for the Access-Control-Max-Age header.
+    # Default: 86400.
+    # None means no header.
+    CORS_MAX_AGE = 21600 
+    
     def getRootResponse(self, filePath):
         # used by GET / and PUT /
         domain = self.request.host
@@ -1398,6 +1429,7 @@ class RootHandler(RequestHandler):
         response = self.getRootResponse(filePath)
         
         self.write(response)
+        self.set_status(201)  # resource created
           
     def delete(self): 
         logging.info('RootHandler.delete ' + self.request.host)   

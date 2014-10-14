@@ -75,7 +75,7 @@ def createGroup(domain):
     headers = {'host': domain}
     # create a new group
     rsp = requests.post(req, headers=headers)
-    if rsp.status_code != 200:
+    if rsp.status_code != 201:
         return None
     rspJson = json.loads(rsp.text)
     id = rspJson["id"] 
@@ -92,7 +92,7 @@ def linkObject(domain, objUuid, name, parentUuid=None):
     payload = {"id": objUuid}
     headers = {'host': domain}
     rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-    if rsp.status_code == 200:
+    if rsp.status_code == 201:
         return True
     else: 
         return False
