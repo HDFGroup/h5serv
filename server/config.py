@@ -9,14 +9,14 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
-import sys
 cfg = {
     'port':   5000,
     'debug':  True,
     'datapath': '../data/',
     'domain': 'test.hdf.io',
     'hdf5_ext': '.h5',
-    'objectdb': 'objectdb.h5'
+    'local_ip': '127.0.0.1',
+    'default_dns': '8.8.8.8'  # used by local_dns.py
 }
    
 def get(x):     

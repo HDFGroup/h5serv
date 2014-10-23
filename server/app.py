@@ -33,7 +33,16 @@ def getFileModCreateTimes(filePath):
     (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(filePath)
     return (mtime, ctime)
 
-def getFilePath(host):
+def getFilePath(host_value):
+    logging.info('getFilePath[' + host_value + ']')
+    #strip off port specifier (if present)
+    npos = host_value.rfind(':')
+    if npos > 0:
+        host = host_value[:npos]
+    else:
+        host = host_value
+    print 'host:', host
+    
     topdomain = config.get('domain')
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
         raise HTTPError(403, message='top-level domain is not valid')
@@ -303,8 +312,8 @@ class LinkHandler(RequestHandler):
         links.append({'rel': 'root',  'href': href + rootUUID})
         links.append({'rel': 'self',  'href': href +  reqUuid + '/links/' + linkName})
         response['links'] = links
-        self.write(response)  
-        self.set_status(201)  
+        self.write(response)   
+        self.set_status(201) 
         
     def delete(self): 
         logging.info('LinkHandler.delete ' + self.request.host)   
