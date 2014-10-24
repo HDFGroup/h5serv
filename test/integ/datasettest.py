@@ -31,6 +31,7 @@ class DatasetTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertEqual(rspJson['type'], 'float32')
+        self.assertEqual(rspJson['class'], 'simple')
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 10)  
         self.assertEqual(rspJson['maxshape'][0], 10)
@@ -81,6 +82,19 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(len(rspJson['shape']), 2)
         self.assertEqual(rspJson['shape'][1], 10)  
         self.assertEqual(rspJson['maxshape'][1], 0)
+        
+    def testGetScalar(self):
+        domain = 'scalar.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, '0d') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(rspJson['class'], 'scalar')
+        self.assertEqual(len(rspJson['shape']), 0)
+        self.assertEqual(rspJson['type'], 'int32')
        
     def testGetCompound(self):
         domain = 'compound.' + config.get('domain')  
@@ -107,6 +121,30 @@ class DatasetTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
         payload = {'type': 'float32', 'shape': 10}
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'dset1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dset1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
+    def testPostScalar(self):
+        domain = 'newscalar.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        payload = {'type': 'int32'}
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
@@ -225,10 +263,7 @@ class DatasetTest(unittest.TestCase):
         payload = {"id": dset_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
-        
-    
-        
+        self.failUnlessEqual(rsp.status_code, 201)     
         
     def testPostInvalidType(self):
         domain = 'tall.' + config.get('domain')  
@@ -262,14 +297,27 @@ class DatasetTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
-        
-        
+             
     def testDeleteBadUUID(self):
         domain = 'tall_dset112_deleted.' + config.get('domain')    
         req = self.endpoint + "/datasets/dff53814-2906-11e4-9f76-3c15c2da029e"
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 404)
+        
+    def testGetCollection(self):
+        for domain_name in ('tall', 'tall_ro'):
+            domain = domain_name + '.' + config.get('domain')    
+            req = self.endpoint + "/datasets"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            datasetIds = rspJson["datasets"]
+            
+            self.failUnlessEqual(len(datasetIds), 4)
+            for uuid in datasetIds:
+                self.assertTrue(helper.validateId(uuid))
         
 if __name__ == '__main__':
     unittest.main()

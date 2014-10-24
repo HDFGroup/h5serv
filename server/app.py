@@ -215,27 +215,24 @@ class LinkHandler(RequestHandler):
         links = [ ]
         for item in items:
             href = self.request.protocol + '://' + domain + '/'
-            selfref = href + 'groups/' + reqUuid + '/links/' + item['name']
             if item['class'] == 'Dataset':
                 href += 'datasets/' + item['uuid']
-                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Dataset',
-                    'self': selfref, 'href': href, 'attributeCount': item['attributeCount']})
+                links.append({'id': item['uuid'], 'name': item['name'], 'class': 'Dataset',
+                     'href': href})
             elif item['class'] == 'Group':
                 href += 'groups/' + item['uuid']
-                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Group',
-                    'self': selfref, 'href': href, 'attributeCount': item['attributeCount']})
+                links.append({'id': item['uuid'], 'name': item['name'], 'class': 'Group',
+                     'href': href})
             elif item['class'] == 'Datatype':
                 href += 'datatypes/' + item['uuid']
-                links.append({'id': item['uuid'], 'name': item['name'], 'rel': 'Datatype',
-                    'self': selfref, 'href': href})
+                links.append({'id': item['uuid'], 'name': item['name'], 'class': 'Datatype',
+                     'href': href})
             elif item['class'] == 'SoftLink':
                 href += 'search?hdf5={' + item['path'] + '}'
-                links.append({'name': item['name'], 'rel': 'SoftLink', 'self': selfref,
-                    'href': href})
+                links.append({'name': item['name'], 'class': 'SoftLink', 'href': href})
             elif item['class'] == 'ExternalLink':
                 href = 'external link' # todo
-                links.append({'name': item['name'], 'rel': 'ExternalLink', 'self': selfref,
-                    'href': href})
+                links.append({'name': item['name'], 'class': 'ExternalLink', 'href': href})
             else:
                 logging.error("unexpected group item class: " + item['class'])
                 raise HTTPError(500)
@@ -543,9 +540,12 @@ class ShapeHandler(RequestHandler):
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
         links.append({'rel:': 'self',       'href': href + 'datasets/' + reqUuid + '/shape'})
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID})
+        response['class'] = item['shape_class'] 
         response['shape'] = item['shape']
         response['maxshape'] = item['maxshape']
+        if 'fillvalue' in item:
+            response['fillvalue'] = item['fillvalue']
         response['links'] = links
         
         self.write(response)
@@ -642,6 +642,9 @@ class DatasetHandler(RequestHandler):
         response['type'] = item['type']
         response['shape'] = item['shape']
         response['maxshape'] = item['maxshape']
+        response['class'] = item['shape_class'] 
+        if 'fillvalue' in item:
+            response['fillvalue'] = item['fillvalue']
         response['created'] = ctime
         response['lastModified'] = mtime
         response['attributeCount'] = item['attributeCount']
@@ -658,26 +661,26 @@ class DatasetHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
+        shape = None
         
         body = json.loads(self.request.body)
         
-        if "shape" not in body:
-            logging.info("Shape not supplied")
-            raise HTTPError(400)  # missing shape
-            
         if "type" not in body:
             logging.info("Type not supplied")
             raise HTTPError(400)  # missing type
             
-        shape = body["shape"]
-        if type(shape) == int:
-            dim1 = shape
-            shape = [dim1]
-        elif type(shape) == list or type(shape) == tuple: 
-            pass # can use as is
+        if "shape" in body:
+            shape = body["shape"]
+            if type(shape) == int:
+                dim1 = shape
+                shape = [dim1]
+            elif type(shape) == list or type(shape) == tuple: 
+                pass # can use as is
+            else:
+                logging.info("invalid shape argument")
+                raise HTTPError(400)
         else:
-            logging.info("invalid shape argument")
-            raise HTTPError(400)
+            shape = ()  # empty tuple
             
         datatype = body["type"]
         
@@ -847,16 +850,7 @@ class ValueHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'datasets/' + reqUuid})
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes'})        
-        response['id'] = reqUuid
-        response['type'] = item['type']
-        response['shape'] = item['shape']
-        response['created'] = ctime
-        response['lastModified'] = mtime
         response['value'] = values
-        response['links'] = links
         
         self.write(response)   
     
@@ -1124,9 +1118,10 @@ class AttributeHandler(RequestHandler):
             responseItem['name'] = item['name']
             responseItem['type'] = item['type']
             responseItem['shape'] = item['shape']
+            response['class'] = item['shape_class'] 
             responseItem['created'] = ctime
             responseItem['lastModified'] = mtime
-            responseItem['self'] = href + item['name']
+            responseItem['href'] = self_href + item['name']
             if 'value' in item:
                 response['value'] = item['value']
             responseItems.append(responseItem)
@@ -1355,7 +1350,95 @@ class GroupHandler(RequestHandler):
                 httpStatus = db.httpStatus
                 if httpStatus == 200:
                     httpStatus = 500
-                raise HTTPError(httpStatus)     
+                raise HTTPError(httpStatus)   
+                
+class GroupCollectionHandler(RequestHandler):
+            
+    def get(self):
+        logging.info('GroupCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        # Get optional query parameters
+        limit = self.get_query_argument("Limit", 0)
+        if type(limit) is not int:
+            try:
+                limit = int(limit)
+            except ValueError:
+                logging.info("expected int type for limit")
+                raise HTTPError(400) 
+        marker = self.get_query_argument("Marker", None)
+        
+        response = { }
+             
+        items = None
+        with Hdf5db(filePath) as db:
+            items = db.getCollection("groups", marker, limit)
+                         
+        # write the response
+        response['groups'] = items
+         
+        self.write(response)
+        
+class DatasetCollectionHandler(RequestHandler):
+            
+    def get(self):
+        logging.info('DatasetCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        # Get optional query parameters
+        limit = self.get_query_argument("Limit", 0)
+        if type(limit) is not int:
+            try:
+                limit = int(limit)
+            except ValueError:
+                logging.info("expected int type for limit")
+                raise HTTPError(400) 
+        marker = self.get_query_argument("Marker", None)
+        
+        response = { }
+             
+        items = None
+        with Hdf5db(filePath) as db:
+            items = db.getCollection("datasets", marker, limit)
+                         
+        # write the response
+        response['datasets'] = items
+         
+        self.write(response)
+        
+class TypeCollectionHandler(RequestHandler):
+            
+    def get(self):
+        logging.info('TypeCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        # Get optional query parameters
+        limit = self.get_query_argument("Limit", 0)
+        if type(limit) is not int:
+            try:
+                limit = int(limit)
+            except ValueError:
+                logging.info("expected int type for limit")
+                raise HTTPError(400) 
+        marker = self.get_query_argument("Marker", None)
+        
+        response = { }
+             
+        items = None
+        with Hdf5db(filePath) as db:
+            items = db.getCollection("datatypes", marker, limit)
+                         
+        # write the response
+        response['datatypes'] = items
+         
+        self.write(response)
+          
         
 class RootHandler(CorsMixin, RequestHandler):
     # Value for the Access-Control-Allow-Origin header.
@@ -1501,14 +1584,20 @@ def make_app():
         url(r"/datatypes/.*/attributes", AttributeHandler),
         url(r"/datatypes/.*", TypeHandler),
         url(r"/datatypes/", TypeHandler),
+        url(r"/datatypes\?.*", TypeCollectionHandler),
+        url(r"/datatypes", TypeCollectionHandler),
         url(r"/datasets/.*/value", ValueHandler),
         url(r"/datasets/.*/value\?.*", ValueHandler),
         url(r"/datasets/.*", DatasetHandler),
         url(r"/datasets/", DatasetHandler),
+        url(r"/datasets\?.*", DatasetCollectionHandler),
+        url(r"/datasets", DatasetCollectionHandler),
         url(r"/groups/.*/links", LinkHandler),
         url(r"/groups/.*/links/.*", LinkHandler),
         url(r"/groups/", GroupHandler), 
         url(r"/groups/.*", GroupHandler), 
+        url(r"/groups\?.*", GroupCollectionHandler),
+        url(r"/groups", GroupCollectionHandler),
         url(r"/", RootHandler),
         url(r".*", DefaultHandler)
     ],  **settings)

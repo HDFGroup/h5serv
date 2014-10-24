@@ -20,11 +20,33 @@ default).
 
 Running: 
     Launch via: sudo python local_dns.py
-    Admin privalages are needed since the server listens on port 53.
-    Modify your Network settings to use 127.0.0.1 as a DNS server.
-    E.g. on Mac OS X run: sudo networksetup -setdnsservers <network_name> 127.0.0.1
+    Admin privileges are needed since the server listens on port 53.
     
-Note: Based on sample code from Twisted Matrix Laboratories
+    You can verify that the dns server is working by querying the dns server on the 
+    command line with nslookup.  E.g. if "tall.h5" is a file in the server data 
+    directory, and the domain (from the config setting) is: "test.hdf.io",
+    you can run: "nslookup tall.test.hdf.io 127.0.0.1" and the dns server should return:
+        Non-authoritative answer:
+        Name:	tall.test.hdf.io
+        Address: 127.0.0.1
+    This indicates that IP address 127.0.0.1 is the address that will serve the
+    domain: "tall.test.hdf.io" (i.e. it is being served by the local host). 
+    
+    In order to access the domain from your browser, modify your Network settings to add 
+    127.0.0.1 as a DNS server.
+    
+    For Mac OS X you can add a DNS server by running the following on the command line: 
+        sudo networksetup -setdnsservers <network_name> 127.0.0.1
+        
+    After doing so, you no longer need to provide the dns name to nslookup.  So:
+        nslookup tall.test.hdf.io
+    will return an address of 127.0.0.1.
+    
+    Now you should be able to open the url: http://tall.test.hdf.io:5000 in your browser.
+    There are plugins for most browsers that enable the json responses to be formatted
+    nicely.
+    
+Note: Source is based on sample code from Twisted Matrix Laboratories
 """
 
 from twisted.internet import reactor, defer

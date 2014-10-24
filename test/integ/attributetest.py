@@ -121,6 +121,21 @@ class AttributeTest(unittest.TestCase):
             element = data[0]  # first and only array element
             self.assertEqual(element[3], 'SE 8')
             self.assertEqual(len(rspJson['links']), 3)
+            
+    def testGetScalar(self):
+        domain = 'scalar.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        req = helper.getEndpoint() + "/groups/" + root_uuid + "/attributes/attr1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(rspJson['class'], 'scalar')
+        self.assertEqual(len(rspJson['shape']), 0)
+        self.assertEqual(rspJson['type'], 'int64')
+        data = rspJson['value'] 
+        self.assertEqual(type(data), int)
+        self.assertEqual(data, 42)
         
     def testPut(self):
         domain = 'tall_updated.' + config.get('domain') 
@@ -129,6 +144,20 @@ class AttributeTest(unittest.TestCase):
         headers = {'host': domain}
            
         payload = {'type': 'float32', 'shape': (0,), 'value': 3.12}
+        req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['links']), 3)
+        
+    def testPutList(self):
+        domain = 'tall_updated.' + config.get('domain') 
+        attr_name = 'attr4'
+        rootUUID = helper.getRootUUID(domain) 
+        headers = {'host': domain}
+        data = range(10)
+           
+        payload = {'type': 'int32', 'shape': (10,), 'value': data}
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute

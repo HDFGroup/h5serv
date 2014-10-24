@@ -105,9 +105,44 @@ class GroupTest(unittest.TestCase):
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 403)
         
-    
-       
-        
+    def testGetCollection(self):
+        for domain_name in ('tall', 'tall_ro'):
+            domain = domain_name + '.' + config.get('domain')    
+            req = self.endpoint + "/groups"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            groupIds = rspJson["groups"]
+            
+            self.failUnlessEqual(len(groupIds), 5)
+            for uuid in groupIds:
+                self.assertTrue(helper.validateId(uuid))
+                
+    def testGetCollectionBatch(self):
+        domain = 'group1k.' + config.get('domain')   
+        req = self.endpoint + "/groups" 
+        headers = {'host': domain}
+        params = {'Limit': 50 }
+        uuids = set()
+        # get ids in 20 batches of 50 links each
+        last_uuid = None
+        for batchno in range(20):
+            if last_uuid:
+                params['Marker'] = last_uuid
+            rsp = requests.get(req, headers=headers, params=params)
+            self.failUnlessEqual(rsp.status_code, 200)
+            if rsp.status_code != 200:
+                break
+            rspJson = json.loads(rsp.text)
+            groupIds = rspJson['groups']
+            self.failUnlessEqual(len(groupIds) <= 50, True)
+            for groupId in groupIds:
+                uuids.add(groupId)
+                last_uuid = groupId
+            if len(groupIds) == 0:
+                break
+        self.failUnlessEqual(len(uuids), 1000)  # should get 1000 unique uuid's    
     
        
 if __name__ == '__main__':

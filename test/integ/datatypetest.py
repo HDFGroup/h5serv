@@ -163,6 +163,19 @@ class DatatypeTest(unittest.TestCase):
         dtype_uuid = helper.getUUID(domain, root_uuid, 'dtype_simple')
         self.failUnlessEqual(dtype_uuid, None)
         
+    def testGetCollection(self):
+        domain = 'namedtype.' + config.get('domain') 
+        req = self.endpoint + "/datatypes"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        datatypeIds = rspJson["datatypes"]
+            
+        self.failUnlessEqual(len(datatypeIds), 2)
+        for uuid in datatypeIds:
+            self.assertTrue(helper.validateId(uuid))
+        
     
      
 if __name__ == '__main__':

@@ -362,6 +362,10 @@ class Hdf5db:
         item['attributeCount'] = len(dset.attrs)
         item['type'] = self.getTypeItem(dset.dtype)
         item['shape'] = dset.shape
+        if len(dset.shape) == 0:
+            item['shape_class'] = 'scalar'
+        else:
+            item['shape_class'] = 'simple'
         maxshape = []
         for i in range(len(dset.maxshape)):
             extent = 0
@@ -369,6 +373,12 @@ class Hdf5db:
                 extent = dset.maxshape[i]
             maxshape.append(extent)
         item['maxshape'] = maxshape
+        try:
+            item['fillvalue'] = dset.fillvalue.tolist()
+        except RuntimeError:
+            # exception is thrown if fill value is not set
+            pass   # nop
+            
         
         return item
         
@@ -472,6 +482,10 @@ class Hdf5db:
         item = { 'name': name }
         item['type'] = self.getTypeItem(attrObj.dtype) 
         item['shape'] = attrObj.shape
+        if len(attrObj.shape) == 0:
+            item['shape_class'] = 'scalar'
+        else:
+            item['shape_class'] = 'simple'
         if includeData:
             if len(attrObj.shape) == 0:
                 item['value'] = attr   # just copy value
@@ -615,7 +629,7 @@ class Hdf5db:
     createDataset - creates new dataset given shape and datatype
     Returns UUID
     """   
-    def createDataset(self, datatype, shape, max_shape=None):
+    def createDataset(self, datatype, datashape, max_shape=None, fill_value=None):
         self.initFile()
         if self.readonly:
             self.httpStatus = 403  # Forbidden
@@ -623,14 +637,13 @@ class Hdf5db:
             return None   
         datasets = self.dbGrp["{datasets}"]
         objUuid = str(uuid.uuid1())
-        # print 'shape:', shape
-        # print 'shape type:', type(shape)
         dt = self.createDatatype(datatype);
         if dt == None:
             logging.error('no type returned')
-            return None  # invalid type       
+            return None  # invalid type     
             
-        newDataset = datasets.create_dataset(objUuid, shape, dt, maxshape=max_shape)
+        newDataset = datasets.create_dataset(objUuid, shape=datashape, dtype=dt, 
+            maxshape=max_shape, fillvalue=fill_value)
         if newDataset == None:
             logging.error('unexpected failure to create dataset')
             return None
@@ -935,6 +948,54 @@ class Hdf5db:
             if limit > 0 and count == limit:
                 break  # return what we got
         return items
+        
+    def getCollection(self, col_type, marker, limit):
+        logging.info("db.getCollection(" + col_type + ")")
+        #col_type should be either "datasets", "groups", or "datatypes"
+        if col_type not in ("datasets", "groups", "datatypes"):
+            logging.error("invalid col_type: [" + col_type + "]")
+            self.httpStatus = 500
+            return None
+        self.initFile()
+        col = None  # Group, Dataset, or Datatype
+        if col_type == "datasets":
+            col = self.dbGrp["{datasets}"]
+        elif col_type == "groups":
+            print 'get groups!'
+            col = self.dbGrp["{groups}"]
+        else:  # col_type == "datatypes" 
+            col = self.dbGrp["{datatypes}"] 
+        
+        uuids = []
+        count = 0;
+        print col.keys()
+        # gather the non-anonymous ids first
+        for uuid in col.attrs:
+            if marker:
+                if uuid == marker:
+                    marker = None  # clear and pick up next item
+                continue
+            uuids.append(uuid)
+            count += 1
+            if limit > 0 and count == limit:
+                break
+                
+        if limit == 0 or count < limit:
+            # grab any anonymous obj ids next
+            for uuid in col:
+                if marker:
+                    if uuid == marker:
+                        marker = None  # clear and pick up next item
+                    continue
+                uuids.append(uuid)
+                count += 1
+                if limit > 0 and count == limit:
+                    break
+                
+                
+        return uuids
+            
+         
       
     def unlinkItem(self, grpUuid, linkName):
         grp = self.getGroupObjByUuid(grpUuid)

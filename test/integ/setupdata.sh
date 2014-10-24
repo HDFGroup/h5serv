@@ -51,6 +51,8 @@ cp $SRC/zerodim.h5 $DES/subdir/deleteme.h5
 cp $SRC/zerodim.h5 $DES/readonly.h5
 cp $SRC/group1k.h5 $DES
 cp $SRC/attr1k.h5 $DES
+cp $SRC/fillvalue.h5 $DES
+cp $SRC/scalar.h5 $DES
 chmod -w $DES/tall_ro.h5
 chmod -w $DES/readonly.h5
 cp $SRC/compound.h5 $DES
