@@ -242,10 +242,10 @@ class MemberHandler(RequestHandler):
              
         response['members'] = members
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'groups/' + reqUuid + '/members'})
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'home',       'href': href }) 
-        links.append({'rel:': 'owner', 'href': href + 'groups/' + reqUuid})  
+        links.append({'rel': 'self',       'href': href + 'groups/' + reqUuid + '/members'})
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'home',       'href': href }) 
+        links.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
         response['links'] = links      
         response['id'] = reqUuid
           
@@ -426,10 +426,10 @@ class TypeHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'datatypes/' + reqUuid})
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'attributes', 'href': href + 'datatypes/' + reqUuid + '/attributes'}) 
-        links.append({'rel:': 'home', 'href': href })        
+        links.append({'rel': 'self',       'href': href + 'datatypes/' + reqUuid})
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'attributes', 'href': href + 'datatypes/' + reqUuid + '/attributes'}) 
+        links.append({'rel': 'home', 'href': href })        
         response['id'] = reqUuid
         response['type'] = item['type']
         response['created'] = ctime
@@ -479,9 +479,9 @@ class TypeHandler(RequestHandler):
         # got everything we need, put together the response
         links = [ ]
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'datatypes/' + typeUUID})
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'attributes', 'href': href + 'datatypes/' + typeUUID + '/attributes'})   
+        links.append({'rel': 'self',       'href': href + 'datatypes/' + typeUUID})
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'attributes', 'href': href + 'datatypes/' + typeUUID + '/attributes'})   
         response['id'] = typeUUID
         response['created'] = ctime
         response['lastModified'] = mtime
@@ -551,8 +551,8 @@ class ShapeHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'datasets/' + reqUuid + '/shape'})
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID})
+        links.append({'rel': 'self',       'href': href + 'datasets/' + reqUuid + '/shape'})
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID})
         response['class'] = item['shape_class'] 
         response['shape'] = item['shape']
         response['maxshape'] = item['maxshape']
@@ -647,11 +647,11 @@ class DatasetHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'datasets/' + reqUuid})
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes'}) 
-        links.append({'rel:': 'data', 'href': href + 'datasets/' + reqUuid + '/value'}) 
-        links.append({'rel:': 'home', 'href': href })       
+        links.append({'rel': 'self',       'href': href + 'datasets/' + reqUuid})
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes'}) 
+        links.append({'rel': 'data', 'href': href + 'datasets/' + reqUuid + '/value'}) 
+        links.append({'rel': 'home', 'href': href })       
         response['id'] = reqUuid
         response['type'] = item['type']
         response['shape'] = item['shape']
@@ -752,10 +752,10 @@ class DatasetHandler(RequestHandler):
         # got everything we need, put together the response
         links = [ ]
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'datasets/' + dsetUUID})
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})   
-        links.append({'rel:': 'value', 'href': href + 'datasets/' + dsetUUID + '/value'})        
+        links.append({'rel': 'self',       'href': href + 'datasets/' + dsetUUID})
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})   
+        links.append({'rel': 'value', 'href': href + 'datasets/' + dsetUUID + '/value'})        
         response['id'] = dsetUUID
         response['created'] = ctime
         response['lastModified'] = mtime
@@ -866,10 +866,10 @@ class ValueHandler(RequestHandler):
         href = self.request.protocol + '://' + domain + '/'
         response['value'] = values
         
-        links.append({'rel:': 'self',  'href': href + 'datasets/' + reqUuid + '/value'})
-        links.append({'rel:': 'root',  'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'owner', 'href': href + 'datasets/' + reqUuid }) 
-        links.append({'rel:': 'home',  'href': href })   
+        links.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value'})
+        links.append({'rel': 'root',  'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid }) 
+        links.append({'rel': 'home',  'href': href })   
         response['links'] = links
         
         self.write(response)   
@@ -1147,9 +1147,9 @@ class AttributeHandler(RequestHandler):
                 response['value'] = item['value']
             responseItems.append(responseItem)
             
-        links.append({'rel:': 'self',       'href': self_href})
-        links.append({'rel:': 'owner',      'href': owner_href })
-        links.append({'rel:': 'root',       'href': root_href }) 
+        links.append({'rel': 'self',       'href': self_href})
+        links.append({'rel': 'owner',      'href': owner_href })
+        links.append({'rel': 'root',       'href': root_href }) 
         
             
         if attr_name == None:
@@ -1242,9 +1242,9 @@ class AttributeHandler(RequestHandler):
             self_href += '/' + attr_name
             
         links = [ ]
-        links.append({'rel:': 'self',   'href': self_href})
-        links.append({'rel:': 'owner',  'href': owner_href })
-        links.append({'rel:': 'root',   'href': root_href }) 
+        links.append({'rel': 'self',   'href': self_href})
+        links.append({'rel': 'owner',  'href': owner_href })
+        links.append({'rel': 'root',   'href': root_href }) 
         response['links'] = links 
         
         self.write(response)  
@@ -1310,11 +1310,11 @@ class GroupHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'groups/' + reqUuid})
-        links.append({'rel:': 'members',      'href': href + 'groups/' + reqUuid + '/members'})
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'home',       'href': href }) 
-        links.append({'rel:': 'attributes', 'href': href + 'groups/' + reqUuid + '/attributes'})        
+        links.append({'rel': 'self',       'href': href + 'groups/' + reqUuid})
+        links.append({'rel': 'members',      'href': href + 'groups/' + reqUuid + '/members'})
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'home',       'href': href }) 
+        links.append({'rel': 'attributes', 'href': href + 'groups/' + reqUuid + '/attributes'})        
         response['id'] = reqUuid
         response['created'] = ctime
         response['lastModified'] = mtime
@@ -1346,10 +1346,10 @@ class GroupHandler(RequestHandler):
         # got everything we need, put together the response
         links = [ ]
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'groups/' + grpUUID})
-        links.append({'rel:': 'links',      'href': href + 'groups/' + grpUUID + '/links'})
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'attributes', 'href': href + 'groups/' + grpUUID + '/attributes'})        
+        links.append({'rel': 'self',       'href': href + 'groups/' + grpUUID})
+        links.append({'rel': 'links',      'href': href + 'groups/' + grpUUID + '/links'})
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'attributes', 'href': href + 'groups/' + grpUUID + '/attributes'})        
         response['id'] = grpUUID
         response['created'] = ctime
         response['lastModified'] = mtime
@@ -1404,9 +1404,9 @@ class GroupCollectionHandler(RequestHandler):
         # write the response
         response['groups'] = items
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'groups' })
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'home',       'href': href }) 
+        links.append({'rel': 'self',       'href': href + 'groups' })
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'home',       'href': href }) 
         response['links'] = links
          
         self.write(response)
@@ -1441,9 +1441,9 @@ class DatasetCollectionHandler(RequestHandler):
         # write the response
         response['datasets'] = items
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'datasets' })
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'home',       'href': href }) 
+        links.append({'rel': 'self',       'href': href + 'datasets' })
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'home',       'href': href }) 
         response['links'] = links
          
         self.write(response)
@@ -1478,9 +1478,9 @@ class TypeCollectionHandler(RequestHandler):
         # write the response
         response['datatypes'] = items
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'datatypes' })
-        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'home',       'href': href }) 
+        links.append({'rel': 'self',       'href': href + 'datatypes' })
+        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel': 'home',       'href': href }) 
         response['links'] = links
          
         self.write(response)
@@ -1523,11 +1523,11 @@ class RootHandler(CorsMixin, RequestHandler):
         # generate response 
         links = [ ]
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self', 'href': href})
-        links.append({'rel:': 'database', 'href': href + 'datasets'})
-        links.append({'rel:': 'groupbase', 'href': href + 'groups'})
-        links.append({'rel:': 'typebase', 'href': href + 'datatypes' })
-        links.append({'rel:': 'root',     'href': href + 'groups/' + rootUUID})
+        links.append({'rel': 'self', 'href': href})
+        links.append({'rel': 'database', 'href': href + 'datasets'})
+        links.append({'rel': 'groupbase', 'href': href + 'groups'})
+        links.append({'rel': 'typebase', 'href': href + 'datatypes' })
+        links.append({'rel': 'root',     'href': href + 'groups/' + rootUUID})
             
         response = {  }
         response['created'] = op.getctime(filePath)
