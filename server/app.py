@@ -138,10 +138,10 @@ class DefaultHandler(RequestHandler):
         logging.warning(self.request)
         raise HTTPError(400) 
         
-class LinkHandler(RequestHandler):
+class MemberHandler(RequestHandler):
     def getRequestId(self, uri):
         # helper method
-        # uri should be in the form: /groups/<uuid>/links
+        # uri should be in the form: /groups/<uuid>/members
         # extract the <uuid>
         uri = self.request.uri
         if uri[:len('/groups/')] != '/groups/':
@@ -161,18 +161,18 @@ class LinkHandler(RequestHandler):
         
     def getName(self, uri):
         # helper method
-        # uri should be in the form: /group/<uuid>/links/<name>
+        # uri should be in the form: /group/<uuid>/members/<name>
         # this method returns name
-        npos = uri.find('/links/')
+        npos = uri.find('/members/')
         if npos < 0:
             # shouldn't be possible to get here
             logging.info("unexpected uri")
             raise HTTPError(500)
-        if npos+len('/links/') >= len(uri):
+        if npos+len('/members/') >= len(uri):
             # no name specified
             logging.info("no name specified")
             raise HTTPError(400)
-        linkName = uri[npos+len('/links/'):]
+        linkName = uri[npos+len('/members/'):]
         if linkName.find('/') >= 0:
             # can't have '/' in link name
             logging.info("invalid linkname")
@@ -180,7 +180,7 @@ class LinkHandler(RequestHandler):
         return linkName
         
     def get(self):
-        logging.info('LinkHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')       
+        logging.info('MemberHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')       
         
         reqUuid = self.getRequestId(self.request.uri)
         domain = self.request.host
@@ -203,6 +203,7 @@ class LinkHandler(RequestHandler):
         
         verifyFile(filePath)
         items = None
+        rootUUID = None
         with Hdf5db(filePath) as db:
             items = db.getItems(reqUuid, classFilter, marker, limit)
             if items == None:
@@ -210,44 +211,54 @@ class LinkHandler(RequestHandler):
                 #todo: return 410 if the group was recently deleted
                 logging.info("group: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
+            rootUUID = db.getUUIDByPath('/')
                          
         # got everything we need, put together the response
-        links = [ ]
+        members = []
+        links = []
         for item in items:
             href = self.request.protocol + '://' + domain + '/'
             if item['class'] == 'Dataset':
                 href += 'datasets/' + item['uuid']
-                links.append({'id': item['uuid'], 'name': item['name'], 'class': 'Dataset',
+                members.append({'id': item['uuid'], 'name': item['name'], 'class': 'Dataset',
                      'href': href})
             elif item['class'] == 'Group':
                 href += 'groups/' + item['uuid']
-                links.append({'id': item['uuid'], 'name': item['name'], 'class': 'Group',
+                members.append({'id': item['uuid'], 'name': item['name'], 'class': 'Group',
                      'href': href})
             elif item['class'] == 'Datatype':
                 href += 'datatypes/' + item['uuid']
-                links.append({'id': item['uuid'], 'name': item['name'], 'class': 'Datatype',
+                members.append({'id': item['uuid'], 'name': item['name'], 'class': 'Datatype',
                      'href': href})
             elif item['class'] == 'SoftLink':
                 href += 'search?hdf5={' + item['path'] + '}'
-                links.append({'name': item['name'], 'class': 'SoftLink', 'href': href})
+                members.append({'name': item['name'], 'class': 'SoftLink', 'href': href})
             elif item['class'] == 'ExternalLink':
                 href = 'external link' # todo
-                links.append({'name': item['name'], 'class': 'ExternalLink', 'href': href})
+                members.append({'name': item['name'], 'class': 'ExternalLink', 'href': href})
             else:
                 logging.error("unexpected group item class: " + item['class'])
                 raise HTTPError(500)
              
-        response['links'] = links
+        response['members'] = members
+        href = self.request.protocol + '://' + domain + '/'
+        links.append({'rel:': 'self',       'href': href + 'groups/' + reqUuid + '/members'})
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'home',       'href': href }) 
+        links.append({'rel:': 'owner', 'href': href + 'groups/' + reqUuid})  
+        response['links'] = links      
+        response['id'] = reqUuid
+          
         
         self.write(response)
     
     def put(self):
-        logging.info('LinkHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        logging.info('MemberHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         # put - create a new link
         # patterns are:
-        # PUT /group/<id>/links/<name> {id: <id> } 
-        # PUT /group/<id>/links/<name> {h5path: <path> } 
-        # PUT /group/<id>/links/<name> {href: <href> }
+        # PUT /group/<id>/members/<name> {id: <id> } 
+        # PUT /group/<id>/members/<name> {h5path: <path> } 
+        # PUT /group/<id>/members/<name> {href: <href> }
         uri = self.request.uri
         reqUuid = self.getRequestId(self.request.uri)
         
@@ -305,15 +316,15 @@ class LinkHandler(RequestHandler):
         links = []
         href = self.request.protocol + '://' + domain + '/groups/'
         links.append({'rel': 'group', 'href': href + reqUuid})
-        links.append({'rel': 'links', 'href': href + reqUuid + '/links'})
+        links.append({'rel': 'members', 'href': href + reqUuid + '/members'})
         links.append({'rel': 'root',  'href': href + rootUUID})
-        links.append({'rel': 'self',  'href': href +  reqUuid + '/links/' + linkName})
+        links.append({'rel': 'self',  'href': href +  reqUuid + '/members/' + linkName})
         response['links'] = links
         self.write(response)   
         self.set_status(201) 
         
     def delete(self): 
-        logging.info('LinkHandler.delete ' + self.request.host)   
+        logging.info('MemberHandler.delete ' + self.request.host)   
         reqUuid = self.getRequestId(self.request.uri)
         
         linkName = self.getName(self.request.uri)
@@ -415,9 +426,10 @@ class TypeHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel:': 'self',       'href': href + 'datasets/' + reqUuid})
+        links.append({'rel:': 'self',       'href': href + 'datatypes/' + reqUuid})
         links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel:': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes'})        
+        links.append({'rel:': 'attributes', 'href': href + 'datatypes/' + reqUuid + '/attributes'}) 
+        links.append({'rel:': 'home', 'href': href })        
         response['id'] = reqUuid
         response['type'] = item['type']
         response['created'] = ctime
@@ -853,6 +865,12 @@ class ValueHandler(RequestHandler):
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
         response['value'] = values
+        
+        links.append({'rel:': 'self',  'href': href + 'datasets/' + reqUuid + '/value'})
+        links.append({'rel:': 'root',  'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'owner', 'href': href + 'datasets/' + reqUuid }) 
+        links.append({'rel:': 'home',  'href': href })   
+        response['links'] = links
         
         self.write(response)   
     
@@ -1293,7 +1311,7 @@ class GroupHandler(RequestHandler):
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
         links.append({'rel:': 'self',       'href': href + 'groups/' + reqUuid})
-        links.append({'rel:': 'links',      'href': href + 'groups/' + reqUuid + '/links'})
+        links.append({'rel:': 'members',      'href': href + 'groups/' + reqUuid + '/members'})
         links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
         links.append({'rel:': 'home',       'href': href }) 
         links.append({'rel:': 'attributes', 'href': href + 'groups/' + reqUuid + '/attributes'})        
@@ -1363,6 +1381,7 @@ class GroupCollectionHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain) 
         verifyFile(filePath)
+        rootUUID = None
         
         # Get optional query parameters
         limit = self.get_query_argument("Limit", 0)
@@ -1377,11 +1396,18 @@ class GroupCollectionHandler(RequestHandler):
         response = { }
              
         items = None
+        links = []
         with Hdf5db(filePath) as db:
             items = db.getCollection("groups", marker, limit)
+            rootUUID = db.getUUIDByPath('/')
                          
         # write the response
         response['groups'] = items
+        href = self.request.protocol + '://' + domain + '/'
+        links.append({'rel:': 'self',       'href': href + 'groups' })
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'home',       'href': href }) 
+        response['links'] = links
          
         self.write(response)
         
@@ -1404,13 +1430,21 @@ class DatasetCollectionHandler(RequestHandler):
         marker = self.get_query_argument("Marker", None)
         
         response = { }
+        links = []
+        rootUUID = None
              
         items = None
         with Hdf5db(filePath) as db:
             items = db.getCollection("datasets", marker, limit)
+            rootUUID = db.getUUIDByPath('/')
                          
         # write the response
         response['datasets'] = items
+        href = self.request.protocol + '://' + domain + '/'
+        links.append({'rel:': 'self',       'href': href + 'datasets' })
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'home',       'href': href }) 
+        response['links'] = links
          
         self.write(response)
         
@@ -1433,13 +1467,21 @@ class TypeCollectionHandler(RequestHandler):
         marker = self.get_query_argument("Marker", None)
         
         response = { }
+        links = []
+        rootUUID = None
              
         items = None
         with Hdf5db(filePath) as db:
             items = db.getCollection("datatypes", marker, limit)
+            rootUUID = db.getUUIDByPath('/')
                          
         # write the response
         response['datatypes'] = items
+        href = self.request.protocol + '://' + domain + '/'
+        links.append({'rel:': 'self',       'href': href + 'datatypes' })
+        links.append({'rel:': 'root',       'href': href + 'groups/' + rootUUID}) 
+        links.append({'rel:': 'home',       'href': href }) 
+        response['links'] = links
          
         self.write(response)
           
@@ -1596,8 +1638,8 @@ def make_app():
         url(r"/datasets/", DatasetHandler),
         url(r"/datasets\?.*", DatasetCollectionHandler),
         url(r"/datasets", DatasetCollectionHandler),
-        url(r"/groups/.*/links", LinkHandler),
-        url(r"/groups/.*/links/.*", LinkHandler),
+        url(r"/groups/.*/members", MemberHandler),
+        url(r"/groups/.*/members/.*", MemberHandler),
         url(r"/groups/", GroupHandler), 
         url(r"/groups/.*", GroupHandler), 
         url(r"/groups\?.*", GroupCollectionHandler),

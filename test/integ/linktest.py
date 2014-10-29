@@ -51,12 +51,12 @@ class LinkTest(unittest.TestCase):
             if rsp.status_code != 200:
                 break
             rspJson = json.loads(rsp.text)
-            links = rspJson['links']
-            self.failUnlessEqual(len(links) <= 50, True)
-            for link in links:
-                lastName = link['name']
+            members = rspJson['members']
+            self.failUnlessEqual(len(members) <= 50, True)
+            for member in members:
+                lastName = member['name']
                 names.add(lastName)
-            if len(links) == 0:
+            if len(members) == 0:
                 break
         self.failUnlessEqual(len(names), 1000)  # should get 1000 unique links
         

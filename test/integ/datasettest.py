@@ -131,7 +131,7 @@ class DatasetTest(unittest.TestCase):
         # link new dataset as 'dset1'
         root_uuid = helper.getRootUUID(domain)
         name = 'dset1'
-        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        req = self.endpoint + "/groups/" + root_uuid + "/members/" + name 
         payload = {"id": dset_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -155,7 +155,7 @@ class DatasetTest(unittest.TestCase):
         # link new dataset as 'dset1'
         root_uuid = helper.getRootUUID(domain)
         name = 'dset1'
-        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        req = self.endpoint + "/groups/" + root_uuid + "/members/" + name 
         payload = {"id": dset_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -190,7 +190,7 @@ class DatasetTest(unittest.TestCase):
          
             # link new dataset using the type name
             name = datatype
-            req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+            req = self.endpoint + "/groups/" + root_uuid + "/members/" + name 
             payload = {"id": dset_uuid}
             headers = {'host': domain}
             rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -217,7 +217,7 @@ class DatasetTest(unittest.TestCase):
          
         # link the new dataset 
         name = "dset"
-        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        req = self.endpoint + "/groups/" + root_uuid + "/members/" + name 
         payload = {"id": dset_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -241,7 +241,7 @@ class DatasetTest(unittest.TestCase):
         # link new dataset as 'resizable'
         root_uuid = helper.getRootUUID(domain)
         name = 'resizable'
-        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        req = self.endpoint + "/groups/" + root_uuid + "/members/" + name 
         payload = {"id": dset_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -259,7 +259,7 @@ class DatasetTest(unittest.TestCase):
         # link new dataset as 'resizable'
         root_uuid = helper.getRootUUID(domain)
         name = 'unlimited'
-        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        req = self.endpoint + "/groups/" + root_uuid + "/members/" + name 
         payload = {"id": dset_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)

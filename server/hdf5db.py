@@ -256,22 +256,7 @@ class Hdf5db:
         obj = self.f[path]  # will throw KeyError if object doesn't exist
         return obj
         
-    def getDatasetObjByUuid(self, objUuid):
-        self.initFile()
-        obj = None
-       
-        datasets = self.dbGrp["{datasets}"]
-        if objUuid in datasets.attrs:
-            ref = datasets.attrs[objUuid]
-            obj = self.f[ref]  # this works for read-only as well
-        elif objUuid in datasets: 
-            # anonymous object
-            obj = datasets[objUuid]
-                                 
-        if obj == None:
-            self.httpStatus = 404  # Not Found
-            self.httpMessage = "Resource not found"
-        return obj
+    
         
     """
         Return numpy type info.
@@ -349,8 +334,61 @@ class Hdf5db:
             logging.error("invalid datatype: " + str(typeItem))
             raise Exception
         return dtRet  
-        
     
+        
+    def getObjectByUuid(self, col_type, objUuid):
+        #col_type should be either "datasets", "groups", or "datatypes"
+        if col_type not in ("datasets", "groups", "datatypes"):
+            logging.error("invalid col_type: [" + col_type + "]")
+            self.httpStatus = 500
+            return None
+        if col_type == "groups" and objUuid == self.dbGrp.attrs["rootUUID"]:
+            return self.f['/']  # returns root group
+            
+        obj = None  # Group, Dataset, or Datatype
+        col_name = '{' + col_type + '}'
+        # get the collection group for this collection type
+        col = self.dbGrp[col_name]
+        if objUuid in col.attrs:
+            ref = col.attrs[objUuid]
+            obj = self.f[ref]  # this works for read-only as well
+        elif objUuid in col: 
+            # anonymous object
+            obj = col[objUuid]
+                
+        return obj
+        
+    def getDatasetObjByUuid(self, objUuid):
+        logging.info("getDatasetObjByUuid(" + objUuid + ")")
+        self.initFile()
+        obj = self.getObjectByUuid("datasets", objUuid)
+                                 
+        if obj == None:
+            self.httpStatus = 404  # Not Found
+            self.httpMessage = "Resource not found"
+        return obj
+        
+    def getGroupObjByUuid(self, objUuid):
+        logging.info("getGroupObjByUuid(" + objUuid + ")")
+        self.initFile()
+        obj =  self.getObjectByUuid("groups", objUuid)
+         
+        if obj == None:
+            self.httpStatus = 404  # Not Found
+            self.httpMessage = "Resource not found"
+        return obj
+        
+        
+    def getDatatypeObjByUuid(self, objUuid):
+        logging.info("getGroupObjByUuid(" + objUuid + ")")
+        self.initFile()
+        obj =  self.getObjectByUuid("groups", objUuid)
+         
+        if obj == None:
+            self.httpStatus = 404  # Not Found
+            self.httpMessage = "Resource not found"
+        return obj
+        
         
     def getDatasetItemByUuid(self, objUuid):
         dset = self.getDatasetObjByUuid(objUuid)
@@ -381,23 +419,6 @@ class Hdf5db:
             
         
         return item
-        
-    def getObjectByUuid(self, col_type, objUuid):
-        #col_type should be either "datasets", "groups", or "datatypes"
-        if col_type not in ("datasets", "groups", "datatypes"):
-            logging.error("invalid col_type: [" + col_type + "]")
-            self.httpStatus = 500
-            return None
-        obj = None  # Group, Dataset, or Datatype
-        if col_type == "datasets" and objUuid in self.dbGrp["{datasets}"]:
-            obj = self.getDatasetObjByUuid(objUuid)
-        elif col_type == "groups" and (objUuid == self.dbGrp.attrs["rootUUID"] or
-            objUuid in self.dbGrp["{groups}"]):
-            obj = self.getGroupObjByUuid(objUuid)
-        elif col_type == "datatypes" and objuuid in self.dbGrp["{datatypes}"]:
-            obj = None   # todo - datatype operations
-         
-        return obj
         
     """
     createCommittedType - creates new named datatype  
@@ -657,7 +678,6 @@ class Hdf5db:
     Resize existing Dataset
     """
     def  resizeDataset(self, objUuid, shape):
-        print "objUuid:", objUuid
         logging.info("resizeDataset(") #  + objUuid + "): ") # + str(shape))
         self.initFile()
         self.httpStatus = 500  # will reset before returning
@@ -669,7 +689,6 @@ class Hdf5db:
         if dset == None:
             self.httpStatus = 404  # Not found
             return
-        print 'shape:', shape
         if len(shape) != len(dset.shape):
             self.httpStatus = 400  
             self.httpMessage = "Resize shape doesn't match dataset rank"
@@ -746,25 +765,7 @@ class Hdf5db:
         return True
         
         
-    def getGroupObjByUuid(self, objUuid):
-        logging.info("getGroupObjByUuid(" + objUuid + ")")
-        self.initFile()
-        obj = None
-        if objUuid == self.dbGrp.attrs["rootUUID"]:
-            obj = self.f['/']  # returns group instance
-        else:
-            groups = self.dbGrp["{groups}"]
-            if objUuid in groups.attrs:
-                grpRef = groups.attrs[objUuid]
-                # grpRef could be a reference or (for read-only) a path
-                obj = self.f[grpRef]
-            elif objUuid in groups:
-                obj = groups[objUuid]
-     
-        if obj == None:
-            self.httpStatus = 404  # Not Found
-            self.httpMessage = "Resource not found"
-        return obj
+    
         
     def getGroupItemByUuid(self, objUuid):
         grp = self.getGroupObjByUuid(objUuid)
@@ -961,14 +962,12 @@ class Hdf5db:
         if col_type == "datasets":
             col = self.dbGrp["{datasets}"]
         elif col_type == "groups":
-            print 'get groups!'
             col = self.dbGrp["{groups}"]
         else:  # col_type == "datatypes" 
             col = self.dbGrp["{datatypes}"] 
         
         uuids = []
         count = 0;
-        print col.keys()
         # gather the non-anonymous ids first
         for uuid in col.attrs:
             if marker:

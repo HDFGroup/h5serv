@@ -53,13 +53,13 @@ Helper function - get uuid given parent group uuid and link name
 def getUUID(domain, parentUuid, name):
     if type(name) != str or len(name) == 0:
         return None
-    req = getEndpoint() + "/groups/" + parentUuid + "/links"
+    req = getEndpoint() + "/groups/" + parentUuid + "/members"
     headers = {'host': domain}
     rsp = requests.get(req, headers=headers)
     tgtUuid = None
     if rsp.status_code == 200:
         rspJson = json.loads(rsp.text)
-        links = rspJson['links']
+        links = rspJson['members']
         tgtUuid = None
         for link in links:
             if link['name'] == name:
@@ -88,7 +88,7 @@ def linkObject(domain, objUuid, name, parentUuid=None):
     if parentUuid == None:
         # use root as parent if not specified
         parentUuid = getRootUUID(domain)
-    req = getEndpoint() + "/groups/" + parentUuid + "/links/" + name 
+    req = getEndpoint() + "/groups/" + parentUuid + "/members/" + name 
     payload = {"id": objUuid}
     headers = {'host': domain}
     rsp = requests.put(req, data=json.dumps(payload), headers=headers)

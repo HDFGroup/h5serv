@@ -20,7 +20,7 @@ cd ../integ
 ./setupdata.sh -f  # initialize data files
 python roottest.py
 python grouptest.py
-python linktest.py
+python membertest.py
 python datasettest.py
 python valuetest.py
 python attributetest.py
