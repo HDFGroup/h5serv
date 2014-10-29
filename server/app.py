@@ -18,7 +18,6 @@ import posixpath as pp
 import json
 import tornado.httpserver
 from tornado.ioloop import IOLoop
-from tornado_cors import CorsMixin
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, json_decode, url_escape, url_unescape
 from sets import Set
@@ -1486,29 +1485,8 @@ class TypeCollectionHandler(RequestHandler):
         self.write(response)
           
         
-class RootHandler(CorsMixin, RequestHandler):
-    # Value for the Access-Control-Allow-Origin header.
-    # Default: None (no header).
-    CORS_ORIGIN = '*'
-
-    # Value for the Access-Control-Allow-Headers header.
-    # Default: None (no header).
-    CORS_HEADERS = 'Content-Type'
-
-    # Value for the Access-Control-Allow-Methods header.
-    # Default: Methods defined in handler class.
-    # None means no header.
-    # CORS_METHODS = GET
-
-    # Value for the Access-Control-Allow-Credentials header.
-    # Default: None (no header).
-    # None means no header.
-    CORS_CREDENTIALS = True
-
-    # Value for the Access-Control-Max-Age header.
-    # Default: 86400.
-    # None means no header.
-    CORS_MAX_AGE = 21600 
+class RootHandler(RequestHandler):
+     
     
     def getRootResponse(self, filePath):
         # used by GET / and PUT /
