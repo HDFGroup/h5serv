@@ -21,7 +21,7 @@ class RootTest(unittest.TestCase):
         self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))
         
     def testGet(self):
-        domain = 'tall.' + config.get('domain')    
+        domain = 'tall.' + config.get('domain')   
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
@@ -129,7 +129,6 @@ class RootTest(unittest.TestCase):
         href = (rspJson["links"][0])[u"href"]
         self.failUnlessEqual(href, 
         u"http://newfile.newsubsubdir.newsubdirparent.test.hdf.io/")
-        # todo - check return domain
         self.failUnlessEqual(rspJson["groupCount"], 1)
         self.failUnlessEqual(rspJson["datasetCount"], 0)
                

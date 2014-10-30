@@ -99,11 +99,16 @@ class Hdf5db:
         self.f = h5py.File(filePath, mode)
         
         if self.readonly:
-            dbFilePath = self.f.filename
-            # remove the ".h5" extension if present
-            if dbFilePath[-3:]== ".h5":
-                dbFilePath = dbFilePath[:-3]
-            dbFilePath = dbFilePath + ".db"
+            # for read-only files, add a dot in front of the name to be used as the 
+            # db file.  This won't collide with actual data files, since "." is not 
+            # allowed as the first character in a domain name.
+            dirname = op.dirname(self.f.filename)
+            basename = op.basename(self.f.filename)
+            if len(dirname) > 0: 
+                dbFilePath = dirname + '/.' + basename
+            else:
+                dbFilePath = '.' + basename
+            print 'dbFilePath:', dbFilePath
             dbMode = 'r+'
             if not op.isfile(dbFilePath):
                 dbMode = 'w'
