@@ -19,6 +19,10 @@ fi
 export SRC="../../testfiles/"
 export DES="../../data"
 rm -rf $DES/*
+if [ -f $DES/.*.h5 ]
+then
+    rm $DES/.*.h5
+fi
 mkdir $DES/subdir
 mkdir $DES/subdir/subsubdir
 if [ ! -f $SRC/group1k.h5 ]

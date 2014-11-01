@@ -10,6 +10,7 @@
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
 import time
+import pytz
 import signal
 import logging
 import os
@@ -17,6 +18,7 @@ import os.path as op
 import posixpath as pp
 import json
 import tornado.httpserver
+from datetime import datetime
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, json_decode, url_escape, url_unescape
@@ -31,6 +33,23 @@ from hdf5db import Hdf5db
 def getFileModCreateTimes(filePath):
     (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(filePath)
     return (mtime, ctime)
+
+"""
+    Convert unix timestamp (seconds since Jan 1, 1970, to ISO-8601 compatible
+    UTC time string
+"""    
+def unixTimeToUTC(timestamp):
+    utc = pytz.utc
+    dtTime = datetime.fromtimestamp(timestamp, utc)
+    iso_str = dtTime.isoformat()
+    # isoformat returns a string like this:
+    # '2014-10-30T04:25:21+00:00'
+    # strip off the '+00:00' and replace
+    # with 'Z' (both are ISO-8601 compatible)
+    npos = iso_str.rfind('+')
+    iso_z = iso_str[:npos] + 'Z'
+    return iso_z
+     
 
 def getFilePath(host_value):
     logging.info('getFilePath[' + host_value + ']')
@@ -196,8 +215,6 @@ class MemberHandler(RequestHandler):
         marker = self.get_query_argument("Marker", None)
         classFilter = self.get_query_argument("ClassFilter", None)
                 
-        ctime = op.getctime(filePath)
-        mtime = ctime
         response = { }
         
         verifyFile(filePath)
@@ -284,8 +301,6 @@ class MemberHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain) 
         
-        ctime = op.getctime(filePath)
-        mtime = ctime
         response = { }
         
         verifyFile(filePath)
@@ -406,9 +421,6 @@ class TypeHandler(RequestHandler):
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
-        #todo - use the real object creation times
-        ctime = op.getctime(filePath)
-        mtime = ctime
         response = { }
         links = []
         rootUUID = None
@@ -431,8 +443,8 @@ class TypeHandler(RequestHandler):
         links.append({'rel': 'home', 'href': href })        
         response['id'] = reqUuid
         response['type'] = item['type']
-        response['created'] = ctime
-        response['lastModified'] = mtime
+        response['created'] = unixTimeToUTC(item['ctime'])
+        response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['attributeCount'] = item['attributeCount']
         response['links'] = links
         
@@ -469,9 +481,6 @@ class TypeHandler(RequestHandler):
                     httpError = db.httpStatus # library may have more specific error code
                 logging.info("failed to create type (httpError: " + str(httpError) + ")")
                 raise HTTPError(httpError)
-                
-        ctime = time.time()
-        mtime = ctime
          
         response = { }
       
@@ -482,8 +491,6 @@ class TypeHandler(RequestHandler):
         links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
         links.append({'rel': 'attributes', 'href': href + 'datatypes/' + typeUUID + '/attributes'})   
         response['id'] = typeUUID
-        response['created'] = ctime
-        response['lastModified'] = mtime
         response['attributeCount'] = 0
         response['links'] = links
         
@@ -531,9 +538,6 @@ class ShapeHandler(RequestHandler):
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
-        #todo - use the real object creation times
-        ctime = op.getctime(filePath)
-        mtime = ctime
         response = { }
         links = []
         rootUUID = None
@@ -557,6 +561,8 @@ class ShapeHandler(RequestHandler):
         response['maxshape'] = item['maxshape']
         if 'fillvalue' in item:
             response['fillvalue'] = item['fillvalue']
+        response['created'] = unixTimeToUTC(item['ctime'])
+        response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['links'] = links
         
         self.write(response)
@@ -627,9 +633,6 @@ class DatasetHandler(RequestHandler):
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
-        #todo - use the real object creation times
-        ctime = op.getctime(filePath)
-        mtime = ctime
         response = { }
         links = []
         rootUUID = None
@@ -658,8 +661,8 @@ class DatasetHandler(RequestHandler):
         response['class'] = item['shape_class'] 
         if 'fillvalue' in item:
             response['fillvalue'] = item['fillvalue']
-        response['created'] = ctime
-        response['lastModified'] = mtime
+        response['created'] = unixTimeToUTC(item['ctime'])
+        response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['attributeCount'] = item['attributeCount']
         response['links'] = links
         
@@ -743,9 +746,6 @@ class DatasetHandler(RequestHandler):
                 logging.info("failed to create dataset (httpError: " + str(httpError) + ")")
                 raise HTTPError(httpError)
                 
-        ctime = time.time()
-        mtime = ctime
-         
         response = { }
       
         # got everything we need, put together the response
@@ -756,8 +756,6 @@ class DatasetHandler(RequestHandler):
         links.append({'rel': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})   
         links.append({'rel': 'value', 'href': href + 'datasets/' + dsetUUID + '/value'})        
         response['id'] = dsetUUID
-        response['created'] = ctime
-        response['lastModified'] = mtime
         response['attributeCount'] = 0
         response['links'] = links
         
@@ -835,9 +833,6 @@ class ValueHandler(RequestHandler):
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
-        #todo - use the real object creation times
-        ctime = op.getctime(filePath)
-        mtime = ctime
         response = { }
         links = []
         rootUUID = None
@@ -1091,9 +1086,6 @@ class AttributeHandler(RequestHandler):
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
-        #todo - use the real object creation times
-        ctime = op.getctime(filePath)
-        mtime = ctime
         response = { }
         links = []
         rootUUID = None
@@ -1138,8 +1130,8 @@ class AttributeHandler(RequestHandler):
             responseItem['type'] = item['type']
             responseItem['shape'] = item['shape']
             response['class'] = item['shape_class'] 
-            responseItem['created'] = ctime
-            responseItem['lastModified'] = mtime
+            responseItem['created'] = unixTimeToUTC(item['ctime']) 
+            responseItem['lastModified'] = unixTimeToUTC(item['mtime']) 
             if attr_name == None:
                 responseItem['href'] = self_href + '/' + url_escape(item['name']) 
             if 'value' in item:
@@ -1227,9 +1219,6 @@ class AttributeHandler(RequestHandler):
                 raise HTTPError(db.httpStatus)
             rootUUID = db.getUUIDByPath('/')
                 
-        ctime = time.time()
-        mtime = ctime
-         
         response = { }
       
         # got everything we need, put together the response
@@ -1289,9 +1278,6 @@ class GroupHandler(RequestHandler):
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
-        #todo - use the real object creation times
-        ctime = op.getctime(filePath)
-        mtime = ctime
         response = { }
              
         links = []
@@ -1315,8 +1301,8 @@ class GroupHandler(RequestHandler):
         links.append({'rel': 'home',       'href': href }) 
         links.append({'rel': 'attributes', 'href': href + 'groups/' + reqUuid + '/attributes'})        
         response['id'] = reqUuid
-        response['created'] = ctime
-        response['lastModified'] = mtime
+        response['created'] = unixTimeToUTC(item['ctime'])
+        response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['attributeCount'] = item['attributeCount']
         response['linkCount'] = item['linkCount']
         response['links'] = links
@@ -1337,9 +1323,6 @@ class GroupHandler(RequestHandler):
             rootUUID = db.getUUIDByPath('/')
             grpUUID = db.createGroup()
                 
-        ctime = time.time()
-        mtime = ctime
-         
         response = { }
       
         # got everything we need, put together the response
@@ -1350,8 +1333,6 @@ class GroupHandler(RequestHandler):
         links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
         links.append({'rel': 'attributes', 'href': href + 'groups/' + grpUUID + '/attributes'})        
         response['id'] = grpUUID
-        response['created'] = ctime
-        response['lastModified'] = mtime
         response['attributeCount'] = 0
         response['linkCount'] = 0
         response['links'] = links
@@ -1508,8 +1489,8 @@ class RootHandler(RequestHandler):
         links.append({'rel': 'root',     'href': href + 'groups/' + rootUUID})
             
         response = {  }
-        response['created'] = op.getctime(filePath)
-        response['lastModified'] = op.getmtime(filePath)
+        response['created'] = unixTimeToUTC(op.getctime(filePath))
+        response['lastModified'] = unixTimeToUTC(op.getmtime(filePath))
         response['datasetCount'] = datasetCount
         response['groupCount'] = groupCount
         response['typeCount'] = datatypeCount

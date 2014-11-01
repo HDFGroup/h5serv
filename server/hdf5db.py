@@ -52,7 +52,7 @@ This class is used to manage UUID lookup tables for primary HDF objects (Groups,
     
  
 """
-
+import time
 import h5py
 import numpy as np
 import shutil
@@ -134,6 +134,113 @@ class Hdf5db:
             self.dbf.close()
         del _db[filename]
         
+        
+    def getTimeStampName(self, uuid, objType="object", name=None):
+        ts_name = uuid
+        if objType != "object":
+            if len(name) == 0:
+                logging.error("empty name passed to setCreateTime")
+                raise Exception("bad setCreateTimeParameter")
+            if objType == "attribute":
+                ts_name += "_attr:["
+                ts_name += name
+                ts_name += "]"
+            elif objType == "link":
+                ts_name += "_link:["
+                ts_name += name
+                ts_name += "]"
+            else:   
+                logging.error("bad objType passed to setCreateTime")
+                raise Exception("bad setCreateTimeParameter")
+        return ts_name
+        
+     
+    """
+      setCreateTime - sets the create time timestamp for the
+            given object.
+        uuid - id of object
+        objtype - one of "object", "link", "attribute"
+        name - name (for attributes, links... ignored for objects)   
+        timestamp - time (otherwise current time will be used)
+       
+       returns - nothing 
+       
+       Note - should only be called once per object
+    """    
+    def setCreateTime(self, uuid, objType="object", name=None, timestamp=None):
+        ctime_grp = self.dbGrp["{ctime}"]
+        ts_name = self.getTimeStampName(uuid, objType, name) 
+        if timestamp == None:
+            timestamp = time.time()
+        if ts_name in ctime_grp.attrs:
+            logging.warning("modifying create time for object: " + ts_name)
+        ctime_grp.attrs.create(ts_name, timestamp, dtype='int64')
+    
+    """
+      getCreateTime - gets the create time timestamp for the
+            given object.
+        uuid - id of object
+        objtype - one of "object", "link", "attribute"
+        name - name (for attributes, links... ignored for objects)   
+       
+       returns - create time for object, or create time for root if not set 
+    """    
+    def getCreateTime(self, uuid, objType="object", name=None):
+        ctime_grp = self.dbGrp["{ctime}"]
+        ts_name = self.getTimeStampName(uuid, objType, name) 
+        timestamp = None
+        if ts_name in ctime_grp.attrs:
+            timestamp = ctime_grp.attrs[ts_name]
+        else:
+            # return root timestamp
+            root_uuid = self.dbGrp.attrs["rootUUID"] 
+            timestamp = ctime_grp.attrs[root_uuid]
+        return timestamp
+     
+    """
+      setModifiedTime - sets the modified time timestamp for the
+            given object.
+        uuid - id of object
+        objtype - one of "object", "link", "attribute"
+        name - name (for attributes, links... ignored for objects)   
+        timestamp - time (otherwise current time will be used)
+       
+       returns - nothing 
+       
+    """         
+    def setModifiedTime(self, uuid, objType="object", name=None, timestamp=None):
+        mtime_grp = self.dbGrp["{mtime}"]
+        ts_name = self.getTimeStampName(uuid, objType, name) 
+        if timestamp == None:
+            timestamp = time.time()
+        mtime_grp.attrs.create(ts_name, timestamp, dtype='int64')
+     
+    """
+      getModifiedTime - gets the modified time timestamp for the
+            given object.
+        uuid - id of object
+        objtype - one of "object", "link", "attribute"
+        name - name (for attributes, links... ignored for objects)   
+       
+       returns - create time for object, or create time for root if not set 
+    """     
+    def getModifiedTime(self, uuid, objType="object", name=None):
+        mtime_grp = self.dbGrp["{mtime}"]
+        ts_name = self.getTimeStampName(uuid, objType, name) 
+        timestamp = None
+        if ts_name in mtime_grp.attrs:
+            timestamp = mtime_grp.attrs[ts_name]
+        else:
+            # return create time if no modified time has been set
+            ctime_grp = self.dbGrp["{ctime}"]
+            if ts_name in ctime_grp.attrs:
+                timestamp = ctime_grp.attrs[ts_name]
+            else:
+                # return root timestamp
+                root_uuid = self.dbGrp.attrs["rootUUID"] 
+                timestamp = mtime_grp.attrs[root_uuid]
+        return timestamp
+        
     def initFile(self):
         # logging.info("initFile")
         self.httpStatus = 200
@@ -152,11 +259,19 @@ class Hdf5db:
             self.dbGrp = self.f.create_group("__db__")
            
         logging.info("initializing file") 
-        self.dbGrp.attrs["rootUUID"] = str(uuid.uuid1())
+        root_uuid = str(uuid.uuid1())
+        self.dbGrp.attrs["rootUUID"] = root_uuid
         self.dbGrp.create_group("{groups}")
         self.dbGrp.create_group("{datasets}")
         self.dbGrp.create_group("{datatypes}")
         self.dbGrp.create_group("{addr}") # store object address
+        self.dbGrp.create_group("{ctime}") # stores create timestamps
+        self.dbGrp.create_group("{mtime}") # store modified timestamps
+        
+        mtime = op.getmtime(self.f.filename)
+        ctime = mtime
+        self.setCreateTime(root_uuid, timestamp=ctime)
+        self.setModifiedTime(root_uuid, timestamp=mtime)
             
         self.f.visititems(visitObj)
         
@@ -422,6 +537,8 @@ class Hdf5db:
             # exception is thrown if fill value is not set
             pass   # nop
             
+        item['ctime'] = self.getCreateTime(objUuid)
+        item['mtime'] = self.getModifiedTime(objUuid)      
         
         return item
         
@@ -451,6 +568,10 @@ class Hdf5db:
         addr = h5py.h5o.get_info(newType.id).addr
         addrGrp = self.dbGrp["{addr}"]
         addrGrp.attrs[str(addr)] = objUuid
+        # set timestamp
+        now = time.time()
+        self.setCreateTime(objUuid, timestamp=now)
+        self.setModifiedTime(objUuid, timestamp=now)
         return objUuid
       
     """
@@ -486,7 +607,9 @@ class Hdf5db:
             return None
         item = { 'id': objUuid }
         item['attributeCount'] = len(datatype.attrs)
-        item['type'] = self.getTypeItem(datatype.dtype) 
+        item['type'] = self.getTypeItem(datatype.dtype)
+        item['ctime'] = self.getCreateTime(objUuid)
+        item['mtime'] = self.getModifiedTime(objUuid) 
         
         return item
        
@@ -517,7 +640,7 @@ class Hdf5db:
                 item['value'] = attr   # just copy value
             else:
                 item['value'] = attr.tolist()  # convert to list 
-        
+        # timestamps will be added by getAttributeItem()
         return item
             
     def getAttributeItems(self, col_type, objUuid, marker=None, limit=0):
@@ -549,6 +672,9 @@ class Hdf5db:
                     continue  # keep going!
             
             item = self.getAttributeItemByObj(obj, name, False)
+            # mix-in timestamps
+            item['ctime'] = self.getCreateTime(objUuid, objType="attribute", name=name)
+            item['mtime'] = self.getModifiedTime(objUuid, objType="attribute", name=name)
                            
             items.append(item)
             count += 1
@@ -562,6 +688,9 @@ class Hdf5db:
         self.initFile()
         obj = self.getObjectByUuid(col_type, objUuid)
         item = self.getAttributeItemByObj(obj, name)
+        # mix-in timestamps
+        item['ctime'] = self.getCreateTime(objUuid, objType="attribute", name=name)
+        item['mtime'] = self.getModifiedTime(objUuid, objType="attribute", name=name)
             
         return item
         
@@ -580,6 +709,10 @@ class Hdf5db:
         if type(value) == tuple:
             value = list(value) 
         newAttr = obj.attrs.create(attr_name, value, dtype=dt)
+        now = time.time()
+        self.setCreateTime(objUuid, objType="attribute", name=attr_name, timestamp=now)
+        self.setModifiedTime(objUuid, objType="attribute", name=attr_name, timestamp=now)
+        self.setModifiedTime(objUuid, timestamp=now)  # owner entity is modified
         
     def deleteAttribute(self, col_name, objUuid, attr_name):
         self.initFile()
@@ -594,6 +727,8 @@ class Hdf5db:
             return False
         
         del obj.attrs[attr_name]
+        now = time.time()
+        self.setModifiedTime(objUuid, objType="attribute", name=attr_name, timestamp=now)
         
         return True
          
@@ -649,6 +784,8 @@ class Hdf5db:
                 else:
                     dset[slices] = data     
         
+        # update modified time
+        self.setModifiedTime(objUuid)
         return True
     
     """
@@ -677,12 +814,17 @@ class Hdf5db:
         addr = h5py.h5o.get_info(newDataset.id).addr
         addrGrp = self.dbGrp["{addr}"]
         addrGrp.attrs[str(addr)] = objUuid
+        
+        # set timestamp
+        now = time.time()
+        self.setCreateTime(objUuid, timestamp=now)
+        self.setModifiedTime(objUuid, timestamp=now)
         return objUuid
         
     """
     Resize existing Dataset
     """
-    def  resizeDataset(self, objUuid, shape):
+    def resizeDataset(self, objUuid, shape):
         logging.info("resizeDataset(") #  + objUuid + "): ") # + str(shape))
         self.initFile()
         self.httpStatus = 500  # will reset before returning
@@ -709,6 +851,9 @@ class Hdf5db:
                 return
         
         dset.resize(shape)  # resize
+        
+        # update modified time
+        self.setModifiedTime(objUuid)
         self.httpStatus = 200
         
      
@@ -767,23 +912,28 @@ class Hdf5db:
              
         if not dbRemoved:
             logging.error("expected to find reference to: " + objUuid)
+        else:
+            # note when the object was deleted
+            self.setModifiedTime(objUuid)
+               
         return True
-        
-        
-    
+          
         
     def getGroupItemByUuid(self, objUuid):
+        self.initFile()
         grp = self.getGroupObjByUuid(objUuid)
         if grp == None:
             return None
         
         linkCount = len(grp)    
         if "__db__" in grp:
-                linkCount -= 1  # don't include the db group
+            linkCount -= 1  # don't include the db group
         
         item = { 'id': objUuid }
         item['attributeCount'] = len(grp.attrs)
         item['linkCount'] = linkCount
+        item['ctime'] = self.getCreateTime(objUuid)
+        item['mtime'] = self.getModifiedTime(objUuid)
         
         return item
         
@@ -796,6 +946,7 @@ class Hdf5db:
         item['class'] - 'Dataset'|'Group'|'Datatype'|'SoftLink'|'ExternalLink'
         item['name'] - object name
 
+    """
     """
     def getItemsByPath(self, h5path, classFilter=None, marker=None, limit=0):
         logging.info("db.getItemsByPath(" + h5path + ")")
@@ -883,10 +1034,14 @@ class Hdf5db:
                 self.httpStatus = 500
                 return None
                 
+        item['ctime'] = self.getCreateTime(parent_uuid, objType="link", name)
+        item['mtime'] = self.getModifiedTime(parent_uuid, objType="link", name)
+                
         items = []
         items.append(item)
                            
         return items
+    """
         
     def getItems(self, grpUuid, classFilter=None, marker=None, limit=0):
         logging.info("db.getItems(" + grpUuid + ")")
@@ -906,19 +1061,19 @@ class Hdf5db:
         if marker != None:
             gotMarker = False
         count = 0
-        for k in parent:
-            if k == "__db__":
+        for linkName in parent:
+            if linkName == "__db__":
                 continue
             if not gotMarker:
-                if k == marker:
+                if linkName == marker:
                     gotMarker = True
                     continue  # start filling in result on next pass
                 else:
                     continue  # keep going!
-            item = { 'name': k } 
+            item = { 'name': linkName } 
             # get the link object, one of HardLink, SoftLink, or ExternalLink
             try:
-                linkObj = parent.get(k, None, False, True)
+                linkObj = parent.get(linkName, None, False, True)
                 linkClass = linkObj.__class__.__name__
             except TypeError:
                 # UDLink? Ignore for now
@@ -937,7 +1092,7 @@ class Hdf5db:
             elif linkClass == 'HardLink':
                 # Hardlink doesn't have any properties itself, just get the linked
                 # object
-                obj = parent[k]
+                obj = parent[linkName]
                 objClass = obj.__class__.__name__
                 if classFilter and objClass != classFilter:
                     continue  # not what we are looking for
@@ -948,6 +1103,10 @@ class Hdf5db:
             else:
                 logging.error("unexpected classname: " + objClass)
                 continue
+                
+            # add timestamps
+            item['ctime'] = self.getCreateTime(grpUuid, objType="link", name=linkName)
+            item['mtime'] = self.getModifiedTime(grpUuid, objType="link", name=linkName)
                            
             items.append(item)
             count += 1
@@ -1031,6 +1190,10 @@ class Hdf5db:
             # SoftLink or External Link - we can just remove the key
             del grp[linkName]
             linkDeleted = True
+            
+        if linkDeleted:
+            # update timestamp
+            self.setModifiedTime(grpUuid, objType="link", name=linkName)
         return linkDeleted
 
     
@@ -1129,6 +1292,11 @@ class Hdf5db:
             del dbCol[childUUID]  # remove hardlink
             dbCol.attrs[childUUID] = childObj.ref # create a ref
         self.htpStatus = 201 # set status to created
+        
+        # set link timestamps
+        now = time.time()
+        self.setCreateTime(parentUUID, objType="link", name=linkName, timestamp=now)
+        self.setModifiedTime(parentUUID, objType="link", name=linkName, timestamp=now)
         return True
         
     def createSoftLink(self, parentUUID, linkPath, linkName):
@@ -1148,6 +1316,11 @@ class Hdf5db:
             del parentObj[linkName]  # delete old link
         parentObj[linkName] = h5py.SoftLink(linkPath)
         self.htpStatus = 201 # set status to created
+        
+        now = time.time()
+        self.setCreateTime(parentUUID, objType="link", name=linkName, timestamp=now)
+        self.setModifiedTime(parentUUID, objType="link", name=linkName, timestamp=now)
+        
         return True
         
     
@@ -1164,6 +1337,12 @@ class Hdf5db:
         addr = h5py.h5o.get_info(newGroup.id).addr
         addrGrp = self.dbGrp["{addr}"]
         addrGrp.attrs[str(addr)] = objUuid
+        
+        #set timestamps
+        now = time.time()
+        self.setCreateTime(objUuid, timestamp=now)
+        self.setModifiedTime(objUuid, timestamp=now)
+        
         return objUuid
         
     

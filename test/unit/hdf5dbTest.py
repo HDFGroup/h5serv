@@ -34,6 +34,13 @@ def getFile(name, tgt=None, ro=False):
     if ro:
         logging.info('make read-only')
         os.chmod(tgt, stat.S_IREAD)
+        
+def removeFile(name):
+    try:
+        os.stat(name)
+    except OSError:
+        return;   # file does not exist
+    os.remove(name)
 
 class Hdf5dbTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -169,6 +176,8 @@ class Hdf5dbTest(unittest.TestCase):
     def testReadOnlyGetUUID(self):
         # get test file
         getFile('tall.h5', 'tall_ro.h5', True)
+        # remove db file!
+        removeFile('.tall_ro.h5')
         g1Uuid = None
         with Hdf5db('tall_ro.h5') as db:
             g1Uuid = db.getUUIDByPath('/g1')
