@@ -84,7 +84,36 @@ class GroupTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
+        # do a GET, should return 410 (GONE)
+        req = self.endpoint + "/groups/" + g2UUID
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 410)
         
+    def testDeleteAnonymous(self):
+        # Test deleting anonymous (not linked) group
+        domain = 'testGroupDelete.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)   
+        req = self.endpoint + "/groups/"
+        headers = {'host': domain}
+        # create a new group
+        rsp = requests.post(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) 
+        rspJson = json.loads(rsp.text)
+        uuid = rspJson["id"]
+        self.assertTrue(helper.validateId(uuid))   
+        
+        req = self.endpoint + "/groups/" + uuid
+        headers = {'host': domain}
+        rsp = requests.delete(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        # do a GET, should return 410 (GONE)
+        req = self.endpoint + "/groups/" + uuid
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 410)
+            
         
     def testDeleteBadUUID(self):
         domain = 'tall_g2_deleted.' + config.get('domain')    

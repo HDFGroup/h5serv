@@ -96,8 +96,8 @@ class Hdf5dbTest(unittest.TestCase):
             self.failUnlessEqual(len(g1uuid), config.get('uuidlen'))
             g1Links = db.getItems(g1uuid)
             self.failUnlessEqual(len(g1Links), 2)
-            
             g11uuid = db.getUUIDByPath("/g1/g1.1")
+            print 'g11uuid', g11uuid
             db.deleteObjectByUuid(g11uuid)
             
     def testCreateGroup(self):

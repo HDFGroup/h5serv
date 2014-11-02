@@ -42,6 +42,8 @@ cp $SRC/tall.h5 $DES/tall_ro.h5
 cp $SRC/tall.h5 $DES/tall_updated.h5
 cp $SRC/tall.h5 $DES/tall_g2_deleted.h5
 cp $SRC/tall.h5 $DES/tall_dset112_deleted.h5
+cp $SRC/tall.h5 $DES/tall_dset22_deleted.h5
+cp $SRC/scalar.h5 $DES/scalar_1d_deleted.h5
 cp $SRC/namedtype.h5 $DES
 cp $SRC/namedtype.h5 $DES/namedtype_deleted.h5
 cp $SRC/resizable.h5 $DES

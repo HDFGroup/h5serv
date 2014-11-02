@@ -23,6 +23,7 @@ class DatasetTest(unittest.TestCase):
     def testGet(self):
         domain = 'tall.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
         g2_uuid = helper.getUUID(domain, root_uuid, 'g2')
         dset21_uuid = helper.getUUID(domain, g2_uuid, 'dset2.1') 
         req = helper.getEndpoint() + "/datasets/" + dset21_uuid
@@ -39,6 +40,7 @@ class DatasetTest(unittest.TestCase):
     def testGetResizable(self):
         domain = 'resizable.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
         resizable_1d_uuid = helper.getUUID(domain, root_uuid, 'resizable_1d') 
         req = helper.getEndpoint() + "/datasets/" + resizable_1d_uuid
         headers = {'host': domain}
@@ -86,6 +88,7 @@ class DatasetTest(unittest.TestCase):
     def testGetScalar(self):
         domain = 'scalar.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
         dset_uuid = helper.getUUID(domain, root_uuid, '0d') 
         req = helper.getEndpoint() + "/datasets/" + dset_uuid
         headers = {'host': domain}
@@ -99,6 +102,7 @@ class DatasetTest(unittest.TestCase):
     def testGetCompound(self):
         domain = 'compound.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
         dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
         req = helper.getEndpoint() + "/datasets/" + dset_uuid
         headers = {'host': domain}
@@ -286,7 +290,7 @@ class DatasetTest(unittest.TestCase):
     def testDelete(self):
         domain = 'tall_dset112_deleted.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)
-        helper.validateId(root_uuid)
+        self.assertTrue(helper.validateId(root_uuid))
         g1_uuid = helper.getUUID(domain, root_uuid, 'g1')
         self.assertTrue(helper.validateId(g1_uuid))
         g11_uuid = helper.getUUID(domain, g1_uuid, 'g1.1')
@@ -297,7 +301,72 @@ class DatasetTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
-             
+        # verify that a GET on the dataset fails
+        req = helper.getEndpoint() + "/datasets/" + d112_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 410)
+    
+        
+    def testDeleteRootChild(self):
+        # test delete with a dset that is child of root
+        domain = 'scalar_1d_deleted.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, '1d')
+        self.assertTrue(helper.validateId(dset_uuid))
+        req = self.endpoint + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        # verify that a GET on the dataset succeeds
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        # now delete the dataset
+        rsp = requests.delete(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        # verify that a GET on the dataset fails
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 410)
+        
+    def testDeleteAnonymous(self):
+        # test delete works with anonymous dataset
+        domain = 'tall_dset22_deleted.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        g2_uuid = helper.getUUID(domain, root_uuid, 'g2')
+        self.assertTrue(helper.validateId(g2_uuid))
+        d22_uuid = helper.getUUID(domain, g2_uuid, 'dset2.2')
+        self.assertTrue(helper.validateId(d22_uuid))
+        
+        # delete g2, that will make dataset anonymous
+        req = self.endpoint + "/groups/" + g2_uuid
+        headers = {'host': domain}
+        rsp = requests.delete(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        # verify that a GET on the dataset succeeds still
+        req = helper.getEndpoint() + "/datasets/" + d22_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        # delete dataset...
+        req = self.endpoint + "/datasets/" + d22_uuid
+        headers = {'host': domain}
+        rsp = requests.delete(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        # verify that a GET on the dataset fails
+        req = helper.getEndpoint() + "/datasets/" + d22_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 410)
+        
+    
+                     
     def testDeleteBadUUID(self):
         domain = 'tall_dset112_deleted.' + config.get('domain')    
         req = self.endpoint + "/datasets/dff53814-2906-11e4-9f76-3c15c2da029e"

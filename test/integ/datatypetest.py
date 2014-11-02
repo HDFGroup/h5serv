@@ -160,8 +160,10 @@ class DatatypeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         
         # verify that it's gone
-        dtype_uuid = helper.getUUID(domain, root_uuid, 'dtype_simple')
-        self.failUnlessEqual(dtype_uuid, None)
+        req = helper.getEndpoint() + "/datatypes/" + dtype_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 410)
         
     def testGetCollection(self):
         domain = 'namedtype.' + config.get('domain') 

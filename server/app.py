@@ -59,7 +59,6 @@ def getFilePath(host_value):
         host = host_value[:npos]
     else:
         host = host_value
-    print 'host:', host
     
     topdomain = config.get('domain')
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
@@ -763,7 +762,7 @@ class DatasetHandler(RequestHandler):
         self.set_status(201)  # resource created
         
     def delete(self): 
-        logging.info('DatasetHandler.delete ' + self.request.host)   
+        logging.info('DatasetHandler.delete host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         uuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain)

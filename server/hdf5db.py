@@ -108,7 +108,6 @@ class Hdf5db:
                 dbFilePath = dirname + '/.' + basename
             else:
                 dbFilePath = '.' + basename
-            print 'dbFilePath:', dbFilePath
             dbMode = 'r+'
             if not op.isfile(dbFilePath):
                 dbMode = 'w'
@@ -181,17 +180,18 @@ class Hdf5db:
             given object.
         uuid - id of object
         objtype - one of "object", "link", "attribute"
-        name - name (for attributes, links... ignored for objects)   
+        name - name (for attributes, links... ignored for objects) 
+        useRoot - if true, use the time value for root object as default  
        
        returns - create time for object, or create time for root if not set 
     """    
-    def getCreateTime(self, uuid, objType="object", name=None):
+    def getCreateTime(self, uuid, objType="object", name=None, useRoot=True):
         ctime_grp = self.dbGrp["{ctime}"]
         ts_name = self.getTimeStampName(uuid, objType, name) 
         timestamp = None
         if ts_name in ctime_grp.attrs:
             timestamp = ctime_grp.attrs[ts_name]
-        else:
+        elif useRoot:
             # return root timestamp
             root_uuid = self.dbGrp.attrs["rootUUID"] 
             timestamp = ctime_grp.attrs[root_uuid]
@@ -220,11 +220,12 @@ class Hdf5db:
             given object.
         uuid - id of object
         objtype - one of "object", "link", "attribute"
-        name - name (for attributes, links... ignored for objects)   
+        name - name (for attributes, links... ignored for objects) 
+        useRoot - if true, use the time value for root object as default   
        
        returns - create time for object, or create time for root if not set 
     """     
-    def getModifiedTime(self, uuid, objType="object", name=None):
+    def getModifiedTime(self, uuid, objType="object", name=None, useRoot=True):
         mtime_grp = self.dbGrp["{mtime}"]
         ts_name = self.getTimeStampName(uuid, objType, name) 
         timestamp = None
@@ -235,7 +236,7 @@ class Hdf5db:
             ctime_grp = self.dbGrp["{ctime}"]
             if ts_name in ctime_grp.attrs:
                 timestamp = ctime_grp.attrs[ts_name]
-            else:
+            elif useRoot:
                 # return root timestamp
                 root_uuid = self.dbGrp.attrs["rootUUID"] 
                 timestamp = mtime_grp.attrs[root_uuid]
@@ -345,9 +346,18 @@ class Hdf5db:
         # iterate through each group in the file and unlink tgt if it is linked
         # by the group
         for uuidName in groups:
+            # iterate through anonymous groups
             grp = groups[uuidName]
             nLinks = self.getNumLinksToObjectInGroup(grp, obj)
-            numLinks += nLinks
+            if nLinks > 0:
+                numLinks += nLinks
+        for uuidName in groups.attrs:
+            # now non anonymous groups
+            grpRef = groups.attrs[uuidName]
+            grp = self.f[grpRef]  # dereference
+            nLinks = self.getNumLinksToObjectInGroup(grp, obj)
+            if nLinks > 0:
+                numLinks += nLinks
         # finally, check the root group
         root = self.getObjByPath("/")
         nLinks = self.getNumLinksToObjectInGroup(root, obj)
@@ -484,8 +494,12 @@ class Hdf5db:
         obj = self.getObjectByUuid("datasets", objUuid)
                                  
         if obj == None:
-            self.httpStatus = 404  # Not Found
-            self.httpMessage = "Resource not found"
+            if self.getModifiedTime(objUuid, useRoot=False):
+                self.httpStatus = 410  # Gone
+                self.httpMessage = "Resource has been removed"
+            else:
+                self.httpStatus = 404  # Not Found
+                self.httpMessage = "Resource not found"
         return obj
         
     def getGroupObjByUuid(self, objUuid):
@@ -494,8 +508,12 @@ class Hdf5db:
         obj =  self.getObjectByUuid("groups", objUuid)
          
         if obj == None:
-            self.httpStatus = 404  # Not Found
-            self.httpMessage = "Resource not found"
+            if self.getModifiedTime(objUuid, useRoot=False):
+                self.httpStatus = 410  # Gone
+                self.httpMessage = "Resource has been removed"
+            else:
+                self.httpStatus = 404  # Not Found
+                self.httpMessage = "Resource not found"
         return obj
         
         
@@ -514,7 +532,6 @@ class Hdf5db:
         dset = self.getDatasetObjByUuid(objUuid)
         if dset == None:
             logging.info("dataset: " + objUuid + " not found")
-            self.httpStatus = 404  # not found
             return None
         item = { 'id': objUuid }
         item['attributeCount'] = len(dset.attrs)
@@ -602,8 +619,12 @@ class Hdf5db:
         datatype = self.getCommittedTypeObjByUuid(objUuid)
          
         if datatype == None:
-            self.httpStatus = 404  # Not Found
-            self.httpMessage = "Resource not found"
+            if self.getModifiedTime(objUuid, useRoot=False):
+                self.httpStatus = 410  # Gone
+                self.httpMessage = "Resource has been removed"
+            else:
+                self.httpStatus = 404  # Not Found
+                self.httpMessage = "Resource not found"
             return None
         item = { 'id': objUuid }
         item['attributeCount'] = len(datatype.attrs)
@@ -855,7 +876,27 @@ class Hdf5db:
         # update modified time
         self.setModifiedTime(objUuid)
         self.httpStatus = 200
-        
+    
+    """
+    Check if link points to given target (as a HardLink)
+    """
+    def isObjectHardLinked(self, parentGroup, targetGroup, linkName):
+        try:
+            linkObj = parentGroup.get(linkName, None, False, True)
+            linkClass = linkObj.__class__.__name__
+        except TypeError:
+            # UDLink? Ignore for now
+            return False
+        if linkClass == 'SoftLink':
+            return False
+        elif linkClass == 'ExternalLink':
+            return False
+        elif linkClass == 'HardLink':
+            if parentGroup[linkName] == targetGroup:
+                return True
+        else:
+            logging.warning("unexpected linkclass: " + linkClass)
+            return False    
      
     """
     Delete Dataset, Group or Datatype by UUID
@@ -870,45 +911,73 @@ class Hdf5db:
             
         if objUuid == self.dbGrp.attrs["rootUUID"]:
             # can't delete root group
+            logging.info("attempt to delete root group")
             self.httpStatus = 403
             self.httpMessage = "Root group can not be deleted"
             return False
-        
+            
+        dbCol = None
         tgt = self.getDatasetObjByUuid(objUuid)
+        if tgt:
+            dbCol = self.dbGrp["{datasets}"]  
         
         if tgt == None:
             #maybe this is a group...
             tgt = self.getGroupObjByUuid(objUuid)
+            if tgt:
+                dbCol = self.dbGrp["{groups}"]
             
         if tgt == None:
             # ok - last chance - check for datatype
             tgt = self.getCommittedTypeObjByUuid(objUuid)
+            if tgt:
+                dbCol = self.dbGrp["{datatypes}"]
             
         if tgt == None:
             logging.info("delete uuid: " + objUuid + " not found")
             self.httpStatus = 404  # Not Found
             self.httpMessage = "id: " + objUuid + " was not found"
-            return False  
-        self.unlinkObject(self.f['/'], tgt)  # unlink from root (if present)
+            return False 
+            
+        # unlink from root (if present)     
+        self.unlinkObject(self.f['/'], tgt) 
+         
         groups = self.dbGrp["{groups}"]
         # iterate through each group in the file and unlink tgt if it is linked
-        # by the group
-        for uuidName in groups:
-            grp = groups[uuidName]
-            self.unlinkObject(grp, tgt) 
+        # by the group.
+        # We'll store a list of links to be removed as we go, and then actually
+        # remove the links after the iteration is done (otherwise we run into issues
+        # where the key has become invalid
+        linkList = []  # this is our list
+        for uuidName in groups.attrs:
+            grpRef = groups.attrs[uuidName]
+            # de-reference handle
+            grp = self.f[grpRef]
+            for linkName in grp:
+                if self.isObjectHardLinked(grp, tgt, linkName):
+                    linkList.append({'group': grp, 'link': linkName})
+        for item in linkList:
+            self.unlinkObjectItem(item['group'], tgt, item['link'])
                   
         addr = h5py.h5o.get_info(tgt.id).addr
         addrGrp = self.dbGrp["{addr}"] 
         del addrGrp.attrs[str(addr)]  # remove reverse map
-        # get {groups}, {datasets}, {datatypes} collections
-        dbCollections = self.getDBCollections()  
         dbRemoved = False
-        for colName in dbCollections:  
-            dbCol = self.dbGrp[colName]  
+          
+        # finally, remove the dataset from db
+        if objUuid in dbCol:
+            # should be here (now it is anonymous)
+            print "removing:", objUuid, "from:", dbCol.name
+            del dbCol[objUuid]
+            dbRemoved = True
+        
+        if not dbRemoved:
+            logging.warning("did not find: " + objUuid + " in anonymous collection")
+                
             if objUuid in dbCol.attrs:
+                logging.info("removing: " + objUuid + " from non-anonymous collection")
                 del dbCol.attrs[objUuid]
                 dbRemoved = True
-                break
              
         if not dbRemoved:
             logging.error("expected to find reference to: " + objUuid)
@@ -916,7 +985,7 @@ class Hdf5db:
             # note when the object was deleted
             self.setModifiedTime(objUuid)
                
-        return True
+        return dbRemoved
           
         
     def getGroupItemByUuid(self, objUuid):
@@ -936,112 +1005,6 @@ class Hdf5db:
         item['mtime'] = self.getModifiedTime(objUuid)
         
         return item
-        
-    """
-    getItemsByPath - return object(s) that matches the given path
-      item info returned:
-      
-        item['parentUUID'] - UUID of parent group
-        item['uuid'] - items 
-        item['class'] - 'Dataset'|'Group'|'Datatype'|'SoftLink'|'ExternalLink'
-        item['name'] - object name
-
-    """
-    """
-    def getItemsByPath(self, h5path, classFilter=None, marker=None, limit=0):
-        logging.info("db.getItemsByPath(" + h5path + ")")
-        if classFilter:
-            logging.info("...classFilter: " + classFilter)
-        if marker:
-            logging.info("...marker: " + marker)
-        if limit:
-            logging.info("...limit: " + str(limit))
-            
-        # note: marker and limit will be used once we support reg-ex paths
-       
-        self.initFile()
-        
-        item = None
-    
-        
-        if h5path == '/':
-            # special case for root group
-            item = {}
-            root_uuid = self.dbGrp.attrs["rootUUID"]
-            item['parentUUID'] = root_uuid
-            item['uuid'] = root_uuid
-            item['class'] = 'Group'
-            item['name'] = ''
-        else:    
-            if h5path[0 : len('/__db__')] == '/__db__':
-                # don't return objects from db
-                self.httpStatus = 403  # forbidden
-                return None
-            path = h5path
-            if h5path[- 1] == '/':
-                path = h5path[:-1]  # trim off the trailing '/'
-            parent_path = op.dirname(h5path)
-            name = op.basename(h5path)
-        
-            try:
-                parent_uuid = self.getUUIDByPath(parent_path)
-            except KeyError:
-                self.httpStatus = 404
-                return None       
-        
-            parent = self.getGroupObjByUuid(parent_uuid)
-            
-            if name not in parent:
-                self.httpStatus = 404
-                return None
-                
-            item = {}
-            item['parentUUID'] = parent_uuid
-            item['name'] = name
-            
-            # get the link object, one of HardLink, SoftLink, or ExternalLink
-            try:
-                linkObj = parent.get(name, None, False, True)
-                linkClass = linkObj.__class__.__name__
-            except TypeError:
-                # UDLink? Ignore for now
-                self.httpStatus = 404
-                return None
-                
-            if linkClass == 'SoftLink':
-                if classFilter and classFilter != 'SoftLink':
-                    self.httpStatus = 404
-                    return None
-                item['class'] = 'SoftLink'
-            elif linkClass == 'ExternalLink':
-                if typeFilter and typeFilter != 'ExternalLink':
-                    self.httpStatus = 404
-                    return None
-                item['class'] = 'ExternalLink'
-            elif linkClass == 'HardLink':
-                # Hardlink doesn't have any properties itself, just get the linked
-                # object
-                obj = parent[name]
-                objClass = obj.__class__.__name__
-                if classFilter and objClass != classFilter:
-                    self.httpStatus = 404
-                    return None  # not what we are looking for
-                addr = h5py.h5o.get_info(obj.id).addr
-                item['class'] = objClass
-                item['uuid'] = self.getUUIDByAddress(addr)
-            else:
-                logging.error("unexpected classname: " + objClass)
-                self.httpStatus = 500
-                return None
-                
-        item['ctime'] = self.getCreateTime(parent_uuid, objType="link", name)
-        item['mtime'] = self.getModifiedTime(parent_uuid, objType="link", name)
-                
-        items = []
-        items.append(item)
-                           
-        return items
-    """
         
     def getItems(self, grpUuid, classFilter=None, marker=None, limit=0):
         logging.info("db.getItems(" + grpUuid + ")")
@@ -1242,13 +1205,15 @@ class Hdf5db:
                     # also remove the attribute UUID key
                     addr = h5py.h5o.get_info(obj.id).addr  
                     objUuid = self.getUUIDByAddress(addr)
-                    logging.info("converting: " + objUuid + " to anonymouse obj")
+                    logging.info("converting: " + objUuid + " to anonymous obj")
                     dbCol = self.getDBCollection(objUuid)
                     del dbCol.attrs[objUuid]  # remove the object ref
                     dbCol[objUuid] = obj      # add a hardlink        
                 logging.info("deleting link: [" + linkName + "] from: " + parentGrp.name)
                 del parentGrp[linkName]  
-                linkDeleted = True               
+                linkDeleted = True    
+        else:
+            logging.info("unlinkObjectItem: link is not a hardlink, ignoring")           
         return linkDeleted
         
     def unlinkObject(self, parentGrp, tgtObj):
