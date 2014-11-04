@@ -310,7 +310,6 @@ class LinkHandler(RequestHandler):
             rootUUID = db.getUUIDByPath('/')
                          
         # got everything we need, put together the response
-        print 'item: ', item
         
         response['name'] = item['name']
         response['class'] = item['class']

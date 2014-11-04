@@ -228,7 +228,6 @@ class Hdf5db:
     def getModifiedTime(self, uuid, objType="object", name=None, useRoot=True):
         mtime_grp = self.dbGrp["{mtime}"]
         ts_name = self.getTimeStampName(uuid, objType, name) 
-        print 'getting ts_name:', ts_name
         timestamp = None
         if ts_name in mtime_grp.attrs:
             timestamp = mtime_grp.attrs[ts_name]
@@ -968,7 +967,6 @@ class Hdf5db:
         # finally, remove the dataset from db
         if objUuid in dbCol:
             # should be here (now it is anonymous)
-            print "removing:", objUuid, "from:", dbCol.name
             del dbCol[objUuid]
             dbRemoved = True
         
