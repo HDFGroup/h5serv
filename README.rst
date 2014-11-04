@@ -33,17 +33,17 @@ Installing on Linux/Mac OS X
 
 To install the server run the following from the command line::
 
-# get source code
-git clone https://github.com/HDFGroup/h5serv.git 
-# go to the server directory 
-cd h5serv/server
-# run the server
-python app.py
-# server is now running on port 5000
+    # get source code
+    git clone https://github.com/HDFGroup/h5serv.git 
+    # go to the server directory 
+    cd h5serv/server
+    # run the server
+    python app.py
+    # server is now running on port 5000
 
-# verify the installation (in a new window)
-cd h5serv/test
-./testall.sh
+    # verify the installation (in a new window)
+    cd h5serv/test
+    ./testall.sh
 
     
 Reporting bugs
