@@ -61,10 +61,10 @@ class Hdf5dbTest(unittest.TestCase):
             self.failUnlessEqual(obj.name, '/g1')
             for name in obj:
                 g = obj[name]
-            g1links = db.getItems(g1Uuid)
+            g1links = db.getLinkItems(g1Uuid)
             self.failUnlessEqual(len(g1links), 2)
             for item in g1links:
-                self.failUnlessEqual(len(item['uuid']), config.get('uuidlen'))
+                self.failUnlessEqual(len(item['id']), config.get('uuidlen'))
           
         # end of with will close file
         # open again and verify we can get obj by name
@@ -90,11 +90,11 @@ class Hdf5dbTest(unittest.TestCase):
             rootuuid = db.getUUIDByPath('/')
             root = db.getGroupObjByUuid(rootuuid)
             self.failUnlessEqual('/', root.name)
-            rootLinks = db.getItems(rootuuid)
+            rootLinks = db.getLinkItems(rootuuid)
             self.failUnlessEqual(len(rootLinks), 2)
             g1uuid = db.getUUIDByPath("/g1")
             self.failUnlessEqual(len(g1uuid), config.get('uuidlen'))
-            g1Links = db.getItems(g1uuid)
+            g1Links = db.getLinkItems(g1uuid)
             self.failUnlessEqual(len(g1Links), 2)
             g11uuid = db.getUUIDByPath("/g1/g1.1")
             print 'g11uuid', g11uuid
@@ -105,18 +105,18 @@ class Hdf5dbTest(unittest.TestCase):
         getFile('tall.h5', 'tall_newgrp.h5')
         with Hdf5db('tall_newgrp.h5') as db:
             rootUuid = db.getUUIDByPath('/')
-            numRootChildren = len(db.getItems(rootUuid))
+            numRootChildren = len(db.getLinkItems(rootUuid))
             self.assertEqual(numRootChildren, 2)
             newGrpUuid = db.createGroup()
             newGrp = db.getGroupObjByUuid(newGrpUuid)
             self.assertNotEqual(newGrp, None)
             db.linkObject(rootUuid, newGrpUuid, 'g3')
-            numRootChildren = len(db.getItems(rootUuid))
+            numRootChildren = len(db.getLinkItems(rootUuid))
             self.assertEqual(numRootChildren, 3)
             # verify linkObject can be called idempotent-ly 
             db.linkObject(rootUuid, newGrpUuid, 'g3')
             
-    def testGetItemsBatch(self):
+    def testGetLinkItemsBatch(self):
         # get test file
         getFile('group100.h5')
         marker = None
@@ -125,7 +125,7 @@ class Hdf5dbTest(unittest.TestCase):
             rootUuid = db.getUUIDByPath('/')
             while True:
                 # get items 13 at a time
-                batch = db.getItems(rootUuid, None, marker, 13) 
+                batch = db.getLinkItems(rootUuid, marker=marker, limit=13) 
                 if len(batch) == 0:
                     break   # done!
                 count += len(batch)
@@ -133,17 +133,57 @@ class Hdf5dbTest(unittest.TestCase):
                 marker = lastItem['name']
         self.assertEqual(count, 100)
         
-    def testGetItemsSoftlink(self):
-        items = None
+    def testGetItemHardLink(self):
+        with Hdf5db('tall.h5') as db:
+            grpUuid = db.getUUIDByPath('/g1/g1.1')
+            item = db.getLinkItemByUuid(grpUuid, "dset1.1.1")
+            self.assertTrue('id' in item)
+            self.assertEqual(item['name'], 'dset1.1.1')
+            self.assertEqual(item['class'], 'hard')
+            self.assertEqual(item['className'], 'Dataset')
+            self.assertTrue('target' not in item)
+            self.assertTrue('mtime' in item)
+            self.assertTrue('ctime' in item)
+        
+    def testGetItemSoftLink(self):
         with Hdf5db('tall.h5') as db:
             grpUuid = db.getUUIDByPath('/g1/g1.2/g1.2.1')
-            items = db.getItems(grpUuid)
-            self.assertEqual(len(items), 1)
-            item = items[0]
+            item = db.getLinkItemByUuid(grpUuid, "slink")
             self.assertTrue('uuid' not in item)
             self.assertEqual(item['name'], 'slink')
-            self.assertEqual(item['class'], 'SoftLink')
+            self.assertEqual(item['class'], 'soft')
+            self.assertEqual(item['className'], 'SoftLink')
             self.assertEqual(item['path'], 'somevalue')
+            self.assertTrue('mtime' in item)
+            self.assertTrue('ctime' in item)
+            
+    def testGetItemExternalLink(self):
+        getFile('tall_with_udlink.h5')
+        with Hdf5db('tall_with_udlink.h5') as db:
+            grpUuid = db.getUUIDByPath('/g1/g1.2')
+            item = db.getLinkItemByUuid(grpUuid, "extlink")
+            self.assertTrue('uuid' not in item)
+            self.assertEqual(item['name'], 'extlink')
+            self.assertEqual(item['class'], 'external')
+            self.assertEqual(item['className'], 'ExternalLink')
+            self.assertEqual(item['path'], 'somepath')
+            self.assertEqual(item['filename'], 'somefile')
+            self.assertTrue('mtime' in item)
+            self.assertTrue('ctime' in item)
+            
+    def testGetItemUDLink(self):
+        getFile('tall_with_udlink.h5')
+        with Hdf5db('tall_with_udlink.h5') as db:
+            grpUuid = db.getUUIDByPath('/g2')
+            item = db.getLinkItemByUuid(grpUuid, "udlink")
+            self.assertTrue('uuid' not in item)
+            self.assertEqual(item['name'], 'udlink')
+            self.assertEqual(item['class'], 'user')
+            self.assertEqual(item['className'], 'UDLink')
+            self.assertTrue('path' not in item)
+            self.assertTrue('filename' not in item)
+            self.assertTrue('mtime' in item)
+            self.assertTrue('ctime' in item)
             
     def testGetNumLinks(self):
         items = None
@@ -152,25 +192,51 @@ class Hdf5dbTest(unittest.TestCase):
             numLinks = db.getNumLinksToObject(g1)
             self.assertEqual(numLinks, 1)
             
-    def testGetItemsUDlink(self):
-        items = None
-        with Hdf5db('tall.h5') as db:
-            grpUuid = db.getUUIDByPath('/g2')
-            # /g2 has a UDLink, but it shouldn't be returned as an item
-            items = db.getItems(grpUuid)
+    def testGetLinks(self):
+        g12_links = ('extlink', 'g1.2.1')
+        hardLink = None
+        externalLink = None
+        getFile('tall_with_udlink.h5')
+        with Hdf5db('tall_with_udlink.h5') as db:
+            grpUuid = db.getUUIDByPath('/g1/g1.2')
+            items = db.getLinkItems(grpUuid)
             self.assertEqual(len(items), 2)
-             
+            for item in items:
+                self.assertTrue(item['name'] in g12_links)
+                if item['class'] == 'hard':
+                    hardLink = item
+                elif item['class'] == 'external':
+                    externalLink = item
+        self.assertEqual(hardLink['className'], 'Group')
+        self.assertTrue('id' in hardLink)
+        self.assertEqual(externalLink['className'], 'ExternalLink')
+        self.assertTrue('id' not in externalLink)
+        self.assertEqual(externalLink['path'], 'somepath')
+        self.assertEqual(externalLink['filename'], 'somefile')
+        
             
     def testDeleteLink(self): 
         # get test file
         getFile('tall.h5', 'tall_grpdelete.h5')
         with Hdf5db('tall_grpdelete.h5') as db:
             rootUuid = db.getUUIDByPath('/')
-            numRootChildren = len(db.getItems(rootUuid))
+            numRootChildren = len(db.getLinkItems(rootUuid))
             self.assertEqual(numRootChildren, 2)
             db.unlinkItem(rootUuid, "g2")
-            numRootChildren = len(db.getItems(rootUuid))
-            self.assertEqual(numRootChildren, 1)   
+            numRootChildren = len(db.getLinkItems(rootUuid))
+            self.assertEqual(numRootChildren, 1) 
+            
+    def testDeleteUDLink(self): 
+        # get test file
+        getFile('tall_with_udlink.h5')
+        with Hdf5db('tall_with_udlink.h5') as db:
+            g2Uuid = db.getUUIDByPath('/g2')
+            numG2Children = len(db.getLinkItems(g2Uuid))
+            self.assertEqual(numG2Children, 3)
+            rc = db.unlinkItem(g2Uuid, "udlink")
+            self.assertFalse(rc)
+            numG2Children = len(db.getLinkItems(g2Uuid))
+            self.assertEqual(numG2Children, 3)
     
                   
     def testReadOnlyGetUUID(self):
@@ -192,10 +258,10 @@ class Hdf5dbTest(unittest.TestCase):
             obj = db.getGroupObjByUuid(g1Uuid) 
             g1 = db.getObjByPath('/g1')
             self.failUnlessEqual(obj, g1)
-            g1links = db.getItems(g1Uuid)
+            g1links = db.getLinkItems(g1Uuid)
             self.failUnlessEqual(len(g1links), 2)
             for item in g1links:
-                self.failUnlessEqual(len(item['uuid']), config.get('uuidlen'))
+                self.failUnlessEqual(len(item['id']), config.get('uuidlen'))
                 
     def testReadDataset(self):
          getFile('tall.h5')

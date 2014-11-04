@@ -53,18 +53,21 @@ Helper function - get uuid given parent group uuid and link name
 def getUUID(domain, parentUuid, name):
     if type(name) != str or len(name) == 0:
         return None
-    req = getEndpoint() + "/groups/" + parentUuid + "/members"
+    req = getEndpoint() + "/groups/" + parentUuid + "/links/" + name
     headers = {'host': domain}
     rsp = requests.get(req, headers=headers)
     tgtUuid = None
     if rsp.status_code == 200:
         rspJson = json.loads(rsp.text)
-        links = rspJson['members']
-        tgtUuid = None
-        for link in links:
-            if link['name'] == name:
-                tgtUuid = link['id']
-                break
+        if rspJson['class'] != 'hard':
+            # soft/external links
+            return None
+        
+        target = rspJson['target']
+        # format is: /<collection>/<id>
+        npos = target.rfind('/')
+        tgtUuid = target[npos+1:]
+
     return tgtUuid
 """
 Helper function - create an anonymous group
@@ -88,7 +91,7 @@ def linkObject(domain, objUuid, name, parentUuid=None):
     if parentUuid == None:
         # use root as parent if not specified
         parentUuid = getRootUUID(domain)
-    req = getEndpoint() + "/groups/" + parentUuid + "/members/" + name 
+    req = getEndpoint() + "/groups/" + parentUuid + "/links/" + name 
     payload = {"id": objUuid}
     headers = {'host': domain}
     rsp = requests.put(req, data=json.dumps(payload), headers=headers)

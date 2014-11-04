@@ -69,7 +69,7 @@ class DatatypeTest(unittest.TestCase):
         # link new dataset as 'dtype1'
         root_uuid = helper.getRootUUID(domain)
         name = 'dtype1'
-        req = self.endpoint + "/groups/" + root_uuid + "/members/" + name 
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
         payload = {'id': dtype_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -106,7 +106,7 @@ class DatatypeTest(unittest.TestCase):
          
             # link new dataset using the type name
             name = datatype
-            req = self.endpoint + "/groups/" + root_uuid + "/members/" + name 
+            req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
             payload = {"id": dtype_uuid}
             headers = {'host': domain}
             rsp = requests.put(req, data=json.dumps(payload), headers=headers)
@@ -133,7 +133,7 @@ class DatatypeTest(unittest.TestCase):
          
         # link the new dataset 
         name = "dtype_compound"
-        req = self.endpoint + "/groups/" + root_uuid + "/members/" + name 
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
         payload = {"id": dtype_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)

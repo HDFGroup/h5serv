@@ -228,6 +228,7 @@ class Hdf5db:
     def getModifiedTime(self, uuid, objType="object", name=None, useRoot=True):
         mtime_grp = self.dbGrp["{mtime}"]
         ts_name = self.getTimeStampName(uuid, objType, name) 
+        print 'getting ts_name:', ts_name
         timestamp = None
         if ts_name in mtime_grp.attrs:
             timestamp = mtime_grp.attrs[ts_name]
@@ -946,8 +947,8 @@ class Hdf5db:
         # iterate through each group in the file and unlink tgt if it is linked
         # by the group.
         # We'll store a list of links to be removed as we go, and then actually
-        # remove the links after the iteration is done (otherwise we run into issues
-        # where the key has become invalid
+        # remove the links after the iteration is done (otherwise we can run into issues
+        # where the key has become invalid)
         linkList = []  # this is our list
         for uuidName in groups.attrs:
             grpRef = groups.attrs[uuidName]
@@ -1005,11 +1006,79 @@ class Hdf5db:
         item['mtime'] = self.getModifiedTime(objUuid)
         
         return item
+       
+    """
+    getLinkItemByObj - return info about a link
+        parent: reference to group
+        linkName: name of link
+        return: item dictionary with link attributes, or None if not found
+    """    
+    def getLinkItemByObj(self, parent, linkName):
+        if not linkName in parent:
+            return None
+            
+        if linkName == "__db__":
+            return None  # don't provide link to db group
+            
+        item = { 'name': linkName } 
+        # get the link object, one of HardLink, SoftLink, or ExternalLink
+        try:
+            linkObj = parent.get(linkName, None, False, True)
+            linkClass = linkObj.__class__.__name__
+        except TypeError:
+            # UDLink? set class as 'user'
+            linkClass = 'UDLink' # user defined links
+            item['className'] = linkClass  
+            item['class'] = 'user'
+        if linkClass == 'SoftLink':
+            item['class'] = 'soft'
+            item['className'] = linkClass
+            item['path'] = linkObj.path
+        elif linkClass == 'ExternalLink':
+            item['class'] = 'external'
+            item['className'] = linkClass
+            item['path'] = linkObj.path
+            item['filename'] = linkObj.filename
+        elif linkClass == 'HardLink':
+            # Hardlink doesn't have any properties itself, just get the linked
+            # object
+            obj = parent[linkName]
+            addr = h5py.h5o.get_info(obj.id).addr
+            item['class'] = 'hard'
+            item['className'] =  obj.__class__.__name__
+            item['id'] = self.getUUIDByAddress(addr)
         
-    def getItems(self, grpUuid, classFilter=None, marker=None, limit=0):
-        logging.info("db.getItems(" + grpUuid + ")")
-        if classFilter:
-            logging.info("...classFilter: " + classFilter)
+        return item
+                 
+        
+    def getLinkItemByUuid(self, grpUuid, linkName):
+        logging.info("db.getLinkItemByUuid(" + grpUuid + ", [" + linkName + "])")
+         
+        self.initFile()
+        parent = self.getGroupObjByUuid(grpUuid)
+        if parent == None:
+            logging.info("grp_uuid not found")
+            return None
+         
+        item = self.getLinkItemByObj(parent, linkName) 
+        # add timestamps
+        if item:
+            item['ctime'] = self.getCreateTime(grpUuid, objType="link", name=linkName)
+            item['mtime'] = self.getModifiedTime(grpUuid, objType="link", name=linkName)
+        else:
+            logging.info("link not found")
+            mtime = self.getModifiedTime(grpUuid, objType="link", name=linkName, useRoot=False)
+            if mtime:
+                self.httpStatus = 410  # Gone
+                self.httpMessage = "Link has been removed"
+            else:
+                self.httpStatus = 404 # Not found
+                self.httpMessage = "Link does not exist"        
+                
+        return item
+        
+    def getLinkItems(self, grpUuid, marker=None, limit=0):
+        logging.info("db.getLinkItems(" + grpUuid + ")")
         if marker:
             logging.info("...marker: " + marker)
         if limit:
@@ -1033,49 +1102,60 @@ class Hdf5db:
                     continue  # start filling in result on next pass
                 else:
                     continue  # keep going!
-            item = { 'name': linkName } 
-            # get the link object, one of HardLink, SoftLink, or ExternalLink
-            try:
-                linkObj = parent.get(linkName, None, False, True)
-                linkClass = linkObj.__class__.__name__
-            except TypeError:
-                # UDLink? Ignore for now
-                continue
-            if linkClass == 'SoftLink':
-                if classFilter and classFilter != 'SoftLink':
-                    continue
-                item['class'] = 'SoftLink'
-                item['path'] = linkObj.path
-            elif linkClass == 'ExternalLink':
-                if typeFilter and typeFilter != 'ExternalLink':
-                    continue
-                item['class'] = 'ExternalLink'
-                item['path'] = linkObj.path
-                item['filename'] = linkObj.path
-            elif linkClass == 'HardLink':
-                # Hardlink doesn't have any properties itself, just get the linked
-                # object
-                obj = parent[linkName]
-                objClass = obj.__class__.__name__
-                if classFilter and objClass != classFilter:
-                    continue  # not what we are looking for
-                addr = h5py.h5o.get_info(obj.id).addr
-                item['class'] = objClass
-                item['uuid'] = self.getUUIDByAddress(addr)
-                item['attributeCount'] = len(obj.attrs)
-            else:
-                logging.error("unexpected classname: " + objClass)
-                continue
-                
-            # add timestamps
-            item['ctime'] = self.getCreateTime(grpUuid, objType="link", name=linkName)
-            item['mtime'] = self.getModifiedTime(grpUuid, objType="link", name=linkName)
-                           
+            item = self.getLinkItemByObj(parent, linkName)
             items.append(item)
+                
             count += 1
             if limit > 0 and count == limit:
                 break  # return what we got
         return items
+        
+    def unlinkItem(self, grpUuid, linkName):
+        grp = self.getGroupObjByUuid(grpUuid)
+        if grp == None:
+            logging.info("parent group not found")
+            self.httpStatus = 404 # not found
+            return False 
+            
+        if linkName not in grp:
+            logging.info("linkName not found")
+            self.httpStatus = 404 # not found
+            return False 
+            
+        if linkName == "__db__":
+            # don't allow db group to be unlinked!
+            logging.info("linkName not found")
+            self.httpStatus = 404 # not found
+            return False 
+            
+        obj = None   
+        try:
+            linkObj = grp.get(linkName, None, False, True)
+            linkClass = linkObj.__class__.__name__
+            if linkClass == 'HardLink':
+                # we can safely reference the object
+                obj = grp[linkName]
+        except TypeError:
+            # UDLink? Return false to indicate that we can not delete this
+            self.httpStatus = 501  # Not implemented
+            self.httpMessage = "Unable to remove user defined link"
+            logging.info("unable to remove udlink: " + grpUuid + 
+                " linkName: " + linkName)
+            return False
+        
+        linkDeleted = False
+        if obj != None:
+            linkDeleted = self.unlinkObjectItem(grp, obj, linkName)
+        else:
+            # SoftLink or External Link - we can just remove the key
+            del grp[linkName]
+            linkDeleted = True
+            
+        if linkDeleted:
+            # update timestamp
+            self.setModifiedTime(grpUuid, objType="link", name=linkName)
+            
+        return linkDeleted
         
     def getCollection(self, col_type, marker, limit):
         logging.info("db.getCollection(" + col_type + ")")
@@ -1120,44 +1200,6 @@ class Hdf5db:
                 
                 
         return uuids
-            
-         
-      
-    def unlinkItem(self, grpUuid, linkName):
-        grp = self.getGroupObjByUuid(grpUuid)
-        if grp == None:
-            logging.info("parent group not found")
-            self.httpStatus = 404 # not found
-            return False 
-            
-        if linkName not in grp:
-            logging.info("linkName not found")
-            return True
-         
-        obj = None   
-        try:
-            linkObj = grp.get(linkName, None, False, True)
-            linkClass = linkObj.__class__.__name__
-            if linkClass == 'HardLink':
-                # we can safely reference the object
-                obj = grp[linkName]
-        except TypeError:
-            # UDLink? Ignore for now
-            logging.warning("got type error in unlinkItem for: " + grpUuid + 
-                " linkName: " + linkName)
-        
-        linkDeleted = False
-        if obj != None:
-            linkDeleted = self.unlinkObjectItem(grp, obj, linkName)
-        else:
-            # SoftLink or External Link - we can just remove the key
-            del grp[linkName]
-            linkDeleted = True
-            
-        if linkDeleted:
-            # update timestamp
-            self.setModifiedTime(grpUuid, objType="link", name=linkName)
-        return linkDeleted
 
     
     """
