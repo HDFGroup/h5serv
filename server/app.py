@@ -339,6 +339,7 @@ class LinkHandler(RequestHandler):
         reqUuid = self.getRequestId(self.request.uri)
         
         linkName = url_unescape(self.getName(self.request.uri))
+        print 'linkName: ', linkName
         
         body = json.loads(self.request.body)
         
@@ -347,6 +348,9 @@ class LinkHandler(RequestHandler):
         
         if "id" in body:
             childUuid = body["id"]
+            print 'childUuid:', childUuid
+            if childUuid == None or len(childUuid) == 0:
+                raise HTTPError(400)
         elif "h5path" in body:
             # todo
             h5path = body["h5path"]
@@ -1324,7 +1328,7 @@ class GroupHandler(RequestHandler):
         
         response = { }
              
-        links = []
+        hrefs = []
         rootUUID = None
         item = None
         with Hdf5db(filePath) as db:
@@ -1339,50 +1343,19 @@ class GroupHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self',       'href': href + 'groups/' + reqUuid})
-        links.append({'rel': 'links',      'href': href + 'groups/' + reqUuid + '/links'})
-        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel': 'home',       'href': href }) 
-        links.append({'rel': 'attributes', 'href': href + 'groups/' + reqUuid + '/attributes'})        
+        hrefs.append({'rel': 'self',       'href': href + 'groups/' + reqUuid})
+        hrefs.append({'rel': 'links',      'href': href + 'groups/' + reqUuid + '/links'})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'home',       'href': href }) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'groups/' + reqUuid + '/attributes'})        
         response['id'] = reqUuid
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['attributeCount'] = item['attributeCount']
         response['linkCount'] = item['linkCount']
-        response['links'] = links
+        response['hrefs'] = hrefs
         
         self.write(response)
-        
-    def post(self):
-        logging.info('GroupHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
-        if self.request.uri != '/groups/':
-            logging.info('bad group post request')
-            raise HTTPError(405)  # Method not allowed
-               
-        domain = self.request.host
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
-        
-        with Hdf5db(filePath) as db:
-            rootUUID = db.getUUIDByPath('/')
-            grpUUID = db.createGroup()
-                
-        response = { }
-      
-        # got everything we need, put together the response
-        links = [ ]
-        href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self',       'href': href + 'groups/' + grpUUID})
-        links.append({'rel': 'links',      'href': href + 'groups/' + grpUUID + '/links'})
-        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel': 'attributes', 'href': href + 'groups/' + grpUUID + '/attributes'})        
-        response['id'] = grpUUID
-        response['attributeCount'] = 0
-        response['linkCount'] = 0
-        response['links'] = links
-        
-        self.write(response)  
-        self.set_status(201)  # resource created
         
     def delete(self): 
         logging.info('GroupHandler.delete ' + self.request.host)   
@@ -1396,7 +1369,20 @@ class GroupHandler(RequestHandler):
                 httpStatus = db.httpStatus
                 if httpStatus == 200:
                     httpStatus = 500
-                raise HTTPError(httpStatus)   
+                raise HTTPError(httpStatus) 
+            rootUUID = db.getUUIDByPath('/') 
+         
+        response = {}        
+        hrefs = []
+                        
+        # write the response
+        href = self.request.protocol + '://' + domain + '/'
+        hrefs.append({'rel': 'self',       'href': href + 'groups' })
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'home',       'href': href }) 
+        response['hrefs'] = hrefs
+         
+        self.write(response) 
                 
 class GroupCollectionHandler(RequestHandler):
             
@@ -1420,7 +1406,7 @@ class GroupCollectionHandler(RequestHandler):
         response = { }
              
         items = None
-        links = []
+        hrefs = []
         with Hdf5db(filePath) as db:
             items = db.getCollection("groups", marker, limit)
             rootUUID = db.getUUIDByPath('/')
@@ -1428,12 +1414,55 @@ class GroupCollectionHandler(RequestHandler):
         # write the response
         response['groups'] = items
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self',       'href': href + 'groups' })
-        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel': 'home',       'href': href }) 
-        response['links'] = links
+        hrefs.append({'rel': 'self',       'href': href + 'groups' })
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'home',       'href': href }) 
+        response['hrefs'] = hrefs
          
         self.write(response)
+        
+    def post(self):
+        logging.info('GroupHandlerCollection.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        if self.request.uri != '/groups':
+            logging.info('bad group post request')
+            raise HTTPError(405)  # Method not allowed
+               
+        domain = self.request.host
+        filePath = getFilePath(domain)
+        verifyFile(filePath, True)
+        
+        with Hdf5db(filePath) as db:
+            rootUUID = db.getUUIDByPath('/')
+            grpUUID = db.createGroup()
+            if grpUUID == None:
+                raise HTTPError(db.httpStatus)
+            item = db.getGroupItemByUuid(grpUUID)
+            if item == None:
+                # unexpected!
+                raise HTTPError(500)          
+           
+        href = self.request.protocol + '://' + domain  
+        self.set_header('Location', href + '/groups/' + grpUUID)
+        self.set_header('Content-Location', href + '/groups/' + grpUUID)
+        
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/'
+        response = { } 
+        hrefs = []
+        hrefs.append({'rel': 'self',       'href': href + 'groups/' + grpUUID})
+        hrefs.append({'rel': 'links',      'href': href + 'groups/' + grpUUID + '/links'})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'home',       'href': href }) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'groups/' + grpUUID + '/attributes'})        
+        response['id'] = grpUUID
+        response['created'] = unixTimeToUTC(item['ctime'])
+        response['lastModified'] = unixTimeToUTC(item['mtime'])
+        response['attributeCount'] = item['attributeCount']
+        response['linkCount'] = item['linkCount']
+        response['hrefs'] = hrefs
+        self.write(response)
+                
+        self.set_status(201)  # resource created
         
 class DatasetCollectionHandler(RequestHandler):
             

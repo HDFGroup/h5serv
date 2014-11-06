@@ -57,14 +57,15 @@ class GroupTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)   
-        req = self.endpoint + "/groups/"
+        req = self.endpoint + "/groups"
         headers = {'host': domain}
         # create a new group
         rsp = requests.post(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) 
         rspJson = json.loads(rsp.text)
-        id = rspJson["id"]
-        self.assertTrue(helper.validateId(id))   
+        self.failUnlessEqual(rspJson["linkCount"], 0)
+        self.failUnlessEqual(rspJson["attributeCount"], 0)
+        self.assertTrue(helper.validateId(rspJson["id"]) ) 
        
     def testBadPost(self):
         domain = 'tall.' + config.get('domain')    
@@ -84,6 +85,8 @@ class GroupTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("hrefs" in rspJson)
         # do a GET, should return 410 (GONE)
         req = self.endpoint + "/groups/" + g2UUID
         rsp = requests.get(req, headers=headers)
@@ -96,7 +99,7 @@ class GroupTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)   
-        req = self.endpoint + "/groups/"
+        req = self.endpoint + "/groups"
         headers = {'host': domain}
         # create a new group
         rsp = requests.post(req, headers=headers)

@@ -74,7 +74,7 @@ Helper function - create an anonymous group
 """    
 def createGroup(domain):
     # test PUT_root
-    req = getEndpoint() + "/groups/"
+    req = getEndpoint() + "/groups"
     headers = {'host': domain}
     # create a new group
     rsp = requests.post(req, headers=headers)
