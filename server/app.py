@@ -9,150 +9,23 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
-import time
-import pytz
+#import time
+#import pytz
 import signal
 import logging
 import os
 import os.path as op
-import posixpath as pp
 import json
 import tornado.httpserver
-from datetime import datetime
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, json_decode, url_escape, url_unescape
 from sets import Set
 import config
 from hdf5db import Hdf5db
+from timeUtil import unixTimeToUTC
+from fileUtil import getFilePath, getDomain, getFileModCreateTimes, makeDirs, verifyFile, getLinkTarget
 
-"""
-
-""" 
-
-def getFileModCreateTimes(filePath):
-    (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(filePath)
-    return (mtime, ctime)
-
-"""
-    Convert unix timestamp (seconds since Jan 1, 1970, to ISO-8601 compatible
-    UTC time string
-"""    
-def unixTimeToUTC(timestamp):
-    utc = pytz.utc
-    dtTime = datetime.fromtimestamp(timestamp, utc)
-    iso_str = dtTime.isoformat()
-    # isoformat returns a string like this:
-    # '2014-10-30T04:25:21+00:00'
-    # strip off the '+00:00' and replace
-    # with 'Z' (both are ISO-8601 compatible)
-    npos = iso_str.rfind('+')
-    iso_z = iso_str[:npos] + 'Z'
-    return iso_z
-     
-
-def getFilePath(host_value):
-    logging.info('getFilePath[' + host_value + ']')
-    #strip off port specifier (if present)
-    npos = host_value.rfind(':')
-    if npos > 0:
-        host = host_value[:npos]
-    else:
-        host = host_value
-    
-    topdomain = config.get('domain')
-    if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
-        raise HTTPError(403, message='top-level domain is not valid')
-        
-    if host[-(len(topdomain) + 1)] != '.':
-        # there needs to be a dot separator
-        raise HTTPError(400, message='domain name is not valid')
-    
-    host = host[:-(len(topdomain)+1)]   # strip off top domain part
-    
-    if len(host) == 0 or host[0] == '.':
-        # needs a least one character (which can't be '.')
-        raise HTTPError(400, message='domain name is not valid')
-        
-    filePath = config.get('datapath')
-    while len(host) > 0:
-        if len(filePath) > 0 and filePath[len(filePath) - 1] != '/':
-            filePath += '/'  # add a directory separator
-        npos = host.rfind('.')
-        if npos < 0:
-            filePath += host
-            host = ''
-        elif npos == 0 or npos == len(host) - 1:
-            raise HTTPError(400) # Bad syntax
-        else:     
-            filePath += host[(npos+1):]
-            host = host[:npos]
-
-    filePath += ".h5"   # add extension
-    
-    logging.info('getFilePath[' + host + '] -> "' + filePath + '"')
-    
-    return filePath
-        
-    
-def getDomain(filePath):
-    # Get domain given a file path
-    domain = op.basename(filePath)[:-3]
-    dirname = op.dirname(filePath)
-    while len(dirname) > 0 and not op.samefile(dirname, config.get('datapath')):
-        domain += '.'
-        domain += op.basename(dirname)
-        dirname = op.dirname(dirname)
-    domain += '.'
-    domain += config.get('domain')
-      
-    return domain 
-
-def verifyFile(filePath, writable=False):
-    logging.info("filePath: " + filePath)
-    if not op.isfile(filePath):
-        raise HTTPError(404)  # not found
-    if not Hdf5db.isHDF5File(filePath):
-        logging.warning('this is not a hdf5 file!')
-        raise HTTPError(404)
-    if writable and not os.access(filePath, os.W_OK):
-        logging.warning('attempting update of read-only file')
-        raise HTTPError(403)
-
-def makeDirs(filePath):
-    # Make any directories along path as needed
-    if len(filePath) == 0 or op.isdir(filePath):
-        return
-    logging.info('makeDirs filePath: [' + filePath + ']')
-    topdomain = config.get('domain')
-    dirname = op.dirname(filePath)
-    
-    if len(dirname) >= len(filePath):
-        logging.warning('makeDirs - unexpected dirname')
-        return
-    makeDirs(dirname)  # recursive call
-    logging.info('mkdir("' + filePath + '")')
-    os.mkdir(filePath)  # should succeed since parent directory is created  
-    
-"""
-  Get the target for a givein link item  
-    item: item object returned by db.getLinkItem
-"""
-def getLinkTarget(item, protocol="http"):
-    target = None
-    if item['class'] == 'hard':
-        target = "/" + item['className'].lower() + 's/' + item['id']
-    elif item['class'] == 'soft':
-        target = "/#h5path(" + json_encode(item['path']) + ")"
-    elif item['class'] == 'external':
-        externalDomain = item['filename']
-        target = protocol + "://" + externalDomain +  "/#h5path(" + url_escape(item['path']) + ")"
-    elif item['class'] == 'user':
-        target = "???"
-    else:
-        logging.error("unexpected link item class: " + item['class'])
-        raise HTTPError(500) 
-    return target
     
 class DefaultHandler(RequestHandler):
     def put(self):
@@ -339,21 +212,19 @@ class LinkHandler(RequestHandler):
         reqUuid = self.getRequestId(self.request.uri)
         
         linkName = url_unescape(self.getName(self.request.uri))
-        print 'linkName: ', linkName
         
         body = json.loads(self.request.body)
         
         childUuid = None
-        h5path = None
         
         if "id" in body:
             childUuid = body["id"]
-            print 'childUuid:', childUuid
             if childUuid == None or len(childUuid) == 0:
                 raise HTTPError(400)
         elif "h5path" in body:
             # todo
             h5path = body["h5path"]
+                 
         elif "href" in body:
             #todo
             raise HTTPError(501)   # not implemented
@@ -1135,7 +1006,7 @@ class AttributeHandler(RequestHandler):
         verifyFile(filePath)
         
         response = { }
-        links = []
+        hrefs = []
         rootUUID = None
         items = []
         # Get optional query parameters
@@ -1186,9 +1057,9 @@ class AttributeHandler(RequestHandler):
                 response['value'] = item['value']
             responseItems.append(responseItem)
             
-        links.append({'rel': 'self',       'href': self_href})
-        links.append({'rel': 'owner',      'href': owner_href })
-        links.append({'rel': 'root',       'href': root_href }) 
+        hrefs.append({'rel': 'self',       'href': self_href})
+        hrefs.append({'rel': 'owner',      'href': owner_href })
+        hrefs.append({'rel': 'root',       'href': root_href }) 
         
             
         if attr_name == None:
@@ -1202,7 +1073,7 @@ class AttributeHandler(RequestHandler):
             responseItem = responseItems[0]
             for k in responseItem:
                 response[k] = responseItem[k]
-        response['links'] = links    
+        response['hrefs'] = hrefs    
         self.write(response)
         
     def put(self):
@@ -1277,11 +1148,11 @@ class AttributeHandler(RequestHandler):
         if attr_name != None:
             self_href += '/' + attr_name
             
-        links = [ ]
-        links.append({'rel': 'self',   'href': self_href})
-        links.append({'rel': 'owner',  'href': owner_href })
-        links.append({'rel': 'root',   'href': root_href }) 
-        response['links'] = links 
+        hrefs = [ ]
+        hrefs.append({'rel': 'self',   'href': self_href})
+        hrefs.append({'rel': 'owner',  'href': owner_href })
+        hrefs.append({'rel': 'root',   'href': root_href }) 
+        response['hrefs'] = hrefs 
         
         self.write(response)  
         self.set_status(201)  # resource created
@@ -1483,7 +1354,7 @@ class DatasetCollectionHandler(RequestHandler):
         marker = self.get_query_argument("Marker", None)
         
         response = { }
-        links = []
+        hrefs = []
         rootUUID = None
              
         items = None
@@ -1494,10 +1365,10 @@ class DatasetCollectionHandler(RequestHandler):
         # write the response
         response['datasets'] = items
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self',       'href': href + 'datasets' })
-        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel': 'home',       'href': href }) 
-        response['links'] = links
+        hrefs.append({'rel': 'self',       'href': href + 'datasets' })
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'home',       'href': href }) 
+        response['hrefs'] = hrefs
          
         self.write(response)
         
@@ -1520,7 +1391,7 @@ class TypeCollectionHandler(RequestHandler):
         marker = self.get_query_argument("Marker", None)
         
         response = { }
-        links = []
+        hrefs = []
         rootUUID = None
              
         items = None
@@ -1531,10 +1402,10 @@ class TypeCollectionHandler(RequestHandler):
         # write the response
         response['datatypes'] = items
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self',       'href': href + 'datatypes' })
-        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel': 'home',       'href': href }) 
-        response['links'] = links
+        hrefs.append({'rel': 'self',       'href': href + 'datatypes' })
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'home',       'href': href }) 
+        response['hrefs'] = hrefs
          
         self.write(response)
           
@@ -1553,13 +1424,13 @@ class RootHandler(RequestHandler):
             datatypeCount = db.getNumberOfDatatypes()
          
         # generate response 
-        links = [ ]
+        hrefs = [ ]
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self', 'href': href})
-        links.append({'rel': 'database', 'href': href + 'datasets'})
-        links.append({'rel': 'groupbase', 'href': href + 'groups'})
-        links.append({'rel': 'typebase', 'href': href + 'datatypes' })
-        links.append({'rel': 'root',     'href': href + 'groups/' + rootUUID})
+        hrefs.append({'rel': 'self', 'href': href})
+        hrefs.append({'rel': 'database', 'href': href + 'datasets'})
+        hrefs.append({'rel': 'groupbase', 'href': href + 'groups'})
+        hrefs.append({'rel': 'typebase', 'href': href + 'datatypes' })
+        hrefs.append({'rel': 'root',     'href': href + 'groups/' + rootUUID})
             
         response = {  }
         response['created'] = unixTimeToUTC(op.getctime(filePath))
@@ -1568,7 +1439,7 @@ class RootHandler(RequestHandler):
         response['groupCount'] = groupCount
         response['typeCount'] = datatypeCount
         response['root'] = rootUUID
-        response['links'] = links
+        response['hrefs'] = hrefs
         
       
         return response

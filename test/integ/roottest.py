@@ -126,7 +126,7 @@ class RootTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
-        href = (rspJson["links"][0])[u"href"]
+        href = (rspJson["hrefs"][0])[u"href"]
         self.failUnlessEqual(href, 
         u"http://newfile.newsubsubdir.newsubdirparent.test.hdf.io/")
         self.failUnlessEqual(rspJson["groupCount"], 1)

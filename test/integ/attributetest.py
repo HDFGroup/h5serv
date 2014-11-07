@@ -39,7 +39,7 @@ class AttributeTest(unittest.TestCase):
             expected = range(97, 107)
             expected[9] = 0
             self.assertEqual(data, expected) 
-            self.assertEqual(len(rspJson['links']), 3)
+            self.assertEqual(len(rspJson['hrefs']), 3)
             
     def testGetString(self):
         for domain_name in ('attr1k',):   
@@ -55,7 +55,7 @@ class AttributeTest(unittest.TestCase):
             self.assertEqual(len(rspJson['shape']), 0)
             data = rspJson['value'] 
             self.assertEqual(data, "this is attribute: 1") 
-            self.assertEqual(len(rspJson['links']), 3)
+            self.assertEqual(len(rspJson['hrefs']), 3)
             
     def testGetAll(self):
         for domain_name in ('tall', 'tall_ro'):
@@ -66,7 +66,7 @@ class AttributeTest(unittest.TestCase):
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
-            self.assertEqual(len(rspJson['links']), 3)
+            self.assertEqual(len(rspJson['hrefs']), 3)
             attrsJson = rspJson['attributes']
             self.assertEqual(len(attrsJson), 2)
             self.assertEqual(attrsJson[0]['name'], 'attr1')
@@ -120,7 +120,7 @@ class AttributeTest(unittest.TestCase):
             self.assertEqual(len(data), 1)
             element = data[0]  # first and only array element
             self.assertEqual(element[3], 'SE 8')
-            self.assertEqual(len(rspJson['links']), 3)
+            self.assertEqual(len(rspJson['hrefs']), 3)
             
     def testGetScalar(self):
         domain = 'scalar.' + config.get('domain')  
@@ -148,7 +148,7 @@ class AttributeTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         rspJson = json.loads(rsp.text)
-        self.assertEqual(len(rspJson['links']), 3)
+        self.assertEqual(len(rspJson['hrefs']), 3)
         
     def testPutList(self):
         domain = 'tall_updated.' + config.get('domain') 
@@ -162,7 +162,7 @@ class AttributeTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         rspJson = json.loads(rsp.text)
-        self.assertEqual(len(rspJson['links']), 3)
+        self.assertEqual(len(rspJson['hrefs']), 3)
         
     def testPutCompound(self):
         domain = 'tall_updated.' + config.get('domain')
@@ -178,7 +178,7 @@ class AttributeTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         rspJson = json.loads(rsp.text)
-        self.assertEqual(len(rspJson['links']), 3)
+        self.assertEqual(len(rspJson['hrefs']), 3)
         
     def testDelete(self):
         domain = 'tall_updated.' + config.get('domain') 

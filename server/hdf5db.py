@@ -72,9 +72,6 @@ def visitObj(path, obj):
     hdf5db.visit(path, obj)
     
 class Hdf5db:
-    @staticmethod
-    def isHDF5File(filePath):
-        return h5py.is_hdf5(filePath)
         
     @staticmethod
     def createHDF5File(filePath):

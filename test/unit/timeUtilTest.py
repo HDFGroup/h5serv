@@ -9,15 +9,33 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
-cfg = {
-    'testfiledir': '../../testfiles/',
-    'domain':  'unit.hdf.io',
-    'datapath': '../data/',
-    'uuidlen':  36 
-}
-   
-def get(x):
-    return cfg[x]
+import unittest
+import time
+import sys
+ 
 
-  
-  
+sys.path.append('../../server')
+from timeUtil import unixTimeToUTC
+import config
+
+
+class TimeUtilTest(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TimeUtilTest, self).__init__(*args, **kwargs)
+        # main
+        
+    def testConvertUnixTimetoUTC(self):
+        # get test file
+        now = time.time()
+        utcTime = unixTimeToUTC(now)
+        self.assertEqual(len(utcTime), 27)
+        self.assertTrue(utcTime.startswith('20'))
+        self.assertTrue(utcTime.endswith('Z'))
+        
+            
+             
+if __name__ == '__main__':
+    #setup test files
+    
+    unittest.main()
+    

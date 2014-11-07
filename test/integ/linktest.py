@@ -21,13 +21,13 @@ class LinkTest(unittest.TestCase):
         super(LinkTest, self).__init__(*args, **kwargs)
         self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))
        
-    def testGet(self):
-        logging.info("LinkTest.testGet")
+    def testGetHard(self):
+        logging.info("LinkTest.testGetHard")
         for domain_name in ('tall', 'tall_ro'):
             g1_uuid = None
             domain = domain_name + '.' + config.get('domain')   
-            rootUUID = helper.getRootUUID(domain)     
-            req = self.endpoint + "/groups/" + rootUUID + "/links/g1"
+            root_uuid = helper.getRootUUID(domain)     
+            req = self.endpoint + "/groups/" + root_uuid + "/links/g1"
             headers = {'host': domain}
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
@@ -38,12 +38,72 @@ class LinkTest(unittest.TestCase):
             self.assertTrue("lastModified" in rspJson)
             self.failUnlessEqual(rspJson['class'], 'hard')
             self.failUnlessEqual(rspJson['name'], 'g1')
+            
+    def testGetSoft(self):
+        logging.info("LinkTest.testGetSoft")
+        for domain_name in ('tall', 'tall_ro'):
+            g1_uuid = None
+            domain = domain_name + '.' + config.get('domain')   
+            root_uuid = helper.getRootUUID(domain)
+            g1_uuid = helper.getUUID(domain, root_uuid, 'g1')
+            g12_uuid = helper.getUUID(domain, g1_uuid, 'g1.2')
+            g121_uuid = helper.getUUID(domain, g12_uuid, 'g1.2.1')
+            req = self.endpoint + "/groups/" + g121_uuid + "/links/slink"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            target = rspJson['target']
+            self.failUnlessEqual(target, '/#h5path("somevalue")')
+            self.assertTrue("created" in rspJson)
+            self.assertTrue("lastModified" in rspJson)
+            self.failUnlessEqual(rspJson['class'], 'soft')
+            self.failUnlessEqual(rspJson['name'], 'slink')
+            
+    def testGetExternal(self):
+        logging.info("LinkTest.testGetExternal")
+        for domain_name in ('tall', 'tall_ro'):
+            g1_uuid = None
+            domain = domain_name + '.' + config.get('domain')   
+            root_uuid = helper.getRootUUID(domain)
+            g1_uuid = helper.getUUID(domain, root_uuid, 'g1')
+            g12_uuid = helper.getUUID(domain, g1_uuid, 'g1.2')
+            req = self.endpoint + "/groups/" + g12_uuid + "/links/extlink"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            target = rspJson['target']
+            expectedTarget = "http://somefile." + config.get('domain') + \
+            "/#h5path(somepath)"
+            self.failUnlessEqual(target, expectedTarget)
+            self.assertTrue("created" in rspJson)
+            self.assertTrue("lastModified" in rspJson)
+            self.failUnlessEqual(rspJson['class'], 'external')
+            self.failUnlessEqual(rspJson['name'], 'extlink')
+            
+    def testGetUDLink(self):
+        logging.info("LinkTest.testGetUDLink")
+        domain_name = 'tall_with_udlink'    
+        domain = domain_name + '.' + config.get('domain')   
+        root_uuid = helper.getRootUUID(domain)
+        g2_uuid = helper.getUUID(domain, root_uuid, 'g2')
+        req = self.endpoint + "/groups/" + g2_uuid + "/links/udlink"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("created" in rspJson)
+        self.assertTrue("lastModified" in rspJson)
+        self.failUnlessEqual(rspJson['class'], 'user')
+        self.failUnlessEqual(rspJson['name'], 'udlink')
+        self.failUnlessEqual(rspJson['target'], '???')
                             
     def testGetBatch(self):
         logging.info("MemberTest.testGetBatch")
         domain = 'group1k.' + config.get('domain')   
-        rootUUID = helper.getRootUUID(domain)     
-        req = helper.getEndpoint() + "/groups/" + rootUUID + "/links"
+        root_uuid = helper.getRootUUID(domain)     
+        req = helper.getEndpoint() + "/groups/" + root_uuid + "/links"
         headers = {'host': domain}
         params = {'Limit': 50 }
         names = set()
@@ -69,8 +129,8 @@ class LinkTest(unittest.TestCase):
     def testGetBadParam(self):
         logging.info("LinkTest.testGetBatchBadParam")
         domain = 'tall.' + config.get('domain')   
-        rootUUID = helper.getRootUUID(domain)     
-        req = helper.getEndpoint() + "/groups/" + rootUUID + "/links"
+        root_uuid = helper.getRootUUID(domain)     
+        req = helper.getEndpoint() + "/groups/" + root_uuid + "/links"
         headers = {'host': domain}
         params = {'Limit': 'abc' }
         rsp = requests.get(req, headers=headers, params=params)
@@ -177,6 +237,23 @@ class LinkTest(unittest.TestCase):
         # verify idempotent
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
+        
+    def testPutExternalLink(self):
+        logging.info("LinkTest.testPutExternalLink")
+        domain = 'tall_updated.' + config.get('domain') 
+        href = 'http://external_target.' + config.get('domain') + '/#h5path(/dset1)'
+        grpId = helper.createGroup(domain)
+        rootId = helper.getRootUUID(domain)   
+        name = 'extlink'
+        req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
+        payload = {"href": href}
+        headers = {'host': domain}
+        # verify extlink does not exist
+        rsp = requests.get(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 404)
+        # make request
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 501)  # not implemented!
         
     def testDelete(self):
         logging.info("LinkTest.testDelete")

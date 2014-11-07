@@ -19,13 +19,12 @@ class SpiderTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(SpiderTest, self).__init__(*args, **kwargs)
         self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))
-        self.verifiedLinks = set()
-        self.unverifiedLinks = set()  
+        self.verifiedhrefs = set()
+        self.unverifiedhrefs = set()  
         self.headers = {} 
         
-    def validateLinks(self, href):
-        print 'validate:', href
-        self.verifiedLinks.add(href)
+    def validateHrefs(self, href):
+        self.verifiedhrefs.add(href)
         # convert to local endpoint
         domain = config.get('domain')
         npos = href.find(domain)
@@ -34,39 +33,42 @@ class SpiderTest(unittest.TestCase):
         else:
             req = href
         
-        print 'sending request:', req
         rsp = requests.get(req, headers=self.headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertTrue("links" in rspJson)
-        links = rspJson["links"]
-        self.assertTrue(len(links) > 0)
-        for link in links:
+        self.assertTrue("hrefs" in rspJson)
+        hrefs = rspJson["hrefs"]
+        self.assertTrue(len(hrefs) > 0)
+        links = {}
+        for link in hrefs:
             self.assertTrue('href' in link)
+            self.assertTrue('rel' in link)
+            rel = link['rel']
             url = link['href']
-            if url in self.verifiedLinks:
+            self.assertTrue(rel not in links)
+            links[rel] = url
+            if url in self.verifiedhrefs:
                 continue
-            print 'adding link:', url
-            self.unverifiedLinks.add(url)
-            
-        while len(self.unverifiedLinks) > 0:
-            link = self.unverifiedLinks.pop()
-            self.validateLinks(link)     
+            self.unverifiedhrefs.add(url)
+        self.assertTrue('self' in links)
+        self.assertTrue('root' in links)
+        
+        while len(self.unverifiedhrefs) > 0:
+            link = self.unverifiedhrefs.pop()
+            self.validateHrefs(link)     
         
        
     def testHateoas(self):
         domains = ('tall', 'tall_ro', 'group1k')
         for name in domains:     
             domain = name + '.' + config.get('domain') 
-            self.verifiedLinks.clear()
-            self.unverifiedLinks.clear()
+            self.verifiedhrefs.clear()
+            self.unverifiedhrefs.clear()
             req = self.endpoint + "/"
             self.headers = {'host': domain}
-            self.validateLinks(self.endpoint + "/")
+            self.validateHrefs(self.endpoint + "/")
          
         
-     
-    
         
 if __name__ == '__main__':
     unittest.main()
