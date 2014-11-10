@@ -9,8 +9,7 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
-#import time
-#import pytz
+import time
 import signal
 import logging
 import os
@@ -20,6 +19,7 @@ import tornado.httpserver
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, json_decode, url_escape, url_unescape
+from urlparse import urlparse
 from sets import Set
 import config
 from hdf5db import Hdf5db
@@ -216,6 +216,8 @@ class LinkHandler(RequestHandler):
         body = json.loads(self.request.body)
         
         childUuid = None
+        h5path = None
+        filename = None   # fake filename
         
         if "id" in body:
             childUuid = body["id"]
@@ -224,12 +226,37 @@ class LinkHandler(RequestHandler):
         elif "h5path" in body:
             # todo
             h5path = body["h5path"]
+            if h5path == None or len(h5path) == 0 or not h5path.startswith('/'):
+                raise HTTPError(400)
                  
         elif "href" in body:
-            #todo
-            raise HTTPError(501)   # not implemented
+            href = body["href"]
+            if href == None or len(href) == 0 or not href.startswith('http'):
+                raise HTTPError(400)
+            o = urlparse(href)
+            if len(o.scheme) == 0 or len(o.netloc) == 0:
+                raise HTTPError(400)
+            if len(o.query) > 0:
+                raise HTTPError(400)  # no query param
+            filename = o.scheme + "://" + o.netloc
+            if len(o.fragment) > 0:
+                # url should be in the form: /#h5path(<path>)
+                if (o.path != "/" or not o.fragment.startswith("h5path(/") or
+                    not  o.fragment.endswith(")")):
+                    raise HTTPError(400)
+                h5path = o.fragment[len("h5path("):-1]
+                h5path = h5path.strip()
+            else:
+                # url should be in the form:  /(datasets|datatypes|groups)/<id>
+                if (o.path.startswith("/datasets/") or   o.path.startswith("/groups/") or 
+                     o.path.startswith("/datatypes/")):
+                    h5path = o.path
+                else:
+                    raise HTTPError(400)
+                
+            
         else: 
-            logging.info("bad query syntax: [" + self.request.body + "]")
+            logging.info("bad put syntax: [" + self.request.body + "]")
             raise HTTPError(400)                      
         
         domain = self.request.host
@@ -243,6 +270,8 @@ class LinkHandler(RequestHandler):
         with Hdf5db(filePath) as db:
             if childUuid:
                 ok = db.linkObject(reqUuid, childUuid, linkName)
+            elif filename:
+                ok = db.createExternalLink(reqUuid, filename, h5path, linkName)
             elif h5path:
                 ok = db.createSoftLink(reqUuid, h5path, linkName)
             else:

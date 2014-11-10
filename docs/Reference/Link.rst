@@ -41,10 +41,13 @@ The following json elements will be returned:
     
 Format of the target depends on the class returned:
 
- - hard: returns a link to the object in the datasets, datatypes, or groups
- collection (depending on the type of target).
- - soft: a fragment identifier containing the path to the linked object
- - external: a href to the resource 
+    - hard: returns a link to the object in the datasets, datatypes, or groups
+        collection (depending on the type of target).
+    - soft: a fragment identifier containing the path to the linked object
+    - external: a href to the resource 
+    - user: A User Defined link - these are generated via User Defined link
+        extensions to the HDF5 library.  Creation of User Defined Links or 
+        not supported by the REST api currently.
  
  Currently "user" links do not return a target.
     
@@ -57,17 +60,18 @@ For other link types, the resource may or may not exist.
     HTTP/1.1 200 OK
     Content-Type: application/json
     
+The format of the json response depends on the link class.
+
+For hard links the following is returned:
+    
 .. code-block:: json
 
    {
-    "name": <name>,
-    "class": "hard"|"soft"|"external"|"user",
-    "created": <utctime>,
-    "lastModified": <utctime>,
-    "target": "/(datasets|datatypes|groups)/<id>" |
-              "/#h5path(<HDF5 path name>)" |
-              "http://<domain>/(datasets|datatypes|groups)/<id>" |
-              "http://<domain>/#h5path(<HDF5 path name>) ",
+    "name": "<name>",
+    "class": "hard",
+    "target": "/(datasets|datatypes|groups)/<id>",
+    "created": "<utctime>",
+    "lastModified": "<utctime>",
     "hrefs": [
         { "rel": "owner",        "href": "http://<domain>/groups/<id>/links" },
         { "rel": "root",         "href": "http://<domain>/groups/<rootID>" },
@@ -75,6 +79,56 @@ For other link types, the resource may or may not exist.
         { "rel": "self",         "href": "http://<domain>/groups/<id>/links/<name>" }
     ]
     }
+    
+For soft links the json response will be:
+
+.. code-block:: json
+
+ {
+    "name": "<name>",
+    "class": "soft",
+    "target": "/#h5path(<HDF5 path name>)",
+    "created": "<utctime>",
+    "lastModified": "<utctime>",
+    "hrefs": [
+        { "rel": "owner",        "href": "http://<domain>/groups/<id>/links" },
+        { "rel": "root",         "href": "http://<domain>/groups/<rootID>" },
+        { "rel": "home",         "href": "http://<domain>/" },
+        { "rel": "self",         "href": "http://<domain>/groups/<id>/links/<name>" }
+    ]
+    }
+    
+*"<HDF5 path name>"* will be a slash separated series of link names.  
+E.g. *"/g1/g1.1/dset1.1.1"*
+
+For external links the json response will be:
+
+.. code-block:: json
+
+ {
+    "name": "<name>",
+    "class": "external",
+    "target": "<href>",
+    "created": "<utctime>",
+    "lastModified": "<utctime>",
+    "hrefs": [
+        { "rel": "owner",        "href": "http://<domain>/groups/<id>/links" },
+        { "rel": "root",         "href": "http://<domain>/groups/<rootID>" },
+        { "rel": "home",         "href": "http://<domain>/" },
+        { "rel": "self",         "href": "http://<domain>/groups/<id>/links/<name>" }
+    ]
+    }
+    
+In this response, "<href>" will be in the form:
+
+*"http://<domain>/(datasets|datatypes|groups)/<id>" *
+
+if the value of the link is a UUID.  Or:
+
+*"http://<domain>/#h5path(<HDF5 path name>) "*
+
+if the value of the link represents an HDF5 path.
+
 
 PUT /groups/<id>/links/<name> HTTP/1.1
 --------------------------------------
@@ -93,10 +147,10 @@ Request
 *Parameters:*
 
  - *idref:* Used to create hard links.  Request will fail (return 404) if <id> does not 
- refer to the UUID of an existing Group, Dataset, or Committed Datatype in the domain.
+    refer to the UUID of an existing Group, Dataset, or Committed Datatype in the domain.
  
  - *h5path:*  Path to a resource in the domain.  Referenced resource may or may not
- exist.
+    exist.
  
  - *href:* An href to an external resource.
  
@@ -189,7 +243,8 @@ Returns a representation of the Links collection the link was a in.
     HTTP/1.1 200 OK
     Content-Type: application/json
 
-.. code-block:: json    
+.. code-block:: json  
+  
     "hrefs": [
         { "rel": "self",        "href": "http://<domain>/groups/<id>/links" },
         { "rel": "root",         "href": "http://<domain>/groups/<rootID>" },

@@ -1325,6 +1325,30 @@ class Hdf5db:
         
         return True
         
+    def createExternalLink(self, parentUUID, extPath, linkPath, linkName):
+        self.initFile()
+        if self.readonly:
+            self.httpStatus = 403  # Forbidden
+            self.httpMessage = "Updates are not allowed"
+            return False    
+        parentObj = self.getGroupObjByUuid(parentUUID)
+        if parentObj == None:
+            self.httpStatus = 404 # Not found
+            self.httpMessage = "Parent Group not found"
+            return False
+        if linkName in parentObj:
+            # link already exists
+            logging.info("linkname already exists, deleting")
+            del parentObj[linkName]  # delete old link
+        parentObj[linkName] = h5py.ExternalLink(extPath, linkPath)
+        self.htpStatus = 201 # set status to created
+        
+        now = time.time()
+        self.setCreateTime(parentUUID, objType="link", name=linkName, timestamp=now)
+        self.setModifiedTime(parentUUID, objType="link", name=linkName, timestamp=now)
+        
+        return True
+        
     
     def createGroup(self):
         self.initFile()

@@ -130,12 +130,23 @@ def getLinkTarget(item, protocol="http"):
         target = "/#h5path(" + json_encode(item['path']) + ")"
     elif item['class'] == 'external':
         filename = item['filename']
-        print 'filename', filename
-        externalDomain = ""
-        if len(filename) > 0:
-            externalDomain = getDomain(filename)
-        print 'domain:', externalDomain
-        target = protocol + "://" + externalDomain +  "/#h5path(" + url_escape(item['path']) + ")"
+        externalDomain = None
+        path = None
+        if filename.startswith("http"):
+            # this link was apparently saved as a URI, just use it directly
+            externalDomain = filename
+        else:
+            externalDomain = protocol + "://"
+            if len(filename) > 0:
+                externalDomain += getDomain(filename)
+             
+            path = url_escape(item['path'])
+            if (path.startswith("/datasets") or path.startswith("/groups") or 
+                path.startswith("/datatypes")):
+                logging.info("use id path: " + path)
+            else:
+                path = "/#h5path(" + path + ")"
+        target = externalDomain + path
     elif item['class'] == 'user':
         target = "???"
     else:

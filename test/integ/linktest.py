@@ -253,7 +253,43 @@ class LinkTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 404)
         # make request
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 501)  # not implemented!
+        self.failUnlessEqual(rsp.status_code, 201) 
+        
+    def testPutExternalLinkId(self):
+        logging.info("LinkTest.testPutExternalLinkId")
+        fakeId = "14bfeeb8-68b1-11e4-a69a-3c15c2da029e"
+        domain = 'tall_updated.' + config.get('domain') 
+        href = 'http://external_target.' + config.get('domain') + '/datasets/' + fakeId
+        grpId = helper.createGroup(domain)
+        rootId = helper.getRootUUID(domain)   
+        name = 'extlinkid'
+        req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
+        payload = {"href": href}
+        headers = {'host': domain}
+        # verify extlink does not exist
+        rsp = requests.get(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 404)
+        # make request
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)    
+        
+    def testPutExternalLinkBadHref(self):
+        logging.info("LinkTest.testPutExternalLinkId")
+        fakeId = "14bfeeb8-68b1-11e4-a69a-3c15c2da029e"
+        domain = 'tall_updated.' + config.get('domain') 
+        href = 'http://external_target.' + config.get('domain') + '/foobar/' + fakeId
+        grpId = helper.createGroup(domain)
+        rootId = helper.getRootUUID(domain)   
+        name = 'extlinkid'
+        req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
+        payload = {"href": href}
+        headers = {'host': domain}
+        # verify extlink does not exist
+        rsp = requests.get(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 404)
+        # make request
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 400)     
         
     def testDelete(self):
         logging.info("LinkTest.testDelete")
