@@ -777,6 +777,37 @@ class Hdf5db:
                 values = dset[slices].tolist()
         return values 
         
+    """
+    Get values from dataset identified by objUuid using the given
+    point selection.
+    """
+    def getDatasetPointSelectionByUuid(self, objUuid, points):
+        self.httpStatus = 200
+        dset = self.getDatasetObjByUuid(objUuid)
+        if dset == None:
+            logging.info("dataset: " + objUuid + " not found")
+            self.httpStatus = 404  # not found
+            return False
+        rank = len(dset.shape)
+        values = np.zeros(len(points), dtype=dset.dtype)
+        try:
+            i = 0
+            for point in points:
+                # need to convert to strings so result can be JSON serializable
+                #values.append(dset[[point]].tolist())
+                if rank == 1:
+                    values[i] = dset[[point]]
+                else:
+                    values[i] = dset[tuple(point)]
+                i += 1
+        except ValueError:
+            # out of range error
+            logging.info("getDatasetPointSelection, out of range error")
+            self.httpStatus = 400
+            return None
+        return values.tolist()
+                 
+        
     def setDatasetValuesByUuid(self, objUuid, data, slices=None):
         dset = self.getDatasetObjByUuid(objUuid)
         if dset == None:

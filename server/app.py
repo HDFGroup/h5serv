@@ -370,7 +370,7 @@ class TypeHandler(RequestHandler):
         verifyFile(filePath)
         
         response = { }
-        links = []
+        hrefs = []
         rootUUID = None
         item = None
         with Hdf5db(filePath) as db:
@@ -385,16 +385,16 @@ class TypeHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self',       'href': href + 'datatypes/' + reqUuid})
-        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel': 'attributes', 'href': href + 'datatypes/' + reqUuid + '/attributes'}) 
-        links.append({'rel': 'home', 'href': href })        
+        hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + reqUuid})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + reqUuid + '/attributes'}) 
+        hrefs.append({'rel': 'home', 'href': href })        
         response['id'] = reqUuid
         response['type'] = item['type']
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['attributeCount'] = item['attributeCount']
-        response['links'] = links
+        response['hrefs'] = hrefs
         
         self.write(response)
         
@@ -433,14 +433,14 @@ class TypeHandler(RequestHandler):
         response = { }
       
         # got everything we need, put together the response
-        links = [ ]
+        hrefs = [ ]
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self',       'href': href + 'datatypes/' + typeUUID})
-        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel': 'attributes', 'href': href + 'datatypes/' + typeUUID + '/attributes'})   
+        hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + typeUUID})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + typeUUID + '/attributes'})   
         response['id'] = typeUUID
         response['attributeCount'] = 0
-        response['links'] = links
+        response['hrefs'] = hrefs
         
         self.write(response)  
         self.set_status(201)  # resource created
@@ -487,7 +487,7 @@ class ShapeHandler(RequestHandler):
         verifyFile(filePath)
         
         response = { }
-        links = []
+        hrefs = []
         rootUUID = None
         item = None
         with Hdf5db(filePath) as db:
@@ -502,8 +502,9 @@ class ShapeHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self',       'href': href + 'datasets/' + reqUuid + '/shape'})
-        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID})
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid})
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid + '/shape'})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})
         response['class'] = item['shape_class'] 
         response['shape'] = item['shape']
         response['maxshape'] = item['maxshape']
@@ -511,7 +512,7 @@ class ShapeHandler(RequestHandler):
             response['fillvalue'] = item['fillvalue']
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
-        response['links'] = links
+        response['hrefs'] = hrefs
         
         self.write(response)
         
@@ -582,7 +583,7 @@ class DatasetHandler(RequestHandler):
         verifyFile(filePath)
         
         response = { }
-        links = []
+        hrefs = []
         rootUUID = None
         item = None
         with Hdf5db(filePath) as db:
@@ -597,11 +598,11 @@ class DatasetHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self',       'href': href + 'datasets/' + reqUuid})
-        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes'}) 
-        links.append({'rel': 'data', 'href': href + 'datasets/' + reqUuid + '/value'}) 
-        links.append({'rel': 'home', 'href': href })       
+        hrefs.append({'rel': 'self',       'href': href + 'datasets/' + reqUuid})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes'}) 
+        hrefs.append({'rel': 'data', 'href': href + 'datasets/' + reqUuid + '/value'}) 
+        hrefs.append({'rel': 'home', 'href': href })       
         response['id'] = reqUuid
         response['type'] = item['type']
         response['shape'] = item['shape']
@@ -612,7 +613,7 @@ class DatasetHandler(RequestHandler):
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['attributeCount'] = item['attributeCount']
-        response['links'] = links
+        response['hrefs'] = hrefs
         
         self.write(response)
         
@@ -697,15 +698,15 @@ class DatasetHandler(RequestHandler):
         response = { }
       
         # got everything we need, put together the response
-        links = [ ]
+        hrefs = [ ]
         href = self.request.protocol + '://' + domain + '/'
-        links.append({'rel': 'self',       'href': href + 'datasets/' + dsetUUID})
-        links.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})   
-        links.append({'rel': 'value', 'href': href + 'datasets/' + dsetUUID + '/value'})        
+        hrefs.append({'rel': 'self',       'href': href + 'datasets/' + dsetUUID})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})   
+        hrefs.append({'rel': 'value', 'href': href + 'datasets/' + dsetUUID + '/value'})        
         response['id'] = dsetUUID
         response['attributeCount'] = 0
-        response['links'] = links
+        response['hrefs'] = hrefs
         
         self.write(response)  
         self.set_status(201)  # resource created
@@ -782,7 +783,7 @@ class ValueHandler(RequestHandler):
         verifyFile(filePath)
         
         response = { }
-        links = []
+        hrefs = []
         rootUUID = None
         item = None
         values = None
@@ -806,18 +807,84 @@ class ValueHandler(RequestHandler):
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
+        
         response['value'] = values
         
-        links.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value'})
-        links.append({'rel': 'root',  'href': href + 'groups/' + rootUUID}) 
-        links.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid }) 
-        links.append({'rel': 'home',  'href': href })   
-        response['links'] = links
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value'})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid }) 
+        hrefs.append({'rel': 'home',  'href': href })   
+        response['hrefs'] = hrefs
         
-        self.write(response)   
+        self.write(response) 
+        
+    def post(self):
+        logging.info('ValueHandler.post host=[' + self.request.host + '] uri=[' +
+             self.request.uri + ']')
+        
+        reqUuid = self.getRequestId()
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        body = json.loads(self.request.body)
+        if "points" not in body:
+            logging.info("value post request without points in body")
+            raise HTTPError(400)
+        points = body['points']
+        if type(points) != list:
+            logging.info("expecting list of points")
+            raise HTTPError(400)
+        
+        
+        response = { }
+        hrefs = []
+        rootUUID = None
+        item = None
+        values = None
+        with Hdf5db(filePath) as db:
+            item = db.getDatasetItemByUuid(reqUuid)
+            if item == None:
+                httpError = 404  # not found
+                if db.httpStatus != 200:
+                    httpError = db.httpStatus # library may have more specific error code
+                logging.info("dataset: [" + reqUuid + "] not found")
+                raise HTTPError(httpError)
+            shape = item['shape']
+            rank = len(shape)
+            if rank < 1:
+                logging.info("point selection is not supported on scalar datasets")
+                raise HTTPError(400)
+                
+            for point in points:
+                if rank == 1 and type(point) != int:
+                    logging.info("elements of points to be int type for datasets of rank 1")
+                    raise HTTPError(400)
+                elif rank > 1 and type(point) != list:
+                    logging.info("elements of points to be list type for datasets of rank >1")
+                    raise HTTPError(400)
+                    if len(point) != rank:
+                        logging.info("one or more points have missing coordinate value")
+                        raise HTTPError(400)
+             
+            values = db.getDatasetPointSelectionByUuid(reqUuid, points) 
+            rootUUID = db.getUUIDByPath('/')
+                         
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/'
+        response['value'] = values
+        
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value'})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid }) 
+        hrefs.append({'rel': 'home',  'href': href })   
+        #response['hrefs'] = hrefs
+        
+        self.write(response)     
     
     def put(self):
-        logging.info('ValueHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        logging.info('ValueHandler.put host=[' + self.request.host + '] uri=[' + 
+            self.request.uri + ']')
         
         reqUuid = self.getRequestId()
         domain = self.request.host

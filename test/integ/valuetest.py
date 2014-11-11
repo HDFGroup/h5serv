@@ -206,6 +206,46 @@ class ValueTest(unittest.TestCase):
         self.failUnlessEqual(first[0], 24) 
         self.failUnlessEqual(first[1], "13:53")  
         
+    def testPost(self):    
+        for domain_name in ('tall','tall_ro'):
+            domain = domain_name + '.' + config.get('domain') 
+            rootUUID = helper.getRootUUID(domain)
+            g1UUID = helper.getUUID(domain, rootUUID, 'g1')
+            g11UUID = helper.getUUID(domain, g1UUID, 'g1.1')
+               
+            # rank 1 dataset
+            dset112UUID = helper.getUUID(domain, g11UUID, 'dset1.1.2') 
+            points = (19, 17, 13, 11, 7, 5, 3, 2)
+            req = self.endpoint + "/datasets/" + dset112UUID + "/value" 
+            payload = {'points': points}
+            headers = {'host': domain}
+            
+            rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            data = rspJson['value'] 
+            self.assertEqual(len(data), len(points))
+            self.assertEqual(points[0], data[0])
+            
+            # rank 2 dataset
+            dset111UUID = helper.getUUID(domain, g11UUID, 'dset1.1.1') 
+            points = []
+            for i in range(10):
+                points.append((i,i))  # get diagonal
+            req = self.endpoint + "/datasets/" + dset111UUID + "/value" 
+            payload = {'points': points}
+            headers = {'host': domain}
+            
+            rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            data = rspJson['value'] 
+            self.assertEqual(len(data), len(points))
+            self.assertEqual(9, data[3])
+            
+        
+        
+        
     def testPut(self):
         # create domain
         domain = 'valueput.datasettest.' + config.get('domain')
