@@ -17,7 +17,11 @@ then
     exit 1
 fi
 export SRC="../../testfiles/"
-export DES="../../data"
+export DES="../../data/test/"
+if [ ! -d $DES ]
+then
+    mkdir $DES
+fi
 rm -rf $DES/*
 if [ -f $DES/.*.h5 ]
 then
@@ -57,6 +61,7 @@ cp $SRC/zerodim.h5 $DES/deleteme.h5
 cp $SRC/zerodim.h5 $DES/subdir/deleteme.h5
 cp $SRC/zerodim.h5 $DES/readonly.h5
 cp $SRC/group1k.h5 $DES
+cp $SRC/group1k.h5 $DES/group1k_updated.h5
 cp $SRC/attr1k.h5 $DES
 cp $SRC/fillvalue.h5 $DES
 cp $SRC/scalar.h5 $DES

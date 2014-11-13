@@ -13,7 +13,7 @@ cfg = {
     'port':   5000,
     'debug':  True,
     'datapath': '../data/',
-    'domain': 'test.hdf.io',
+    'domain': 'hdf.io',
     'hdf5_ext': '.h5',
     'local_ip': '127.0.0.1',
     'default_dns': '8.8.8.8'  # used by local_dns.py

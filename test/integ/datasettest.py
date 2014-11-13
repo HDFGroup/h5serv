@@ -50,7 +50,6 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(rspJson['type'], 'int64')
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 10)  
-        self.assertEqual(rspJson['maxshape'][0], 20)
         
         resizable_2d_uuid = helper.getUUID(domain, root_uuid, 'resizable_2d') 
         req = helper.getEndpoint() + "/datasets/" + resizable_2d_uuid

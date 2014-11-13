@@ -354,7 +354,7 @@ class TypeHandler(RequestHandler):
         uri = self.request.uri
         npos = uri.rfind('/')
         if npos < 0:
-            raise HTTPError(500)  # should not get routed to ValueHandler in this case
+            raise HTTPError(500)  # should not get routed to TypeHandler in this case
         if npos == len(uri) - 1:
             raise HTTPError(400, message="missing id")
         id = uri[(npos+1):]
@@ -503,7 +503,7 @@ class ShapeHandler(RequestHandler):
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
         hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid})
-        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid + '/shape'})
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid })
         hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})
         response['class'] = item['shape_class'] 
         response['shape'] = item['shape']
@@ -566,7 +566,7 @@ class DatasetHandler(RequestHandler):
         uri = self.request.uri
         npos = uri.rfind('/')
         if npos < 0:
-            raise HTTPError(500)  # should not get routed to ValueHandler in this case
+            raise HTTPError(500)  # should not get routed to TypeHandler in this case
         if npos == len(uri) - 1:
             raise HTTPError(400, message="missing id")
         id = uri[(npos+1):]
@@ -607,7 +607,7 @@ class DatasetHandler(RequestHandler):
         response['type'] = item['type']
         response['shape'] = item['shape']
         response['maxshape'] = item['maxshape']
-        response['class'] = item['shape_class'] 
+        response['class'] = item['shape_class']
         if 'fillvalue' in item:
             response['fillvalue'] = item['fillvalue']
         response['created'] = unixTimeToUTC(item['ctime'])
@@ -754,6 +754,66 @@ class ValueHandler(RequestHandler):
         return s
         
     """
+    Get slices given lists of start, stop, step values
+    """
+    def  getHyperslabSelection(self, dsetshape, start, stop, step):
+        rank = len(dsetshape)
+        if start:
+            if type(start) is not list:
+                start = [start,]
+            if len(start) != rank:
+                logging.info("request start array length not equal to dataset rank")
+                raise HTTPError(400)
+            for dim in range(rank):
+                if start[dim] < 0 or start[dim] >= dsetshape[dim]:
+                    logging.info("request start index invalid for dim: " + str(dim))
+                    raise HTTPError(400)
+        else:
+            start = []
+            for dim in range(rank):
+                start.append(0)
+        
+        if stop:
+            if type(stop) is not list:
+                stop = [stop,]
+            if len(stop) != rank:
+                logging.info("request stop array length not equal to dataset rank")
+                raise HTTPError(400)
+            for dim in range(rank):
+                if stop[dim] <= start[dim] or stop[dim] > dsetshape[dim]:
+                    logging.info("request stop index invalid for dim: " + str(dim))
+                    raise HTTPError(400)
+        else:
+            stop = []
+            for dim in range(rank):
+                stop.append(dsetshape[dim])
+        
+        if step:
+            if type(step) is not list:
+                step = [step,]
+            if len(step) != rank:
+                logging.info("request step array length not equal to dataset rank")
+                raise HTTPError(400)
+            for dim in range(rank):
+                if step[dim] <= 0 or step[dim] > dsetshape[dim]:
+                    logging.info("request step index invalid for dim: " + str(dim))
+                    raise HTTPError(400)
+        else:
+            step = []
+            for dim in range(rank):
+                step.append(1)
+            
+        slices = []
+        for dim in range(rank):
+            try:
+                s = slice(int(start[dim]), int(stop[dim]), int(step[dim]))
+            except ValueError:
+                logging.info("invalid start/stop/step value")
+                raise HTTPError(400)
+            slices.append(s)
+        return tuple(slices)
+        
+    """
     Helper method - get uuid for the dataset
     """    
     def getRequestId(self):
@@ -890,47 +950,39 @@ class ValueHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain) 
         verifyFile(filePath)
+        points = None
+        start = None
+        stop = None
+        step = None
         
         body = json.loads(self.request.body)
         
-        if "shape" not in body:
-            logging.info("Shape not supplied")
-            raise HTTPError(400)  # missing shape
-            
-        if "type" not in body:
-            logging.info("Type not supplied")
-            raise HTTPError(400)  # missing type
-            
         if "value" not in body:
             logging.info("Value not supplied")
             raise HTTPError(400) # missing data
             
-        reqshape = body["shape"]
-        reqtype = body["type"]
+        if "points" in body:
+            points = body['points']
+            if type(points) != list:
+                logging.info("expecting list of points")
+                raise HTTPError(400)
+            if 'start' in body or 'stop' in body or 'step' in body:
+                logging.info("can use hyperslab selection with points")
+                raise HTTPError(400)
+            if len(points) > len(value):
+                logging.info("more points provided than values")
+                raise HTTPError(400)
+        else:
+            # hyperslab selection
+            if 'start' in body:
+                start = body['start']
+            if 'stop' in body:
+                stop = body['stop']
+            if 'step' in body:
+                step = body['step']
+                            
         data = body["value"]
         
-        if type(reqshape) == int:
-            dim1 = reqshape
-            reqshape = []
-            reqshape = [dim1]
-        elif type(reqshape) == list or type(reqshape) == tuple: 
-            pass # can use as is
-        else:
-            logging.info("invalid shape argument")
-            raise HTTPError(400)
-            
-        # validate type
-        TypeHandler.verifyType(reqtype)
-            
-        # validate shape
-        for extent in reqshape:
-            if type(extent) != int:
-                logging.info("invalid shape type")
-                raise HTTPError(400)
-            if extent < 0:
-                logging.info("invalid shape (negative extent)")
-                raise HTTPError(400)   
-                
         with Hdf5db(filePath) as db:
             item = db.getDatasetItemByUuid(reqUuid)
             if item == None:
@@ -941,78 +993,21 @@ class ValueHandler(RequestHandler):
                 raise HTTPError(httpError)
             dsetshape = item['shape']
             rank = len(dsetshape) 
-            if len(reqshape) != rank:
-                # ranks don't match
-                logging.info("request shape doesn't match dataset shape")
-                raise HTTPError(400)
-            start = []
-            stop = []
-            step = []
-            if 'start' in body:
-                start = body['start']
-                if type(start) is not list:
-                    start = [start,]
-                if len(start) != rank:
-                    logging.info("request start array length not equal to dataset rank")
-                    raise HTTPError(400)
-                for dim in range(rank):
-                    if start[dim] < 0 or start[dim] >= dsetshape[dim]:
-                        logging.info("request start index invalid for dim: " + str(dim))
-                        raise HTTPError(400)
+            if points:
+                for point in points:
+                    pass
+                    
             else:
-                for dim in range(rank):
-                    start.append(0)
-            if 'stop' in body:
-                stop = body['stop']
-                if type(stop) is not list:
-                    stop = [stop,]
-                if len(start) != rank:
-                    logging.info("request stop array length not equal to dataset rank")
-                    raise HTTPError(400)
-                for dim in range(rank):
-                    if stop[dim] < 0 or stop[dim] > dsetshape[dim]:
-                        logging.info("request stop index invalid for dim: " + str(dim))
-                        raise HTTPError(400)
-            else:
-                for dim in range(rank):
-                    stop.append(dsetshape[dim])
-            if 'step' in body:
-                step = body['step']
-                if type(step) is not list:
-                    step = [step,]
-                if len(step) != rank:
-                    logging.info("request step array length not equal to dataset rank")
-                    raise HTTPError(400)
-                for dim in range(rank):
-                    if step[dim] < 0 or step[dim] > dsetshape[dim]:
-                        logging.info("request step index invalid for dim: " + str(dim))
-                        raise HTTPError(400)
-            else:
-                for dim in range(rank):
-                    step.append(1)
-            
-            for dim in range(rank):
-                if reqshape[dim] != dsetshape[dim]:
-                    logging.info("request extent doesn't match dataset extent for dim: " +
-                        str(dim))
-                        
-            slices = []
-            for dim in range(rank):
-                try:
-                    s = slice(int(start[dim]), int(stop[dim]), int(step[dim]))
-                except ValueError:
-                    logging.info("invalid start/stop/step value")
-                    raise HTTPError(400)
-                slices.append(s)
-            # todo - check that the types are compatible
-            ok = db.setDatasetValuesByUuid(reqUuid, data, tuple(slices))
-            if not ok:
-                httpError = 500  # internal error
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                logging.info("dataset put error")
-                raise HTTPError(httpError)   
-        logging.info("value post succeeded")   
+                slices = self.getHyperslabSelection(dsetshape, start, stop, step)
+                # todo - check that the types are compatible
+                ok = db.setDatasetValuesByUuid(reqUuid, data, slices)
+                if not ok:
+                    httpError = 500  # internal error
+                    if db.httpStatus != 200:
+                        httpError = db.httpStatus # library may have more specific error code
+                    logging.info("dataset put error")
+                    raise HTTPError(httpError)   
+            logging.info("value post succeeded")   
            
 class AttributeHandler(RequestHandler):
 
@@ -1144,7 +1139,7 @@ class AttributeHandler(RequestHandler):
             responseItem['name'] = item['name']
             responseItem['type'] = item['type']
             responseItem['shape'] = item['shape']
-            response['class'] = item['shape_class'] 
+            responseItem['class'] = item['shape_class'] 
             responseItem['created'] = unixTimeToUTC(item['ctime']) 
             responseItem['lastModified'] = unixTimeToUTC(item['mtime']) 
             if attr_name == None:

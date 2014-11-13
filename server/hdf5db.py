@@ -1266,7 +1266,8 @@ class Hdf5db:
         if linkClass == 'HardLink':
             obj = parentGrp[linkName]
             if tgtObj == None or obj == tgtObj:
-                numlinks = self.getNumLinksToObject(obj)
+                
+                numlinks =  self.getNumLinksToObject(obj)
                 if numlinks == 1:
                     # last link to this object - convert to anonymous object
                     # by creating link under {datasets} or {groups} or {datatypes}

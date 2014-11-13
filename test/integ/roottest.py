@@ -56,13 +56,16 @@ class RootTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 403)  # 403 == Forbidden
         
-    def testInvalidlDomain(self):
+    def testInvalidDomain(self):
         # can't be just a bare top-level domain
-        domain = config.get('domain')   
+        domain = config.get('domain')  
+        # get top-level domain. e.g.: 'test.hdf.io' -> 'hdf.io'
+        npos = domain.find('.')
+        topdomain = domain[npos+1:] 
         req = self.endpoint + "/"
-        headers = {'host': domain}
+        headers = {'host': topdomain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # 400 == Forbidden
+        self.failUnlessEqual(rsp.status_code, 403)  # 403 == Forbidden
         
         domain = 'two.dots..are.bad.' + config.get('domain')   
         req = self.endpoint + "/"
@@ -70,14 +73,14 @@ class RootTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 400)  # 400 == bad syntax
         
-        domain = 'missingenddot' + config.get('domain')   
+        domain = 'missingenddot' + topdomain   
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 400)  # 400 == bad syntax
         
         # just a dot is no good
-        domain = '.' + config.get('domain')   
+        domain = '.' + topdomain  
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)

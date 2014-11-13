@@ -39,6 +39,8 @@ def getFilePath(host_value):
         host = host_value
     
     topdomain = config.get('domain')
+    
+     
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
         raise HTTPError(403, message='top-level domain is not valid')
         

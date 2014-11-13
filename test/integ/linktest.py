@@ -74,9 +74,9 @@ class LinkTest(unittest.TestCase):
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             target = rspJson['target']
-            expectedTarget = "http://somefile." + config.get('domain') + \
-            "/#h5path(somepath)"
-            self.failUnlessEqual(target, expectedTarget)
+            print 'target', target
+            self.assertTrue(target.startswith("http://somefile."))
+            self.assertTrue(target.endswith("/#h5path(somepath)"))  
             self.assertTrue("created" in rspJson)
             self.assertTrue("lastModified" in rspJson)
             self.failUnlessEqual(rspJson['class'], 'external')
@@ -100,7 +100,7 @@ class LinkTest(unittest.TestCase):
         self.failUnlessEqual(rspJson['target'], '???')
                             
     def testGetBatch(self):
-        logging.info("MemberTest.testGetBatch")
+        logging.info("LinkTest.testGetBatch")
         domain = 'group1k.' + config.get('domain')   
         root_uuid = helper.getRootUUID(domain)     
         req = helper.getEndpoint() + "/groups/" + root_uuid + "/links"
@@ -125,6 +125,44 @@ class LinkTest(unittest.TestCase):
             if len(links) == 0:
                 break
         self.failUnlessEqual(len(names), 1000)  # should get 1000 unique links
+    
+    
+    #Fix - This is crazy slow!
+    """    
+    def testMoveLinks(self):
+        logging.info("LinkTest.testMoveLinks")
+        domain = 'group1k_updated.' + config.get('domain')   
+        root_uuid = helper.getRootUUID(domain)  
+        
+        # create a new subgroup to move others to
+        targetGroupId = helper.createGroup(domain)
+         
+           
+        req = helper.getEndpoint() + "/groups/" + root_uuid + "/links"
+        headers = {'host': domain}
+        params = {'Limit': 100 }
+        names = set()
+        # get links in batches of 100 links each
+        count = 0
+        while True:
+            print 'count:', count
+            rsp = requests.get(req, headers=headers, params=params)
+            self.failUnlessEqual(rsp.status_code, 200)
+            if rsp.status_code != 200:
+                break
+            rspJson = json.loads(rsp.text)
+            links = rspJson['links']
+            
+            if len(links) == 0:
+                break
+            count += len(links)
+            for link in links:
+                # delete link
+                del_req = helper.getEndpoint() + "/groups/" + root_uuid + "/links/" + link['name']
+                rsp = requests.delete(del_req, headers=headers)
+                self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(count, 1000)  # should get 1000 unique links
+    """
         
     def testGetBadParam(self):
         logging.info("LinkTest.testGetBatchBadParam")
@@ -138,7 +176,7 @@ class LinkTest(unittest.TestCase):
     
         
     def testPut(self):
-        logging.info("MemberTest.testPut")
+        logging.info("LinkTest.testPut")
         domain = 'tall_updated.' + config.get('domain') 
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)   
