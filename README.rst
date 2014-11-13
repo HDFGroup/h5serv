@@ -19,6 +19,7 @@ You need, at a minimum the following Python packages:
 * NumPy 1.6.1 or later
 * h5py 2.3.1 or later
 * twisted 14.0 or later
+* tornado 4.0.2 or later
 
 You will also need a git client to download the source code.
 
