@@ -74,7 +74,6 @@ class LinkTest(unittest.TestCase):
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             target = rspJson['target']
-            print 'target', target
             self.assertTrue(target.startswith("http://somefile."))
             self.assertTrue(target.endswith("/#h5path(somepath)"))  
             self.assertTrue("created" in rspJson)

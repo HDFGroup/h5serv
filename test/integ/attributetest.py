@@ -30,7 +30,7 @@ class AttributeTest(unittest.TestCase):
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertEqual(rspJson['name'], 'attr1')
-            self.assertEqual(rspJson['type'], 'int8')
+            self.assertEqual(rspJson['type'], 'H5T_STD_I8LE')
             self.assertEqual(len(rspJson['shape']), 1)
             self.assertEqual(rspJson['shape'][0], 10)
             data = rspJson['value'] 
@@ -51,7 +51,12 @@ class AttributeTest(unittest.TestCase):
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertEqual(rspJson['name'], 'a0001')
-            self.assertEqual(rspJson['type'], 'object')  # todo - this should be a string 
+            typeItem = rspJson['type']
+            self.assertEqual(typeItem['class'], 'H5T_STRING')
+            self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+            self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+            self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLTERM') 
+            self.assertEqual(typeItem['strsize'], 'H5T_VARIABLE') 
             self.assertEqual(len(rspJson['shape']), 0)
             data = rspJson['value'] 
             self.assertEqual(data, "this is attribute: 1") 
@@ -109,18 +114,28 @@ class AttributeTest(unittest.TestCase):
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertEqual(rspJson['name'], 'weather')
-            self.assertEqual(len(rspJson['type']), 4)
-            field0 = rspJson['type'][0]
-            self.assertEqual(field0['time'], 'int64')
-            field1 = rspJson['type'][3]
-            self.assertEqual(field1['wind'], 'S6')
-            self.assertEqual(len(rspJson['shape']), 1)
-            self.assertEqual(rspJson['shape'][0], 1)
-            data = rspJson['value'] 
-            self.assertEqual(len(data), 1)
-            element = data[0]  # first and only array element
-            self.assertEqual(element[3], 'SE 8')
-            self.assertEqual(len(rspJson['hrefs']), 3)
+            typeItem = rspJson['type']
+            self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
+            self.assertEqual(len(typeItem['fields']), 4)
+            fields = typeItem['fields']
+            field0 = fields[0]
+            self.assertEqual(field0['name'], 'time')
+            self.assertEqual(field0['type'], 'H5T_STD_I64LE')
+            field1 = fields[1]
+            self.assertEqual(field1['name'], 'temp')
+            self.assertEqual(field1['type'], 'H5T_STD_I64LE')
+            field2 = fields[2]
+            self.assertEqual(field2['name'], 'pressure')
+            self.assertEqual(field2['type'], 'H5T_IEEE_F64LE')
+            field3 = fields[3]
+            self.assertEqual(field3['name'], 'wind')
+            field3Type = field3['type']
+            self.assertEqual(field3Type['class'], 'H5T_STRING')
+            self.assertEqual(field3Type['cset'], 'H5T_CSET_ASCII')
+            self.assertEqual(field3Type['order'], 'H5T_ORDER_NONE')
+            self.assertEqual(field3Type['strsize'], 6)
+            self.assertEqual(field3Type['strpad'], 'H5T_STR_NULLPAD')
+             
             
     def testGetScalar(self):
         domain = 'scalar.' + config.get('domain')  
@@ -132,7 +147,7 @@ class AttributeTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertEqual(rspJson['class'], 'scalar')
         self.assertEqual(len(rspJson['shape']), 0)
-        self.assertEqual(rspJson['type'], 'int64')
+        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
         data = rspJson['value'] 
         self.assertEqual(type(data), int)
         self.assertEqual(data, 42)

@@ -32,7 +32,7 @@ class DatatypeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertEqual(rspJson['id'], dtype_uuid)
-        self.assertEqual(rspJson['type'], 'float32')
+        self.assertEqual(rspJson['type'], 'H5T_IEEE_F32LE')
         self.assertEqual(rspJson['attributeCount'], 1)
        
     def testGetCompound(self):
@@ -44,12 +44,17 @@ class DatatypeTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        typeJson = rspJson['type']
-        self.assertEqual(len(typeJson), 2)
-        field0 = typeJson[0]
-        self.assertEqual(field0['temp'], 'int32')
-        field1 = typeJson[1]
-        self.assertEqual(field1['pressure'], 'float32')
+        typeItem = rspJson['type']
+        self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
+        self.assertTrue('fields' in typeItem)
+        fields = typeItem['fields']
+        self.assertEqual(len(fields), 2)
+        tempField = fields[0]
+        self.assertEqual(tempField['name'], 'temp')
+        self.assertEqual(tempField['type'], 'H5T_STD_I32LE')
+        pressureField = fields[1]
+        self.assertEqual(pressureField['name'], 'pressure')
+        self.assertEqual(pressureField['type'], 'H5T_IEEE_F32LE')
     
     def testPost(self):
         domain = 'newdtype.datatypetest.' + config.get('domain')

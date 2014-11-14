@@ -390,7 +390,12 @@ class TypeHandler(RequestHandler):
         hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + reqUuid + '/attributes'}) 
         hrefs.append({'rel': 'home', 'href': href })        
         response['id'] = reqUuid
-        response['type'] = item['type']
+        typeItem = item['type']
+        if 'base' in typeItem:
+            # just return the base string for pre-defined types
+            response['type'] = typeItem['base']
+        else:
+            response['type'] = typeItem # otherwise, return full type
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['attributeCount'] = item['attributeCount']
@@ -459,6 +464,60 @@ class TypeHandler(RequestHandler):
                     httpStatus = 500
                 raise HTTPError(httpStatus)  
                 
+class DatatypeHandler(RequestHandler):
+    def getRequestId(self):
+        # request is in the form /datasets/<id>/type, return <id>
+        uri = self.request.uri
+        npos = uri.rfind('/type')
+        if npos < 0:
+            raise HTTPError(500)  # should not get routed to DatatypeHandler in this case
+        id_part = uri[:npos]
+        npos = id_part.rfind('/')
+        if npos < 0:
+            raise HTTPError(500)  # should not get routed to DatatypeHandler in this case
+        
+        if npos == len(id_part) - 1:
+            raise HTTPError(400, message="missing id")
+        id = id_part[(npos+1):]
+        logging.info('got id: [' + id + ']')
+    
+        return id
+        
+    def get(self):
+        logging.info('DatatypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        
+        reqUuid = self.getRequestId()
+        domain = self.request.host
+        filePath = getFilePath(domain) 
+        verifyFile(filePath)
+        
+        response = { }
+        hrefs = []
+        rootUUID = None
+        item = None
+        with Hdf5db(filePath) as db:
+            item = db.getDatasetTypeItemByUuid(reqUuid)
+            if item == None:
+                httpError = 404  # not found
+                if db.httpStatus != 200:
+                    httpError = db.httpStatus # library may have more specific error code
+                logging.info("dataset: [" + reqUuid + "] not found")
+                raise HTTPError(httpError)
+            rootUUID = db.getUUIDByPath('/')
+                         
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/'
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/type'})
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid })
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})
+        response['type'] = item['type']
+       
+        response['created'] = unixTimeToUTC(item['ctime'])
+        response['lastModified'] = unixTimeToUTC(item['mtime'])
+        response['hrefs'] = hrefs
+        
+        self.write(response)
+                
 class ShapeHandler(RequestHandler):
     def getRequestId(self):
         # request is in the form /datasets/<id>/shape, return <id>
@@ -504,12 +563,12 @@ class ShapeHandler(RequestHandler):
         href = self.request.protocol + '://' + domain + '/'
         hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid})
         hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid })
-        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})   
         response['class'] = item['shape_class'] 
-        response['shape'] = item['shape']
-        response['maxshape'] = item['maxshape']
         if 'fillvalue' in item:
             response['fillvalue'] = item['fillvalue']
+        response['shape'] = item['shape']
+        response['maxshape'] = item['maxshape']
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['hrefs'] = hrefs
@@ -604,7 +663,12 @@ class DatasetHandler(RequestHandler):
         hrefs.append({'rel': 'data', 'href': href + 'datasets/' + reqUuid + '/value'}) 
         hrefs.append({'rel': 'home', 'href': href })       
         response['id'] = reqUuid
-        response['type'] = item['type']
+        typeItem = item['type']
+        if 'base' in typeItem:
+            # just return the base string for pre-defined types
+            response['type'] = typeItem['base']
+        else:
+            response['type'] = typeItem # otherwise, return full type
         response['shape'] = item['shape']
         response['maxshape'] = item['maxshape']
         response['class'] = item['shape_class']
@@ -1137,7 +1201,12 @@ class AttributeHandler(RequestHandler):
         for item in items:
             responseItem = {}
             responseItem['name'] = item['name']
-            responseItem['type'] = item['type']
+            typeItem = item['type']
+            if 'base' in typeItem:
+                # just return the base string for pre-defined types
+                response['type'] = typeItem['base']
+            else:
+                response['type'] = typeItem # otherwise, return full type
             responseItem['shape'] = item['shape']
             responseItem['class'] = item['shape_class'] 
             responseItem['created'] = unixTimeToUTC(item['ctime']) 
@@ -1615,6 +1684,7 @@ def make_app():
     print 'isdebug:', settings['debug']
     
     app = Application( [
+        url(r"/datasets/.*/type", DatatypeHandler),
         url(r"/datasets/.*/shape", ShapeHandler),
         url(r"/datasets/.*/attributes/.*", AttributeHandler),
         url(r"/groups/.*/attributes/.*", AttributeHandler),

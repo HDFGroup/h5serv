@@ -40,6 +40,8 @@ echo 'datatypetest'
 python datatypetest.py
 echo 'shapetest'
 python shapetest.py
+echo 'datasettypetest'
+python datasettypetest.py
 echo 'spidertest'
 python spidertest.py
 cd ..

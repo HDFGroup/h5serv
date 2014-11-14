@@ -31,7 +31,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['type'], 'float32')
+        self.assertEqual(rspJson['type'], 'H5T_IEEE_F32BE')
         self.assertEqual(rspJson['class'], 'simple')
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 10)  
@@ -47,7 +47,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['type'], 'int64')
+        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 10)  
         
@@ -57,7 +57,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['type'], 'int64')
+        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
         self.assertEqual(len(rspJson['shape']), 2)
         self.assertEqual(rspJson['shape'][1], 10)  
         self.assertEqual(rspJson['maxshape'][1], 20)
@@ -68,7 +68,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['type'], 'int64')
+        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 10)  
         self.assertEqual(rspJson['maxshape'][0], 0)
@@ -79,7 +79,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['type'], 'int64')
+        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
         self.assertEqual(len(rspJson['shape']), 2)
         self.assertEqual(rspJson['shape'][1], 10)  
         self.assertEqual(rspJson['maxshape'][1], 0)
@@ -96,7 +96,7 @@ class DatasetTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertEqual(rspJson['class'], 'scalar')
         self.assertEqual(len(rspJson['shape']), 0)
-        self.assertEqual(rspJson['type'], 'int32')
+        self.assertEqual(rspJson['type'], 'H5T_STD_I32LE')
        
     def testGetCompound(self):
         domain = 'compound.' + config.get('domain')  
@@ -110,11 +110,20 @@ class DatasetTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 72)  
-        self.assertEqual(len(rspJson['type']), 5)
-        field0 = rspJson['type'][0]
-        self.assertEqual(field0['date'], 'int64')
-        field1 = rspJson['type'][1]
-        self.assertEqual(field1['time'], 'S6')
+        typeItem = rspJson['type']
+        self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
+        self.assertTrue('fields' in typeItem)
+        fields = typeItem['fields']
+        self.assertEqual(len(fields), 5)
+        timeField = fields[1]
+        self.assertEqual(timeField['name'], 'time')
+        self.assertTrue('type' in timeField)
+        timeFieldType = timeField['type']
+        self.assertEqual(timeFieldType['class'], 'H5T_STRING')
+        self.assertEqual(timeFieldType['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
+        self.assertEqual(timeFieldType['strsize'], 6)
+        self.assertEqual(timeFieldType['strpad'], 'H5T_STR_NULLPAD')
     
     def testPost(self):
         domain = 'newdset.datasettest.' + config.get('domain')
