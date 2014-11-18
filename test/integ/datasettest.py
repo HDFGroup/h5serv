@@ -111,6 +111,7 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 72)  
         typeItem = rspJson['type']
+        
         self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
         self.assertTrue('fields' in typeItem)
         fields = typeItem['fields']
@@ -124,7 +125,116 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
         self.assertEqual(timeFieldType['strsize'], 6)
         self.assertEqual(timeFieldType['strpad'], 'H5T_STR_NULLPAD')
-    
+        
+    def testGetArray(self):
+        domain = 'array_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 4)  
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_ARRAY')
+        self.assertEqual(typeItem['base_class'], 'H5T_INTEGER')
+        self.assertTrue('shape' in typeItem)
+        typeShape = typeItem['shape']
+        self.assertEqual(len(typeShape), 2)
+        self.assertEqual(typeShape[0], 3)
+        self.assertEqual(typeShape[1], 5)
+        self.assertEqual(typeItem['size'], 120)
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
+        self.assertEqual(typeItem['base_type'], 'H5T_STD_I64LE')
+        
+    def testGetFixedString(self):
+        domain = 'fixed_string_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 4)  
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_STRING')
+        self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        self.assertEqual(typeItem['strsize'], 7)
+        self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLPAD')
+        self.assertEqual(typeItem['size'], 7)
+        
+    def testGetEnum(self):
+        domain = 'enum_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 2)
+        self.assertEqual(rspJson['shape'][0], 4)  
+        self.assertEqual(rspJson['shape'][1], 7)
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_ENUM')
+        self.assertEqual(typeItem['size'], 2)
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_BE')
+        self.assertEqual(typeItem['base_type'], 'H5T_STD_I16BE')
+        self.assertTrue('mapping' in typeItem)
+        mapping = typeItem['mapping']
+        self.assertEqual(len(mapping), 4)
+        self.assertEqual(mapping['SOLID'], 0)
+        self.assertEqual(mapping['LIQUID'], 1)
+        self.assertEqual(mapping['GAS'], 2)
+        self.assertEqual(mapping['PLASMA'], 3)
+        
+    def testGetVlen(self):
+        domain = 'vlen_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 2)  
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_VLEN')
+        self.assertEqual(typeItem['size'], 8)
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        
+    def testGetOpaque(self):
+        domain = 'opaque_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 4)  
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_OPAQUE')
+        self.assertEqual(typeItem['size'], 7)
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        
     def testPost(self):
         domain = 'newdset.datasettest.' + config.get('domain')
         req = self.endpoint + "/"

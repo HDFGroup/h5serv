@@ -393,7 +393,7 @@ class Hdf5db:
     def getTypeItem(self, dt, verbose=False):
         type_info = {}
         if len(dt) <= 1:
-            type_info = self.getBaseType(dt)
+            type_info = self.getTypeElement(dt)
         else:
              names = dt.names
              type_info['class'] = 'H5T_COMPOUND'
@@ -401,9 +401,9 @@ class Hdf5db:
              for name in names:
                 field = { 'name': name }
                 typeItem = self.getTypeItem(dt[name]) # recursive call
-                if not verbose and 'base' in typeItem:
+                if not verbose and 'base_type' in typeItem:
                     # just return the predefined type string
-                    field['type'] = typeItem['base']
+                    field['type'] = typeItem['base_type']
                 else:
                     field['type'] = typeItem  # otherwise return the full type
                 fields.append(field)
@@ -412,11 +412,75 @@ class Hdf5db:
         return type_info
              
     """
-       Get base type info.
+       Get element type info - either a complete type or element of a compound type
          Returns dictionary
         Note: only getTypeItem should call this!
     """
             
+    def getTypeElement(self, dt):
+        if len(dt) > 1:
+            logging.error("unexpected numpy type passed to getTypeElement")
+            return None
+                 
+        type_info = {}
+        # common properties
+        # add in a shape for array types!                       
+        if dt.shape:
+            # array type
+            type_info['shape'] = dt.shape
+        # set itemsize
+        type_info['size'] = dt.itemsize
+        base_type = self.getBaseType(dt)
+        
+        # primitive type
+        if dt.kind == 'S':
+            # Fixed length string type
+            type_info['class'] = 'H5T_STRING' 
+        elif dt.kind == 'O':
+            # numpy object type - could be a vlen string or generic vlen
+            if 'cset' in base_type:
+                type_info['class'] = 'H5T_STRING'
+            else:
+                type_info['class'] = 'H5T_VLEN'
+        elif dt.kind == 'V':
+            # void type or array type
+            if dt.shape:
+                type_info['class'] = 'H5T_ARRAY'
+            else:
+                type_info['class'] = 'H5T_OPAQUE'
+                type_info['order'] = 'H5T_ORDER_NONE'
+        elif dt.kind == 'i':
+            # numpy integer type - but check to see if this is the h5py 
+            # enum extension
+            mapping = h5py.h5t.check_dtype(enum=dt)   
+            if mapping:
+                # yes, this is an enum!
+                type_info['class'] = 'H5T_ENUM'
+            else:
+                # not an enum, regular integer type
+                type_info['class'] = 'H5T_INTEGER'
+            # get the base type properties
+            type_info['base_type'] = base_type['base_type']
+        elif dt.kind == 'f':
+            type_info['class'] = 'H5T_FLOAT'
+            # not supporting custom float formats now - just use base properties
+            type_info['base_type'] = base_type['base_type']
+        
+        # copy over any properties from the base type to the type info to be returned            
+        for prop in base_type:
+            if prop not in type_info:
+                type_info[prop] = base_type[prop]
+            else:
+                if type_info[prop] != base_type[prop]:
+                    # different value, prepend a "base_" to the prop name
+        
+                    type_info['base_' + prop] = base_type[prop]
+        
+        return type_info
+        
+    """
+    Get Base type info for given type element.
+    """    
     def getBaseType(self, dt):
         if len(dt) > 1:
             logging.error("unexpected numpy type passed to getBaseType")
@@ -437,76 +501,66 @@ class Hdf5db:
             'float64': 'H5T_IEEE_F64'
         }
         type_info = {}
-        if len(dt) <= 1:
-            # primitive type
-            if dt.kind == 'S':
-                # Fixed length string type
-                type_info['class'] = 'H5T_STRING' 
+        type_info['size'] = dt.itemsize
+         
+        # primitive type
+        if dt.base.kind == 'S':
+            # Fixed length string type
+            type_info['class'] = 'H5T_STRING' 
+            type_info['cset'] = 'H5T_CSET_ASCII'
+            type_info['strsize'] = dt.itemsize
+            type_info['strpad'] = 'H5T_STR_NULLPAD'
+            type_info['order'] = 'H5T_ORDER_NONE'
+        elif dt.base.kind == 'O':
+            # numpy object type - assume this is a vlen string
+            h5t_check = h5py.h5t.check_dtype(vlen=dt)
+            if h5t_check == str:
+                type_info['class'] = 'H5T_STRING'
+                type_info['strsize'] = 'H5T_VARIABLE'
                 type_info['cset'] = 'H5T_CSET_ASCII'
-                type_info['strsize'] = dt.itemsize
-                type_info['strpad'] = 'H5T_STR_NULLPAD'
+                type_info['strpad'] = 'H5T_STR_NULLTERM'
                 type_info['order'] = 'H5T_ORDER_NONE'
-            elif dt.kind == 'O':
-                # numpy object type - assume this is a vlen string
-                h5t_check = h5py.h5t.check_dtype(vlen=dt)
-                if h5t_check == str:
-                    type_info['class'] = 'H5T_STRING'
-                    type_info['strsize'] = 'H5T_VARIABLE'
-                    type_info['cset'] = 'H5T_CSET_ASCII'
-                    type_info['strpad'] = 'H5T_STR_NULLTERM'
-                    type_info['order'] = 'H5T_ORDER_NONE'
-                elif h5t_check == unicode:
-                    type_info['class'] = 'H5T_STRING'
-                    type_info['strsize'] = 'H5T_VARIABLE'
-                    type_info['cset'] = 'H5T_CSET_UTF8'
-                    type_info['strpad'] = 'H5T_STR_NULLTERM'
-                    type_info['order'] = 'H5T_ORDER_NONE'
-                else:
-                    # unknown vlen
-                    type_info['class'] = 'H5T_VLEN'
-                    type_info['size'] = dt.itemsize 
-                    type_info['order'] = 'H5T_ORDER_NONE' 
-            elif dt.kind == 'V':
-                # void type
+            elif h5t_check == unicode:
+                type_info['class'] = 'H5T_STRING'
+                type_info['strsize'] = 'H5T_VARIABLE'
+                type_info['cset'] = 'H5T_CSET_UTF8'
+                type_info['strpad'] = 'H5T_STR_NULLTERM'
+                type_info['order'] = 'H5T_ORDER_NONE'
+            else:
+                # unknown vlen
+                type_info['class'] = 'H5T_VLEN'
+                type_info['order'] = 'H5T_ORDER_NONE' 
+        elif dt.base.kind == 'V':
                 type_info['class'] = 'H5T_OPAQUE'
-                type_info['size'] = dt.itemsize
                 type_info['order'] = 'H5T_ORDER_NONE'
-            elif dt.kind == 'i':
-                # numpy integer type - but check to see if this is the hypy 
-                # enum extension
-                mapping = h5py.h5t.check_dtype(enum=dt)   
-                if mapping:
-                    # yes, this is an enum!
-                    type_info['class'] = 'H5T_ENUM'
-                    type_info['size'] = dt.itemsize 
-                    type_info['order'] = 'H5T_ORDER_NONE'
-                    type_info['mapping'] = mapping
-                else:
-                    # not an enum, regular integer type
-                    type_info['class'] = 'H5T_INTEGER'
-                    type_info['size'] = dt.itemsize 
-                    byteorder = 'LE'
-                    if dt.byteorder == '>':
-                        byteorder = 'BE'
-                    type_info['order'] = 'H5T_ORDER_' + byteorder
-                    if dt.name in predefined_int_types:
-                        #maps to one of the HDF5 predefined types
-                        type_info['base'] = predefined_int_types[dt.name] + byteorder   
-            elif dt.kind == 'f':
-                type_info['class'] = 'H5T_FLOAT'
-                type_info['size'] = dt.itemsize
-                byteorder = 'LE'
-                if dt.byteorder == '>':
-                    byteorder = 'BE'
-                type_info['order'] = 'H5T_ORDER_' + byteorder
-                if dt.name in predefined_float_types:
-                    #maps to one of the HDF5 predefined types
-                    type_info['base'] = predefined_float_types[dt.name] + byteorder 
-                    
-        # add in a shape for array types!                       
-        if dt.shape:
-            # array type
-            type_info['shape'] = dt.shape
+        elif dt.base.kind == 'i':
+            # numpy integer type - but check to see if this is the hypy 
+            # enum extension
+            mapping = h5py.h5t.check_dtype(enum=dt)  
+            
+            if mapping:
+                # yes, this is an enum!
+                type_info['class'] = 'H5T_ENUM'
+                type_info['mapping'] = mapping
+            else:
+                # not an enum, regular integer type
+                type_info['class'] = 'H5T_INTEGER'
+            byteorder = 'LE'
+            if dt.byteorder == '>':
+                byteorder = 'BE'
+            type_info['order'] = 'H5T_ORDER_' + byteorder
+            if dt.base.name in predefined_int_types:
+                #maps to one of the HDF5 predefined types
+                type_info['base_type'] = predefined_int_types[dt.base.name] + byteorder  
+        elif dt.base.kind == 'f':
+            #type_info['class'] = 'H5T_FLOAT'
+            byteorder = 'LE'
+            if dt.byteorder == '>':
+                byteorder = 'BE'
+            type_info['order'] = 'H5T_ORDER_' + byteorder
+            if dt.base.name in predefined_float_types:
+                #maps to one of the HDF5 predefined types
+                type_info['base_type'] = predefined_float_types[dt.base.name] + byteorder 
                     
         return type_info
         
@@ -648,7 +702,8 @@ class Hdf5db:
             return None
         item = { 'id': objUuid }
         item['attributeCount'] = len(dset.attrs)
-        item['type'] = self.getTypeItem(dset.dtype)
+        typeItem = self.getTypeItem(dset.dtype)
+        item['type'] = typeItem
         item['shape'] = dset.shape
         if len(dset.shape) == 0:
             item['shape_class'] = 'scalar'
@@ -661,11 +716,14 @@ class Hdf5db:
                 extent = dset.maxshape[i]
             maxshape.append(extent)
         item['maxshape'] = maxshape
-        try:
-            item['fillvalue'] = dset.fillvalue.tolist()
-        except RuntimeError:
-            # exception is thrown if fill value is not set
-            pass   # nop
+        if typeItem['class'] != 'H5T_VLEN' and typeItem['class'] != 'H5T_OPAQUE':
+            try:
+                fillvalue = dset.fillvalue
+                if fillvalue != None:
+                    item['fillvalue'] = fillvalue.tolist()
+            except RuntimeError:
+                # exception is thrown if fill value is not set
+                pass   # nop
             
         item['ctime'] = self.getCreateTime(objUuid)
         item['mtime'] = self.getModifiedTime(objUuid)      
@@ -760,16 +818,27 @@ class Hdf5db:
             
         # get the attribute!
         attrObj = h5py.h5a.open(obj.id, name)
-        attr = obj.attrs[name]  # returns a numpy array
-            
+        attr = None
+                   
         item = { 'name': name }
-        item['type'] = self.getTypeItem(attrObj.dtype) 
+        
+        typeItem = self.getTypeItem(attrObj.dtype) 
+        item['type'] = typeItem
+        # todo - don't include data for VLEN and OPAQUE until JSON serialization 
+        # issues are addressed
+        if type(typeItem) == dict and typeItem['class'] in ('H5T_VLEN', 'H5T_OPAQUE'):
+            includeData = False
+        if includeData:
+            try:
+                attr = obj.attrs[name]  # returns a numpy array
+            except TypeError:
+                logging.warning("type error reading attribute") 
         item['shape'] = attrObj.shape
         if len(attrObj.shape) == 0:
             item['shape_class'] = 'scalar'
         else:
             item['shape_class'] = 'simple'
-        if includeData:
+        if includeData and attr != None:
             if len(attrObj.shape) == 0:
                 item['value'] = attr   # just copy value
             else:
@@ -821,7 +890,11 @@ class Hdf5db:
             name + ")")
         self.initFile()
         obj = self.getObjectByUuid(col_type, objUuid)
+        if obj == None:
+            return None
         item = self.getAttributeItemByObj(obj, name)
+        if item == None:
+            return None
         # mix-in timestamps
         item['ctime'] = self.getCreateTime(objUuid, objType="attribute", name=name)
         item['mtime'] = self.getModifiedTime(objUuid, objType="attribute", name=name)

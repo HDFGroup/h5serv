@@ -39,28 +39,7 @@ class AttributeTest(unittest.TestCase):
             expected = range(97, 107)
             expected[9] = 0
             self.assertEqual(data, expected) 
-            self.assertEqual(len(rspJson['hrefs']), 3)
-            
-    def testGetString(self):
-        for domain_name in ('attr1k',):   
-            domain = domain_name + '.' + config.get('domain') 
-            rootUUID = helper.getRootUUID(domain)
-            req = helper.getEndpoint() + "/groups/" + rootUUID + "/attributes/a0001"
-            headers = {'host': domain}
-            rsp = requests.get(req, headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)
-            rspJson = json.loads(rsp.text)
-            self.assertEqual(rspJson['name'], 'a0001')
-            typeItem = rspJson['type']
-            self.assertEqual(typeItem['class'], 'H5T_STRING')
-            self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
-            self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
-            self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLTERM') 
-            self.assertEqual(typeItem['strsize'], 'H5T_VARIABLE') 
-            self.assertEqual(len(rspJson['shape']), 0)
-            data = rspJson['value'] 
-            self.assertEqual(data, "this is attribute: 1") 
-            self.assertEqual(len(rspJson['hrefs']), 3)
+            self.assertEqual(len(rspJson['hrefs']), 4)
             
     def testGetAll(self):
         for domain_name in ('tall', 'tall_ro'):
@@ -71,7 +50,7 @@ class AttributeTest(unittest.TestCase):
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
-            self.assertEqual(len(rspJson['hrefs']), 3)
+            self.assertEqual(len(rspJson['hrefs']), 4)
             attrsJson = rspJson['attributes']
             self.assertEqual(len(attrsJson), 2)
             self.assertEqual(attrsJson[0]['name'], 'attr1')
@@ -136,6 +115,159 @@ class AttributeTest(unittest.TestCase):
             self.assertEqual(field3Type['strsize'], 6)
             self.assertEqual(field3Type['strpad'], 'H5T_STR_NULLPAD')
              
+    def testGetArray(self):
+        domain = 'array_attr.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/attributes/A1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 4)  
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_ARRAY')
+        self.assertEqual(typeItem['base_class'], 'H5T_INTEGER')
+        self.assertTrue('shape' in typeItem)
+        typeShape = typeItem['shape']
+        self.assertEqual(len(typeShape), 2)
+        self.assertEqual(typeShape[0], 3)
+        self.assertEqual(typeShape[1], 5)
+        self.assertEqual(typeItem['size'], 120)
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
+        self.assertEqual(typeItem['base_type'], 'H5T_STD_I64LE')
+        # bug! - unable to read value from attribute with array type
+        # code is not returning 'value' key in this case
+        # h5py issue?
+        self.assertTrue('value' not in rspJson)
+        
+    def testGetVLenString(self):
+        domain = 'vlen_string_attr.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/attributes/A1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 4)  
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_STRING')
+        self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        self.assertEqual(typeItem['strsize'], 'H5T_VARIABLE')
+        self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLTERM')
+        self.assertEqual(typeItem['size'], 8)
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 4) 
+        self.assertEqual(value[0], "Parting")
+        self.assertEqual(value[1], "is such")
+        self.assertEqual(value[2], "sweet")
+        self.assertEqual(value[3], "sorrow.")
+        
+    def testGetFixedString(self):
+        domain = 'fixed_string_attr.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/attributes/A1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 4)  
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_STRING')
+        self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        self.assertEqual(typeItem['strsize'], 7)
+        self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLPAD')
+        self.assertEqual(typeItem['size'], 7)
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 4) 
+        self.assertEqual(value[0], "Parting")
+        self.assertEqual(value[1], "is such")
+        self.assertEqual(value[2], "sweet")
+        self.assertEqual(value[3], "sorrow.")
+        
+    def testGetEnum(self):
+        domain = 'enum_attr.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/attributes/A1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 2)
+        self.assertEqual(rspJson['shape'][0], 4)  
+        self.assertEqual(rspJson['shape'][1], 7)
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_ENUM')
+        self.assertEqual(typeItem['size'], 2)
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_BE')
+        self.assertEqual(typeItem['base_type'], 'H5T_STD_I16BE')
+        self.assertTrue('mapping' in typeItem)
+        mapping = typeItem['mapping']
+        self.assertEqual(len(mapping), 4)
+        self.assertEqual(mapping['SOLID'], 0)
+        self.assertEqual(mapping['LIQUID'], 1)
+        self.assertEqual(mapping['GAS'], 2)
+        self.assertEqual(mapping['PLASMA'], 3)
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 4) 
+        self.assertEqual(value[1][2], mapping['GAS'])
+        
+    def testGetVlen(self):
+        domain = 'vlen_attr.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/attributes/A1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 2)  
+        typeItem = rspJson['type']
+        self.assertEqual(typeItem['class'], 'H5T_VLEN')
+        self.assertEqual(typeItem['size'], 8)
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        self.assertTrue('value' not in rspJson)  # vlen data is not supported yet
+        
+    def testGetOpaque(self):
+        domain = 'opaque_attr.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/attributes/A1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 4)  
+        typeItem = rspJson['type']   
+        
+        self.assertEqual(typeItem['class'], 'H5T_OPAQUE')
+        self.assertEqual(typeItem['size'], 7)
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        self.assertTrue('value' not in rspJson)  # opaque data is not supported yet
+        
             
     def testGetScalar(self):
         domain = 'scalar.' + config.get('domain')  

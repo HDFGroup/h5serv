@@ -32,7 +32,7 @@ class DatasetTypeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         typeItem = rspJson['type']
-        self.assertEqual(typeItem['base'], 'H5T_IEEE_F32BE') 
+        self.assertEqual(typeItem['base_type'], 'H5T_IEEE_F32BE') 
         self.assertEqual(typeItem['order'], 'H5T_ORDER_BE') 
         self.assertEqual(typeItem['class'], 'H5T_FLOAT') 
         self.assertEqual(typeItem['size'], 4) 
@@ -49,7 +49,7 @@ class DatasetTypeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         typeItem = rspJson['type']
-        self.assertEqual(typeItem['base'], 'H5T_STD_I32LE') 
+        self.assertEqual(typeItem['base_type'], 'H5T_STD_I32LE') 
         self.assertEqual(typeItem['order'], 'H5T_ORDER_LE') 
         self.assertEqual(typeItem['class'], 'H5T_INTEGER') 
         self.assertEqual(typeItem['size'], 4) 

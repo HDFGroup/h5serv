@@ -388,12 +388,13 @@ class TypeHandler(RequestHandler):
         hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + reqUuid})
         hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
         hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + reqUuid + '/attributes'}) 
-        hrefs.append({'rel': 'home', 'href': href })        
+        hrefs.append({'rel': 'home',       'href': href })        
         response['id'] = reqUuid
         typeItem = item['type']
-        if 'base' in typeItem:
-            # just return the base string for pre-defined types
-            response['type'] = typeItem['base']
+        if 'base_type' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
+            typeItem['class'] == 'H5T_FLOAT'):
+            # just return the predefined type name for pre-defined types
+            response['type'] = typeItem['base_type']
         else:
             response['type'] = typeItem # otherwise, return full type
         response['created'] = unixTimeToUTC(item['ctime'])
@@ -654,7 +655,7 @@ class DatasetHandler(RequestHandler):
                 logging.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
-                         
+            
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
         hrefs.append({'rel': 'self',       'href': href + 'datasets/' + reqUuid})
@@ -664,9 +665,10 @@ class DatasetHandler(RequestHandler):
         hrefs.append({'rel': 'home', 'href': href })       
         response['id'] = reqUuid
         typeItem = item['type']
-        if 'base' in typeItem:
-            # just return the base string for pre-defined types
-            response['type'] = typeItem['base']
+        if 'base_type' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
+            typeItem['class'] == 'H5T_FLOAT'):
+            # just return the predefined type name for pre-defined types
+            response['type'] = typeItem['base_type']
         else:
             response['type'] = typeItem # otherwise, return full type
         response['shape'] = item['shape']
@@ -919,6 +921,15 @@ class ValueHandler(RequestHandler):
                     httpError = db.httpStatus # library may have more specific error code
                 logging.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
+            itemType = item['type']
+            if itemType['class'] == 'H5T_VLEN':
+                #todo - support for returning VLEN data...
+                logging.info("GET VLEN data not supported")
+                raise HTTPError(501)  # Not implemented
+            if itemType['class'] == 'H5T_OPAQUE':
+                #todo - support for returning OPAQUE data...
+                logging.info("GET OPAQUE data not supported")
+                raise HTTPError(501)  # Not implemented
             shape = item['shape']
             rank = len(shape)
             slices = []
@@ -1202,24 +1213,27 @@ class AttributeHandler(RequestHandler):
             responseItem = {}
             responseItem['name'] = item['name']
             typeItem = item['type']
-            if 'base' in typeItem:
-                # just return the base string for pre-defined types
-                response['type'] = typeItem['base']
+            if 'base_type' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
+                typeItem['class'] == 'H5T_FLOAT'):
+                # just return the predefined type name for pre-defined types
+                responseItem['type'] = typeItem['base_type']
             else:
-                response['type'] = typeItem # otherwise, return full type
+                responseItem['type'] = typeItem # otherwise, return full type
             responseItem['shape'] = item['shape']
             responseItem['class'] = item['shape_class'] 
             responseItem['created'] = unixTimeToUTC(item['ctime']) 
             responseItem['lastModified'] = unixTimeToUTC(item['mtime']) 
-            if attr_name == None:
-                responseItem['href'] = self_href + '/' + url_escape(item['name']) 
-            if 'value' in item:
-                response['value'] = item['value']
+            if typeItem['class'] == 'H5T_VLEN' or typeItem['class'] == 'H5T_OPAQUE':
+                pass # todo - send data for H5T_VLEN's
+            elif 'value' in item:
+                responseItem['value'] = item['value']
+            
             responseItems.append(responseItem)
             
         hrefs.append({'rel': 'self',       'href': self_href})
         hrefs.append({'rel': 'owner',      'href': owner_href })
         hrefs.append({'rel': 'root',       'href': root_href }) 
+        hrefs.append({'rel': 'home',       'href': href }) 
         
             
         if attr_name == None:
@@ -1233,7 +1247,9 @@ class AttributeHandler(RequestHandler):
             responseItem = responseItems[0]
             for k in responseItem:
                 response[k] = responseItem[k]
-        response['hrefs'] = hrefs    
+        response['hrefs'] = hrefs   
+        
+         
         self.write(response)
         
     def put(self):

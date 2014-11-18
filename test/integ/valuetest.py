@@ -206,6 +206,97 @@ class ValueTest(unittest.TestCase):
         self.failUnlessEqual(first[0], 24) 
         self.failUnlessEqual(first[1], "13:53")  
         
+    def testGetArray(self):
+        domain = 'array_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 4)  # four dataset elements (each an array)
+        self.assertEqual(len(value[0]), 3)  # 3x5 array shape
+        self.assertEqual(len((value[0])[0]), 5)  # 3x5 array shape
+        self.assertEqual(value[0][2][4], -8)  # pull out a value from the array
+        
+    def testGetVLenString(self):
+        domain = 'vlen_string_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 4) 
+        self.assertEqual(value[0], "Parting")
+        self.assertEqual(value[1], "is such")
+        self.assertEqual(value[2], "sweet")
+        self.assertEqual(value[3], "sorrow.")
+        
+    def testGetFixedString(self):
+        domain = 'fixed_string_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+       
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 4) 
+        self.assertEqual(value[0], "Parting")
+        self.assertEqual(value[1], "is such")
+        self.assertEqual(value[2], "sweet")
+        self.assertEqual(value[3], "sorrow.")
+        
+    def testGetEnum(self):
+        domain = 'enum_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 4) 
+        self.assertEqual(value[1][2], 2)
+        
+    def testGetVlen(self):
+        domain = 'vlen_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        # get for VLEN data is not supported yet.  Check that the call returns 501
+        self.failUnlessEqual(rsp.status_code, 501)
+        
+    def testGetOpaque(self):
+        domain = 'opaque_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        # get for VLEN data is not supported yet.  Check that the call returns 501
+        self.failUnlessEqual(rsp.status_code, 501)
+        
+        
     def testPost(self):    
         for domain_name in ('tall','tall_ro'):
             domain = domain_name + '.' + config.get('domain') 

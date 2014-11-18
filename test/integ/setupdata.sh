@@ -16,8 +16,8 @@ then
     echo "this will remove all files from ../../data and repopulate using files from ../../testdata!  run with -f to proceed"
     exit 1
 fi
-export SRC="../../testfiles/"
-export DES="../../data/test/"
+export SRC="../../testfiles"
+export DES="../../data/test"
 if [ ! -d $DES ]
 then
     mkdir $DES
@@ -70,5 +70,24 @@ chmod -w $DES/readonly.h5
 cp $SRC/compound.h5 $DES
 cp $SRC/compound_attr.h5 $DES
 cp $SRC/arraytype.h5 $DES
+# from hdf5 lib examples...
+cp $SRC/array_attr.h5 $DES
+cp $SRC/array_dset.h5 $DES
+cp $SRC/bitfield_attr.h5 $DES
+cp $SRC/bitfield_dset.h5 $DES 
+cp $SRC/enum_dset.h5 $DES 
+cp $SRC/enum_attr.h5 $DES 
+cp $SRC/fixed_string_dset.h5 $DES 
+cp $SRC/fixed_string_attr.h5 $DES 
+cp $SRC/objref_dset.h5 $DES 
+cp $SRC/objref_attr.h5 $DES 
+cp $SRC/regionref_dset.h5 $DES
+cp $SRC/regionref_attr.h5 $DES
+cp $SRC/vlen_dset.h5 $DES
+cp $SRC/vlen_attr.h5 $DES
+cp $SRC/vlen_string_dset.h5 $DES
+cp $SRC/vlen_string_attr.h5 $DES
+cp $SRC/opaque_dset.h5 $DES
+cp $SRC/opaque_attr.h5 $DES
 
 
