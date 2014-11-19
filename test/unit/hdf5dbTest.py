@@ -97,7 +97,6 @@ class Hdf5dbTest(unittest.TestCase):
             g1Links = db.getLinkItems(g1uuid)
             self.failUnlessEqual(len(g1Links), 2)
             g11uuid = db.getUUIDByPath("/g1/g1.1")
-            print 'g11uuid', g11uuid
             db.deleteObjectByUuid(g11uuid)
             
     def testCreateGroup(self):
@@ -247,7 +246,6 @@ class Hdf5dbTest(unittest.TestCase):
         g1Uuid = None
         with Hdf5db('tall_ro.h5') as db:
             g1Uuid = db.getUUIDByPath('/g1')
-            print g1Uuid
             self.failUnlessEqual(len(g1Uuid), config.get('uuidlen'))
             obj = db.getObjByPath('/g1')
             self.failUnlessEqual(obj.name, '/g1')
@@ -305,8 +303,6 @@ class Hdf5dbTest(unittest.TestCase):
             rootUuid = db.getUUIDByPath('/')
             self.failUnlessEqual(len(rootUuid), config.get('uuidlen'))
             item = db.getAttributeItem("groups", rootUuid, "attr1")
-            print "return: ", db.httpStatus
-        print "item:", item
         
     def testGetCompoundType(self): 
         # get test file

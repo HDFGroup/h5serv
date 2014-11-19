@@ -925,7 +925,7 @@ class ValueHandler(RequestHandler):
             if itemType['class'] == 'H5T_VLEN':
                 #todo - support for returning VLEN data...
                 logging.info("GET VLEN data not supported")
-                raise HTTPError(501)  # Not implemented
+                # raise HTTPError(501)  # Not implemented
             if itemType['class'] == 'H5T_OPAQUE':
                 #todo - support for returning OPAQUE data...
                 logging.info("GET OPAQUE data not supported")
@@ -1223,8 +1223,8 @@ class AttributeHandler(RequestHandler):
             responseItem['class'] = item['shape_class'] 
             responseItem['created'] = unixTimeToUTC(item['ctime']) 
             responseItem['lastModified'] = unixTimeToUTC(item['mtime']) 
-            if typeItem['class'] == 'H5T_VLEN' or typeItem['class'] == 'H5T_OPAQUE':
-                pass # todo - send data for H5T_VLEN's
+            if typeItem['class'] == 'H5T_OPAQUE':
+                pass # todo - send data for H5T_OPAQUE's
             elif 'value' in item:
                 responseItem['value'] = item['value']
             

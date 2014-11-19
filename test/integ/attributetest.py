@@ -244,10 +244,17 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 2)  
         typeItem = rspJson['type']
+        
         self.assertEqual(typeItem['class'], 'H5T_VLEN')
         self.assertEqual(typeItem['size'], 8)
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
-        self.assertTrue('value' not in rspJson)  # vlen data is not supported yet
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
+        self.assertEqual(typeItem['base_size'], 4)
+        self.assertEqual(typeItem['base'], 'H5T_STD_I32LE')
+        #verify data returned
+        value = rspJson['value']
+        self.assertEqual(len(value), 2)
+        self.assertEqual(len(value[1]), 12)
+        self.assertEqual(value[1][11], 144)
         
     def testGetOpaque(self):
         domain = 'opaque_attr.' + config.get('domain')  

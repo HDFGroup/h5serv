@@ -430,7 +430,8 @@ class Hdf5db:
             type_info['shape'] = dt.shape
         # set itemsize
         type_info['size'] = dt.itemsize
-        base_type = self.getBaseType(dt)
+        
+        basedt = dt  # we will override this for some classes 
         
         # primitive type
         if dt.kind == 'S':
@@ -438,10 +439,24 @@ class Hdf5db:
             type_info['class'] = 'H5T_STRING' 
         elif dt.kind == 'O':
             # numpy object type - could be a vlen string or generic vlen
-            if 'cset' in base_type:
+            h5t_check = h5py.h5t.check_dtype(vlen=dt)
+            if h5t_check == str:
                 type_info['class'] = 'H5T_STRING'
+                type_info['strsize'] = 'H5T_VARIABLE'
+                type_info['cset'] = 'H5T_CSET_ASCII'
+                type_info['strpad'] = 'H5T_STR_NULLTERM'
+                type_info['order'] = 'H5T_ORDER_NONE'
+            elif h5t_check == unicode:
+                type_info['class'] = 'H5T_STRING'
+                type_info['strsize'] = 'H5T_VARIABLE'
+                type_info['cset'] = 'H5T_CSET_UTF8'
+                type_info['strpad'] = 'H5T_STR_NULLTERM'
+                type_info['order'] = 'H5T_ORDER_NONE'
             else:
+                # unknown vlen
                 type_info['class'] = 'H5T_VLEN'
+                basedt = h5t_check  # should be a numpy type
+                
         elif dt.kind == 'V':
             # void type or array type
             if dt.shape:
@@ -459,14 +474,12 @@ class Hdf5db:
             else:
                 # not an enum, regular integer type
                 type_info['class'] = 'H5T_INTEGER'
-            # get the base type properties
-            type_info['base'] = base_type['base']
         elif dt.kind == 'f':
             type_info['class'] = 'H5T_FLOAT'
             # not supporting custom float formats now - just use base properties
-            type_info['base'] = base_type['base']
         
-        # copy over any properties from the base type to the type info to be returned            
+        # copy over any properties from the base type to the type info to be returned 
+        base_type = self.getBaseType(basedt)           
         for prop in base_type:
             if prop not in type_info:
                 type_info[prop] = base_type[prop]
@@ -826,7 +839,7 @@ class Hdf5db:
         item['type'] = typeItem
         # todo - don't include data for VLEN and OPAQUE until JSON serialization 
         # issues are addressed
-        if type(typeItem) == dict and typeItem['class'] in ('H5T_VLEN', 'H5T_OPAQUE'):
+        if type(typeItem) == dict and typeItem['class'] in ('H5T_OPAQUE'):
             includeData = False
         if includeData:
             try:
@@ -838,9 +851,11 @@ class Hdf5db:
             item['shape_class'] = 'scalar'
         else:
             item['shape_class'] = 'simple'
-        if includeData and attr != None:
+        if includeData and attr is not None:
             if len(attrObj.shape) == 0:
                 item['value'] = attr   # just copy value
+            elif attr.dtype.kind == 'O':
+                item['value'] = self.vlenToList(attr)
             else:
                 item['value'] = attr.tolist()  # convert to list 
         # timestamps will be added by getAttributeItem()
@@ -938,6 +953,25 @@ class Hdf5db:
         self.setModifiedTime(objUuid, objType="attribute", name=attr_name, timestamp=now)
         
         return True
+        
+    """
+       Create ascii representation of vlen data object
+    """    
+    def vlenToList(self, data):
+        # todo - verify that data is a numpy.ndarray
+        out = None
+        try:
+            if data.dtype.kind != 'O':
+                out = data.tolist()
+            else:
+                out = []
+                for item in data:
+                    out.append(self.vlenToList(item))  # recursive call
+        except AttributeError:
+            # looks like this is not a numpy ndarray, just return the value
+            out = data
+        return out
+            
          
     """
     Get values from dataset identified by objUuid.
@@ -962,7 +996,12 @@ class Hdf5db:
             if len(slices) != rank:
                 logging.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
                 return None 
-            else:      
+            
+            # H5T_VLEN ?
+            if dset.dtype.kind == 'O':
+                values = self.vlenToList(dset[slices])
+            else:
+                # just use tolist to dump
                 values = dset[slices].tolist()
         return values 
         

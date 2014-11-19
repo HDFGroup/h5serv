@@ -215,7 +215,9 @@ class DatasetTest(unittest.TestCase):
         
         self.assertEqual(typeItem['class'], 'H5T_VLEN')
         self.assertEqual(typeItem['size'], 8)
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        self.assertEqual(typeItem['base_size'], 4)
+        self.assertEqual(typeItem['base'], 'H5T_STD_I32LE')
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
         
     def testGetOpaque(self):
         domain = 'opaque_dset.' + config.get('domain')  
