@@ -149,7 +149,7 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(typeShape[1], 5)
         self.assertEqual(typeItem['size'], 120)
         self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
-        self.assertEqual(typeItem['base_type'], 'H5T_STD_I64LE')
+        self.assertEqual(typeItem['base'], 'H5T_STD_I64LE')
         
     def testGetFixedString(self):
         domain = 'fixed_string_dset.' + config.get('domain')  
@@ -190,7 +190,7 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(typeItem['class'], 'H5T_ENUM')
         self.assertEqual(typeItem['size'], 2)
         self.assertEqual(typeItem['order'], 'H5T_ORDER_BE')
-        self.assertEqual(typeItem['base_type'], 'H5T_STD_I16BE')
+        self.assertEqual(typeItem['base'], 'H5T_STD_I16BE')
         self.assertTrue('mapping' in typeItem)
         mapping = typeItem['mapping']
         self.assertEqual(len(mapping), 4)

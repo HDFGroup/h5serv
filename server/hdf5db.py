@@ -401,9 +401,9 @@ class Hdf5db:
              for name in names:
                 field = { 'name': name }
                 typeItem = self.getTypeItem(dt[name]) # recursive call
-                if not verbose and 'base_type' in typeItem:
+                if not verbose and 'base' in typeItem:
                     # just return the predefined type string
-                    field['type'] = typeItem['base_type']
+                    field['type'] = typeItem['base']
                 else:
                     field['type'] = typeItem  # otherwise return the full type
                 fields.append(field)
@@ -460,11 +460,11 @@ class Hdf5db:
                 # not an enum, regular integer type
                 type_info['class'] = 'H5T_INTEGER'
             # get the base type properties
-            type_info['base_type'] = base_type['base_type']
+            type_info['base'] = base_type['base']
         elif dt.kind == 'f':
             type_info['class'] = 'H5T_FLOAT'
             # not supporting custom float formats now - just use base properties
-            type_info['base_type'] = base_type['base_type']
+            type_info['base'] = base_type['base']
         
         # copy over any properties from the base type to the type info to be returned            
         for prop in base_type:
@@ -551,7 +551,7 @@ class Hdf5db:
             type_info['order'] = 'H5T_ORDER_' + byteorder
             if dt.base.name in predefined_int_types:
                 #maps to one of the HDF5 predefined types
-                type_info['base_type'] = predefined_int_types[dt.base.name] + byteorder  
+                type_info['base'] = predefined_int_types[dt.base.name] + byteorder  
         elif dt.base.kind == 'f':
             #type_info['class'] = 'H5T_FLOAT'
             byteorder = 'LE'
@@ -560,7 +560,7 @@ class Hdf5db:
             type_info['order'] = 'H5T_ORDER_' + byteorder
             if dt.base.name in predefined_float_types:
                 #maps to one of the HDF5 predefined types
-                type_info['base_type'] = predefined_float_types[dt.base.name] + byteorder 
+                type_info['base'] = predefined_float_types[dt.base.name] + byteorder 
                     
         return type_info
         

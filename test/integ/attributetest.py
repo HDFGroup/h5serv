@@ -138,7 +138,7 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(typeShape[1], 5)
         self.assertEqual(typeItem['size'], 120)
         self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
-        self.assertEqual(typeItem['base_type'], 'H5T_STD_I64LE')
+        self.assertEqual(typeItem['base'], 'H5T_STD_I64LE')
         # bug! - unable to read value from attribute with array type
         # code is not returning 'value' key in this case
         # h5py issue?
@@ -218,7 +218,7 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(typeItem['class'], 'H5T_ENUM')
         self.assertEqual(typeItem['size'], 2)
         self.assertEqual(typeItem['order'], 'H5T_ORDER_BE')
-        self.assertEqual(typeItem['base_type'], 'H5T_STD_I16BE')
+        self.assertEqual(typeItem['base'], 'H5T_STD_I16BE')
         self.assertTrue('mapping' in typeItem)
         mapping = typeItem['mapping']
         self.assertEqual(len(mapping), 4)
@@ -279,6 +279,7 @@ class AttributeTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertEqual(rspJson['class'], 'scalar')
         self.assertEqual(len(rspJson['shape']), 0)
+        
         self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
         data = rspJson['value'] 
         self.assertEqual(type(data), int)

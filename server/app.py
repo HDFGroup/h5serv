@@ -391,10 +391,10 @@ class TypeHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href })        
         response['id'] = reqUuid
         typeItem = item['type']
-        if 'base_type' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
+        if 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
             typeItem['class'] == 'H5T_FLOAT'):
             # just return the predefined type name for pre-defined types
-            response['type'] = typeItem['base_type']
+            response['type'] = typeItem['base']
         else:
             response['type'] = typeItem # otherwise, return full type
         response['created'] = unixTimeToUTC(item['ctime'])
@@ -665,10 +665,10 @@ class DatasetHandler(RequestHandler):
         hrefs.append({'rel': 'home', 'href': href })       
         response['id'] = reqUuid
         typeItem = item['type']
-        if 'base_type' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
+        if 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
             typeItem['class'] == 'H5T_FLOAT'):
             # just return the predefined type name for pre-defined types
-            response['type'] = typeItem['base_type']
+            response['type'] = typeItem['base']
         else:
             response['type'] = typeItem # otherwise, return full type
         response['shape'] = item['shape']
@@ -1213,10 +1213,10 @@ class AttributeHandler(RequestHandler):
             responseItem = {}
             responseItem['name'] = item['name']
             typeItem = item['type']
-            if 'base_type' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
+            if 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
                 typeItem['class'] == 'H5T_FLOAT'):
                 # just return the predefined type name for pre-defined types
-                responseItem['type'] = typeItem['base_type']
+                responseItem['type'] = typeItem['base']
             else:
                 responseItem['type'] = typeItem # otherwise, return full type
             responseItem['shape'] = item['shape']
