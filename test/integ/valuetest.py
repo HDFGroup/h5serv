@@ -298,7 +298,7 @@ class ValueTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        # get for VLEN data is not supported yet.  Check that the call returns 501
+        # get for Opaque data is not supported yet.  Check that the call returns 501
         self.failUnlessEqual(rsp.status_code, 501)
         
     def testGetObjectReference(self):
