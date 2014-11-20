@@ -392,8 +392,8 @@ class TypeHandler(RequestHandler):
         response['id'] = reqUuid
         typeItem = item['type']
         if 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
-            typeItem['class'] == 'H5T_FLOAT'):
-            # just return the predefined type name for pre-defined types
+            typeItem['class'] == 'H5T_FLOAT' or typeItem['class'] == 'H5T_REFERENCE'):
+            # just return the predefined type name for pre-defined types (or reference)
             response['type'] = typeItem['base']
         else:
             response['type'] = typeItem # otherwise, return full type
@@ -666,8 +666,8 @@ class DatasetHandler(RequestHandler):
         response['id'] = reqUuid
         typeItem = item['type']
         if 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
-            typeItem['class'] == 'H5T_FLOAT'):
-            # just return the predefined type name for pre-defined types
+            typeItem['class'] == 'H5T_FLOAT' or typeItem['class'] == 'H5T_REFERENCE'):
+            # just return the predefined type name for pre-defined types (or reference)
             response['type'] = typeItem['base']
         else:
             response['type'] = typeItem # otherwise, return full type
@@ -1214,9 +1214,9 @@ class AttributeHandler(RequestHandler):
             responseItem['name'] = item['name']
             typeItem = item['type']
             if 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
-                typeItem['class'] == 'H5T_FLOAT'):
-                # just return the predefined type name for pre-defined types
-                responseItem['type'] = typeItem['base']
+                typeItem['class'] == 'H5T_FLOAT' or typeItem['class'] == 'H5T_REFERENCE'):
+                # just return the predefined type name for pre-defined types (or reference)
+                response['type'] = typeItem['base']
             else:
                 responseItem['type'] = typeItem # otherwise, return full type
             responseItem['shape'] = item['shape']

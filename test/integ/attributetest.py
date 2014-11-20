@@ -275,6 +275,47 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
         self.assertTrue('value' not in rspJson)  # opaque data is not supported yet
         
+    def testGetObjectReference(self):
+        domain = 'objref_attr.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        ds1_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        ds2_uuid = helper.getUUID(domain, root_uuid, 'DS2') 
+        g1_uuid = helper.getUUID(domain, root_uuid, 'G1') 
+        req = helper.getEndpoint() + "/datasets/" + ds1_uuid + "/attributes/A1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 2)  
+        typeItem = rspJson['type']
+        
+        self.assertEqual(rspJson['type'], 'H5T_STD_REF_OBJ')
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 2)
+        self.assertEqual(value[0], '/groups/' + g1_uuid)
+        self.assertEqual(value[1], '/datasets/' + ds2_uuid)
+        
+    def testGetRegionReference(self):
+        domain = 'regionref_attr.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/attributes/A1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 2)  
+        self.assertEqual(rspJson['type'], 'H5T_STD_REF_DSETREG')
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 2)
+        self.assertEqual(value[0], '???')
+        
             
     def testGetScalar(self):
         domain = 'scalar.' + config.get('domain')  

@@ -237,6 +237,34 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(typeItem['size'], 7)
         self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
         
+    def testGetObjReference(self):
+        domain = 'objref_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 2)  
+        self.assertEqual(rspJson['type'], 'H5T_STD_REF_OBJ')
+        
+    def testGetRegionReference(self):
+        domain = 'regionref_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 2)  
+        self.assertEqual(rspJson['type'], 'H5T_STD_REF_DSETREG')
+        
     def testPost(self):
         domain = 'newdset.datasettest.' + config.get('domain')
         req = self.endpoint + "/"

@@ -452,10 +452,29 @@ class Hdf5db:
                 type_info['cset'] = 'H5T_CSET_UTF8'
                 type_info['strpad'] = 'H5T_STR_NULLTERM'
                 type_info['order'] = 'H5T_ORDER_NONE'
-            else:
-                # unknown vlen
+            elif h5t_check is not None:
+                # other vlen data
                 type_info['class'] = 'H5T_VLEN'
                 basedt = h5t_check  # should be a numpy type
+            else:
+                # check for reference type
+                h5t_check = h5py.h5t.check_dtype(ref=dt)
+                if h5t_check is not None:
+                    type_info['class'] = 'H5T_REFERENCE'
+                    type_info['order'] = 'H5T_ORDER_NONE'
+                    basedt = None
+                    if h5t_check is h5py.h5r.Reference:
+                        type_info['base'] = 'H5T_STD_REF_OBJ'  # objref
+                    elif h5t_check is h5py.h5r.RegionReference:
+                        type_info['base'] = 'H5T_STD_REF_DSETREG'  # region ref
+                    else:
+                        self.httpStatus = 500
+                        logging.error("unexpected reference type")
+                        return None
+                else:     
+                    self.httpStatus = 500
+                    logging.error("unknown object type")
+                    return None
                 
         elif dt.kind == 'V':
             # void type or array type
@@ -478,16 +497,16 @@ class Hdf5db:
             type_info['class'] = 'H5T_FLOAT'
             # not supporting custom float formats now - just use base properties
         
-        # copy over any properties from the base type to the type info to be returned 
-        base_type = self.getBaseType(basedt)           
-        for prop in base_type:
-            if prop not in type_info:
-                type_info[prop] = base_type[prop]
-            else:
-                if type_info[prop] != base_type[prop]:
-                    # different value, prepend a "base_" to the prop name
-        
-                    type_info['base_' + prop] = base_type[prop]
+        if basedt is not None:
+            # copy over any properties from the base type to the type info to be returned 
+            base_type = self.getBaseType(basedt)           
+            for prop in base_type:
+                if prop not in type_info:
+                    type_info[prop] = base_type[prop]
+                else:
+                    if type_info[prop] != base_type[prop]:
+                        # different value, prepend a "base_" to the prop name
+                        type_info['base_' + prop] = base_type[prop]
         
         return type_info
         
@@ -837,7 +856,7 @@ class Hdf5db:
         
         typeItem = self.getTypeItem(attrObj.dtype) 
         item['type'] = typeItem
-        # todo - don't include data for VLEN and OPAQUE until JSON serialization 
+        # todo - don't include data for OPAQUE until JSON serialization 
         # issues are addressed
         if type(typeItem) == dict and typeItem['class'] in ('H5T_OPAQUE'):
             includeData = False
@@ -854,8 +873,10 @@ class Hdf5db:
         if includeData and attr is not None:
             if len(attrObj.shape) == 0:
                 item['value'] = attr   # just copy value
-            elif attr.dtype.kind == 'O':
+            elif typeItem['class'] == 'H5T_VLEN':
                 item['value'] = self.vlenToList(attr)
+            elif typeItem['class'] == 'H5T_REFERENCE':
+                item['value'] = self.refToList(attr)
             else:
                 item['value'] = attr.tolist()  # convert to list 
         # timestamps will be added by getAttributeItem()
@@ -971,6 +992,36 @@ class Hdf5db:
             # looks like this is not a numpy ndarray, just return the value
             out = data
         return out
+        
+    """
+       Create ascii representation of ref data object
+    """    
+    def refToList(self, data):
+        # todo - verify that data is a numpy.ndarray
+        out = None
+        if type(data) is h5py.h5r.Reference:
+            if bool(data):
+                grpref = self.f[data]
+                addr = h5py.h5o.get_info(grpref.id).addr
+                uuid = self.getUUIDByAddress(addr)
+                if self.getGroupObjByUuid(uuid):
+                    out = "/groups/" + uuid
+                elif self.getDatasetObjByUuid(uuid):
+                    out = "/datasets/" + uuid
+                elif self.getDatatypeObjByUuid(uuid):
+                    out = "/datatypes/" + uuid
+                else:
+                    logging.warning("uuid in region ref not found: [" + uuid + "]");
+                    return None
+            else:
+                out = "null"
+        elif type(data) is h5py.h5r.RegionReference:
+            out = "???"  # todo!
+        else:
+            out = []
+            for item in data:
+                out.append(self.refToList(item))  # recursive call
+        return out
             
          
     """
@@ -978,31 +1029,42 @@ class Hdf5db:
     If a slices list or tuple is provided, it should have the same
     number of elements as the rank of the dataset.
     """    
-    def getDatasetValuesByUuid(self, objUuid, slices=None):
+    def getDatasetValuesByUuid(self, objUuid, slices=Ellipsis):
         dset = self.getDatasetObjByUuid(objUuid)
         if dset == None:
             return None
         values = None
-        if slices == None:
-            # just return the entire array as a list
-            values = dset[()].tolist()
-            return values
-        else:
-            if type(slices) != list and type(slices) != tuple:
-                logging.error("getDatasetValuesByUuid: bad type for dim parameter")
-                return None
-            rank = len(dset.shape)
-            
-            if len(slices) != rank:
-                logging.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
-                return None 
-            
-            # H5T_VLEN ?
-            if dset.dtype.kind == 'O':
+        dt = dset.dtype
+        rank = len(dset.shape)
+         
+        if type(slices) != list and type(slices) != tuple and slices is not Ellipsis:
+            logging.error("getDatasetValuesByUuid: bad type for dim parameter")
+            return None
+                
+        if (type(slices) == list or type(slices) == tuple) and len(slices) != rank:
+            logging.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
+            return None 
+        
+        if dt.kind == 'O':    
+            # numpy object type - could be a vlen string or generic vlen
+            h5t_check = h5py.h5t.check_dtype(vlen=dt)
+            if h5t_check == str or h5t_check == unicode:
+                values = dset[slices].tolist()  # just dump to list
+            elif h5t_check is not None:
+                # other vlen data
                 values = self.vlenToList(dset[slices])
             else:
-                # just use tolist to dump
-                values = dset[slices].tolist()
+                # check for reference type
+                h5t_check = h5py.h5t.check_dtype(ref=dt)
+                if h5t_check is not None:
+                    # reference type
+                    values = self.refToList(dset[slices])
+                else:     
+                    self.httpStatus = 500
+                    logging.error("unknown object type")
+        else:
+            # just use tolist to dump
+            values = dset[slices].tolist()
         return values 
         
     """
