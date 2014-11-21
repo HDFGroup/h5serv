@@ -994,6 +994,43 @@ class Hdf5db:
         return out
         
     """
+      Get item description of region reference value
+    """
+    def getRegionReference(self, regionRef):
+        selectionEnums = { h5py.h5s.SEL_NONE:       'H5S_SEL_NONE',
+                           h5py.h5s.SEL_ALL:        'H5S_SEL_ALL', 
+                           h5py.h5s.SEL_POINTS:     'H5S_SEL_POINTS',
+                           h5py.h5s.SEL_HYPERSLABS: 'H5S_SEL_HYPERSLABS'
+                          }
+                         
+        #if regionRef.typecode not in selectionEnums:
+        #    logging.error("Unexpected selection type: " + regionRef.typecode)
+        #    return None
+        item = {}
+        objid = h5py.h5r.dereference(regionRef, self.f.file.file.id)
+        if objid:
+            item['id'] = self.getUUIDByAddress(h5py.h5o.get_info(objid).addr)
+            
+        sel = h5py.h5r.get_region(regionRef, objid)  
+        select_type = sel.get_select_type()
+        if select_type not in selectionEnums:
+            logging.error("Unexpected selection type: " + regionRef.typecode)
+            return None
+        item['select_type'] = selectionEnums[select_type]
+        points = None
+        if select_type == h5py.h5s.SEL_POINTS:
+            # retrieve a numpy array of selection points
+            points = sel.get_select_elem_pointlist()      
+        elif select_type == h5py.h5s.SEL_HYPERSLABS:
+            points = sel.get_select_hyper_blocklist()        
+        if points is not None:
+            item['selection'] = points[...].tolist()     
+        
+        return item 
+           
+        
+        
+    """
        Create ascii representation of ref data object
     """    
     def refToList(self, data):
@@ -1016,7 +1053,7 @@ class Hdf5db:
             else:
                 out = "null"
         elif type(data) is h5py.h5r.RegionReference:
-            out = "???"  # todo!
+            out = self.getRegionReference(data)
         else:
             out = []
             for item in data:

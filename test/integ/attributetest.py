@@ -302,8 +302,9 @@ class AttributeTest(unittest.TestCase):
         domain = 'regionref_attr.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)
         self.assertTrue(helper.validateId(root_uuid))
-        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
-        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/attributes/A1"
+        ds1_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        ds2_uuid = helper.getUUID(domain, root_uuid, 'DS2') 
+        req = helper.getEndpoint() + "/datasets/" + ds1_uuid + "/attributes/A1"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
@@ -314,7 +315,31 @@ class AttributeTest(unittest.TestCase):
         self.assertTrue('value' in rspJson)
         value = rspJson['value']
         self.assertEqual(len(value), 2)
-        self.assertEqual(value[0], '???')
+        value = rspJson['value']
+        self.assertEqual(len(value), 2)
+        ref0 = value[0]
+        self.assertEqual(ref0['select_type'], 'H5S_SEL_POINTS')
+        self.assertEqual(ref0['id'], ds2_uuid)
+        points = ref0['selection']
+        self.assertEqual(len(points), 4)
+        self.assertEqual(points[0], [0, 1])
+        self.assertEqual(points[1], [2,11])
+        self.assertEqual(points[2], [1, 0])
+        self.assertEqual(points[3], [2, 4])
+        
+        ref1 = value[1]
+        self.assertEqual(ref1['select_type'], 'H5S_SEL_HYPERSLABS')
+        self.assertEqual(ref1['id'], ds2_uuid)
+        hyperslabs = ref1['selection'] 
+        self.assertEqual(len(hyperslabs), 4)
+        self.assertEqual(hyperslabs[0][0], [0, 0])
+        self.assertEqual(hyperslabs[0][1], [0, 2])
+        self.assertEqual(hyperslabs[1][0], [0, 11])
+        self.assertEqual(hyperslabs[1][1], [0, 13])
+        self.assertEqual(hyperslabs[2][0], [2, 0])
+        self.assertEqual(hyperslabs[2][1], [2, 2])
+        self.assertEqual(hyperslabs[3][0], [2, 11])
+        self.assertEqual(hyperslabs[3][1], [2, 13])
         
             
     def testGetScalar(self):

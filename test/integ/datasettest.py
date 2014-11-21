@@ -263,6 +263,7 @@ class DatasetTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['shape']), 1)
         self.assertEqual(rspJson['shape'][0], 2)  
+        
         self.assertEqual(rspJson['type'], 'H5T_STD_REF_DSETREG')
         
     def testPost(self):
