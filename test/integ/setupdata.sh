@@ -89,5 +89,6 @@ cp $SRC/vlen_string_dset.h5 $DES
 cp $SRC/vlen_string_attr.h5 $DES
 cp $SRC/opaque_dset.h5 $DES
 cp $SRC/opaque_attr.h5 $DES
+cp $SRC/null_objref_dset.h5 $DES
 
 
