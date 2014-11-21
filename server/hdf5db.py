@@ -306,7 +306,7 @@ class Hdf5db:
     def getUUIDByAddress(self, addr):
         if "{addr}" not in self.dbGrp:
             logging.error("expected to find {addr} group") 
-            raise Exception
+            return None
         addrGrp = self.dbGrp["{addr}"]
         objUuid = None
         if str(addr) in addrGrp.attrs:
@@ -423,6 +423,8 @@ class Hdf5db:
             return None
                  
         type_info = {}
+        
+        
         # common properties
         # add in a shape for array types!                       
         if dt.shape:
@@ -734,8 +736,23 @@ class Hdf5db:
             return None
         item = { 'id': objUuid }
         item['attributeCount'] = len(dset.attrs)
-        typeItem = self.getTypeItem(dset.dtype)
+        
+        # check if the dataset is using a committed type
+        typeid = h5py.h5d.DatasetID.get_type(dset.id)
+        typeItem = None
+        if h5py.h5t.TypeID.committed(typeid):
+            type_uuid = None
+            addr = h5py.h5o.get_info(typeid).addr
+            type_uuid = self.getUUIDByAddress(addr)
+            committedType = self.getCommittedTypeItemByUuid(type_uuid)
+            typeItem = committedType['type']
+            typeItem['uuid'] = type_uuid
+        else:  
+            typeItem = self.getTypeItem(dset.dtype)
+            
         item['type'] = typeItem
+            
+        # get shape
         item['shape'] = dset.shape
         if len(dset.shape) == 0:
             item['shape_class'] = 'scalar'
@@ -748,7 +765,8 @@ class Hdf5db:
                 extent = dset.maxshape[i]
             maxshape.append(extent)
         item['maxshape'] = maxshape
-        if typeItem['class'] != 'H5T_VLEN' and typeItem['class'] != 'H5T_OPAQUE':
+        #todo - get fillvalue for committed type objects
+        if typeItem and typeItem['class'] != 'H5T_VLEN' and typeItem['class'] != 'H5T_OPAQUE':
             try:
                 fillvalue = dset.fillvalue
                 if fillvalue != None:

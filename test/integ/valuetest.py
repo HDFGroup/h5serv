@@ -206,6 +206,20 @@ class ValueTest(unittest.TestCase):
         self.failUnlessEqual(first[0], 24) 
         self.failUnlessEqual(first[1], "13:53")  
         
+    def testGetCommitted(self):
+        domain = 'committed_type.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        data = rspJson['value'] 
+        self.failUnlessEqual(len(data), 4)
+         
+        
     def testGetArray(self):
         domain = 'array_dset.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)
@@ -332,7 +346,6 @@ class ValueTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertTrue('value' in rspJson)
         value = rspJson['value']
-        print value
         self.assertEqual(len(value), 1)
         self.assertEqual(value[0], "null")
         

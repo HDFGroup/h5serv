@@ -126,6 +126,21 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(timeFieldType['strsize'], 6)
         self.assertEqual(timeFieldType['strpad'], 'H5T_STR_NULLPAD')
         
+    def testGetCommitted(self):
+        domain = 'committed_type.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 1)
+        self.assertEqual(rspJson['shape'][0], 4)  
+        typeItem = rspJson['type']  # returns uuid
+        self.assertTrue(helper.validateId(typeItem))
+        
     def testGetArray(self):
         domain = 'array_dset.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)

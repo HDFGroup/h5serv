@@ -665,7 +665,10 @@ class DatasetHandler(RequestHandler):
         hrefs.append({'rel': 'home', 'href': href })       
         response['id'] = reqUuid
         typeItem = item['type']
-        if 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
+        if 'uuid' in typeItem:
+            # committed type, just return uuid
+            response['type'] = typeItem['uuid']
+        elif 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
             typeItem['class'] == 'H5T_FLOAT' or typeItem['class'] == 'H5T_REFERENCE'):
             # just return the predefined type name for pre-defined types (or reference)
             response['type'] = typeItem['base']
@@ -822,7 +825,7 @@ class ValueHandler(RequestHandler):
     """
     Get slices given lists of start, stop, step values
     """
-    def  getHyperslabSelection(self, dsetshape, start, stop, step):
+    def getHyperslabSelection(self, dsetshape, start, stop, step):
         rank = len(dsetshape)
         if start:
             if type(start) is not list:
