@@ -305,6 +305,7 @@ class LinkHandler(RequestHandler):
                 raise HTTPError(httpStatus)  
                 
 class TypeHandler(RequestHandler):
+    """
     # supported datatypes
     _dtypes = Set([    'int8',        'int16',   'int32',  'int64',
                       'uint8',       'uint16',  'uint32', 'uint64',
@@ -346,7 +347,7 @@ class TypeHandler(RequestHandler):
             logging.info("invalid type argument: " + typeItem)
             raise HTTPError(400)
         return isValid
-            
+    """
         
     # or 'Snn' for fixed string or 'vlen_bytes' for variable 
     def getRequestId(self):
@@ -420,11 +421,7 @@ class TypeHandler(RequestHandler):
             logging.info("Type not supplied")
             raise HTTPError(400)  # missing type
             
-        datatype = body["type"]
-        
-        # validate type
-        TypeHandler.verifyType(datatype)
-              
+        datatype = body["type"]     
         
         with Hdf5db(filePath) as db:
             rootUUID = db.getUUIDByPath('/')
@@ -730,9 +727,6 @@ class DatasetHandler(RequestHandler):
                 logging.info("invalid maxshape argument")
                 raise HTTPError(400)     
            
-        # validate type
-        TypeHandler.verifyType(datatype)
-            
         # validate shape
         for extent in shape:
             if type(extent) != int:
@@ -1294,9 +1288,6 @@ class AttributeHandler(RequestHandler):
         else:
             logging.info("invalid shape argument")
             raise HTTPError(400)
-            
-        # validate type
-        TypeHandler.verifyType(datatype)
             
         # validate shape
         for extent in shape:

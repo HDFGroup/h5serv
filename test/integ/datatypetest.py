@@ -91,13 +91,11 @@ class DatatypeTest(unittest.TestCase):
         root_uuid = helper.getRootUUID(domain)
         
         # list of types supported
-        # 'Sn' is supported for any positive n, so we'll just use 
-        # a few specific examples
-        datatypes = ( 'S1', 'S10', 'S100', 
-                       'int8',  'int16',   'int32',  'int64',
-                      'uint8',       'uint16',  'uint32', 'uint64',
-                    'float16',      'float32', 'float64',
-                  'complex64',   'complex128')
+        datatypes = ( 'H5T_STD_I8LE',   'H5T_STD_UI8LE',  
+                      'H5T_STD_I16LE',  'H5T_STD_UI16LE',    
+                      'H5T_STD_I32LE',  'H5T_STD_UI32LE',   
+                      'H5T_STD_I64LE',  'H5T_STD_I64LE',  
+                      'H5T_IEEE_F32LE', 'H5T_IEEE_F64LE' )
                      
                #todo: check on  'vlen_bytes', 'vlen_unicode'
         for datatype in datatypes:  
@@ -125,9 +123,9 @@ class DatatypeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
         root_uuid = helper.getRootUUID(domain)
-        
-        datatype = ({'name': 'temp', 'type': 'int32'}, 
-                    {'name': 'pressure', 'type': 'float32'}) 
+        fields = ({'name': 'temp', 'type': 'H5T_STD_I32LE'}, 
+                    {'name': 'pressure', 'type': 'H5T_IEEE_F32LE'}) 
+        datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
         payload = {'type': datatype}
         req = self.endpoint + "/datatypes/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)

@@ -156,7 +156,6 @@ class DatasetTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_ARRAY')
-        self.assertEqual(typeItem['base_class'], 'H5T_INTEGER')
         self.assertTrue('shape' in typeItem)
         typeShape = typeItem['shape']
         self.assertEqual(len(typeShape), 2)
@@ -229,8 +228,8 @@ class DatasetTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_VLEN')
-        self.assertEqual(typeItem['size'], 8)
-        self.assertEqual(typeItem['base_size'], 4)
+        self.assertEqual(typeItem['size'], 'H5T_VARIABLE')
+        self.assertEqual(typeItem['base_size'], 8)
         self.assertEqual(typeItem['base'], 'H5T_STD_I32LE')
         self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
         
@@ -302,7 +301,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
-        payload = {'type': 'float32', 'shape': 10}
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10}
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
@@ -326,7 +325,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
-        payload = {'type': 'int32'}
+        payload = {'type': 'H5T_STD_I32LE'}
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
@@ -352,15 +351,13 @@ class DatasetTest(unittest.TestCase):
         
         root_uuid = helper.getRootUUID(domain)
         
-        # list of types supported
-        # 'Sn' is supported for any positive n, so we'll just use 
-        # a few specific examples
-        datatypes = ( 'S1', 'S10', 'S100', 
-                       'int8',  'int16',   'int32',  'int64',
-                      'uint8',       'uint16',  'uint32', 'uint64',
-                    'float16',      'float32', 'float64',
-                  'complex64',   'complex128',
-                 'vlen_bytes', 'vlen_unicode')
+        
+        datatypes = ( 'H5T_STD_I8LE',   'H5T_STD_UI8LE',  
+                      'H5T_STD_I16LE',  'H5T_STD_UI16LE',    
+                      'H5T_STD_I32LE',  'H5T_STD_UI32LE',   
+                      'H5T_STD_I64LE',  'H5T_STD_I64LE',  
+                      'H5T_IEEE_F32LE', 'H5T_IEEE_F64LE' )
+        
         for datatype in datatypes:  
             payload = {'type': datatype, 'shape': 10}
             req = self.endpoint + "/datasets/"
@@ -387,8 +384,9 @@ class DatasetTest(unittest.TestCase):
         
         root_uuid = helper.getRootUUID(domain)
         
-        datatype = ({'name': 'temp', 'type': 'int32'}, 
-                    {'name': 'pressure', 'type': 'float32'}) 
+        fields = ({'name': 'temp', 'type': 'H5T_STD_I32LE'}, 
+                    {'name': 'pressure', 'type': 'H5T_IEEE_F32LE'}) 
+        datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
         payload = {'type': datatype, 'shape': 10}
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
@@ -412,7 +410,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
-        payload = {'type': 'float32', 'shape': 10, 'maxshape': 20}
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'maxshape': 20}
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
@@ -430,7 +428,7 @@ class DatasetTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201)
         
         # create a datataset with unlimited dimension
-        payload = {'type': 'float32', 'shape': 10, 'maxshape': 0}
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'maxshape': 0}
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
@@ -459,7 +457,7 @@ class DatasetTest(unittest.TestCase):
     def testPostInvalidShape(self):
         domain = 'tall.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)
-        payload = {'type': 'int32', 'shape': -5}
+        payload = {'type': 'H5T_STD_I32LE', 'shape': -5}
         headers = {'host': domain}
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)

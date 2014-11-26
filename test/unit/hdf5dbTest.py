@@ -304,32 +304,7 @@ class Hdf5dbTest(unittest.TestCase):
             self.failUnlessEqual(len(rootUuid), config.get('uuidlen'))
             item = db.getAttributeItem("groups", rootUuid, "attr1")
         
-    def testGetCompoundType(self): 
-        # get test file
-        getFile('compound.h5')
-        typeItem = None
-        val = None
-        with Hdf5db('compound.h5') as db:
-             dset_uuid = db.getUUIDByPath('/dset')
-             dset = db.getDatasetObjByUuid(dset_uuid)
-             typeItem = db.getTypeItem(dset.dtype)
-             slices = []
-             slices.append(slice(1,2))
-             values = db.getDatasetValuesByUuid(dset_uuid, slices)
-        
-        self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
-        self.assertTrue('fields' in typeItem)
-        fields = typeItem['fields']
-        self.assertEqual(len(fields), 5)
-        timeField = fields[1]
-        self.assertEqual(timeField['name'], 'time')
-        self.assertTrue('type' in timeField)
-        timeFieldType = timeField['type']
-        self.assertEqual(timeFieldType['class'], 'H5T_STRING')
-        self.assertEqual(timeFieldType['cset'], 'H5T_CSET_ASCII')
-        self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
-        self.assertEqual(timeFieldType['strsize'], 6)
-        self.assertEqual(timeFieldType['strpad'], 'H5T_STR_NULLPAD')
+     
              
              
 if __name__ == '__main__':

@@ -99,13 +99,14 @@ class AttributeTest(unittest.TestCase):
             fields = typeItem['fields']
             field0 = fields[0]
             self.assertEqual(field0['name'], 'time')
-            self.assertEqual(field0['type'], 'H5T_STD_I64LE')
+            #todo - these should be return just the predefined type names
+            #self.assertEqual(field0['type'], 'H5T_STD_I64LE')
             field1 = fields[1]
             self.assertEqual(field1['name'], 'temp')
-            self.assertEqual(field1['type'], 'H5T_STD_I64LE')
+            #self.assertEqual(field1['type'], 'H5T_STD_I64LE')
             field2 = fields[2]
             self.assertEqual(field2['name'], 'pressure')
-            self.assertEqual(field2['type'], 'H5T_IEEE_F64LE')
+            #self.assertEqual(field2['type'], 'H5T_IEEE_F64LE')
             field3 = fields[3]
             self.assertEqual(field3['name'], 'wind')
             field3Type = field3['type']
@@ -130,7 +131,6 @@ class AttributeTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_ARRAY')
-        self.assertEqual(typeItem['base_class'], 'H5T_INTEGER')
         self.assertTrue('shape' in typeItem)
         typeShape = typeItem['shape']
         self.assertEqual(len(typeShape), 2)
@@ -163,7 +163,6 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
         self.assertEqual(typeItem['strsize'], 'H5T_VARIABLE')
         self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLTERM')
-        self.assertEqual(typeItem['size'], 8)
         self.assertTrue('value' in rspJson)
         value = rspJson['value']
         self.assertEqual(len(value), 4) 
@@ -246,9 +245,9 @@ class AttributeTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_VLEN')
-        self.assertEqual(typeItem['size'], 8)
+        self.assertEqual(typeItem['size'], 'H5T_VARIABLE')
         self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
-        self.assertEqual(typeItem['base_size'], 4)
+        self.assertEqual(typeItem['base_size'], 8)
         self.assertEqual(typeItem['base'], 'H5T_STD_I32LE')
         #verify data returned
         value = rspJson['value']
@@ -364,7 +363,7 @@ class AttributeTest(unittest.TestCase):
         rootUUID = helper.getRootUUID(domain) 
         headers = {'host': domain}
            
-        payload = {'type': 'float32', 'shape': (0,), 'value': 3.12}
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': (0,), 'value': 3.12}
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
@@ -378,7 +377,7 @@ class AttributeTest(unittest.TestCase):
         headers = {'host': domain}
         data = range(10)
            
-        payload = {'type': 'int32', 'shape': (10,), 'value': data}
+        payload = {'type': 'H5T_STD_I32LE', 'shape': (10,), 'value': data}
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
@@ -391,8 +390,10 @@ class AttributeTest(unittest.TestCase):
         root_uuid = helper.getRootUUID(domain)
         headers = {'host': domain}
         
-        datatype = ({'name': 'temp', 'type': 'int32'}, 
-                    {'name': 'pressure', 'type': 'float32'})
+        fields = ({'name': 'temp', 'type': 'H5T_STD_I32LE'}, 
+                    {'name': 'pressure', 'type': 'H5T_IEEE_F32LE'}) 
+        datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
+        
         value = ((55, 32.34), (59, 29.34)) 
         payload = {'type': datatype, 'shape': 2, 'value': value}
         req = self.endpoint + "/groups/" + root_uuid + "/attributes/" + attr_name

@@ -61,6 +61,8 @@ import logging
 import os.path as op
 import os
 
+import hdf5dtype
+
 
 # global dictionary to direct back to the Hdf5db instance by filename
 # (needed for visititems callback)
@@ -384,278 +386,6 @@ class Hdf5db:
         return obj
         
     
-        
-    """
-        Return type info.
-          For primitive types, return string with typename
-          For compound types return array of dictionary items
-    """
-    def getTypeItem(self, dt, verbose=False):
-        type_info = {}
-        if len(dt) <= 1:
-            type_info = self.getTypeElement(dt)
-        else:
-             names = dt.names
-             type_info['class'] = 'H5T_COMPOUND'
-             fields = []
-             for name in names:
-                field = { 'name': name }
-                typeItem = self.getTypeItem(dt[name]) # recursive call
-                if not verbose and 'base' in typeItem:
-                    # just return the predefined type string
-                    field['type'] = typeItem['base']
-                else:
-                    field['type'] = typeItem  # otherwise return the full type
-                fields.append(field)
-            
-             type_info['fields'] = fields
-        return type_info
-             
-    """
-       Get element type info - either a complete type or element of a compound type
-         Returns dictionary
-        Note: only getTypeItem should call this!
-    """
-            
-    def getTypeElement(self, dt):
-        if len(dt) > 1:
-            logging.error("unexpected numpy type passed to getTypeElement")
-            return None
-                 
-        type_info = {}
-        
-        
-        # common properties
-        # add in a shape for array types!                       
-        if dt.shape:
-            # array type
-            type_info['shape'] = dt.shape
-        # set itemsize
-        type_info['size'] = dt.itemsize
-        
-        basedt = dt  # we will override this for some classes 
-        
-        # primitive type
-        if dt.kind == 'S':
-            # Fixed length string type
-            type_info['class'] = 'H5T_STRING' 
-        elif dt.kind == 'O':
-            # numpy object type - could be a vlen string or generic vlen
-            h5t_check = h5py.h5t.check_dtype(vlen=dt)
-            if h5t_check == str:
-                type_info['class'] = 'H5T_STRING'
-                type_info['strsize'] = 'H5T_VARIABLE'
-                type_info['cset'] = 'H5T_CSET_ASCII'
-                type_info['strpad'] = 'H5T_STR_NULLTERM'
-                type_info['order'] = 'H5T_ORDER_NONE'
-            elif h5t_check == unicode:
-                type_info['class'] = 'H5T_STRING'
-                type_info['strsize'] = 'H5T_VARIABLE'
-                type_info['cset'] = 'H5T_CSET_UTF8'
-                type_info['strpad'] = 'H5T_STR_NULLTERM'
-                type_info['order'] = 'H5T_ORDER_NONE'
-            elif h5t_check is not None:
-                # other vlen data
-                type_info['class'] = 'H5T_VLEN'
-                basedt = h5t_check  # should be a numpy type
-            else:
-                # check for reference type
-                h5t_check = h5py.h5t.check_dtype(ref=dt)
-                if h5t_check is not None:
-                    type_info['class'] = 'H5T_REFERENCE'
-                    type_info['order'] = 'H5T_ORDER_NONE'
-                    basedt = None
-                    if h5t_check is h5py.h5r.Reference:
-                        type_info['base'] = 'H5T_STD_REF_OBJ'  # objref
-                    elif h5t_check is h5py.h5r.RegionReference:
-                        type_info['base'] = 'H5T_STD_REF_DSETREG'  # region ref
-                    else:
-                        self.httpStatus = 500
-                        logging.error("unexpected reference type")
-                        return None
-                else:     
-                    self.httpStatus = 500
-                    logging.error("unknown object type")
-                    return None
-                
-        elif dt.kind == 'V':
-            # void type or array type
-            if dt.shape:
-                type_info['class'] = 'H5T_ARRAY'
-            else:
-                type_info['class'] = 'H5T_OPAQUE'
-                type_info['order'] = 'H5T_ORDER_NONE'
-        elif dt.kind == 'i':
-            # numpy integer type - but check to see if this is the h5py 
-            # enum extension
-            mapping = h5py.h5t.check_dtype(enum=dt)   
-            if mapping:
-                # yes, this is an enum!
-                type_info['class'] = 'H5T_ENUM'
-            else:
-                # not an enum, regular integer type
-                type_info['class'] = 'H5T_INTEGER'
-        elif dt.kind == 'f':
-            type_info['class'] = 'H5T_FLOAT'
-            # not supporting custom float formats now - just use base properties
-        
-        if basedt is not None:
-            # copy over any properties from the base type to the type info to be returned 
-            base_type = self.getBaseType(basedt)           
-            for prop in base_type:
-                if prop not in type_info:
-                    type_info[prop] = base_type[prop]
-                else:
-                    if type_info[prop] != base_type[prop]:
-                        # different value, prepend a "base_" to the prop name
-                        type_info['base_' + prop] = base_type[prop]
-        
-        return type_info
-        
-    """
-    Get Base type info for given type element.
-    """    
-    def getBaseType(self, dt):
-        if len(dt) > 1:
-            logging.error("unexpected numpy type passed to getBaseType")
-            return None
-                 
-        predefined_int_types = {
-            'int8':    'H5T_STD_I8',
-            'uint8':   'H5T_STD_UI8',
-            'int16':   'H5T_STD_I16',
-            'uint16':  'H5T_STD_UI16',
-            'int32':   'H5T_STD_I32',
-            'uint32':  'H5T_STD_UI32',
-            'int64':   'H5T_STD_I64',
-            'uint64':  'H5T_STD_UI64'
-        }
-        predefined_float_types = {
-            'float32': 'H5T_IEEE_F32',
-            'float64': 'H5T_IEEE_F64'
-        }
-        type_info = {}
-        type_info['size'] = dt.itemsize
-         
-        # primitive type
-        if dt.base.kind == 'S':
-            # Fixed length string type
-            type_info['class'] = 'H5T_STRING' 
-            type_info['cset'] = 'H5T_CSET_ASCII'
-            type_info['strsize'] = dt.itemsize
-            type_info['strpad'] = 'H5T_STR_NULLPAD'
-            type_info['order'] = 'H5T_ORDER_NONE'
-        elif dt.base.kind == 'O':
-            # numpy object type - assume this is a vlen string
-            h5t_check = h5py.h5t.check_dtype(vlen=dt)
-            if h5t_check == str:
-                type_info['class'] = 'H5T_STRING'
-                type_info['strsize'] = 'H5T_VARIABLE'
-                type_info['cset'] = 'H5T_CSET_ASCII'
-                type_info['strpad'] = 'H5T_STR_NULLTERM'
-                type_info['order'] = 'H5T_ORDER_NONE'
-            elif h5t_check == unicode:
-                type_info['class'] = 'H5T_STRING'
-                type_info['strsize'] = 'H5T_VARIABLE'
-                type_info['cset'] = 'H5T_CSET_UTF8'
-                type_info['strpad'] = 'H5T_STR_NULLTERM'
-                type_info['order'] = 'H5T_ORDER_NONE'
-            else:
-                # unknown vlen
-                type_info['class'] = 'H5T_VLEN'
-                type_info['order'] = 'H5T_ORDER_NONE' 
-        elif dt.base.kind == 'V':
-                type_info['class'] = 'H5T_OPAQUE'
-                type_info['order'] = 'H5T_ORDER_NONE'
-        elif dt.base.kind == 'i':
-            # numpy integer type - but check to see if this is the hypy 
-            # enum extension
-            mapping = h5py.h5t.check_dtype(enum=dt)  
-            
-            if mapping:
-                # yes, this is an enum!
-                type_info['class'] = 'H5T_ENUM'
-                type_info['mapping'] = mapping
-            else:
-                # not an enum, regular integer type
-                type_info['class'] = 'H5T_INTEGER'
-            byteorder = 'LE'
-            if dt.byteorder == '>':
-                byteorder = 'BE'
-            type_info['order'] = 'H5T_ORDER_' + byteorder
-            if dt.base.name in predefined_int_types:
-                #maps to one of the HDF5 predefined types
-                type_info['base'] = predefined_int_types[dt.base.name] + byteorder  
-        elif dt.base.kind == 'f':
-            #type_info['class'] = 'H5T_FLOAT'
-            byteorder = 'LE'
-            if dt.byteorder == '>':
-                byteorder = 'BE'
-            type_info['order'] = 'H5T_ORDER_' + byteorder
-            if dt.base.name in predefined_float_types:
-                #maps to one of the HDF5 predefined types
-                type_info['base'] = predefined_float_types[dt.base.name] + byteorder 
-                    
-        return type_info
-        
-    """
-      Create a type based on string or dictionary item (for compound types)
-       'int8',        'int16',   'int32',  'int64',
-                      'uint8',       'uint16',  'uint32', 'uint64',
-                    'float16',      'float32', 'float64',
-                  'complex64',   'complex128',
-                 'vlen_bytes', 'vlen_unicode'
-    """
-    
-    def createDatatype(self, typeItem):
-        logging.info("createDatatype(" + str(typeItem) + ") type: " + str(type(typeItem)))
-        primitiveTypes = { 'int8': np.int8, 'int32': np.int32, 'int64': np.int64,
-                'uint8': np.uint8, 'uint32': np.uint32, 'uint64': np.uint64,
-                'float16': np.float16, 'float32': np.float32, 'float64': np.float64,
-                'complex64': np.complex64, 'complex128': np.complex128 }
-        dtRet = None
-        if typeItem == "vlen_bytes":
-            dtRet = h5py.special_dtype(vlen=bytes)
-        elif typeItem == "vlen_unicode":
-            dtRet = h5py.special_dtype(vlen=unicode)
-        elif type(typeItem) == str or type(typeItem) == unicode:
-            # just use the type string as type
-            if typeItem in primitiveTypes:
-                dtRet = primitiveTypes[typeItem]
-            else:
-                dtRet = np.dtype(str(typeItem))   # todo catch TypeError for invalid types
-            
-            if dtRet == None:
-                logging.error("failed to create type for: " + typeItem)
-        elif type(typeItem) == tuple or type(typeItem) == list:
-            # non-primitive type, build up an array of sub-types
-            dtList = []
-            for item in typeItem:
-                # recursive call
-                if type(item) is not dict:
-                    logging.error("invalid datatype: " + str(item))
-                    raise Exception
-                if 'name' not in item:
-                    logging.error("expecting name member: " + str(item))
-                    raise Exception
-                if 'type' not in item:
-                    logging.error("expecting type member: " + str(item))
-                    raise Exception
-                dt = self.createDatatype(item['type'])
-                if dt == None:
-                    # invalid type
-                    return None
-                # note we need to ascii-fy the unicode name
-                # see numpy issue: https://github.com/numpy/numpy/issues/2407
-                fieldName = str(item['name'])
-                dtList.append((fieldName, dt))  # add a tuple of (name, dt) to list
-            dtRet = np.dtype(dtList)  # create a type out of our list of tuples
-        else:
-            logging.error("invalid datatype: " + str(typeItem))
-            raise Exception
-        return dtRet  
-    
-        
     def getObjectByUuid(self, col_type, objUuid):
         #col_type should be either "datasets", "groups", or "datatypes"
         if col_type not in ("datasets", "groups", "datatypes"):
@@ -723,7 +453,7 @@ class Hdf5db:
             logging.info("dataset: " + objUuid + " not found")
             return None
         item = { 'id': objUuid }
-        item['type'] = self.getTypeItem(dset.dtype, verbose=True)
+        item['type'] = hdf5dtype.getTypeItem(dset.dtype, verbose=True)
         item['ctime'] = self.getCreateTime(objUuid)
         item['mtime'] = self.getModifiedTime(objUuid)      
         
@@ -748,7 +478,7 @@ class Hdf5db:
             typeItem = committedType['type']
             typeItem['uuid'] = type_uuid
         else:  
-            typeItem = self.getTypeItem(dset.dtype)
+            typeItem = hdf5dtype.getTypeItem(dset.dtype, verbose=True)
             
         item['type'] = typeItem
             
@@ -792,8 +522,8 @@ class Hdf5db:
             return None   
         datatypes = self.dbGrp["{datatypes}"]
         objUuid = str(uuid.uuid1())
-        dt = self.createDatatype(datatype);
-        if dt == None:
+        dt = hdf5dbtype.createDataType(datatype);
+        if dt is None:
             logging.error('no type returned')
             return None  # invalid type
         datatypes[objUuid] = np.dtype(dt)  # dt
@@ -849,7 +579,7 @@ class Hdf5db:
             return None
         item = { 'id': objUuid }
         item['attributeCount'] = len(datatype.attrs)
-        item['type'] = self.getTypeItem(datatype.dtype)
+        item['type'] = hdf5dtype.getTypeItem(datatype.dtype, verbose=True) 
         item['ctime'] = self.getCreateTime(objUuid)
         item['mtime'] = self.getModifiedTime(objUuid) 
         
@@ -872,7 +602,7 @@ class Hdf5db:
                    
         item = { 'name': name }
         
-        typeItem = self.getTypeItem(attrObj.dtype) 
+        typeItem = hdf5dtype.getTypeItem(attrObj.dtype, verbose=True) 
         item['type'] = typeItem
         # todo - don't include data for OPAQUE until JSON serialization 
         # issues are addressed
@@ -963,8 +693,8 @@ class Hdf5db:
             return None   
         obj = self.getObjectByUuid(col_name, objUuid)
         
-        dt = self.createDatatype(attr_type);
-        if dt == None:
+        dt = hdf5dtype.createDataType(attr_type);
+        if dt is None:
             logging.error('no type returned')
             return None  # invalid type
         if type(value) == tuple:
@@ -1194,9 +924,16 @@ class Hdf5db:
             return None   
         datasets = self.dbGrp["{datasets}"]
         objUuid = str(uuid.uuid1())
-        dt = self.createDatatype(datatype);
-        if dt == None:
+        try:
+            dt = hdf5dtype.createDataType(datatype)
+            print 'hdf5db got:', dt
+        except Exception:
+            self.httpStatus = 400 # invalid
+            return None
+        if dt is None:
+            print "???"
             logging.error('no type returned')
+            self.httpStatus = 500  # unexpected
             return None  # invalid type     
             
         newDataset = datasets.create_dataset(objUuid, shape=datashape, dtype=dt, 

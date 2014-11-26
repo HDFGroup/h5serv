@@ -19,8 +19,11 @@ echo 'timeUtilTest'
 python timeUtilTest.py
 echo 'fileUtilTest'
 python fileUtilTest.py
+echo 'hdf5dtypeTest'
+python hdf5dtypeTest.py
 echo 'hdf5dbTest'
 python hdf5dbTest.py
+
 
 cd ../integ
 ./setupdata.sh -f  # initialize data files
@@ -37,7 +40,7 @@ python valuetest.py
 echo 'attributetest'
 python attributetest.py
 echo 'datatypetest'
-python datatypetest.py
+# python datatypetest.py
 echo 'shapetest'
 python shapetest.py
 echo 'datasettypetest'
