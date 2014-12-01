@@ -125,6 +125,9 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
         self.assertEqual(timeFieldType['strsize'], 6)
         self.assertEqual(timeFieldType['strpad'], 'H5T_STR_NULLPAD')
+        tempField = fields[2]
+        self.assertEqual(tempField['name'], 'temp')
+        self.assertEqual(tempField['type'], 'H5T_STD_I64LE')
         
     def testGetCommitted(self):
         domain = 'committed_type.' + config.get('domain')  

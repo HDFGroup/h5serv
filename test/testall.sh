@@ -40,7 +40,7 @@ python valuetest.py
 echo 'attributetest'
 python attributetest.py
 echo 'datatypetest'
-# python datatypetest.py
+python datatypetest.py
 echo 'shapetest'
 python shapetest.py
 echo 'datasettypetest'

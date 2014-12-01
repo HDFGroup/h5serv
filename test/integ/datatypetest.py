@@ -63,7 +63,7 @@ class DatatypeTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
-        payload = {'type': 'float32'}
+        payload = {'type': 'H5T_IEEE_F32LE'}
         req = self.endpoint + "/datatypes/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create datatype

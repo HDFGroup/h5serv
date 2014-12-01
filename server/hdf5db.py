@@ -453,7 +453,7 @@ class Hdf5db:
             logging.info("dataset: " + objUuid + " not found")
             return None
         item = { 'id': objUuid }
-        item['type'] = hdf5dtype.getTypeItem(dset.dtype, verbose=True)
+        item['type'] = hdf5dtype.getTypeItem(dset.dtype)
         item['ctime'] = self.getCreateTime(objUuid)
         item['mtime'] = self.getModifiedTime(objUuid)      
         
@@ -478,7 +478,7 @@ class Hdf5db:
             typeItem = committedType['type']
             typeItem['uuid'] = type_uuid
         else:  
-            typeItem = hdf5dtype.getTypeItem(dset.dtype, verbose=True)
+            typeItem = hdf5dtype.getTypeItem(dset.dtype)
             
         item['type'] = typeItem
             
@@ -522,7 +522,7 @@ class Hdf5db:
             return None   
         datatypes = self.dbGrp["{datatypes}"]
         objUuid = str(uuid.uuid1())
-        dt = hdf5dbtype.createDataType(datatype);
+        dt = hdf5dtype.createDataType(datatype);
         if dt is None:
             logging.error('no type returned')
             return None  # invalid type
@@ -579,7 +579,7 @@ class Hdf5db:
             return None
         item = { 'id': objUuid }
         item['attributeCount'] = len(datatype.attrs)
-        item['type'] = hdf5dtype.getTypeItem(datatype.dtype, verbose=True) 
+        item['type'] = hdf5dtype.getTypeItem(datatype.dtype) 
         item['ctime'] = self.getCreateTime(objUuid)
         item['mtime'] = self.getModifiedTime(objUuid) 
         
@@ -602,7 +602,7 @@ class Hdf5db:
                    
         item = { 'name': name }
         
-        typeItem = hdf5dtype.getTypeItem(attrObj.dtype, verbose=True) 
+        typeItem = hdf5dtype.getTypeItem(attrObj.dtype) 
         item['type'] = typeItem
         # todo - don't include data for OPAQUE until JSON serialization 
         # issues are addressed

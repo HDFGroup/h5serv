@@ -17,34 +17,55 @@ This class is used to map between HDF5 type representations and numpy types
 import numpy as np
 import h5py
 import logging
-   
+
+
+"""
+Convert the given type item  to a predefined type string for 
+predefined integer and floating point types ("H5T_STD_I64LE", et. al).
+For compound types, recursively iterate through the typeItem and do same
+conversion for fields of the compound type.
+"""    
+def getTypeResponse(typeItem):
+    response = None
+    if 'uuid' in typeItem:
+        # committed type, just return uuid
+        response = typeItem['uuid']
+    elif 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
+        typeItem['class'] == 'H5T_FLOAT' or typeItem['class'] == 'H5T_REFERENCE'):
+        # just return the predefined type name for pre-defined types (or reference)
+        response = typeItem['base']
+    elif typeItem['class'] == 'H5T_COMPOUND':
+        response = {}
+        response['class'] = 'H5T_COMPOUND'
+        fieldList = []
+        for field in typeItem['fields']:
+            fieldItem = { }
+            fieldItem['name'] = field['name']
+            fieldItem['type'] = getTypeResponse(field['type'])  # recursive call
+            fieldList.append(fieldItem)
+        response['fields'] = fieldList
+    else:
+        response = typeItem # otherwise, return full type
+    return response
+           
         
 """
     Return type info.
           For primitive types, return string with typename
           For compound types return array of dictionary items
 """
-def getTypeItem(dt, verbose=False):
+def getTypeItem(dt):
     type_info = {}
     if len(dt) <= 1:
         type_info = getTypeElement(dt)
-        if not verbose and type_info['class'] in ('H5T_INTEGER', 'H5T_FLOAT'):
-            #just return the predefined type string
-            type_info = type_info['base']
     else:
         names = dt.names
         type_info['class'] = 'H5T_COMPOUND'
         fields = []
         for name in names:
             field = { 'name': name }
-            typeItem = getTypeElement(dt[name])  
-            if not verbose and typeItem['class'] in ('H5T_INTEGER', 'H5T_FLOAT'):
-                # just return the predefined type string
-                field['type'] = typeItem['base']
-            else:
-                field['type'] = typeItem  # otherwise return the full type
+            field['type'] = getTypeElement(dt[name])  
             fields.append(field)
-            
             type_info['fields'] = fields
     return type_info
              

@@ -23,6 +23,7 @@ from urlparse import urlparse
 from sets import Set
 import config
 from hdf5db import Hdf5db
+import hdf5dtype
 from timeUtil import unixTimeToUTC
 from fileUtil import getFilePath, getDomain, getFileModCreateTimes, makeDirs, verifyFile, getLinkTarget
 
@@ -305,50 +306,7 @@ class LinkHandler(RequestHandler):
                 raise HTTPError(httpStatus)  
                 
 class TypeHandler(RequestHandler):
-    """
-    # supported datatypes
-    _dtypes = Set([    'int8',        'int16',   'int32',  'int64',
-                      'uint8',       'uint16',  'uint32', 'uint64',
-                    'float16',      'float32', 'float64',
-                  'complex64',   'complex128',
-                 'vlen_bytes', 'vlen_unicode'])
-      
-    @staticmethod             
-    def verifyType(typeItem):
-        isValid = False
-        if type(typeItem) == tuple or type(typeItem) == list:
-            # a compound type - validate sub-types
-            for item in typeItem:
-                TypeHandler.verifyType(item)  # we'll raise exception if not valid
-            isValid = True
-        elif type(typeItem) == dict:
-            # element of a compound type
-            if 'name' not in typeItem:
-                logging.info("no name member of type: " + str(typeItem))
-                raise HTTPError(400)
-            if 'type' not in typeItem:
-                logging.info("type not found in: " + str(typeItem))
-                raise HTTPError(400)
-            # make recursive call (type maybe compound type itself...)
-            TypeHandler.verifyType(typeItem['type'])  
-            isValid = True
-        elif typeItem in TypeHandler._dtypes:
-            isValid = True
-        elif len(typeItem) > 1 and typeItem[0] == 'S':
-            # Fixed ascii datatype, very the text after 'S' is a positive int
-            try:
-                nwidth = int(typeItem[1:])
-                if nwidth > 0:
-                    isValid = True              
-            except ValueError:
-                logging.info("can't convert text after 'S' in: " + typeItem + " to int") 
-                raise HTTPError(400)          
-        else:
-            logging.info("invalid type argument: " + typeItem)
-            raise HTTPError(400)
-        return isValid
-    """
-        
+    
     # or 'Snn' for fixed string or 'vlen_bytes' for variable 
     def getRequestId(self):
         # request is in the form /datatypes/<id>, return <id>
@@ -392,12 +350,7 @@ class TypeHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href })        
         response['id'] = reqUuid
         typeItem = item['type']
-        if 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
-            typeItem['class'] == 'H5T_FLOAT' or typeItem['class'] == 'H5T_REFERENCE'):
-            # just return the predefined type name for pre-defined types (or reference)
-            response['type'] = typeItem['base']
-        else:
-            response['type'] = typeItem # otherwise, return full type
+        response['type'] = hdf5dtype.getTypeResponse(typeItem)
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['attributeCount'] = item['attributeCount']
@@ -662,15 +615,7 @@ class DatasetHandler(RequestHandler):
         hrefs.append({'rel': 'home', 'href': href })       
         response['id'] = reqUuid
         typeItem = item['type']
-        if 'uuid' in typeItem:
-            # committed type, just return uuid
-            response['type'] = typeItem['uuid']
-        elif 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
-            typeItem['class'] == 'H5T_FLOAT' or typeItem['class'] == 'H5T_REFERENCE'):
-            # just return the predefined type name for pre-defined types (or reference)
-            response['type'] = typeItem['base']
-        else:
-            response['type'] = typeItem # otherwise, return full type
+        response['type'] = hdf5dtype.getTypeResponse(typeItem)
         response['shape'] = item['shape']
         response['maxshape'] = item['maxshape']
         response['class'] = item['shape_class']
@@ -1210,12 +1155,7 @@ class AttributeHandler(RequestHandler):
             responseItem = {}
             responseItem['name'] = item['name']
             typeItem = item['type']
-            if 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
-                typeItem['class'] == 'H5T_FLOAT' or typeItem['class'] == 'H5T_REFERENCE'):
-                # just return the predefined type name for pre-defined types (or reference)
-                response['type'] = typeItem['base']
-            else:
-                responseItem['type'] = typeItem # otherwise, return full type
+            responseItem['type'] = hdf5dtype.getTypeResponse(typeItem)
             responseItem['shape'] = item['shape']
             responseItem['class'] = item['shape_class'] 
             responseItem['created'] = unixTimeToUTC(item['ctime']) 
