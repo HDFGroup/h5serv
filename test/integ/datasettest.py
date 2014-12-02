@@ -448,6 +448,31 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
         
+    def testPostArray(self):
+        domain = 'newarraydset.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        datatype = {'class': 'H5T_ARRAY', 'base': 'H5T_STD_I64LE', 'shape': (3, 5) }
+        
+        payload = {'type': datatype, 'shape': 10}
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'dset1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dset1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
         
     def testPostResizable(self):
         domain = 'resizabledset.datasettest.' + config.get('domain')
@@ -587,8 +612,6 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 410)
         
-    
-                     
     def testDeleteBadUUID(self):
         domain = 'tall_dset112_deleted.' + config.get('domain')    
         req = self.endpoint + "/datasets/dff53814-2906-11e4-9f76-3c15c2da029e"

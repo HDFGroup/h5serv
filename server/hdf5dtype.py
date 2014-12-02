@@ -259,8 +259,15 @@ def createBaseDataType(typeItem):
         raise Exception("Type Error: 'class' not provided")
     typeClass = typeItem['class']
     shape = ''
-    if 'shape' in typeItem:
-        shape = str(typeItem['shape'])
+    if 'shape' in typeItem:  
+        dims = None      
+        if type(typeItem['shape']) == int:
+            dims = (typeItem['shape'])  # make into a tuple
+        elif type(typeItem['shape']) not in (list, tuple):
+            raise Exception("Type Error: expected list or integer for shape")
+        else:
+            dims = typeItem['shape']
+        shape = str(tuple(dims))
         
     if typeClass == 'H5T_INTEGER':
         if 'base' not in typeItem:
@@ -297,18 +304,31 @@ def createBaseDataType(typeItem):
         if shape:
             raise Exception(
                 "Type Error: ArrayType is not supported for variable len types")
+        if 'base' not in typeItem:
+            raise Exception("Type Error: 'base' not provided") 
         baseType = getNumpyTypename(typeItem['base'])
         dtRet = h5py.h5t.special_dtype(vlen=np.dtype(baseType))
     elif typeClass == 'H5T_OPAQUE':
         if shape:
             raise Exception(
-                "Type Error: ArrayType is not supported for variable len types")
+                "Type Error: Opaque Type is not supported for variable len types")
         if 'size' not in typeItem:
             raise Exception("Type Error: 'size' not provided")
         nSize = int(typeItem['size'])
         if nSize <= 0:
             raise Exception("Type Error: 'size' must be non-negative")
         dtRet = np.dtype('V' + str(nSize))
+    elif typeClass == 'H5T_ARRAY':
+        if not shape:
+            raise Exception("Type Error: 'shape' must be provided for array types")
+        if 'base' not in typeItem:
+            raise Exception("Type Error: 'base' not provided") 
+        baseType = getNumpyTypename(typeItem['base'])
+        if type(baseType) not in  (str, unicode):
+            raise Exception("Array type is only supported for predefined base types")
+        # should be one of the predefined types
+        dtRet = np.dtype(shape+baseType)
+        return dtRet  # return predefined type     
     else:
         raise Exception("Type Error: Invalid type class")
         
