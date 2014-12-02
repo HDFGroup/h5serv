@@ -107,7 +107,7 @@ class DatatypeTest(unittest.TestCase):
             dtype_uuid = rspJson['id']
             self.assertTrue(helper.validateId(dtype_uuid))
          
-            # link new dataset using the type name
+            # link new datatype using the type name
             name = datatype
             req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
             payload = {"id": dtype_uuid}
@@ -134,7 +134,7 @@ class DatatypeTest(unittest.TestCase):
         dtype_uuid = rspJson['id']
         self.assertTrue(helper.validateId(dtype_uuid))
          
-        # link the new dataset 
+        # link the new datatype 
         name = "dtype_compound"
         req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
         payload = {"id": dtype_uuid}

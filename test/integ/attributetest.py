@@ -115,6 +115,19 @@ class AttributeTest(unittest.TestCase):
             self.assertEqual(field3Type['order'], 'H5T_ORDER_NONE')
             self.assertEqual(field3Type['strsize'], 6)
             self.assertEqual(field3Type['strpad'], 'H5T_STR_NULLPAD')
+            
+    def testGetCommitted(self):
+        domain = 'committed_type.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        req = helper.getEndpoint() + "/groups/" + root_uuid + "/attributes/attr1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['shape']), 0)
+        typeItem = rspJson['type']  # returns uuid
+        self.assertTrue(helper.validateId(typeItem))
              
     def testGetArray(self):
         domain = 'array_attr.' + config.get('domain')  
@@ -396,6 +409,41 @@ class AttributeTest(unittest.TestCase):
         
         value = ((55, 32.34), (59, 29.34)) 
         payload = {'type': datatype, 'shape': 2, 'value': value}
+        req = self.endpoint + "/groups/" + root_uuid + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['hrefs']), 3)
+        
+    def testPutCommittedType(self):
+        domain = 'tall_updated.' + config.get('domain')
+        attr_name = 'attr_committed'
+        root_uuid = helper.getRootUUID(domain)
+        headers = {'host': domain}
+        
+        # create the datatype
+        payload = {'type': 'H5T_IEEE_F32LE'}
+        req = self.endpoint + "/datatypes/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create datatype
+        rspJson = json.loads(rsp.text)
+        dtype_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dtype_uuid))
+         
+        # link new datatype as 'dtype1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dtype1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {'id': dtype_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
+        # create the attribute using the type created above
+        value = []
+        for i in range(10):
+            value.append(i*0.5) 
+        payload = {'type': dtype_uuid, 'shape': 10, 'value': value}
         req = self.endpoint + "/groups/" + root_uuid + "/attributes/" + attr_name
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute

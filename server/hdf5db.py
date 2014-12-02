@@ -69,6 +69,8 @@ import hdf5dtype
 # Will break in multi-threaded context
 _db = { }
 
+UUID_LEN = 36  # length for uuid strings
+
 def visitObj(path, obj):   
     hdf5db = _db[obj.file.filename]
     hdf5db.visit(path, obj)
@@ -601,11 +603,23 @@ class Hdf5db:
         attr = None
                    
         item = { 'name': name }
-        
-        typeItem = hdf5dtype.getTypeItem(attrObj.dtype) 
+         
+        # check if the dataset is using a committed type
+        typeid = attrObj.get_type()
+        typeItem = None
+        if h5py.h5t.TypeID.committed(typeid):
+            type_uuid = None
+            addr = h5py.h5o.get_info(typeid).addr
+            type_uuid = self.getUUIDByAddress(addr)
+            committedType = self.getCommittedTypeItemByUuid(type_uuid)
+            typeItem = committedType['type']
+            typeItem['uuid'] = type_uuid
+        else:  
+            typeItem = hdf5dtype.getTypeItem(attrObj.dtype)
         item['type'] = typeItem
         # todo - don't include data for OPAQUE until JSON serialization 
         # issues are addressed
+        
         if type(typeItem) == dict and typeItem['class'] in ('H5T_OPAQUE'):
             includeData = False
         if includeData:
@@ -619,14 +633,16 @@ class Hdf5db:
         else:
             item['shape_class'] = 'simple'
         if includeData and attr is not None:
-            if len(attrObj.shape) == 0:
-                item['value'] = attr   # just copy value
-            elif typeItem['class'] == 'H5T_VLEN':
+            if typeItem['class'] == 'H5T_VLEN':
                 item['value'] = self.vlenToList(attr)
             elif typeItem['class'] == 'H5T_REFERENCE':
                 item['value'] = self.refToList(attr)
+            elif typeItem['class'] == 'H5T_COMPOUND':
+                item['value'] = attr.tolist()  # convert to list
+            elif len(attrObj.shape) == 0:
+                item['value'] = attr   # just copy value
             else:
-                item['value'] = attr.tolist()  # convert to list 
+                item['value'] = attr.tolist()  # convert to list
         # timestamps will be added by getAttributeItem()
         return item
             
@@ -693,10 +709,25 @@ class Hdf5db:
             return None   
         obj = self.getObjectByUuid(col_name, objUuid)
         
-        dt = hdf5dtype.createDataType(attr_type);
+        dt = None
+        if type(attr_type) in (str, unicode) and len(attr_type) == UUID_LEN:
+            # assume attr_type is a uuid of a named datatype
+            tgt = self.getCommittedTypeObjByUuid(attr_type)
+            if tgt is None:
+                self.httpStatus = 404  # not found
+                return None
+            dt = tgt  # can use the object as the dt parameter
+        else:    
+            try:
+                dt = hdf5dtype.createDataType(attr_type)
+            except Exception:
+                self.httpStatus = 400 # invalid
+                return None
         if dt is None:
             logging.error('no type returned')
-            return None  # invalid type
+            self.httpStatus = 500  # unexpected
+            return None  # invalid type  
+            
         if type(value) == tuple:
             value = list(value) 
         newAttr = obj.attrs.create(attr_name, value, dtype=dt)
@@ -924,14 +955,21 @@ class Hdf5db:
             return None   
         datasets = self.dbGrp["{datasets}"]
         objUuid = str(uuid.uuid1())
-        try:
-            dt = hdf5dtype.createDataType(datatype)
-            print 'hdf5db got:', dt
-        except Exception:
-            self.httpStatus = 400 # invalid
-            return None
+        dt = None
+        if type(datatype) in (str, unicode) and len(datatype) == UUID_LEN:
+            # assume datatype is a uuid of a named datatype
+            tgt = self.getCommittedTypeObjByUuid(datatype)
+            if tgt is None:
+                self.httpStatus = 404  # not found
+                return None
+            dt = tgt  # can use the object as the dt parameter
+        else:    
+            try:
+                dt = hdf5dtype.createDataType(datatype)
+            except Exception:
+                self.httpStatus = 400 # invalid
+                return None
         if dt is None:
-            print "???"
             logging.error('no type returned')
             self.httpStatus = 500  # unexpected
             return None  # invalid type     

@@ -28,25 +28,22 @@ class Hdf5dtypeTest(unittest.TestCase):
         
     def testBaseIntegerTypeItem(self):
         dt = np.dtype('<i1')
-        typeItem = hdf5dtype.getTypeItem(dt, verbose=True)
+        typeItem = hdf5dtype.getTypeItem(dt)
         self.failUnlessEqual(typeItem['class'], 'H5T_INTEGER')
         self.failUnlessEqual(typeItem['size'], 1)
         self.failUnlessEqual(typeItem['base_size'], 1)
         self.failUnlessEqual(typeItem['order'], 'H5T_ORDER_LE')
         self.failUnlessEqual(typeItem['base'], 'H5T_STD_I8LE')
-        typeItem = hdf5dtype.getTypeItem(dt)  # non-verbose format
-        self.failUnlessEqual(typeItem, 'H5T_STD_I8LE')
-        
         
     def testBaseFloatTypeItem(self):
         dt = np.dtype('<f8')
-        typeItem = hdf5dtype.getTypeItem(dt, verbose=True)
+        typeItem = hdf5dtype.getTypeItem(dt)
         self.failUnlessEqual(typeItem['class'], 'H5T_FLOAT')
         self.failUnlessEqual(typeItem['size'], 8)
         self.failUnlessEqual(typeItem['base_size'], 8)
         self.failUnlessEqual(typeItem['order'], 'H5T_ORDER_LE')
         self.failUnlessEqual(typeItem['base'], 'H5T_IEEE_F64LE')
-        typeItem = hdf5dtype.getTypeItem(dt)  # non-verbose format
+        typeItem = hdf5dtype.getTypeResponse(typeItem) # non-verbose format
         self.failUnlessEqual(typeItem, 'H5T_IEEE_F64LE')
         
     def testBaseStringTypeItem(self):
@@ -121,7 +118,7 @@ class Hdf5dtypeTest(unittest.TestCase):
         
     def testCompoundTypeItem(self): 
         dt = np.dtype([("temp", np.float32), ("pressure", np.float32), ("wind", np.int16)])
-        typeItem = hdf5dtype.getTypeItem(dt, verbose=True)
+        typeItem = hdf5dtype.getTypeItem(dt)
         self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
         self.assertTrue('fields' in typeItem)
         fields = typeItem['fields']
@@ -136,7 +133,7 @@ class Hdf5dtypeTest(unittest.TestCase):
         self.failUnlessEqual(tempFieldType['order'], 'H5T_ORDER_LE')
         self.failUnlessEqual(tempFieldType['base'], 'H5T_IEEE_F32LE')   
         
-        typeItem = hdf5dtype.getTypeItem(dt)  # non-verbose
+        typeItem = hdf5dtype.getTypeResponse(typeItem) # non-verbose format  
         self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
         self.assertTrue('fields' in typeItem)
         fields = typeItem['fields']
@@ -219,12 +216,7 @@ class Hdf5dtypeTest(unittest.TestCase):
         dt = hdf5dtype.createDataType(typeItem)
         self.assertEqual(dt.name, 'void80')
         self.assertEqual(dt.kind, 'V')
-        self.assertEqual(len(dt.fields), 3)
-        
-         
-        
-         
-       
+        self.assertEqual(len(dt.fields), 3)     
         
 if __name__ == '__main__':
     #setup test files

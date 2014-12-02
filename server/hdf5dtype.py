@@ -245,15 +245,11 @@ def getNumpyTypename(hdf5TypeName, typeClass=None):
     
 def createBaseDataType(typeItem):
     logging.info("createDatatype (" + str(typeItem) + ") type: " + str(type(typeItem)))
-    print 'createBaseDataType...'
     dtRet = None
     if type(typeItem) == str or type(typeItem) == unicode:
         # should be one of the predefined types
-        print 'get base type'
         dtName = getNumpyTypename(typeItem)
-        print 'got predefined type', dtName
         dtRet = np.dtype(dtName)
-        
         return dtRet  # return predefined type
         
     if type(typeItem) != dict:
@@ -326,9 +322,7 @@ def createDataType(typeItem):
     if type(typeItem) == str or type(typeItem) == unicode:
         # should be one of the predefined types
         dtName = getNumpyTypename(typeItem)
-        print 'got dtName', dtName
         dtRet = np.dtype(dtName)
-        print 'dt:', dtRet
         return dtRet  # return predefined type
         
     if type(typeItem) != dict:
@@ -365,10 +359,6 @@ def createDataType(typeItem):
             if dt is None:
                 raise Exception("unexpected error")
             subtypes.append((field['name'], dt))  # append tuple
-            print 'subtype:', dt
-            print 'len subtypes', len(subtypes)
-            for subtype in subtypes:
-                print 'type:', subtype
         dtRet = np.dtype(subtypes)
     else:
         dtRet = createBaseDataType(typeItem)  # create non-compound dt

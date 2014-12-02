@@ -406,6 +406,49 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
         
+    def testPostCommittedType(self):
+        domain = 'committedtype.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        # create the datatype
+        payload = {'type': 'H5T_IEEE_F32LE'}
+        req = self.endpoint + "/datatypes/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create datatype
+        rspJson = json.loads(rsp.text)
+        dtype_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dtype_uuid))
+         
+        # link new datatype as 'dtype1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dtype1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {'id': dtype_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
+        # create the dataset
+        payload = {'type': dtype_uuid, 'shape': 10}
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'dset1'
+        name = 'dset1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
+        
     def testPostResizable(self):
         domain = 'resizabledset.datasettest.' + config.get('domain')
         req = self.endpoint + "/"
