@@ -88,13 +88,16 @@ class Hdf5db:
         return True
            
         
-    def __init__(self, filePath):
-        if os.access(filePath, os.W_OK):         
-            mode = 'r+'
-            self.readonly = False
-        else:
-            mode = 'r'
+    def __init__(self, filePath, readonly=False):
+        mode = 'r'
+        if readonly:
             self.readonly = True
+        else:
+            if os.access(filePath, os.W_OK):         
+                mode = 'r+'
+                self.readonly = False
+            else:
+                self.readonly = True
         #logging.info("init -- filePath: " + filePath + " mode: " + mode)
         
         self.f = h5py.File(filePath, mode)
@@ -655,7 +658,6 @@ class Hdf5db:
         
         self.initFile()
         obj = self.getObjectByUuid(col_type, objUuid)
-            
         if obj == None:
             logging.error("uuid: " + objUuid + " could not be loaded")
             self.httpStatus = 404  # not found
@@ -673,7 +675,6 @@ class Hdf5db:
                     continue  # start filling in result on next pass
                 else:
                     continue  # keep going!
-            
             item = self.getAttributeItemByObj(obj, name, False)
             # mix-in timestamps
             item['ctime'] = self.getCreateTime(objUuid, objType="attribute", name=name)
@@ -1303,7 +1304,7 @@ class Hdf5db:
             
         return linkDeleted
         
-    def getCollection(self, col_type, marker, limit):
+    def getCollection(self, col_type, marker=None, limit=None):
         logging.info("db.getCollection(" + col_type + ")")
         #col_type should be either "datasets", "groups", or "datatypes"
         if col_type not in ("datasets", "groups", "datatypes"):
