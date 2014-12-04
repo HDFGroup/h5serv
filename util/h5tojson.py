@@ -14,6 +14,7 @@ import json
 
 sys.path.append('../server')
 from hdf5db import Hdf5db
+import hdf5dtype 
 
 
 """
@@ -27,11 +28,12 @@ class DumpJson:
         
     def dumpAttribute(self, col_name, uuid, attr_name):
         item = self.db.getAttributeItem(col_name, uuid, attr_name)
-        if 'ctime' in item:
-            del item['ctime']
-        if 'mtime' in item:
-            del item['mtime']
-        return item
+        response = { 'name': attr_name }
+        typeItem = item['type']
+        response['type'] = hdf5dtype.getTypeResponse(typeItem)
+        response['shape'] = item['shape']
+        response['value'] = item['value']
+        return response
      
         
     def dumpAttributes(self, col_name, uuid):
@@ -79,18 +81,16 @@ class DumpJson:
         
         
     def dumpDataset(self, uuid):
+        response = { 'id': uuid }
         item = self.db.getDatasetItemByUuid(uuid)
-        if 'ctime' in item:
-            del item['ctime']
-        if 'mtime' in item:
-            del item['mtime']
-        if 'attributeCount' in item:
-            del item['attributeCount']
+        typeItem = item['type']
+        response['type'] = hdf5dtype.getTypeResponse(typeItem)
+        
         attributes = self.dumpAttributes('datasets', uuid)
-        item['attributes'] = attributes
+        response['attributes'] = attributes
         value = self.db.getDatasetValuesByUuid(uuid)
-        item['value'] = value
-        return item
+        response['value'] = value
+        return response
         
     def dumpDatasets(self):
         datasetList = []

@@ -532,7 +532,7 @@ class Hdf5db:
         if typeItem and typeItem['class'] != 'H5T_VLEN' and typeItem['class'] != 'H5T_OPAQUE':
             try:
                 fillvalue = dset.fillvalue
-                if fillvalue != None:
+                if fillvalue is not None:
                     item['fillvalue'] = fillvalue.tolist()
             except RuntimeError:
                 # exception is thrown if fill value is not set

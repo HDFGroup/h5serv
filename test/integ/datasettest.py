@@ -199,7 +199,6 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(len(typeShape), 2)
         self.assertEqual(typeShape[0], 3)
         self.assertEqual(typeShape[1], 5)
-        self.assertEqual(typeItem['size'], 120)
         self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
         self.assertEqual(typeItem['base'], 'H5T_STD_I64LE')
         
@@ -224,7 +223,6 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
         self.assertEqual(typeItem['strsize'], 7)
         self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLPAD')
-        self.assertEqual(typeItem['size'], 7)
         
     def testGetEnum(self):
         domain = 'enum_dset.' + config.get('domain')  
@@ -244,7 +242,6 @@ class DatasetTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_ENUM')
-        self.assertEqual(typeItem['size'], 2)
         self.assertEqual(typeItem['order'], 'H5T_ORDER_BE')
         self.assertEqual(typeItem['base'], 'H5T_STD_I16BE')
         self.assertTrue('mapping' in typeItem)
@@ -272,8 +269,6 @@ class DatasetTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_VLEN')
-        self.assertEqual(typeItem['size'], 'H5T_VARIABLE')
-        self.assertEqual(typeItem['base_size'], 8)
         self.assertEqual(typeItem['base'], 'H5T_STD_I32LE')
         self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
         
@@ -294,7 +289,6 @@ class DatasetTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_OPAQUE')
-        self.assertEqual(typeItem['size'], 7)
         self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
         
     def testGetObjReference(self):

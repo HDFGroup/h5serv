@@ -46,7 +46,10 @@ def getTypeResponse(typeItem):
             fieldList.append(fieldItem)
         response['fields'] = fieldList
     else:
-        response = typeItem # otherwise, return full type
+        response = {}   # otherwise, return full type
+        for k in typeItem.keys():
+            if k not in ('size', 'base_size'):
+                response[k] = typeItem[k]
     return response
            
         
