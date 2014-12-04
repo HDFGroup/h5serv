@@ -154,8 +154,8 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(typeItem['base'], 'H5T_STD_I64LE')
         # bug! - unable to read value from attribute with array type
         # code is not returning 'value' key in this case
-        # h5py issue?
-        self.assertTrue('value' not in rspJson)
+        # h5py issue: https://github.com/h5py/h5py/issues/498 
+        #self.assertTrue('value' not in rspJson)
         
     def testGetVLenString(self):
         domain = 'vlen_string_attr.' + config.get('domain')  
