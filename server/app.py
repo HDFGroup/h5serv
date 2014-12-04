@@ -515,11 +515,12 @@ class ShapeHandler(RequestHandler):
         hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid})
         hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid })
         hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})   
-        response['class'] = item['shape_class'] 
+        shape = item['shape']
+        response['class'] = shape['class'] 
         if 'fillvalue' in item:
             response['fillvalue'] = item['fillvalue']
-        response['shape'] = item['shape']
-        response['maxshape'] = item['maxshape']
+        response['dims'] = shape['dims']
+        response['maxdims'] = shape['maxdims']
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['hrefs'] = hrefs
@@ -617,8 +618,6 @@ class DatasetHandler(RequestHandler):
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
         response['shape'] = item['shape']
-        response['maxshape'] = item['maxshape']
-        response['class'] = item['shape_class']
         if 'fillvalue' in item:
             response['fillvalue'] = item['fillvalue']
         response['created'] = unixTimeToUTC(item['ctime'])
@@ -873,19 +872,30 @@ class ValueHandler(RequestHandler):
                 logging.info("GET OPAQUE data not supported")
                 raise HTTPError(501)  # Not implemented
             shape = item['shape']
-            rank = len(shape)
-            slices = []
-            for dim in range(rank):
-                slice = self.getSliceQueryParam(dim, shape[dim])
-                slices.append(slice)
+            if shape['class'] == 'H5S_NULL':
+                pass   # don't return a value
+            elif shape['class'] == 'H5S_SCALAR':
+                values = db.getDatasetValuesByUuid(reqUuid, Ellipsis)
+            elif shape['class'] == 'H5S_SIMPLE':
+                dims = shape['dims']
+                rank = len(dims)
+                slices = []
+                for dim in range(rank):
+                    slice = self.getSliceQueryParam(dim, dims[dim])
+                    slices.append(slice)
          
-            values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
+                values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
+            else:
+                logging.error("unexpected shape class: " + shape['class'])
+                raise HTTPError(500)
+                
             rootUUID = db.getUUIDByPath('/')
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
         
-        response['value'] = values
+        if values is not None:
+            response['value'] = values
         
         hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value'})
         hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID}) 
@@ -928,10 +938,10 @@ class ValueHandler(RequestHandler):
                 logging.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             shape = item['shape']
-            rank = len(shape)
-            if rank < 1:
+            if shape['class'] == 'H5S_SCALAR':
                 logging.info("point selection is not supported on scalar datasets")
                 raise HTTPError(400)
+            rank = len(shape['dims'])
                 
             for point in points:
                 if rank == 1 and type(point) != int:
@@ -1009,13 +1019,14 @@ class ValueHandler(RequestHandler):
                 logging.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             dsetshape = item['shape']
-            rank = len(dsetshape) 
+            dims = dsetshape['dims']
+            rank = len(dims) 
             if points:
                 for point in points:
                     pass
                     
             else:
-                slices = self.getHyperslabSelection(dsetshape, start, stop, step)
+                slices = self.getHyperslabSelection(dims, start, stop, step)
                 # todo - check that the types are compatible
                 ok = db.setDatasetValuesByUuid(reqUuid, data, slices)
                 if not ok:
@@ -1157,7 +1168,6 @@ class AttributeHandler(RequestHandler):
             typeItem = item['type']
             responseItem['type'] = hdf5dtype.getTypeResponse(typeItem)
             responseItem['shape'] = item['shape']
-            responseItem['class'] = item['shape_class'] 
             responseItem['created'] = unixTimeToUTC(item['ctime']) 
             responseItem['lastModified'] = unixTimeToUTC(item['mtime']) 
             if typeItem['class'] == 'H5T_OPAQUE':

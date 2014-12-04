@@ -465,6 +465,43 @@ class Hdf5db:
         
         return item    
         
+    def getShapeItemByDsetObj(self, obj):
+        item = {}
+        if len(obj.shape) == 0:
+            # check to see if this is a null space vs a scalar dataset
+            # we'll do this by seeing if an exception is raised when reading the dataset
+            # h5py issue https://github.com/h5py/h5py/issues/279 will provide a better
+            # way to determine null spaces
+            try: 
+                val = obj[...]
+                item['class'] = 'H5S_SCALAR'
+            except IOError:
+                item['class'] = 'H5S_NULL'
+        else:
+            item['class'] = 'H5S_SIMPLE'
+            item['dims'] = obj.shape
+            maxshape = []
+            for i in range(len(obj.shape)):
+                extent = 0
+                if len(obj.maxshape) > i:
+                    if obj.maxshape[i] != None:
+                        extent = obj.maxshape[i]
+                maxshape.append(extent)
+            item['maxdims'] = maxshape
+        return item
+        
+    def getShapeItemByAttrObj(self, obj):
+        item = {}
+        if len(obj.shape) == 0:
+            # No clear way to determine if an attribute has a null space or not.
+            # for now, just return scalar.
+            # See: h5py issue https://github.com/h5py/h5py/issues/279  
+            item['class'] = 'H5S_SCALAR'
+        else:
+            item['class'] = 'H5S_SIMPLE'
+            item['dims'] = obj.shape
+        return item
+        
     def getDatasetItemByUuid(self, objUuid):
         dset = self.getDatasetObjByUuid(objUuid)
         if dset == None:
@@ -489,26 +526,8 @@ class Hdf5db:
         item['type'] = typeItem
             
         # get shape
-        item['shape'] = dset.shape
-        if len(dset.shape) == 0:
-            # check to see if this is a null space vs a scalar dataset
-            # we'll do this by seeing if an exception is raised when reading the dataset
-            # h5py issue https://github.com/h5py/h5py/issues/279 will provide a better
-            # way to determine null spaces
-            try: 
-                val = dset[...]
-                item['shape_class'] = 'scalar'
-            except IOError:
-                item['shape_class'] = 'null'
-        else:
-            item['shape_class'] = 'simple'
-        maxshape = []
-        for i in range(len(dset.maxshape)):
-            extent = 0
-            if dset.maxshape[i] != None:
-                extent = dset.maxshape[i]
-            maxshape.append(extent)
-        item['maxshape'] = maxshape
+        item['shape'] = self.getShapeItemByDsetObj(dset)
+         
         #todo - get fillvalue for committed type objects
         if typeItem and typeItem['class'] != 'H5T_VLEN' and typeItem['class'] != 'H5T_OPAQUE':
             try:
@@ -639,11 +658,7 @@ class Hdf5db:
                 attr = obj.attrs[name]  # returns a numpy array
             except TypeError:
                 logging.warning("type error reading attribute") 
-        item['shape'] = attrObj.shape
-        if len(attrObj.shape) == 0:
-            item['shape_class'] = 'scalar'
-        else:
-            item['shape_class'] = 'simple'
+        item['shape'] = self.getShapeItemByAttrObj(attrObj)
         if includeData and attr is not None:
             if typeItem['class'] == 'H5T_VLEN':
                 item['value'] = self.vlenToList(attr)
