@@ -97,6 +97,20 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(rspJson['class'], 'scalar')
         self.assertEqual(len(rspJson['shape']), 0)
         self.assertEqual(rspJson['type'], 'H5T_STD_I32LE')
+        
+    def testGetNullSpace(self):
+        domain = 'null_space_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(rspJson['class'], 'null')
+        self.assertEqual(len(rspJson['shape']), 0)
+        self.assertEqual(rspJson['type'], 'H5T_STD_I32LE')
        
     def testGetCompound(self):
         domain = 'compound.' + config.get('domain')  

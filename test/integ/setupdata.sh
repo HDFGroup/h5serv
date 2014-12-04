@@ -65,6 +65,7 @@ cp $SRC/group1k.h5 $DES/group1k_updated.h5
 cp $SRC/attr1k.h5 $DES
 cp $SRC/fillvalue.h5 $DES
 cp $SRC/scalar.h5 $DES
+cp $SRC/null_space_dset.h5 $DES
 chmod -w $DES/tall_ro.h5
 chmod -w $DES/readonly.h5
 cp $SRC/compound.h5 $DES

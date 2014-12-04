@@ -14,6 +14,7 @@
 This class is used to map between HDF5 type representations and numpy types   
  
 """
+import sys
 import numpy as np
 import h5py
 import logging

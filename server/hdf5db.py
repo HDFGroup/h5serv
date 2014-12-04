@@ -52,6 +52,7 @@ This class is used to manage UUID lookup tables for primary HDF objects (Groups,
     
  
 """
+import sys
 import time
 import h5py
 import numpy as np
@@ -490,7 +491,15 @@ class Hdf5db:
         # get shape
         item['shape'] = dset.shape
         if len(dset.shape) == 0:
-            item['shape_class'] = 'scalar'
+            # check to see if this is a null space vs a scalar dataset
+            # we'll do this by seeing if an exception is raised when reading the dataset
+            # h5py issue https://github.com/h5py/h5py/issues/279 will provide a better
+            # way to determine null spaces
+            try: 
+                val = dset[...]
+                item['shape_class'] = 'scalar'
+            except IOError:
+                item['shape_class'] = 'null'
         else:
             item['shape_class'] = 'simple'
         maxshape = []
@@ -853,7 +862,14 @@ class Hdf5db:
         values = None
         dt = dset.dtype
         rank = len(dset.shape)
-         
+        if rank == 0:
+            # check for null dataspace
+            try:
+                val = dset[...]
+            except IOError:
+                # assume null dataspace, return none
+                return None
+                         
         if type(slices) != list and type(slices) != tuple and slices is not Ellipsis:
             logging.error("getDatasetValuesByUuid: bad type for dim parameter")
             return None

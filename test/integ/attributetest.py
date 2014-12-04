@@ -240,6 +240,7 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(mapping['PLASMA'], 3)
         self.assertTrue('value' in rspJson)
         value = rspJson['value']
+        print value
         self.assertEqual(len(value), 4) 
         self.assertEqual(value[1][2], mapping['GAS'])
         
