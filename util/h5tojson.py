@@ -83,7 +83,6 @@ class DumpJson:
     def dumpDataset(self, uuid):
         response = { 'id': uuid }
         item = self.db.getDatasetItemByUuid(uuid)
-        print json.dumps(item, sort_keys=True, indent=4)
         
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
@@ -93,8 +92,6 @@ class DumpJson:
             extensible = False
             dims = shapeItem['dims']
             maxdims = shapeItem['maxdims']
-            print dims
-            print maxdims
             for i in range(len(dims)):
                 if dims[i] < maxdims[i]:
                     extensible = True
