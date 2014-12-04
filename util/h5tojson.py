@@ -85,6 +85,7 @@ class DumpJson:
         item = self.db.getDatasetItemByUuid(uuid)
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
+        response['shape'] = item['shape']
         
         attributes = self.dumpAttributes('datasets', uuid)
         response['attributes'] = attributes
