@@ -1,0 +1,94 @@
+{
+    "datasets": [
+        {
+            "attributes": [
+                {
+                    "name": "A1", 
+                    "shape": {
+                        "class": "H5S_SIMPLE", 
+                        "dims": [
+                            4, 
+                            7
+                        ]
+                    }, 
+                    "type": {
+                        "base": {
+                            "base": "H5T_STD_I16BE", 
+                            "class": "H5T_INTEGER"
+                        }, 
+                        "class": "H5T_ENUM", 
+                        "mapping": {
+                            "GAS": 2, 
+                            "LIQUID": 1, 
+                            "PLASMA": 3, 
+                            "SOLID": 0
+                        }
+                    }, 
+                    "value": [
+                        [
+                            0, 
+                            0, 
+                            0, 
+                            0, 
+                            0, 
+                            0, 
+                            0
+                        ], 
+                        [
+                            0, 
+                            1, 
+                            2, 
+                            3, 
+                            0, 
+                            1, 
+                            2
+                        ], 
+                        [
+                            0, 
+                            2, 
+                            0, 
+                            2, 
+                            0, 
+                            2, 
+                            0
+                        ], 
+                        [
+                            0, 
+                            3, 
+                            2, 
+                            1, 
+                            0, 
+                            3, 
+                            2
+                        ]
+                    ]
+                }
+            ], 
+            "id": "a615cf0a-7b51-11e4-bc7e-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_NULL"
+            }, 
+            "type": {
+                "base": "H5T_STD_I32LE", 
+                "class": "H5T_INTEGER"
+            }, 
+            "value": null
+        }
+    ], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "attributes": [], 
+            "id": "a614dc9c-7b51-11e4-a3f7-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "a615cf0a-7b51-11e4-bc7e-3c15c2da029e", 
+                    "name": "DS1"
+                }
+            ]
+        }
+    ], 
+    "root": "a614dc9c-7b51-11e4-a3f7-3c15c2da029e"
+}

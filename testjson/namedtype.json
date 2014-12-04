@@ -1,0 +1,81 @@
+{
+    "datasets": [], 
+    "datatypes": [
+        {
+            "attributes": [], 
+            "id": "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e", 
+            "type": {
+                "class": "H5T_COMPOUND", 
+                "fields": [
+                    {
+                        "name": "temp", 
+                        "type": {
+                            "base": "H5T_STD_I32LE", 
+                            "base_size": 4, 
+                            "class": "H5T_INTEGER", 
+                            "order": "H5T_ORDER_LE", 
+                            "size": 4
+                        }
+                    }, 
+                    {
+                        "name": "pressure", 
+                        "type": {
+                            "base": "H5T_IEEE_F32LE", 
+                            "base_size": 4, 
+                            "class": "H5T_FLOAT", 
+                            "order": "H5T_ORDER_LE", 
+                            "size": 4
+                        }
+                    }
+                ]
+            }
+        }, 
+        {
+            "attributes": [
+                {
+                    "name": "note", 
+                    "shape": {
+                        "class": "H5S_SCALAR"
+                    }, 
+                    "type": {
+                        "class": "H5T_STRING", 
+                        "cset": "H5T_CSET_ASCII", 
+                        "order": "H5T_ORDER_NONE", 
+                        "strpad": "H5T_STR_NULLTERM", 
+                        "strsize": "H5T_VARIABLE"
+                    }, 
+                    "value": "this is a committed datatype of float32"
+                }
+            ], 
+            "id": "9eb9ddab-7bf7-11e4-927d-3c15c2da029e", 
+            "type": {
+                "base": "H5T_IEEE_F32LE", 
+                "base_size": 4, 
+                "class": "H5T_FLOAT", 
+                "order": "H5T_ORDER_LE", 
+                "size": 4
+            }
+        }
+    ], 
+    "groups": [
+        {
+            "attributes": [], 
+            "id": "9eb8d02e-7bf7-11e4-896e-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Datatype", 
+                    "id": "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e", 
+                    "name": "dtype_compound"
+                }, 
+                {
+                    "class": "hard", 
+                    "className": "Datatype", 
+                    "id": "9eb9ddab-7bf7-11e4-927d-3c15c2da029e", 
+                    "name": "dtype_simple"
+                }
+            ]
+        }
+    ], 
+    "root": "9eb8d02e-7bf7-11e4-896e-3c15c2da029e"
+}

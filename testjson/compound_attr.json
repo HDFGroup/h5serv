@@ -1,0 +1,66 @@
+{
+    "datasets": [], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "attributes": [
+                {
+                    "name": "weather", 
+                    "shape": {
+                        "class": "H5S_SIMPLE", 
+                        "dims": [
+                            1
+                        ]
+                    }, 
+                    "type": {
+                        "class": "H5T_COMPOUND", 
+                        "fields": [
+                            {
+                                "name": "time", 
+                                "type": {
+                                    "base": "H5T_STD_I64LE", 
+                                    "class": "H5T_INTEGER"
+                                }
+                            }, 
+                            {
+                                "name": "temp", 
+                                "type": {
+                                    "base": "H5T_STD_I64LE", 
+                                    "class": "H5T_INTEGER"
+                                }
+                            }, 
+                            {
+                                "name": "pressure", 
+                                "type": {
+                                    "base": "H5T_IEEE_F64LE", 
+                                    "class": "H5T_FLOAT"
+                                }
+                            }, 
+                            {
+                                "name": "wind", 
+                                "type": {
+                                    "class": "H5T_STRING", 
+                                    "cset": "H5T_CSET_ASCII", 
+                                    "order": "H5T_ORDER_NONE", 
+                                    "strpad": "H5T_STR_NULLPAD", 
+                                    "strsize": 6
+                                }
+                            }
+                        ]
+                    }, 
+                    "value": [
+                        [
+                            1412732704, 
+                            64, 
+                            35.43, 
+                            "SE 8"
+                        ]
+                    ]
+                }
+            ], 
+            "id": "aa915954-7b80-11e4-b989-3c15c2da029e", 
+            "links": []
+        }
+    ], 
+    "root": "aa915954-7b80-11e4-b989-3c15c2da029e"
+}

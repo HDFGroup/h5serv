@@ -1,0 +1,188 @@
+{
+    "datasets": [
+        {
+            "attributes": [], 
+            "id": "68ee8647-7bed-11e4-9397-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    2
+                ], 
+                "maxdims": [
+                    2
+                ]
+            }, 
+            "type": {
+                "base": "H5T_STD_REF_DSETREG", 
+                "class": "H5T_REFERENCE"
+            }, 
+            "value": [
+                {
+                    "id": "68ee967a-7bed-11e4-819c-3c15c2da029e", 
+                    "select_type": "H5S_SEL_POINTS", 
+                    "selection": [
+                        [
+                            0, 
+                            1
+                        ], 
+                        [
+                            2, 
+                            11
+                        ], 
+                        [
+                            1, 
+                            0
+                        ], 
+                        [
+                            2, 
+                            4
+                        ]
+                    ]
+                }, 
+                {
+                    "id": "68ee967a-7bed-11e4-819c-3c15c2da029e", 
+                    "select_type": "H5S_SEL_HYPERSLABS", 
+                    "selection": [
+                        [
+                            [
+                                0, 
+                                0
+                            ], 
+                            [
+                                0, 
+                                2
+                            ]
+                        ], 
+                        [
+                            [
+                                0, 
+                                11
+                            ], 
+                            [
+                                0, 
+                                13
+                            ]
+                        ], 
+                        [
+                            [
+                                2, 
+                                0
+                            ], 
+                            [
+                                2, 
+                                2
+                            ]
+                        ], 
+                        [
+                            [
+                                2, 
+                                11
+                            ], 
+                            [
+                                2, 
+                                13
+                            ]
+                        ]
+                    ]
+                }
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "68ee967a-7bed-11e4-819c-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    3, 
+                    16
+                ], 
+                "maxdims": [
+                    3, 
+                    16
+                ]
+            }, 
+            "type": {
+                "base": "H5T_STD_I8LE", 
+                "class": "H5T_INTEGER"
+            }, 
+            "value": [
+                [
+                    84, 
+                    104, 
+                    101, 
+                    32, 
+                    113, 
+                    117, 
+                    105, 
+                    99, 
+                    107, 
+                    32, 
+                    98, 
+                    114, 
+                    111, 
+                    119, 
+                    110, 
+                    0
+                ], 
+                [
+                    102, 
+                    111, 
+                    120, 
+                    32, 
+                    106, 
+                    117, 
+                    109, 
+                    112, 
+                    115, 
+                    32, 
+                    111, 
+                    118, 
+                    101, 
+                    114, 
+                    32, 
+                    0
+                ], 
+                [
+                    116, 
+                    104, 
+                    101, 
+                    32, 
+                    53, 
+                    32, 
+                    108, 
+                    97, 
+                    122, 
+                    121, 
+                    32, 
+                    100, 
+                    111, 
+                    103, 
+                    115, 
+                    0
+                ]
+            ]
+        }
+    ], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "attributes": [], 
+            "id": "68ed8eee-7bed-11e4-b61c-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "68ee8647-7bed-11e4-9397-3c15c2da029e", 
+                    "name": "DS1"
+                }, 
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "68ee967a-7bed-11e4-819c-3c15c2da029e", 
+                    "name": "DS2"
+                }
+            ]
+        }
+    ], 
+    "root": "68ed8eee-7bed-11e4-b61c-3c15c2da029e"
+}

@@ -1,0 +1,46 @@
+{
+    "datasets": [
+        {
+            "attributes": [], 
+            "id": "a99a04b8-7bf7-11e4-b696-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    4
+                ], 
+                "maxdims": [
+                    4
+                ]
+            }, 
+            "type": {
+                "class": "H5T_STRING", 
+                "cset": "H5T_CSET_ASCII", 
+                "order": "H5T_ORDER_NONE", 
+                "strpad": "H5T_STR_NULLTERM", 
+                "strsize": "H5T_VARIABLE"
+            }, 
+            "value": [
+                "Parting", 
+                "is such", 
+                "sweet", 
+                "sorrow."
+            ]
+        }
+    ], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "attributes": [], 
+            "id": "a9991170-7bf7-11e4-ae8b-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "a99a04b8-7bf7-11e4-b696-3c15c2da029e", 
+                    "name": "DS1"
+                }
+            ]
+        }
+    ], 
+    "root": "a9991170-7bf7-11e4-ae8b-3c15c2da029e"
+}

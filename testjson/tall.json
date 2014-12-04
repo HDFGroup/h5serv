@@ -1,0 +1,497 @@
+{
+    "datasets": [
+        {
+            "attributes": [
+                {
+                    "name": "attr1", 
+                    "shape": {
+                        "class": "H5S_SIMPLE", 
+                        "dims": [
+                            27
+                        ]
+                    }, 
+                    "type": {
+                        "base": "H5T_STD_I8LE", 
+                        "class": "H5T_INTEGER"
+                    }, 
+                    "value": [
+                        49, 
+                        115, 
+                        116, 
+                        32, 
+                        97, 
+                        116, 
+                        116, 
+                        114, 
+                        105, 
+                        98, 
+                        117, 
+                        116, 
+                        101, 
+                        32, 
+                        111, 
+                        102, 
+                        32, 
+                        100, 
+                        115, 
+                        101, 
+                        116, 
+                        49, 
+                        46, 
+                        49, 
+                        46, 
+                        49, 
+                        0
+                    ]
+                }, 
+                {
+                    "name": "attr2", 
+                    "shape": {
+                        "class": "H5S_SIMPLE", 
+                        "dims": [
+                            27
+                        ]
+                    }, 
+                    "type": {
+                        "base": "H5T_STD_I8LE", 
+                        "class": "H5T_INTEGER"
+                    }, 
+                    "value": [
+                        50, 
+                        110, 
+                        100, 
+                        32, 
+                        97, 
+                        116, 
+                        116, 
+                        114, 
+                        105, 
+                        98, 
+                        117, 
+                        116, 
+                        101, 
+                        32, 
+                        111, 
+                        102, 
+                        32, 
+                        100, 
+                        115, 
+                        101, 
+                        116, 
+                        49, 
+                        46, 
+                        49, 
+                        46, 
+                        49, 
+                        0
+                    ]
+                }
+            ], 
+            "id": "7f335a2e-7ab1-11e4-87a5-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    10, 
+                    10
+                ], 
+                "maxdims": [
+                    10, 
+                    10
+                ]
+            }, 
+            "type": {
+                "base": "H5T_STD_I32BE", 
+                "class": "H5T_INTEGER"
+            }, 
+            "value": [
+                [
+                    0, 
+                    0, 
+                    0, 
+                    0, 
+                    0, 
+                    0, 
+                    0, 
+                    0, 
+                    0, 
+                    0
+                ], 
+                [
+                    0, 
+                    1, 
+                    2, 
+                    3, 
+                    4, 
+                    5, 
+                    6, 
+                    7, 
+                    8, 
+                    9
+                ], 
+                [
+                    0, 
+                    2, 
+                    4, 
+                    6, 
+                    8, 
+                    10, 
+                    12, 
+                    14, 
+                    16, 
+                    18
+                ], 
+                [
+                    0, 
+                    3, 
+                    6, 
+                    9, 
+                    12, 
+                    15, 
+                    18, 
+                    21, 
+                    24, 
+                    27
+                ], 
+                [
+                    0, 
+                    4, 
+                    8, 
+                    12, 
+                    16, 
+                    20, 
+                    24, 
+                    28, 
+                    32, 
+                    36
+                ], 
+                [
+                    0, 
+                    5, 
+                    10, 
+                    15, 
+                    20, 
+                    25, 
+                    30, 
+                    35, 
+                    40, 
+                    45
+                ], 
+                [
+                    0, 
+                    6, 
+                    12, 
+                    18, 
+                    24, 
+                    30, 
+                    36, 
+                    42, 
+                    48, 
+                    54
+                ], 
+                [
+                    0, 
+                    7, 
+                    14, 
+                    21, 
+                    28, 
+                    35, 
+                    42, 
+                    49, 
+                    56, 
+                    63
+                ], 
+                [
+                    0, 
+                    8, 
+                    16, 
+                    24, 
+                    32, 
+                    40, 
+                    48, 
+                    56, 
+                    64, 
+                    72
+                ], 
+                [
+                    0, 
+                    9, 
+                    18, 
+                    27, 
+                    36, 
+                    45, 
+                    54, 
+                    63, 
+                    72, 
+                    81
+                ]
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "7f3374a6-7ab1-11e4-94e2-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    20
+                ], 
+                "maxdims": [
+                    20
+                ]
+            }, 
+            "type": {
+                "base": "H5T_STD_I32BE", 
+                "class": "H5T_INTEGER"
+            }, 
+            "value": [
+                0, 
+                1, 
+                2, 
+                3, 
+                4, 
+                5, 
+                6, 
+                7, 
+                8, 
+                9, 
+                10, 
+                11, 
+                12, 
+                13, 
+                14, 
+                15, 
+                16, 
+                17, 
+                18, 
+                19
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "7f33c885-7ab1-11e4-ac4d-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    10
+                ], 
+                "maxdims": [
+                    10
+                ]
+            }, 
+            "type": {
+                "base": "H5T_IEEE_F32BE", 
+                "class": "H5T_FLOAT"
+            }, 
+            "value": [
+                1.0, 
+                1.100000023841858, 
+                1.2000000476837158, 
+                1.2999999523162842, 
+                1.399999976158142, 
+                1.5, 
+                1.600000023841858, 
+                1.7000000476837158, 
+                1.7999999523162842, 
+                1.899999976158142
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "7f33e211-7ab1-11e4-8669-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    3, 
+                    5
+                ], 
+                "maxdims": [
+                    3, 
+                    5
+                ]
+            }, 
+            "type": {
+                "base": "H5T_IEEE_F32BE", 
+                "class": "H5T_FLOAT"
+            }, 
+            "value": [
+                [
+                    0.0, 
+                    0.10000000149011612, 
+                    0.20000000298023224, 
+                    0.30000001192092896, 
+                    0.4000000059604645
+                ], 
+                [
+                    0.0, 
+                    0.20000000298023224, 
+                    0.4000000059604645, 
+                    0.6000000238418579, 
+                    0.800000011920929
+                ], 
+                [
+                    0.0, 
+                    0.30000001192092896, 
+                    0.6000000238418579, 
+                    0.8999999761581421, 
+                    1.2000000476837158
+                ]
+            ]
+        }
+    ], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "attributes": [
+                {
+                    "name": "attr1", 
+                    "shape": {
+                        "class": "H5S_SIMPLE", 
+                        "dims": [
+                            10
+                        ]
+                    }, 
+                    "type": {
+                        "base": "H5T_STD_I8LE", 
+                        "class": "H5T_INTEGER"
+                    }, 
+                    "value": [
+                        97, 
+                        98, 
+                        99, 
+                        100, 
+                        101, 
+                        102, 
+                        103, 
+                        104, 
+                        105, 
+                        0
+                    ]
+                }, 
+                {
+                    "name": "attr2", 
+                    "shape": {
+                        "class": "H5S_SIMPLE", 
+                        "dims": [
+                            2, 
+                            2
+                        ]
+                    }, 
+                    "type": {
+                        "base": "H5T_STD_I32BE", 
+                        "class": "H5T_INTEGER"
+                    }, 
+                    "value": [
+                        [
+                            0, 
+                            1
+                        ], 
+                        [
+                            2, 
+                            3
+                        ]
+                    ]
+                }
+            ], 
+            "id": "7f323835-7ab1-11e4-b6da-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Group", 
+                    "id": "7f332f8f-7ab1-11e4-9a20-3c15c2da029e", 
+                    "name": "g1"
+                }, 
+                {
+                    "class": "hard", 
+                    "className": "Group", 
+                    "id": "7f33b04c-7ab1-11e4-8c78-3c15c2da029e", 
+                    "name": "g2"
+                }
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "7f332f8f-7ab1-11e4-9a20-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Group", 
+                    "id": "7f334102-7ab1-11e4-94b4-3c15c2da029e", 
+                    "name": "g1.1"
+                }, 
+                {
+                    "class": "hard", 
+                    "className": "Group", 
+                    "id": "7f338cb8-7ab1-11e4-9185-3c15c2da029e", 
+                    "name": "g1.2"
+                }
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "7f334102-7ab1-11e4-94b4-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "7f335a2e-7ab1-11e4-87a5-3c15c2da029e", 
+                    "name": "dset1.1.1"
+                }, 
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "7f3374a6-7ab1-11e4-94e2-3c15c2da029e", 
+                    "name": "dset1.1.2"
+                }
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "7f338cb8-7ab1-11e4-9185-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Group", 
+                    "id": "7f339ef5-7ab1-11e4-9ee3-3c15c2da029e", 
+                    "name": "g1.2.1"
+                }, 
+                {
+                    "class": "external", 
+                    "className": "ExternalLink", 
+                    "filename": "somefile", 
+                    "name": "extlink", 
+                    "path": "somepath"
+                }
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "7f339ef5-7ab1-11e4-9ee3-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "soft", 
+                    "className": "SoftLink", 
+                    "name": "slink", 
+                    "path": "somevalue"
+                }
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "7f33b04c-7ab1-11e4-8c78-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "7f33c885-7ab1-11e4-ac4d-3c15c2da029e", 
+                    "name": "dset2.1"
+                }, 
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "7f33e211-7ab1-11e4-8669-3c15c2da029e", 
+                    "name": "dset2.2"
+                }
+            ]
+        }
+    ], 
+    "root": "7f323835-7ab1-11e4-b6da-3c15c2da029e"
+}

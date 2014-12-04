@@ -83,9 +83,25 @@ class DumpJson:
     def dumpDataset(self, uuid):
         response = { 'id': uuid }
         item = self.db.getDatasetItemByUuid(uuid)
+        print json.dumps(item, sort_keys=True, indent=4)
+        
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
-        response['shape'] = item['shape']
+        shapeItem = item['shape']
+        response['shape'] = shapeItem
+        if 'dims' in shapeItem and 'maxdims' in shapeItem:
+            extensible = False
+            dims = shapeItem['dims']
+            maxdims = shapeItem['maxdims']
+            print dims
+            print maxdims
+            for i in range(len(dims)):
+                if dims[i] < maxdims[i]:
+                    extensible = True
+                    break
+            # dump the fill value
+            if extensible and 'fillvalue' in item:
+                response['fillvalue'] = item['fillvalue']
         
         attributes = self.dumpAttributes('datasets', uuid)
         response['attributes'] = attributes
@@ -141,7 +157,6 @@ def main():
         print "usage: h5tojson <filename>"
         sys.exit(); 
     filepath = sys.argv[1]
-    print filepath
     with Hdf5db(filepath, readonly=True) as db:
         dumper = DumpJson(db)
         dumper.dumpFile()    

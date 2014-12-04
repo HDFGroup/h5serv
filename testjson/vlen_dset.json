@@ -1,0 +1,61 @@
+{
+    "datasets": [
+        {
+            "attributes": [], 
+            "id": "89dfb414-7b83-11e4-8384-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    2
+                ], 
+                "maxdims": [
+                    2
+                ]
+            }, 
+            "type": {
+                "base": {
+                    "base": "H5T_STD_I32LE", 
+                    "class": "H5T_INTEGER"
+                }, 
+                "class": "H5T_VLEN"
+            }, 
+            "value": [
+                [
+                    3, 
+                    2, 
+                    1
+                ], 
+                [
+                    1, 
+                    1, 
+                    2, 
+                    3, 
+                    5, 
+                    8, 
+                    13, 
+                    21, 
+                    34, 
+                    55, 
+                    89, 
+                    144
+                ]
+            ]
+        }
+    ], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "attributes": [], 
+            "id": "89de7ee6-7b83-11e4-b0e9-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "89dfb414-7b83-11e4-8384-3c15c2da029e", 
+                    "name": "DS1"
+                }
+            ]
+        }
+    ], 
+    "root": "89de7ee6-7b83-11e4-b0e9-3c15c2da029e"
+}

@@ -1,0 +1,55 @@
+{
+    "datasets": [
+        {
+            "attributes": [
+                {
+                    "name": "A1", 
+                    "shape": {
+                        "class": "H5S_SIMPLE", 
+                        "dims": [
+                            4
+                        ]
+                    }, 
+                    "type": {
+                        "class": "H5T_STRING", 
+                        "cset": "H5T_CSET_ASCII", 
+                        "order": "H5T_ORDER_NONE", 
+                        "strpad": "H5T_STR_NULLPAD", 
+                        "strsize": 7
+                    }, 
+                    "value": [
+                        "Parting", 
+                        "is such", 
+                        "sweet", 
+                        "sorrow."
+                    ]
+                }
+            ], 
+            "id": "08baa31e-7b81-11e4-9c29-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_NULL"
+            }, 
+            "type": {
+                "base": "H5T_STD_I32LE", 
+                "class": "H5T_INTEGER"
+            }, 
+            "value": null
+        }
+    ], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "attributes": [], 
+            "id": "08b95cb5-7b81-11e4-b022-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "08baa31e-7b81-11e4-9c29-3c15c2da029e", 
+                    "name": "DS1"
+                }
+            ]
+        }
+    ], 
+    "root": "08b95cb5-7b81-11e4-b022-3c15c2da029e"
+}

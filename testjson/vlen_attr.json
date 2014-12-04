@@ -1,0 +1,70 @@
+{
+    "datasets": [
+        {
+            "attributes": [
+                {
+                    "name": "A1", 
+                    "shape": {
+                        "class": "H5S_SIMPLE", 
+                        "dims": [
+                            2
+                        ]
+                    }, 
+                    "type": {
+                        "base": {
+                            "base": "H5T_STD_I32LE", 
+                            "class": "H5T_INTEGER"
+                        }, 
+                        "class": "H5T_VLEN"
+                    }, 
+                    "value": [
+                        [
+                            3, 
+                            2, 
+                            1
+                        ], 
+                        [
+                            1, 
+                            1, 
+                            2, 
+                            3, 
+                            5, 
+                            8, 
+                            13, 
+                            21, 
+                            34, 
+                            55, 
+                            89, 
+                            144
+                        ]
+                    ]
+                }
+            ], 
+            "id": "a831762e-7bf7-11e4-afae-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_NULL"
+            }, 
+            "type": {
+                "base": "H5T_STD_I32LE", 
+                "class": "H5T_INTEGER"
+            }, 
+            "value": null
+        }
+    ], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "attributes": [], 
+            "id": "a8307d8c-7bf7-11e4-8e1a-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "a831762e-7bf7-11e4-afae-3c15c2da029e", 
+                    "name": "DS1"
+                }
+            ]
+        }
+    ], 
+    "root": "a8307d8c-7bf7-11e4-8e1a-3c15c2da029e"
+}

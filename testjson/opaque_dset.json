@@ -1,0 +1,38 @@
+{
+    "datasets": [
+        {
+            "attributes": [], 
+            "id": "9c01a6ca-7be9-11e4-a1c9-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    4
+                ], 
+                "maxdims": [
+                    4
+                ]
+            }, 
+            "type": {
+                "class": "H5T_OPAQUE", 
+                "size": 7
+            }, 
+            "value": "????"
+        }
+    ], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "attributes": [], 
+            "id": "9c00a20c-7be9-11e4-bbe8-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "9c01a6ca-7be9-11e4-a1c9-3c15c2da029e", 
+                    "name": "DS1"
+                }
+            ]
+        }
+    ], 
+    "root": "9c00a20c-7be9-11e4-bbe8-3c15c2da029e"
+}

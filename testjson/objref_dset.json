@@ -1,0 +1,70 @@
+{
+    "datasets": [
+        {
+            "attributes": [], 
+            "id": "23674021-7bed-11e4-aba3-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    2
+                ], 
+                "maxdims": [
+                    2
+                ]
+            }, 
+            "type": {
+                "base": "H5T_STD_REF_OBJ", 
+                "class": "H5T_REFERENCE"
+            }, 
+            "value": [
+                "/groups/23676461-7bed-11e4-b95c-3c15c2da029e", 
+                "/datasets/23675094-7bed-11e4-b08a-3c15c2da029e"
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "23675094-7bed-11e4-b08a-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_NULL"
+            }, 
+            "type": {
+                "base": "H5T_STD_I32LE", 
+                "class": "H5T_INTEGER"
+            }, 
+            "value": null
+        }
+    ], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "attributes": [], 
+            "id": "2365cacf-7bed-11e4-b15d-3c15c2da029e", 
+            "links": [
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "23674021-7bed-11e4-aba3-3c15c2da029e", 
+                    "name": "DS1"
+                }, 
+                {
+                    "class": "hard", 
+                    "className": "Dataset", 
+                    "id": "23675094-7bed-11e4-b08a-3c15c2da029e", 
+                    "name": "DS2"
+                }, 
+                {
+                    "class": "hard", 
+                    "className": "Group", 
+                    "id": "23676461-7bed-11e4-b95c-3c15c2da029e", 
+                    "name": "G1"
+                }
+            ]
+        }, 
+        {
+            "attributes": [], 
+            "id": "23676461-7bed-11e4-b95c-3c15c2da029e", 
+            "links": []
+        }
+    ], 
+    "root": "2365cacf-7bed-11e4-b15d-3c15c2da029e"
+}
