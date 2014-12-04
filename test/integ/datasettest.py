@@ -31,7 +31,10 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['type'], 'H5T_IEEE_F32BE')
+        self.assertTrue('type' in rspJson)
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_FLOAT')
+        self.assertEqual(type['base'], 'H5T_IEEE_F32BE')
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
@@ -49,7 +52,9 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_INTEGER')
+        self.assertEqual(type['base'], 'H5T_STD_I64LE')
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
@@ -62,7 +67,9 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_INTEGER')
+        self.assertEqual(type['base'], 'H5T_STD_I64LE')
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 2)
@@ -75,7 +82,9 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_INTEGER')
+        self.assertEqual(type['base'], 'H5T_STD_I64LE')
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
@@ -88,7 +97,9 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_INTEGER')
+        self.assertEqual(type['base'], 'H5T_STD_I64LE')
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 2)
@@ -105,11 +116,14 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_INTEGER')
+        self.assertEqual(type['base'], 'H5T_STD_I32LE')
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SCALAR')
         self.assertTrue('dims' not in shape)
         self.assertTrue('maxdims' not in shape)
-        self.assertEqual(rspJson['type'], 'H5T_STD_I32LE')
+        
         
     def testGetNullSpace(self):
         domain = 'null_space_dset.' + config.get('domain')  
@@ -121,11 +135,13 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_INTEGER')
+        self.assertEqual(type['base'], 'H5T_STD_I32LE')
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_NULL')
         self.assertTrue('dims' not in shape)
         self.assertTrue('maxdims' not in shape)
-        self.assertEqual(rspJson['type'], 'H5T_STD_I32LE')
        
     def testGetCompound(self):
         domain = 'compound.' + config.get('domain')  
@@ -141,8 +157,7 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 72)  
-        typeItem = rspJson['type']
-        
+        typeItem = rspJson['type']   
         self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
         self.assertTrue('fields' in typeItem)
         fields = typeItem['fields']
@@ -158,7 +173,9 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(timeFieldType['strpad'], 'H5T_STR_NULLPAD')
         tempField = fields[2]
         self.assertEqual(tempField['name'], 'temp')
-        self.assertEqual(tempField['type'], 'H5T_STD_I64LE')
+        tempFieldType = tempField['type']
+        self.assertEqual(tempFieldType['class'], 'H5T_INTEGER')
+        self.assertEqual(tempFieldType['base'], 'H5T_STD_I64LE')
         
     def testGetCommitted(self):
         domain = 'committed_type.' + config.get('domain')  
@@ -194,13 +211,14 @@ class DatasetTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_ARRAY')
-        self.assertTrue('shape' in typeItem)
-        typeShape = typeItem['shape']
+        self.assertTrue('dims' in typeItem)
+        typeShape = typeItem['dims']
         self.assertEqual(len(typeShape), 2)
         self.assertEqual(typeShape[0], 3)
         self.assertEqual(typeShape[1], 5)
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
-        self.assertEqual(typeItem['base'], 'H5T_STD_I64LE')
+        typeItemBase = typeItem['base']
+        self.assertEqual(typeItemBase['class'], 'H5T_INTEGER')
+        self.assertEqual(typeItemBase['base'], 'H5T_STD_I64LE')
         
     def testGetFixedString(self):
         domain = 'fixed_string_dset.' + config.get('domain')  
@@ -242,8 +260,9 @@ class DatasetTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_ENUM')
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_BE')
-        self.assertEqual(typeItem['base'], 'H5T_STD_I16BE')
+        typeBase = typeItem['base']
+        self.assertEqual(typeBase['class'], 'H5T_INTEGER')
+        self.assertEqual(typeBase['base'], 'H5T_STD_I16BE')
         self.assertTrue('mapping' in typeItem)
         mapping = typeItem['mapping']
         self.assertEqual(len(mapping), 4)
@@ -269,8 +288,9 @@ class DatasetTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_VLEN')
-        self.assertEqual(typeItem['base'], 'H5T_STD_I32LE')
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
+        typeBase = typeItem['base']
+        self.assertEqual(typeBase['class'], 'H5T_INTEGER')
+        self.assertEqual(typeBase['base'], 'H5T_STD_I32LE')
         
     def testGetOpaque(self):
         domain = 'opaque_dset.' + config.get('domain')  
@@ -289,7 +309,7 @@ class DatasetTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_OPAQUE')
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        self.assertEqual(typeItem['size'], 7)
         
     def testGetObjReference(self):
         domain = 'objref_dset.' + config.get('domain')  
@@ -305,7 +325,9 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 2)   
-        self.assertEqual(rspJson['type'], 'H5T_STD_REF_OBJ')
+        typeItem = rspJson['type']
+        self.assertEqual(typeItem['class'], 'H5T_REFERENCE')
+        self.assertEqual(typeItem['base'], 'H5T_STD_REF_OBJ')
         
     def testGetNullObjReference(self):
         domain = 'null_objref_dset.' + config.get('domain')  
@@ -321,7 +343,9 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 1)   
-        self.assertEqual(rspJson['type'], 'H5T_STD_REF_OBJ')
+        typeItem = rspJson['type']
+        self.assertEqual(typeItem['class'], 'H5T_REFERENCE')
+        self.assertEqual(typeItem['base'], 'H5T_STD_REF_OBJ')
         
     def testGetRegionReference(self):
         domain = 'regionref_dset.' + config.get('domain')  
@@ -337,8 +361,9 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 2)  
-        
-        self.assertEqual(rspJson['type'], 'H5T_STD_REF_DSETREG')
+        typeItem = rspJson['type']
+        self.assertEqual(typeItem['class'], 'H5T_REFERENCE')
+        self.assertEqual(typeItem['base'], 'H5T_STD_REF_DSETREG')
         
     def testPost(self):
         domain = 'newdset.datasettest.' + config.get('domain')

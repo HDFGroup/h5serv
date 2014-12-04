@@ -35,7 +35,8 @@ class ValueTest(unittest.TestCase):
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertEqual(rspJson['id'], dset112UUID)
-            self.assertEqual(rspJson['type'], 'H5T_STD_I32BE')
+            typeItem = rspJson['type']  
+            self.assertEqual(typeItem['base'], 'H5T_STD_I32BE')
             shape = rspJson['shape']
             self.assertEqual(shape['class'], 'H5S_SIMPLE')
             self.assertEqual(len(shape['dims']), 1)
@@ -57,7 +58,8 @@ class ValueTest(unittest.TestCase):
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertEqual(rspJson['id'], dset111UUID)
-            self.assertEqual(rspJson['type'], 'H5T_STD_I32BE')
+            typeItem = rspJson['type']  
+            self.assertEqual(typeItem['base'], 'H5T_STD_I32BE')
             shape = rspJson['shape']
             self.assertEqual(shape['class'], 'H5S_SIMPLE')
             self.assertEqual(len(shape['dims']), 2)
@@ -87,7 +89,8 @@ class ValueTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertEqual(rspJson['id'], dsetUUID)
-        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
+        typeItem = rspJson['type']  
+        self.assertEqual(typeItem['base'], 'H5T_STD_I64LE')
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SCALAR')
         req = helper.getEndpoint() + "/datasets/" + dsetUUID + "/value"

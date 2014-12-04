@@ -30,7 +30,10 @@ class AttributeTest(unittest.TestCase):
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertEqual(rspJson['name'], 'attr1')
-            self.assertEqual(rspJson['type'], 'H5T_STD_I8LE')
+            self.assertTrue('type' in rspJson)
+            type = rspJson['type']
+            self.assertEqual(type['class'], 'H5T_INTEGER')
+            self.assertEqual(type['base'], 'H5T_STD_I8LE')
             self.assertTrue('shape' in rspJson)
             shape = rspJson['shape']
             self.assertEqual(shape['class'], 'H5S_SIMPLE')
@@ -107,14 +110,19 @@ class AttributeTest(unittest.TestCase):
             fields = typeItem['fields']
             field0 = fields[0]
             self.assertEqual(field0['name'], 'time')
-            #todo - these should be return just the predefined type names
-            #self.assertEqual(field0['type'], 'H5T_STD_I64LE')
+            field0Type = field0['type']
+            self.assertEqual(field0Type['class'], 'H5T_INTEGER')
+            self.assertEqual(field0Type['base'], 'H5T_STD_I64LE')
             field1 = fields[1]
             self.assertEqual(field1['name'], 'temp')
-            #self.assertEqual(field1['type'], 'H5T_STD_I64LE')
+            field1Type = field1['type']
+            self.assertEqual(field1Type['class'], 'H5T_INTEGER')
+            self.assertEqual(field1Type['base'], 'H5T_STD_I64LE')
             field2 = fields[2]
             self.assertEqual(field2['name'], 'pressure')
-            #self.assertEqual(field2['type'], 'H5T_IEEE_F64LE')
+            field2Type = field2['type']
+            self.assertEqual(field2Type['class'], 'H5T_FLOAT')
+            self.assertEqual(field2Type['base'], 'H5T_IEEE_F64LE')
             field3 = fields[3]
             self.assertEqual(field3['name'], 'wind')
             field3Type = field3['type']
@@ -153,16 +161,16 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 4) 
-        typeItem = rspJson['type']
-        
+        typeItem = rspJson['type']    
         self.assertEqual(typeItem['class'], 'H5T_ARRAY')
-        self.assertTrue('shape' in typeItem)
-        typeShape = typeItem['shape']
+        self.assertTrue('dims' in typeItem)
+        typeShape = typeItem['dims']
         self.assertEqual(len(typeShape), 2)
         self.assertEqual(typeShape[0], 3)
         self.assertEqual(typeShape[1], 5)
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
-        self.assertEqual(typeItem['base'], 'H5T_STD_I64LE')
+        typeBase = typeItem['base']
+        self.assertEqual(typeBase['class'], 'H5T_INTEGER')
+        self.assertEqual(typeBase['base'], 'H5T_STD_I64LE')
         # bug! - unable to read value from attribute with array type
         # code is not returning 'value' key in this case
         # h5py issue: https://github.com/h5py/h5py/issues/498 
@@ -182,8 +190,7 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 4) 
-        typeItem = rspJson['type']
-        
+        typeItem = rspJson['type']   
         self.assertEqual(typeItem['class'], 'H5T_STRING')
         self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
         self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
@@ -244,8 +251,9 @@ class AttributeTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_ENUM')
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_BE')
-        self.assertEqual(typeItem['base'], 'H5T_STD_I16BE')
+        baseType = typeItem['base']
+        self.assertEqual(baseType['class'], 'H5T_INTEGER')
+        self.assertEqual(baseType['base'], 'H5T_STD_I16BE')
         self.assertTrue('mapping' in typeItem)
         mapping = typeItem['mapping']
         self.assertEqual(len(mapping), 4)
@@ -275,8 +283,9 @@ class AttributeTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_VLEN')
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_LE')
-        self.assertEqual(typeItem['base'], 'H5T_STD_I32LE')
+        baseType = typeItem['base']
+        self.assertEqual(baseType['class'], 'H5T_INTEGER')
+        self.assertEqual(baseType['base'], 'H5T_STD_I32LE')
         #verify data returned
         value = rspJson['value']
         self.assertEqual(len(value), 2)
@@ -300,7 +309,7 @@ class AttributeTest(unittest.TestCase):
         typeItem = rspJson['type']   
         
         self.assertEqual(typeItem['class'], 'H5T_OPAQUE')
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        self.assertEqual(typeItem['size'], 7)
         self.assertTrue('value' not in rspJson)  # opaque data is not supported yet
         
     def testGetObjectReference(self):
@@ -319,9 +328,9 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 2)  
-        typeItem = rspJson['type']
-        
-        self.assertEqual(rspJson['type'], 'H5T_STD_REF_OBJ')
+        typeItem = rspJson['type']     
+        self.assertEqual(typeItem['class'], 'H5T_REFERENCE')
+        self.assertEqual(typeItem['base'], 'H5T_STD_REF_OBJ')
         self.assertTrue('value' in rspJson)
         value = rspJson['value']
         self.assertEqual(len(value), 2)
@@ -343,7 +352,9 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 2) 
-        self.assertEqual(rspJson['type'], 'H5T_STD_REF_DSETREG')
+        typeItem = rspJson['type']     
+        self.assertEqual(typeItem['class'], 'H5T_REFERENCE')
+        self.assertEqual(typeItem['base'], 'H5T_STD_REF_DSETREG')
         self.assertTrue('value' in rspJson)
         value = rspJson['value']
         self.assertEqual(len(value), 2)
@@ -385,8 +396,9 @@ class AttributeTest(unittest.TestCase):
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SCALAR')
         self.assertTrue('dims' not in shape)
-        
-        self.assertEqual(rspJson['type'], 'H5T_STD_I64LE')
+        typeItem = rspJson['type']
+        self.assertEqual(typeItem['class'], 'H5T_INTEGER')
+        self.assertEqual(typeItem['base'], 'H5T_STD_I64LE')
         data = rspJson['value'] 
         self.assertEqual(type(data), int)
         self.assertEqual(data, 42)

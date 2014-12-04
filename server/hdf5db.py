@@ -910,6 +910,10 @@ class Hdf5db:
                 else:     
                     self.httpStatus = 500
                     logging.error("unknown object type")
+        elif dt.kind == 'V' and  len(dt) <= 1 and len(dt.shape) == 0:
+            # opaque type - skip for now
+            logging.warning("unable to print opaque type values")
+            values = "????"
         else:
             # just use tolist to dump
             values = dset[slices].tolist()

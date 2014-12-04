@@ -31,10 +31,19 @@ def getTypeResponse(typeItem):
     if 'uuid' in typeItem:
         # committed type, just return uuid
         response = typeItem['uuid']
-    elif 'base' in typeItem and (typeItem['class'] == 'H5T_INTEGER' or 
-        typeItem['class'] == 'H5T_FLOAT' or typeItem['class'] == 'H5T_REFERENCE'):
-        # just return the predefined type name for pre-defined types (or reference)
-        response = typeItem['base']
+    elif typeItem['class'] == 'H5T_INTEGER' or  typeItem['class'] == 'H5T_FLOAT':
+        # just return the class and base for pre-defined types
+        response = {}
+        response['class'] = typeItem['class']
+        response['base'] = typeItem['base']
+    elif typeItem['class'] == 'H5T_OPAQUE':
+        response = {}
+        response['class'] = 'H5T_OPAQUE'
+        response['size'] = typeItem['size']
+    elif typeItem['class'] == 'H5T_REFERENCE':
+        response = {}
+        response['class'] = 'H5T_REFERENCE'
+        response['base'] = typeItem['base']
     elif typeItem['class'] == 'H5T_COMPOUND':
         response = {}
         response['class'] = 'H5T_COMPOUND'
@@ -48,7 +57,12 @@ def getTypeResponse(typeItem):
     else:
         response = {}   # otherwise, return full type
         for k in typeItem.keys():
-            if k not in ('size', 'base_size'):
+            if k == 'base':
+                if type(typeItem[k]) == dict:
+                    response[k] = getTypeResponse(typeItem[k])  # recursive call
+                else:
+                    response[k] = typeItem[k]  # predefined type
+            elif k not in ('size', 'base_size'):
                 response[k] = typeItem[k]
     return response
            
@@ -84,8 +98,7 @@ def getTypeElement(dt):
         raise Exception("unexpected numpy type passed to getTypeElement")
     
     type_info = {}
-    
-        
+         
     if dt.kind == 'O':
         # numpy object type - assume this is a h5py variable length extension
         h5t_check = h5py.h5t.check_dtype(vlen=dt)
@@ -107,11 +120,7 @@ def getTypeElement(dt):
                 # vlen data
                 type_info['class'] = 'H5T_VLEN'
                 type_info['size'] = 'H5T_VARIABLE'
-                
-                base_type = getBaseType(h5t_check)   
-                for k in base_type:
-                    if k not in type_info:
-                        type_info[k] = base_type[k]
+                type_info['base'] = getBaseType(h5t_check)   
             else:
                 #unknown vlen type
                 raise Exception("Unknown h5py vlen type")
@@ -130,9 +139,44 @@ def getTypeElement(dt):
                     raise Exception("unexpected reference type")
             else:     
                 raise Exception("unknown object type")
+    elif dt.kind == 'V':
+        baseType = getBaseType(dt)
+        if dt.shape:
+            # array type
+            type_info['dims'] = dt.shape
+            type_info['class'] = 'H5T_ARRAY'
+            type_info['base'] = getBaseType(dt)
+        elif baseType['class'] == 'H5T_OPAQUE':
+            # expecting this to be an opaque type
+            type_info = baseType  # just promote the base type
+        else:
+            raise Exception("unexpected Void type")
+    elif dt.kind == 'S':
+        # String type
+        baseType = getBaseType(dt)
+        type_info = baseType  # just use base type
+    elif dt.kind == 'i':
+        # integer type
+        baseType = getBaseType(dt)
+        # numpy integer type - but check to see if this is the hypy 
+        # enum extension
+        mapping = h5py.h5t.check_dtype(enum=dt)  
+            
+        if mapping:
+            # yes, this is an enum!
+            type_info['class'] = 'H5T_ENUM'
+            type_info['mapping'] = mapping
+            type_info['base'] = baseType
+        else:
+            type_info = baseType  # just use base type
+    
+    elif dt.kind == 'f':
+        # floating point type
+        baseType = getBaseType(dt)
+        type_info = baseType  # just use base type
     else:
-        # just call getBaseType
-        type_info = getBaseType(dt)
+        # unexpected kind
+        raise Exception("unexpected dtype kind: " + dt.kind)
         
     return type_info
         
@@ -142,10 +186,7 @@ Get Base type info for given type element.
 def getBaseType(dt):
     if len(dt) > 1:
         raise Exception("unexpected numpy type passed to getTypeElement")
-        
-    if dt.kind == 'O':
-        raise Exception("Object type passed to getTypeElement")
-        
+             
     predefined_int_types = {
         'int8':    'H5T_STD_I8',
         'uint8':   'H5T_STD_UI8',
@@ -175,18 +216,8 @@ def getBaseType(dt):
     elif dt.base.kind == 'V':
             type_info['class'] = 'H5T_OPAQUE'
             type_info['order'] = 'H5T_ORDER_NONE'
-    elif dt.base.kind == 'i':
-        # numpy integer type - but check to see if this is the hypy 
-        # enum extension
-        mapping = h5py.h5t.check_dtype(enum=dt)  
-            
-        if mapping:
-            # yes, this is an enum!
-            type_info['class'] = 'H5T_ENUM'
-            type_info['mapping'] = mapping
-        else:
-            # not an enum, regular integer type
-            type_info['class'] = 'H5T_INTEGER'
+    elif dt.base.kind == 'i':    
+        type_info['class'] = 'H5T_INTEGER'
         byteorder = 'LE'
         if dt.byteorder == '>':
             byteorder = 'BE'
@@ -203,12 +234,9 @@ def getBaseType(dt):
         if dt.base.name in predefined_float_types:
             #maps to one of the HDF5 predefined types
             type_info['base'] = predefined_float_types[dt.base.name] + byteorder 
-         
-    # check for array type
-    if dt.shape:
-        # array type
-        type_info['shape'] = dt.shape
-        type_info['class'] = 'H5T_ARRAY'
+    else:
+        # unexpected kind
+        raise Exception("unexpected dtype base kind: " + dt.base.kind)
     
     return type_info
  

@@ -34,6 +34,10 @@ class Hdf5dtypeTest(unittest.TestCase):
         self.failUnlessEqual(typeItem['base_size'], 1)
         self.failUnlessEqual(typeItem['order'], 'H5T_ORDER_LE')
         self.failUnlessEqual(typeItem['base'], 'H5T_STD_I8LE')
+        typeItem = hdf5dtype.getTypeResponse(typeItem) # non-verbose format
+        self.failUnlessEqual(typeItem['class'], 'H5T_INTEGER')
+        self.failUnlessEqual(typeItem['base'], 'H5T_STD_I8LE')
+        
         
     def testBaseFloatTypeItem(self):
         dt = np.dtype('<f8')
@@ -44,7 +48,8 @@ class Hdf5dtypeTest(unittest.TestCase):
         self.failUnlessEqual(typeItem['order'], 'H5T_ORDER_LE')
         self.failUnlessEqual(typeItem['base'], 'H5T_IEEE_F64LE')
         typeItem = hdf5dtype.getTypeResponse(typeItem) # non-verbose format
-        self.failUnlessEqual(typeItem, 'H5T_IEEE_F64LE')
+        self.failUnlessEqual(typeItem['class'], 'H5T_FLOAT')
+        self.failUnlessEqual(typeItem['base'], 'H5T_IEEE_F64LE')
         
     def testBaseStringTypeItem(self):
         dt = np.dtype('S3')
@@ -82,10 +87,12 @@ class Hdf5dtypeTest(unittest.TestCase):
         dt = special_dtype(enum=(np.int8, mapping) )
         typeItem = hdf5dtype.getTypeItem(dt)
         self.failUnlessEqual(typeItem['class'], 'H5T_ENUM')
-        self.failUnlessEqual(typeItem['size'], 1)
-        self.failUnlessEqual(typeItem['base_size'], 1)
-        self.failUnlessEqual(typeItem['order'], 'H5T_ORDER_LE')
-        self.failUnlessEqual(typeItem['base'], 'H5T_STD_I8LE')
+        baseItem = typeItem['base']
+        self.failUnlessEqual(baseItem['class'], 'H5T_INTEGER')
+        self.failUnlessEqual(baseItem['size'], 1)
+        self.failUnlessEqual(baseItem['base_size'], 1)
+        self.failUnlessEqual(baseItem['order'], 'H5T_ORDER_LE')
+        self.failUnlessEqual(baseItem['base'], 'H5T_STD_I8LE')
         self.assertTrue('mapping' in typeItem)
         self.failUnlessEqual(typeItem['mapping']['GREEN'], 1)
         
@@ -93,10 +100,12 @@ class Hdf5dtypeTest(unittest.TestCase):
         dt = np.dtype('(2,2)<int32')
         typeItem = hdf5dtype.getTypeItem(dt)
         self.failUnlessEqual(typeItem['class'], 'H5T_ARRAY')
-        self.failUnlessEqual(typeItem['size'], 16)
-        self.failUnlessEqual(typeItem['base_size'], 4)
-        self.failUnlessEqual(typeItem['order'], 'H5T_ORDER_LE')
-        self.failUnlessEqual(typeItem['base'], 'H5T_STD_I32LE')
+        baseItem = typeItem['base']
+        self.failUnlessEqual(baseItem['class'], 'H5T_INTEGER')
+        self.failUnlessEqual(baseItem['size'], 16)
+        self.failUnlessEqual(baseItem['base_size'], 4)
+        self.failUnlessEqual(baseItem['order'], 'H5T_ORDER_LE')
+        self.failUnlessEqual(baseItem['base'], 'H5T_STD_I32LE')
         
     def testOpaqueTypeItem(self):
         dt = np.dtype('V200')
@@ -112,9 +121,10 @@ class Hdf5dtypeTest(unittest.TestCase):
         typeItem = hdf5dtype.getTypeItem(dt)
         self.failUnlessEqual(typeItem['class'], 'H5T_VLEN')
         self.failUnlessEqual(typeItem['size'], 'H5T_VARIABLE')
-        self.failUnlessEqual(typeItem['base_size'], 8)
-        self.failUnlessEqual(typeItem['order'], 'H5T_ORDER_LE')
-        self.failUnlessEqual(typeItem['base'], 'H5T_STD_I32LE')
+        baseItem = typeItem['base']
+        self.failUnlessEqual(baseItem['size'], 4)
+        self.failUnlessEqual(baseItem['order'], 'H5T_ORDER_LE')
+        self.failUnlessEqual(baseItem['base'], 'H5T_STD_I32LE')
         
     def testCompoundTypeItem(self): 
         dt = np.dtype([("temp", np.float32), ("pressure", np.float32), ("wind", np.int16)])
@@ -141,7 +151,9 @@ class Hdf5dtypeTest(unittest.TestCase):
         tempField = fields[0]
         self.assertEqual(tempField['name'], 'temp')
         self.assertTrue('type' in tempField)
-        self.failUnlessEqual(tempField['type'], 'H5T_IEEE_F32LE')  
+        tempFieldType = tempField['type']
+        self.failUnlessEqual(tempFieldType['class'], 'H5T_FLOAT') 
+        self.failUnlessEqual(tempFieldType['base'], 'H5T_IEEE_F32LE')  
         
     def testCreateBaseType(self):
         dt = hdf5dtype.createDataType('H5T_STD_UI32BE') 
