@@ -28,8 +28,6 @@ class RootTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         helper.validateId(rspJson["root"])
-        self.failUnlessEqual(rspJson["groupCount"], 6)
-        self.failUnlessEqual(rspJson["datasetCount"], 4)
         
     def testGetReadOnly(self):
         domain = 'tall_ro.' + config.get('domain')    
@@ -39,8 +37,6 @@ class RootTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         helper.validateId(rspJson["root"])
-        self.failUnlessEqual(rspJson["groupCount"], 6)
-        self.failUnlessEqual(rspJson["datasetCount"], 4)
         
     def testGetNotFound(self):
         domain = 'doesnotexist.' + config.get('domain')    
@@ -99,8 +95,6 @@ class RootTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.failUnlessEqual(rspJson["groupCount"], 1)
-        self.failUnlessEqual(rspJson["datasetCount"], 1)
         
     def testGetSubdomain(self): 
         domain = 'zerodim.subdir.' + config.get('domain')
@@ -109,8 +103,6 @@ class RootTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
-        self.failUnlessEqual(rspJson["groupCount"], 1)
-        self.failUnlessEqual(rspJson["datasetCount"], 1)
         
     def testPutSubdomain(self): 
         domain = 'newfile.newsubdir.' + config.get('domain')
@@ -119,8 +111,6 @@ class RootTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
-        self.failUnlessEqual(rspJson["groupCount"], 1)
-        self.failUnlessEqual(rspJson["datasetCount"], 0)
         
     def testPutSubSubdomain(self): 
         domain = 'newfile.newsubsubdir.newsubdirparent.' + config.get('domain')        
@@ -132,8 +122,6 @@ class RootTest(unittest.TestCase):
         href = (rspJson["hrefs"][0])[u"href"]
         self.failUnlessEqual(href, 
         u"http://newfile.newsubsubdir.newsubdirparent.test.hdf.io/")
-        self.failUnlessEqual(rspJson["groupCount"], 1)
-        self.failUnlessEqual(rspJson["datasetCount"], 0)
                
     def testDelete(self):
         #test DELETE_root
@@ -173,8 +161,6 @@ class RootTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
-        self.failUnlessEqual(rspJson["groupCount"], 1)
-        self.failUnlessEqual(rspJson["datasetCount"], 0)
         
 if __name__ == '__main__':
     unittest.main()

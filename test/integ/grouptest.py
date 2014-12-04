@@ -30,8 +30,6 @@ class GroupTest(unittest.TestCase):
             rspJson = json.loads(rsp.text)
             rootUUID = rspJson["root"]
             self.assertTrue(helper.validateId(rootUUID))
-            self.failUnlessEqual(rspJson["groupCount"], 6)
-            self.failUnlessEqual(rspJson["datasetCount"], 4)
         
             req = self.endpoint + "/groups/" + rootUUID
             rsp = requests.get(req, headers=headers)

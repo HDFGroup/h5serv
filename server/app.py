@@ -1555,9 +1555,6 @@ class RootHandler(RequestHandler):
         response = {  }
         response['created'] = unixTimeToUTC(op.getctime(filePath))
         response['lastModified'] = unixTimeToUTC(op.getmtime(filePath))
-        response['datasetCount'] = datasetCount
-        response['groupCount'] = groupCount
-        response['typeCount'] = datatypeCount
         response['root'] = rootUUID
         response['hrefs'] = hrefs
         
