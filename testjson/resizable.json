@@ -1,7 +1,112 @@
 {
+    "attributeCount": 0, 
+    "ctime": 1417567282, 
+    "fillvalue": 0, 
+    "id": "a36df1ba-7bf7-11e4-b0ea-3c15c2da029e", 
+    "mtime": 1417567282, 
+    "shape": {
+        "class": "H5S_SIMPLE", 
+        "dims": [
+            10
+        ], 
+        "maxdims": [
+            20
+        ]
+    }, 
+    "type": {
+        "base": "H5T_STD_I64LE", 
+        "base_size": 8, 
+        "class": "H5T_INTEGER", 
+        "order": "H5T_ORDER_LE", 
+        "size": 8
+    }
+}
+(10,)
+[20]
+{
+    "attributeCount": 0, 
+    "ctime": 1417567282, 
+    "fillvalue": 0, 
+    "id": "a36e0fe3-7bf7-11e4-a278-3c15c2da029e", 
+    "mtime": 1417567282, 
+    "shape": {
+        "class": "H5S_SIMPLE", 
+        "dims": [
+            10, 
+            10
+        ], 
+        "maxdims": [
+            10, 
+            20
+        ]
+    }, 
+    "type": {
+        "base": "H5T_STD_I64LE", 
+        "base_size": 8, 
+        "class": "H5T_INTEGER", 
+        "order": "H5T_ORDER_LE", 
+        "size": 8
+    }
+}
+(10, 10)
+[10, 20]
+{
+    "attributeCount": 0, 
+    "ctime": 1417567282, 
+    "fillvalue": 0, 
+    "id": "a36e207d-7bf7-11e4-ac4a-3c15c2da029e", 
+    "mtime": 1417567282, 
+    "shape": {
+        "class": "H5S_SIMPLE", 
+        "dims": [
+            10
+        ], 
+        "maxdims": [
+            0
+        ]
+    }, 
+    "type": {
+        "base": "H5T_STD_I64LE", 
+        "base_size": 8, 
+        "class": "H5T_INTEGER", 
+        "order": "H5T_ORDER_LE", 
+        "size": 8
+    }
+}
+(10,)
+[0]
+{
+    "attributeCount": 0, 
+    "ctime": 1417567282, 
+    "fillvalue": 0, 
+    "id": "a36e3c1c-7bf7-11e4-90c4-3c15c2da029e", 
+    "mtime": 1417567282, 
+    "shape": {
+        "class": "H5S_SIMPLE", 
+        "dims": [
+            10, 
+            10
+        ], 
+        "maxdims": [
+            10, 
+            0
+        ]
+    }, 
+    "type": {
+        "base": "H5T_STD_I64LE", 
+        "base_size": 8, 
+        "class": "H5T_INTEGER", 
+        "order": "H5T_ORDER_LE", 
+        "size": 8
+    }
+}
+(10, 10)
+[10, 0]
+{
     "datasets": [
         {
             "attributes": [], 
+            "fillvalue": 0, 
             "id": "a36df1ba-7bf7-11e4-b0ea-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
@@ -31,6 +136,7 @@
         }, 
         {
             "attributes": [], 
+            "fillvalue": 0, 
             "id": "a36e0fe3-7bf7-11e4-a278-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
