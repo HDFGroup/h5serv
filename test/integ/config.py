@@ -13,10 +13,7 @@ import os
 
 cfg = {
     'server': '127.0.0.1',
-    #'server': '192.168.0.100',
-    #'server': 'ec2-54-174-20-244.compute-1.amazonaws.com',
     'port':   5000,
-    #'port':     7253,
     'domain':  'test.hdf.io'
 }
    

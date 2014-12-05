@@ -116,16 +116,15 @@ class DumpJson:
         self.json['datasets'] = datasetList
         
     def dumpDatatype(self, uuid):
+        response = { 'id': uuid }
         item = self.db.getCommittedTypeItemByUuid(uuid)
-        if 'ctime' in item:
-            del item['ctime']
-        if 'mtime' in item:
-            del item['mtime']
-        if 'attributeCount' in item:
-            del item['attributeCount']
+        response['alias'] = item['alias']
+        typeItem = item['type']
+        response['type'] = hdf5dtype.getTypeResponse(typeItem)
         attributes = self.dumpAttributes('datatypes', uuid)
-        item['attributes'] = attributes
-        return item
+        response['attributes'] = attributes
+        return response
+         
         
     def dumpDatatypes(self):
         datatypeList = []
