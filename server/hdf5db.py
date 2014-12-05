@@ -441,17 +441,6 @@ class Hdf5db:
                 self.httpStatus = 404  # Not Found
                 self.httpMessage = "Resource not found"
         return obj
-        
-        
-    def getDatatypeObjByUuid(self, objUuid):
-        logging.info("getGroupObjByUuid(" + objUuid + ")")
-        self.initFile()
-        obj =  self.getObjectByUuid("groups", objUuid)
-         
-        if obj == None:
-            self.httpStatus = 404  # Not Found
-            self.httpMessage = "Resource not found"
-        return obj
     
     def getDatasetTypeItemByUuid(self, objUuid):
         dset = self.getDatasetObjByUuid(objUuid)
@@ -508,6 +497,12 @@ class Hdf5db:
             logging.info("dataset: " + objUuid + " not found")
             return None
         item = { 'id': objUuid }
+        
+        alias = []
+        if dset.name:
+            alias.append(dset.name)   # just use the default h5py path for now
+        item['alias'] = alias
+        
         item['attributeCount'] = len(dset.attrs)
         
         # check if the dataset is using a committed type
@@ -611,6 +606,10 @@ class Hdf5db:
                 self.httpMessage = "Resource not found"
             return None
         item = { 'id': objUuid }
+        alias = []
+        if datatype.name:
+            alias.append(datatype.name)   # just use the default h5py path for now
+        item['alias'] = alias
         item['attributeCount'] = len(datatype.attrs)
         item['type'] = hdf5dtype.getTypeItem(datatype.dtype) 
         item['ctime'] = self.getCreateTime(objUuid)
@@ -849,7 +848,7 @@ class Hdf5db:
                     out = "/groups/" + uuid
                 elif self.getDatasetObjByUuid(uuid):
                     out = "/datasets/" + uuid
-                elif self.getDatatypeObjByUuid(uuid):
+                elif self.getCommittedTypeObjByUuid(uuid):
                     out = "/datatypes/" + uuid
                 else:
                     logging.warning("uuid in region ref not found: [" + uuid + "]");
@@ -1177,11 +1176,16 @@ class Hdf5db:
         if grp == None:
             return None
         
+        
         linkCount = len(grp)    
         if "__db__" in grp:
             linkCount -= 1  # don't include the db group
         
         item = { 'id': objUuid }
+        alias = []
+        if grp.name:
+            alias.append(grp.name)   # just use the default h5py path for now
+        item['alias'] = alias
         item['attributeCount'] = len(grp.attrs)
         item['linkCount'] = linkCount
         item['ctime'] = self.getCreateTime(objUuid)

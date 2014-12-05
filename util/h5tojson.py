@@ -83,7 +83,7 @@ class DumpJson:
     def dumpDataset(self, uuid):
         response = { 'id': uuid }
         item = self.db.getDatasetItemByUuid(uuid)
-        
+        response['alias'] = item['alias']
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
         shapeItem = item['shape']
