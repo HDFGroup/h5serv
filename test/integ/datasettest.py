@@ -191,8 +191,10 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 4)  
-        typeItem = rspJson['type']  # returns uuid
-        self.assertTrue(helper.validateId(typeItem))
+        typeItem = rspJson['type']  # returns '/datatypes/<uuid>'
+        npos = typeItem.rfind('/')
+        type_uuid = typeItem[(npos+1):]
+        self.assertTrue(helper.validateId(type_uuid))
         
     def testGetArray(self):
         domain = 'array_dset.' + config.get('domain')  
@@ -445,6 +447,18 @@ class DatasetTest(unittest.TestCase):
             headers = {'host': domain}
             rsp = requests.put(req, data=json.dumps(payload), headers=headers)
             self.failUnlessEqual(rsp.status_code, 201)
+            
+            # Do a GET on the datasets we just created
+            req = helper.getEndpoint() + "/datasets/" + dset_uuid
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            # verify the type
+            self.assertTrue('type' in rspJson)
+            type = rspJson['type']
+            self.assertTrue(type['class'] in ('H5T_FLOAT', 'H5T_INTEGER'))
+            self.assertEqual(type['base'], datatype)      
+            
             
     def testPostCompoundType(self):
         domain = 'compound.datasettest.' + config.get('domain')

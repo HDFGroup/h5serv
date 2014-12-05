@@ -144,8 +144,10 @@ class AttributeTest(unittest.TestCase):
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SCALAR')
         self.assertTrue('dims' not in shape)
-        typeItem = rspJson['type']  # returns uuid
-        self.assertTrue(helper.validateId(typeItem))
+        typeItem = rspJson['type']  # returns '/datatypes/<uuid>'
+        npos = typeItem.rfind('/')
+        type_uuid = typeItem[(npos+1):]
+        self.assertTrue(helper.validateId(type_uuid))
              
     def testGetArray(self):
         domain = 'array_attr.' + config.get('domain')  

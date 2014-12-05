@@ -30,7 +30,7 @@ def getTypeResponse(typeItem):
     response = None
     if 'uuid' in typeItem:
         # committed type, just return uuid
-        response = typeItem['uuid']
+        response = 'datatypes/' + typeItem['uuid']
     elif typeItem['class'] == 'H5T_INTEGER' or  typeItem['class'] == 'H5T_FLOAT':
         # just return the class and base for pre-defined types
         response = {}
@@ -155,7 +155,7 @@ def getTypeElement(dt):
         # String type
         baseType = getBaseType(dt)
         type_info = baseType  # just use base type
-    elif dt.kind == 'i':
+    elif dt.kind == 'i' or dt.kind == 'u':
         # integer type
         baseType = getBaseType(dt)
         # numpy integer type - but check to see if this is the hypy 
@@ -216,7 +216,7 @@ def getBaseType(dt):
     elif dt.base.kind == 'V':
             type_info['class'] = 'H5T_OPAQUE'
             type_info['order'] = 'H5T_ORDER_NONE'
-    elif dt.base.kind == 'i':    
+    elif dt.base.kind == 'i' or dt.base.kind == 'u':    
         type_info['class'] = 'H5T_INTEGER'
         byteorder = 'LE'
         if dt.byteorder == '>':
