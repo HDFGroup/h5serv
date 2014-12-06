@@ -1,6 +1,10 @@
+adding alias:/dset
 {
     "datasets": [
         {
+            "alias": [
+                "/dset"
+            ], 
             "attributes": [], 
             "id": "f5789a87-7b80-11e4-ba61-3c15c2da029e", 
             "shape": {
@@ -145,6 +149,9 @@
     "datatypes": [], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [], 
             "id": "f577b4eb-7b80-11e4-bdb9-3c15c2da029e", 
             "links": [

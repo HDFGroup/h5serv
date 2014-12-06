@@ -1,6 +1,11 @@
+adding alias:/0d
+adding alias:/1d
 {
     "datasets": [
         {
+            "alias": [
+                "/0d"
+            ], 
             "attributes": [], 
             "id": "41e49e63-7b86-11e4-852f-3c15c2da029e", 
             "shape": {
@@ -13,6 +18,9 @@
             "value": 42
         }, 
         {
+            "alias": [
+                "/1d"
+            ], 
             "attributes": [], 
             "id": "41e4b5a8-7b86-11e4-b6f6-3c15c2da029e", 
             "shape": {
@@ -36,6 +44,9 @@
     "datatypes": [], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [
                 {
                     "name": "attr1", 

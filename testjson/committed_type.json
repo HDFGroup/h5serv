@@ -1,6 +1,10 @@
+adding alias:/DS1
 {
     "datasets": [
         {
+            "alias": [
+                "/DS1"
+            ], 
             "attributes": [], 
             "id": "25d6f985-7b51-11e4-a037-3c15c2da029e", 
             "shape": {
@@ -12,7 +16,7 @@
                     4
                 ]
             }, 
-            "type": "25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
+            "type": "datatypes/25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
             "value": [
                 [
                     12345678, 
@@ -43,6 +47,9 @@
     ], 
     "datatypes": [
         {
+            "alias": [
+                "/Sensor_Type"
+            ], 
             "attributes": [], 
             "id": "25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
             "type": {
@@ -52,16 +59,12 @@
                         "name": "Serial number", 
                         "type": {
                             "base": "H5T_STD_I64BE", 
-                            "base_size": 8, 
-                            "class": "H5T_INTEGER", 
-                            "order": "H5T_ORDER_BE", 
-                            "size": 8
+                            "class": "H5T_INTEGER"
                         }
                     }, 
                     {
                         "name": "Location", 
                         "type": {
-                            "base_size": 8, 
                             "class": "H5T_STRING", 
                             "cset": "H5T_CSET_ASCII", 
                             "order": "H5T_ORDER_NONE", 
@@ -73,20 +76,14 @@
                         "name": "Temperature (F)", 
                         "type": {
                             "base": "H5T_IEEE_F64BE", 
-                            "base_size": 8, 
-                            "class": "H5T_FLOAT", 
-                            "order": "H5T_ORDER_BE", 
-                            "size": 8
+                            "class": "H5T_FLOAT"
                         }
                     }, 
                     {
                         "name": "Pressure (inHg)", 
                         "type": {
                             "base": "H5T_IEEE_F64BE", 
-                            "base_size": 8, 
-                            "class": "H5T_FLOAT", 
-                            "order": "H5T_ORDER_BE", 
-                            "size": 8
+                            "class": "H5T_FLOAT"
                         }
                     }
                 ]
@@ -95,13 +92,16 @@
     ], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [
                 {
                     "name": "attr1", 
                     "shape": {
                         "class": "H5S_SCALAR"
                     }, 
-                    "type": "25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
+                    "type": "datatypes/25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
                     "value": [
                         12345678, 
                         "SEA", 

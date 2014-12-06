@@ -1,6 +1,10 @@
+adding alias:/array
 {
     "datasets": [
         {
+            "alias": [
+                "/array"
+            ], 
             "attributes": [], 
             "id": "9348ad51-7bf7-11e4-a66f-3c15c2da029e", 
             "shape": {
@@ -1030,6 +1034,9 @@
     "datatypes": [], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [], 
             "id": "9347b2d1-7bf7-11e4-857c-3c15c2da029e", 
             "links": [

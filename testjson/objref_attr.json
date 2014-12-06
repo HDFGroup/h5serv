@@ -1,6 +1,11 @@
+adding alias:/DS1
+adding alias:/DS2
 {
     "datasets": [
         {
+            "alias": [
+                "/DS1"
+            ], 
             "attributes": [
                 {
                     "name": "A1", 
@@ -31,6 +36,9 @@
             "value": null
         }, 
         {
+            "alias": [
+                "/DS2"
+            ], 
             "attributes": [], 
             "id": "a09a8efa-7bf7-11e4-9fb6-3c15c2da029e", 
             "shape": {
@@ -46,6 +54,9 @@
     "datatypes": [], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [], 
             "id": "a099880c-7bf7-11e4-82d6-3c15c2da029e", 
             "links": [
@@ -70,6 +81,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/G1"
+            ], 
             "attributes": [], 
             "id": "a09a9b99-7bf7-11e4-aa4b-3c15c2da029e", 
             "links": []

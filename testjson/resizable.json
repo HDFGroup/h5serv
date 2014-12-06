@@ -1,6 +1,13 @@
+adding alias:/resizable_1d
+adding alias:/resizable_2d
+adding alias:/unlimited_1d
+adding alias:/unlimited_2d
 {
     "datasets": [
         {
+            "alias": [
+                "/resizable_1d"
+            ], 
             "attributes": [], 
             "fillvalue": 0, 
             "id": "a36df1ba-7bf7-11e4-b0ea-3c15c2da029e", 
@@ -31,6 +38,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/resizable_2d"
+            ], 
             "attributes": [], 
             "fillvalue": 0, 
             "id": "a36e0fe3-7bf7-11e4-a278-3c15c2da029e", 
@@ -173,6 +183,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/unlimited_1d"
+            ], 
             "attributes": [], 
             "id": "a36e207d-7bf7-11e4-ac4a-3c15c2da029e", 
             "shape": {
@@ -202,6 +215,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/unlimited_2d"
+            ], 
             "attributes": [], 
             "id": "a36e3c1c-7bf7-11e4-90c4-3c15c2da029e", 
             "shape": {
@@ -346,6 +362,9 @@
     "datatypes": [], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [], 
             "id": "a36cf968-7bf7-11e4-88a7-3c15c2da029e", 
             "links": [

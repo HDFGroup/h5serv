@@ -2,6 +2,9 @@
     "datasets": [], 
     "datatypes": [
         {
+            "alias": [
+                "/dtype_compound"
+            ], 
             "attributes": [], 
             "id": "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e", 
             "type": {
@@ -11,26 +14,23 @@
                         "name": "temp", 
                         "type": {
                             "base": "H5T_STD_I32LE", 
-                            "base_size": 4, 
-                            "class": "H5T_INTEGER", 
-                            "order": "H5T_ORDER_LE", 
-                            "size": 4
+                            "class": "H5T_INTEGER"
                         }
                     }, 
                     {
                         "name": "pressure", 
                         "type": {
                             "base": "H5T_IEEE_F32LE", 
-                            "base_size": 4, 
-                            "class": "H5T_FLOAT", 
-                            "order": "H5T_ORDER_LE", 
-                            "size": 4
+                            "class": "H5T_FLOAT"
                         }
                     }
                 ]
             }
         }, 
         {
+            "alias": [
+                "/dtype_simple"
+            ], 
             "attributes": [
                 {
                     "name": "note", 
@@ -50,15 +50,15 @@
             "id": "9eb9ddab-7bf7-11e4-927d-3c15c2da029e", 
             "type": {
                 "base": "H5T_IEEE_F32LE", 
-                "base_size": 4, 
-                "class": "H5T_FLOAT", 
-                "order": "H5T_ORDER_LE", 
-                "size": 4
+                "class": "H5T_FLOAT"
             }
         }
     ], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [], 
             "id": "9eb8d02e-7bf7-11e4-896e-3c15c2da029e", 
             "links": [

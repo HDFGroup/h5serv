@@ -1,6 +1,13 @@
+adding alias:/g1/g1.1/dset1.1.1
+adding alias:/g1/g1.1/dset1.1.2
+adding alias:/g2/dset2.1
+adding alias:/g2/dset2.2
 {
     "datasets": [
         {
+            "alias": [
+                "/g1/g1.1/dset1.1.1"
+            ], 
             "attributes": [
                 {
                     "name": "attr1", 
@@ -227,6 +234,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/g1/g1.1/dset1.1.2"
+            ], 
             "attributes": [], 
             "id": "7f3374a6-7ab1-11e4-94e2-3c15c2da029e", 
             "shape": {
@@ -266,6 +276,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/g2/dset2.1"
+            ], 
             "attributes": [], 
             "id": "7f33c885-7ab1-11e4-ac4d-3c15c2da029e", 
             "shape": {
@@ -295,6 +308,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/g2/dset2.2"
+            ], 
             "attributes": [], 
             "id": "7f33e211-7ab1-11e4-8669-3c15c2da029e", 
             "shape": {
@@ -340,6 +356,9 @@
     "datatypes": [], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [
                 {
                     "name": "attr1", 
@@ -408,6 +427,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/g1"
+            ], 
             "attributes": [], 
             "id": "7f332f8f-7ab1-11e4-9a20-3c15c2da029e", 
             "links": [
@@ -426,6 +448,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/g1/g1.1"
+            ], 
             "attributes": [], 
             "id": "7f334102-7ab1-11e4-94b4-3c15c2da029e", 
             "links": [
@@ -444,6 +469,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/g1/g1.2"
+            ], 
             "attributes": [], 
             "id": "7f338cb8-7ab1-11e4-9185-3c15c2da029e", 
             "links": [
@@ -463,6 +491,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/g1/g1.2/g1.2.1"
+            ], 
             "attributes": [], 
             "id": "7f339ef5-7ab1-11e4-9ee3-3c15c2da029e", 
             "links": [
@@ -475,6 +506,9 @@
             ]
         }, 
         {
+            "alias": [
+                "/g2"
+            ], 
             "attributes": [], 
             "id": "7f33b04c-7ab1-11e4-8c78-3c15c2da029e", 
             "links": [

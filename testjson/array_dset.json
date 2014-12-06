@@ -1,6 +1,10 @@
+adding alias:/DS1
 {
     "datasets": [
         {
+            "alias": [
+                "/DS1"
+            ], 
             "attributes": [], 
             "id": "146c9fb5-7b51-11e4-a549-3c15c2da029e", 
             "shape": {
@@ -122,6 +126,9 @@
     "datatypes": [], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [], 
             "id": "146b5775-7b51-11e4-a63d-3c15c2da029e", 
             "links": [

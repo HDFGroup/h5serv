@@ -3,6 +3,9 @@
     "datatypes": [], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [
                 {
                     "name": "weather", 

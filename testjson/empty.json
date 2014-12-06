@@ -3,6 +3,9 @@
     "datatypes": [], 
     "groups": [
         {
+            "alias": [
+                "/"
+            ], 
             "attributes": [], 
             "id": "913d8791-7b51-11e4-89fd-3c15c2da029e", 
             "links": []
