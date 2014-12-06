@@ -501,7 +501,6 @@ class Hdf5db:
         alias = []
         if dset.name:
             alias.append(dset.name)   # just use the default h5py path for now
-            print("adding alias:" + dset.name)
         item['alias'] = alias
         
         item['attributeCount'] = len(dset.attrs)
