@@ -145,7 +145,7 @@ def getTypeElement(dt):
             # array type
             type_info['dims'] = dt.shape
             type_info['class'] = 'H5T_ARRAY'
-            type_info['base'] = getBaseType(dt)
+            type_info['base'] = baseType
         elif baseType['class'] == 'H5T_OPAQUE':
             # expecting this to be an opaque type
             type_info = baseType  # just promote the base type
@@ -210,7 +210,7 @@ def getBaseType(dt):
         # Fixed length string type
         type_info['class'] = 'H5T_STRING' 
         type_info['cset'] = 'H5T_CSET_ASCII'
-        type_info['strsize'] = dt.itemsize
+        type_info['strsize'] = dt.base.itemsize
         type_info['strpad'] = 'H5T_STR_NULLPAD'
         type_info['order'] = 'H5T_ORDER_NONE'
     elif dt.base.kind == 'V':
@@ -219,7 +219,7 @@ def getBaseType(dt):
     elif dt.base.kind == 'i' or dt.base.kind == 'u':    
         type_info['class'] = 'H5T_INTEGER'
         byteorder = 'LE'
-        if dt.byteorder == '>':
+        if dt.base.byteorder == '>':
             byteorder = 'BE'
         type_info['order'] = 'H5T_ORDER_' + byteorder
         if dt.base.name in predefined_int_types:
@@ -228,7 +228,7 @@ def getBaseType(dt):
     elif dt.base.kind == 'f':
         type_info['class'] = 'H5T_FLOAT'
         byteorder = 'LE'
-        if dt.byteorder == '>':
+        if dt.base.byteorder == '>':
             byteorder = 'BE'
         type_info['order'] = 'H5T_ORDER_' + byteorder
         if dt.base.name in predefined_float_types:

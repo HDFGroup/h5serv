@@ -177,6 +177,60 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(tempFieldType['class'], 'H5T_INTEGER')
         self.assertEqual(tempFieldType['base'], 'H5T_STD_I64LE')
         
+    def testGetCompoundArray(self):
+        # compound where the fields are array type
+        domain = 'tstr.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'comp1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SIMPLE')
+        self.assertEqual(len(shape['dims']), 2)
+        self.assertEqual(shape['dims'][0], 3) 
+        self.assertEqual(shape['dims'][1], 6)   
+        typeItem = rspJson['type'] 
+        self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
+        self.assertTrue('fields' in typeItem)
+        fields = typeItem['fields']
+        self.assertEqual(len(fields), 2)
+        intField = fields[0]
+        self.assertEqual(intField['name'], 'int_array')
+        self.assertTrue('type' in intField)
+        intFieldType = intField['type']
+        self.assertEqual(intFieldType['class'], 'H5T_ARRAY')
+        intFieldTypeDims = intFieldType['dims']
+        self.assertEqual(len(intFieldTypeDims), 2)
+        self.assertEqual(intFieldTypeDims[0], 8)
+        self.assertEqual(intFieldTypeDims[1], 10)
+        self.assertTrue('base' in intFieldType)
+        intFieldTypeBase = intFieldType['base']
+        self.assertEqual(intFieldTypeBase['class'], 'H5T_INTEGER')
+        self.assertEqual(intFieldTypeBase['base'], 'H5T_STD_I32BE')
+        
+        strField = fields[1]
+        self.assertEqual(strField['name'], 'string')
+        self.assertTrue('type' in strField)
+        strFieldType = strField['type']
+        self.assertEqual(strFieldType['class'], 'H5T_ARRAY')
+        strFieldTypeDims = strFieldType['dims']
+        self.assertEqual(len(strFieldTypeDims), 2)
+        self.assertEqual(strFieldTypeDims[0], 3)
+        self.assertEqual(strFieldTypeDims[1], 4)
+        self.assertTrue('base' in strFieldType)
+        strFieldTypeBase = strFieldType['base']
+        
+        self.assertEqual(strFieldTypeBase['class'], 'H5T_STRING')
+        self.assertEqual(strFieldTypeBase['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(strFieldTypeBase['order'], 'H5T_ORDER_NONE')
+        self.assertEqual(strFieldTypeBase['strsize'], 32)
+        # todo - fix, cf https://github.com/HDFGroup/h5serv/issues/20
+        #self.assertEqual(strFieldTypeBase['strpad'], 'H5T_STR_SPACEPAD')
+        
     def testGetCommitted(self):
         domain = 'committed_type.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)

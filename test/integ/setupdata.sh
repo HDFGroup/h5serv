@@ -92,5 +92,6 @@ cp $SRC/opaque_dset.h5 $DES
 cp $SRC/opaque_attr.h5 $DES
 cp $SRC/null_objref_dset.h5 $DES
 cp $SRC/committed_type.h5 $DES
+cp $SRC/tstr.h5 $DES
 
 
