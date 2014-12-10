@@ -1,4 +1,3 @@
-#!/bin/sh 
 ##############################################################################
 # Copyright by The HDF Group.                                                #
 # All rights reserved.                                                       #
@@ -11,44 +10,27 @@
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
 
+import os
+
+unit_tests = ('timeUtilTest', 'fileUtilTest', 'hdf5dtypeTest', 'hdf5dbTest')
+integ_tests = ('roottest', 'grouptest', 'linktest', 'datasettest', 'valuetest',
+    'attributetest', 'datatypetest', 'shapetest', 'datasettypetest', 'spidertest')
 #
 # Run all h5serv tests
 #
-cd unit
-echo 'timeUtilTest'
-python timeUtilTest.py
-echo 'fileUtilTest'
-python fileUtilTest.py
-echo 'hdf5dtypeTest'
-python hdf5dtypeTest.py
-echo 'hdf5dbTest'
-python hdf5dbTest.py
+os.chdir('unit')
+for file_name in unit_tests:
+    print file_name
+    os.system('python ' + file_name + '.py')
+  
+os.chdir('../integ')
 
-
-cd ../integ
-./setupdata.sh -f  # initialize data files
-echo 'rootest'
-python roottest.py
-echo 'grouptest'
-python grouptest.py
-echo 'linktest'
-python linktest.py
-echo 'datasettest'
-python datasettest.py
-echo 'valuetest'
-python valuetest.py
-echo 'attributetest'
-python attributetest.py
-echo 'datatypetest'
-python datatypetest.py
-echo 'shapetest'
-python shapetest.py
-echo 'datasettypetest'
-python datasettypetest.py
-echo 'spidertest'
-python spidertest.py
-cd ..
-echo "Done!"
+os.system("python ./setupdata.py -f")  # initialize data files
+for file_name in integ_tests:
+    print file_name
+    os.system('python ' + file_name + '.py')
+os.chdir('..') 
+print "Done!"
  
 
 

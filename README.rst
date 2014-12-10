@@ -44,7 +44,14 @@ To install the server run the following from the command line::
 
     # verify the installation (in a new window)
     cd h5serv/test
-    ./testall.sh
+    python testall.py
+
+
+Uninstalling
+------------
+
+h5serv does not modify anything in the system outside the directory where it was 
+installed, so just remove the install directory and all contents to uninstall.
 
     
 Reporting bugs
