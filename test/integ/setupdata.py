@@ -11,6 +11,7 @@
 ##############################################################################
 import sys
 import os
+import stat
 from shutil import copyfile
 import h5py
 
@@ -105,6 +106,10 @@ def removeFilesFromDir(dir_name):
                 os.rmdir(file_path)
             else:
                 if os.path.isfile(file_path):
+                    # check for read-only
+                    if (os.stat(file_path).st_mode & stat.S_IWUSR) == 0:
+                        # make read-write
+                        os.chmod(file_path, 0666)
                     os.unlink(file_path)
         except Exception, e:
             print e
