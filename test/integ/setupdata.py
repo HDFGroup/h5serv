@@ -122,9 +122,13 @@ if len(sys.argv) < 2:
     print "this will remove all files from ../../data/test and repopulate using files from ../../testdata!  run with -f to proceed"
     sys.exit(); 
     
-if not os.path.exists(SRC) or not os.path.exists(DES):
+if not os.path.exists(SRC):
     print "run this from the integ test directory!"
     sys.exit()
+    
+if not  os.path.exists(DES):
+    # create the data/test directory if it doesn't exist
+    os.mkdir(DES)
     
 # create group1k.h5 (if not created before)
 makeGroup1k()
