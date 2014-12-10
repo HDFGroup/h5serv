@@ -176,7 +176,13 @@ class AttributeTest(unittest.TestCase):
         # bug! - unable to read value from attribute with array type
         # code is not returning 'value' key in this case
         # h5py issue: https://github.com/h5py/h5py/issues/498 
-        #self.assertTrue('value' not in rspJson)
+        if 'value' in rspJson:
+            print 'remove above if check once h5py 2.4 is released'
+            self.assertTrue('value' in rspJson)
+            value = rspJson['value']
+            self.assertEqual(len(value), 4)
+            elem = value[0] # elem should be a 3x5 array 
+            self.assertEqual(elem[2], [0, -2, -4, -6, -8])
         
     def testGetVLenString(self):
         domain = 'vlen_string_attr.' + config.get('domain')  

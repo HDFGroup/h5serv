@@ -668,6 +668,7 @@ class Hdf5db:
             elif len(attrObj.shape) == 0:
                 item['value'] = attr   # just copy value
             else:
+                print 'get value: ', attr.tolist()
                 item['value'] = attr.tolist()  # convert to list
         # timestamps will be added by getAttributeItem()
         return item
