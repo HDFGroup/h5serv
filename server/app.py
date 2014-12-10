@@ -119,7 +119,7 @@ class LinkCollectionHandler(RequestHandler):
         hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
         response['hrefs'] = hrefs      
         
-        self.write(response)
+        self.write(json_encode(response))
     
         
 class LinkHandler(RequestHandler):
@@ -200,7 +200,7 @@ class LinkHandler(RequestHandler):
         hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
         response['hrefs'] = hrefs      
         
-        self.write(response)
+        self.write(json_encode(response))
     
     def put(self):
         logging.info('LinkHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
@@ -356,7 +356,7 @@ class TypeHandler(RequestHandler):
         response['attributeCount'] = item['attributeCount']
         response['hrefs'] = hrefs
         
-        self.write(response)
+        self.write(json_encode(response))
         
     def post(self):
         logging.info('TypeHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
@@ -398,7 +398,7 @@ class TypeHandler(RequestHandler):
         response['attributeCount'] = 0
         response['hrefs'] = hrefs
         
-        self.write(response)  
+        self.write(json_encode(response)) 
         self.set_status(201)  # resource created
         
     def delete(self): 
@@ -467,7 +467,7 @@ class DatatypeHandler(RequestHandler):
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['hrefs'] = hrefs
         
-        self.write(response)
+        self.write(json_encode(response))
                 
 class ShapeHandler(RequestHandler):
     def getRequestId(self):
@@ -525,7 +525,7 @@ class ShapeHandler(RequestHandler):
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['hrefs'] = hrefs
         
-        self.write(response)
+        self.write(json_encode(response))
         
     def put(self):
         logging.info('ShapeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
@@ -625,7 +625,7 @@ class DatasetHandler(RequestHandler):
         response['attributeCount'] = item['attributeCount']
         response['hrefs'] = hrefs
         
-        self.write(response)
+        self.write(json_encode(response))
         
     def post(self):
         logging.info('DatasetHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
@@ -715,7 +715,7 @@ class DatasetHandler(RequestHandler):
         response['attributeCount'] = 0
         response['hrefs'] = hrefs
         
-        self.write(response)  
+        self.write(json_encode(response))  
         self.set_status(201)  # resource created
         
     def delete(self): 
@@ -903,7 +903,7 @@ class ValueHandler(RequestHandler):
         hrefs.append({'rel': 'home',  'href': href })   
         response['hrefs'] = hrefs
         
-        self.write(response) 
+        self.write(json_encode(response)) 
         
     def post(self):
         logging.info('ValueHandler.post host=[' + self.request.host + '] uri=[' +
@@ -967,7 +967,7 @@ class ValueHandler(RequestHandler):
         hrefs.append({'rel': 'home',  'href': href })   
         #response['hrefs'] = hrefs
         
-        self.write(response)     
+        self.write(json_encode(response))     
     
     def put(self):
         logging.info('ValueHandler.put host=[' + self.request.host + '] uri=[' + 
@@ -1195,9 +1195,8 @@ class AttributeHandler(RequestHandler):
             for k in responseItem:
                 response[k] = responseItem[k]
         response['hrefs'] = hrefs   
-        
          
-        self.write(response)
+        self.write(json_encode(response))
         
     def put(self):
         logging.info('AttributeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
@@ -1274,7 +1273,7 @@ class AttributeHandler(RequestHandler):
         hrefs.append({'rel': 'root',   'href': root_href }) 
         response['hrefs'] = hrefs 
         
-        self.write(response)  
+        self.write(json_encode(response))  
         self.set_status(201)  # resource created
         
     def delete(self): 
@@ -1346,7 +1345,7 @@ class GroupHandler(RequestHandler):
         response['linkCount'] = item['linkCount']
         response['hrefs'] = hrefs
         
-        self.write(response)
+        self.write(json_encode(response))
         
     def delete(self): 
         logging.info('GroupHandler.delete ' + self.request.host)   
@@ -1373,7 +1372,7 @@ class GroupHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href }) 
         response['hrefs'] = hrefs
          
-        self.write(response) 
+        self.write(json_encode(response)) 
                 
 class GroupCollectionHandler(RequestHandler):
             
@@ -1410,7 +1409,7 @@ class GroupCollectionHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href }) 
         response['hrefs'] = hrefs
          
-        self.write(response)
+        self.write(json_encode(response))
         
     def post(self):
         logging.info('GroupHandlerCollection.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
@@ -1451,7 +1450,7 @@ class GroupCollectionHandler(RequestHandler):
         response['attributeCount'] = item['attributeCount']
         response['linkCount'] = item['linkCount']
         response['hrefs'] = hrefs
-        self.write(response)
+        self.write(json_encode(response))
                 
         self.set_status(201)  # resource created
         
@@ -1490,7 +1489,7 @@ class DatasetCollectionHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href }) 
         response['hrefs'] = hrefs
          
-        self.write(response)
+        self.write(json_encode(response))
         
 class TypeCollectionHandler(RequestHandler):
             
@@ -1527,7 +1526,7 @@ class TypeCollectionHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href }) 
         response['hrefs'] = hrefs
          
-        self.write(response)
+        self.write(json_encode(response))
           
         
 class RootHandler(RequestHandler):
@@ -1569,7 +1568,7 @@ class RootHandler(RequestHandler):
         verifyFile(filePath)
         response = self.getRootResponse(filePath)
         
-        self.write(response) 
+        self.write(json_encode(response)) 
         
     def put(self): 
         logging.info('RootHandler.put ' + self.request.host)  
@@ -1586,7 +1585,7 @@ class RootHandler(RequestHandler):
             raise HTTPError(500)
         response = self.getRootResponse(filePath)
         
-        self.write(response)
+        self.write(json_encode(response))
         self.set_status(201)  # resource created
           
     def delete(self): 
