@@ -75,7 +75,7 @@ You may then see a security alert: "Windows Firewall has blocked some features o
 program".  Click "Allow access" with the default option (Private network access).
 
 At this point the server is running, waiting on any requests being sent to port 5000.
-To verify it is functioning correctly. 
+Go to the "verification" section below to try out the service.
 
 Installing on Linux/Mac OS X
 -----------------------------
