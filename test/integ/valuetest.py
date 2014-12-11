@@ -77,29 +77,6 @@ class ValueTest(unittest.TestCase):
                 for j in range(10):
                     self.assertEqual(arr[j], i*j)
                 
-    def testGetZeroDim(self):
-        domain = 'zerodim.subdir.' + config.get('domain')  
-        rootUUID = helper.getRootUUID(domain)
-        dsetUUID = helper.getUUID(domain, rootUUID, 'dset')
-               
-        # rank 0 dataset
-        req = helper.getEndpoint() + "/datasets/" + dsetUUID
-        headers = {'host': domain}
-        rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        rspJson = json.loads(rsp.text)
-        self.assertEqual(rspJson['id'], dsetUUID)
-        typeItem = rspJson['type']  
-        self.assertEqual(typeItem['base'], 'H5T_STD_I64LE')
-        shape = rspJson['shape']
-        self.assertEqual(shape['class'], 'H5S_SCALAR')
-        req = helper.getEndpoint() + "/datasets/" + dsetUUID + "/value"
-        rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        rspJson = json.loads(rsp.text)
-        data = rspJson['value'] 
-        self.assertEqual(data, 42)
-         
         
     def testGetSelection(self):
         for domain_name in ('tall', 'tall_ro'):
@@ -198,6 +175,60 @@ class ValueTest(unittest.TestCase):
              "?dim1_start=2&dim1_step=0"
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 400)  
+        
+    def testGetScalar(self):
+        domain = 'scalar.' + config.get('domain')
+        headers = {'host': domain}  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, '0d') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        data = rspJson['value'] 
+        self.assertEqual(data, 42)
+        
+    def testGetScalarString(self):
+        domain = 'scalar.' + config.get('domain')  
+        headers = {'host': domain}
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, '0ds') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        data = rspJson['value'] 
+        self.assertEqual(data, "hello")
+        
+    def testGetSimpleOneElement(self):
+        domain = 'scalar.' + config.get('domain') 
+        headers = {'host': domain} 
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, '1d') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        data = rspJson['value'] 
+        self.assertEqual(data, [42,])
+        
+    def testGetSimpleOneElementString(self):
+        domain = 'scalar.' + config.get('domain') 
+        headers = {'host': domain} 
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, '1ds') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        data = rspJson['value'] 
+        self.assertEqual(data, ["hello",])
+        
         
     def testGetCompound(self):
         domain = 'compound.' + config.get('domain')  

@@ -124,6 +124,58 @@ class DatasetTest(unittest.TestCase):
         self.assertTrue('dims' not in shape)
         self.assertTrue('maxdims' not in shape)
         
+    def testGetScalarString(self):
+        domain = 'scalar.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, '0ds') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_STRING')
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SCALAR')
+        self.assertTrue('dims' not in shape)
+        self.assertTrue('maxdims' not in shape)
+        
+    def testGetSimpleOneElement(self):
+        domain = 'scalar.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, '1d') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_INTEGER')
+        self.assertEqual(type['base'], 'H5T_STD_I32LE')
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SIMPLE')
+        self.assertTrue('dims' in shape)
+        self.assertEqual(shape['dims'][0], 1) 
+        
+    def testGetSimpleOneElementString(self):
+        domain = 'scalar.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, '1ds') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_STRING')
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SIMPLE')
+        self.assertTrue('dims' in shape)
+        self.assertEqual(shape['dims'][0], 1) 
+        
         
     def testGetNullSpace(self):
         domain = 'null_space_dset.' + config.get('domain')  
@@ -176,6 +228,40 @@ class DatasetTest(unittest.TestCase):
         tempFieldType = tempField['type']
         self.assertEqual(tempFieldType['class'], 'H5T_INTEGER')
         self.assertEqual(tempFieldType['base'], 'H5T_STD_I64LE')
+        
+    def testGetCompoundCommitted(self):
+        domain = 'compound_committed.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SIMPLE')
+        self.assertEqual(len(shape['dims']), 1)
+        self.assertEqual(shape['dims'][0], 72)  
+        typeItem = rspJson['type']   
+        self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
+        self.assertTrue('fields' in typeItem)
+        fields = typeItem['fields']
+        self.assertEqual(len(fields), 3)
+        timeField = fields[1]
+        self.assertEqual(timeField['name'], 'time')
+        self.assertTrue('type' in timeField)
+        timeFieldType = timeField['type']
+        self.assertEqual(timeFieldType['class'], 'H5T_STRING')
+        self.assertEqual(timeFieldType['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
+        self.assertEqual(timeFieldType['strsize'], 6)
+        self.assertEqual(timeFieldType['strpad'], 'H5T_STR_NULLPAD')
+        tempField = fields[2]
+        self.assertEqual(tempField['name'], 'temp')
+        tempFieldType = tempField['type']
+        self.assertEqual(tempFieldType['class'], 'H5T_INTEGER')
+        self.assertEqual(tempFieldType['base'], 'H5T_STD_I32LE')
         
     def testGetCompoundArray(self):
         # compound where the fields are array type

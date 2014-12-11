@@ -410,6 +410,27 @@ class AttributeTest(unittest.TestCase):
         data = rspJson['value'] 
         self.assertEqual(type(data), int)
         self.assertEqual(data, 42)
+    
+    def testGetScalarString(self):
+        domain = 'scalar.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        # now try reading a scalar string
+        req = helper.getEndpoint() + "/groups/" + root_uuid + "/attributes/attr2"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SCALAR')
+        self.assertTrue('dims' not in shape)
+        typeItem = rspJson['type']
+        self.assertEqual(typeItem['class'], 'H5T_STRING')
+        self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
+        self.assertEqual(typeItem['strsize'], 'H5T_VARIABLE')
+        self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLTERM')
+        data = rspJson['value'] 
+        self.assertEqual(data, "hello")   
         
     def testPut(self):
         domain = 'tall_updated.' + config.get('domain') 

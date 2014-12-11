@@ -11,6 +11,7 @@
 ##############################################################################
 import sys
 import os
+import stat
 from shutil import copyfile
 import h5py
 
@@ -34,6 +35,7 @@ testfiles = {
     'null_space_dset.h5': ('.'),
     'compound.h5': ('.',),
     'compound_attr.h5': ('.',),
+    'compound_committed.h5': ('.',),
     'arraytype.h5': ('.',),
     'array_attr.h5': ('.',),
     'array_dset.h5': ('.',),
@@ -105,6 +107,10 @@ def removeFilesFromDir(dir_name):
                 os.rmdir(file_path)
             else:
                 if os.path.isfile(file_path):
+                    # check for read-only
+                    if (os.stat(file_path).st_mode & stat.S_IWUSR) == 0:
+                        # make read-write
+                        os.chmod(file_path, 0666)
                     os.unlink(file_path)
         except Exception, e:
             print e
@@ -117,9 +123,13 @@ if len(sys.argv) < 2:
     print "this will remove all files from ../../data/test and repopulate using files from ../../testdata!  run with -f to proceed"
     sys.exit(); 
     
-if not os.path.exists(SRC) or not os.path.exists(DES):
+if not os.path.exists(SRC):
     print "run this from the integ test directory!"
     sys.exit()
+    
+if not  os.path.exists(DES):
+    # create the data/test directory if it doesn't exist
+    os.mkdir(DES)
     
 # create group1k.h5 (if not created before)
 makeGroup1k()
