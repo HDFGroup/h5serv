@@ -665,6 +665,8 @@ class Hdf5db:
                 item['value'] = self.refToList(attr)
             elif typeItem['class'] == 'H5T_COMPOUND':
                 item['value'] = attr.tolist()  # convert to list
+            elif len(attrObj.shape) == 0 and type(attr) in (str, unicode, int, float):
+                item['value'] = attr   # just copy value
             else:
                 item['value'] = attr.tolist()  # convert to list
         # timestamps will be added by getAttributeItem()
