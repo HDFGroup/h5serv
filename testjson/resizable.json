@@ -1,3 +1,7 @@
+datasets/a36df1ba-7bf7-11e4-b0ea-3c15c2da029e
+datasets/a36e0fe3-7bf7-11e4-a278-3c15c2da029e
+datasets/a36e207d-7bf7-11e4-ac4a-3c15c2da029e
+datasets/a36e3c1c-7bf7-11e4-90c4-3c15c2da029e
 {
     "datasets": [
         {
@@ -365,28 +369,20 @@
             "id": "a36cf968-7bf7-11e4-88a7-3c15c2da029e", 
             "links": [
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "a36df1ba-7bf7-11e4-b0ea-3c15c2da029e", 
-                    "name": "resizable_1d"
+                    "href": "datasets/a36df1ba-7bf7-11e4-b0ea-3c15c2da029e", 
+                    "title": "resizable_1d"
                 }, 
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "a36e0fe3-7bf7-11e4-a278-3c15c2da029e", 
-                    "name": "resizable_2d"
+                    "href": "datasets/a36e0fe3-7bf7-11e4-a278-3c15c2da029e", 
+                    "title": "resizable_2d"
                 }, 
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "a36e207d-7bf7-11e4-ac4a-3c15c2da029e", 
-                    "name": "unlimited_1d"
+                    "href": "datasets/a36e207d-7bf7-11e4-ac4a-3c15c2da029e", 
+                    "title": "unlimited_1d"
                 }, 
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "a36e3c1c-7bf7-11e4-90c4-3c15c2da029e", 
-                    "name": "unlimited_2d"
+                    "href": "datasets/a36e3c1c-7bf7-11e4-90c4-3c15c2da029e", 
+                    "title": "unlimited_2d"
                 }
             ]
         }

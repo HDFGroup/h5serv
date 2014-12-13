@@ -1,3 +1,5 @@
+datasets/25d6f985-7b51-11e4-a037-3c15c2da029e
+datatypes/25d7088f-7b51-11e4-ac9b-3c15c2da029e
 {
     "datasets": [
         {
@@ -112,16 +114,12 @@
             "id": "25d607cc-7b51-11e4-9bc3-3c15c2da029e", 
             "links": [
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "25d6f985-7b51-11e4-a037-3c15c2da029e", 
-                    "name": "DS1"
+                    "href": "datasets/25d6f985-7b51-11e4-a037-3c15c2da029e", 
+                    "title": "DS1"
                 }, 
                 {
-                    "class": "hard", 
-                    "className": "Datatype", 
-                    "id": "25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
-                    "name": "Sensor_Type"
+                    "href": "datatypes/25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
+                    "title": "Sensor_Type"
                 }
             ]
         }

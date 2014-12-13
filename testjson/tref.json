@@ -1,0 +1,123 @@
+groups/a73efab5-7bf7-11e4-bd21-3c15c2da029e
+datasets/a73f45b5-7bf7-11e4-b933-3c15c2da029e
+datasets/a73f1775-7bf7-11e4-bb93-3c15c2da029e
+datasets/a73f2f0c-7bf7-11e4-aef8-3c15c2da029e
+{
+    "datasets": [
+        {
+            "alias": [
+                "/Group1/Dataset1"
+            ], 
+            "attributes": [], 
+            "id": "a73f1775-7bf7-11e4-bb93-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    4
+                ], 
+                "maxdims": [
+                    4
+                ]
+            }, 
+            "type": {
+                "base": "H5T_STD_UI32BE", 
+                "class": "H5T_INTEGER"
+            }, 
+            "value": [
+                0, 
+                3, 
+                6, 
+                9
+            ]
+        }, 
+        {
+            "alias": [
+                "/Group1/Dataset2"
+            ], 
+            "attributes": [], 
+            "id": "a73f2f0c-7bf7-11e4-aef8-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    4
+                ], 
+                "maxdims": [
+                    4
+                ]
+            }, 
+            "type": {
+                "base": "H5T_STD_UI8LE", 
+                "class": "H5T_INTEGER"
+            }, 
+            "value": [
+                0, 
+                0, 
+                0, 
+                0
+            ]
+        }, 
+        {
+            "alias": [
+                "/ZZZDataset3"
+            ], 
+            "attributes": [], 
+            "id": "a73f45b5-7bf7-11e4-b933-3c15c2da029e", 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    3
+                ], 
+                "maxdims": [
+                    3
+                ]
+            }, 
+            "type": {
+                "base": "H5T_STD_REF_OBJ", 
+                "class": "H5T_REFERENCE"
+            }, 
+            "value": [
+                "/datasets/a73f1775-7bf7-11e4-bb93-3c15c2da029e", 
+                "/datasets/a73f2f0c-7bf7-11e4-aef8-3c15c2da029e", 
+                "/groups/a73efab5-7bf7-11e4-bd21-3c15c2da029e"
+            ]
+        }
+    ], 
+    "datatypes": [], 
+    "groups": [
+        {
+            "alias": [
+                "/"
+            ], 
+            "attributes": [], 
+            "id": "a73df7a6-7bf7-11e4-8c8d-3c15c2da029e", 
+            "links": [
+                {
+                    "href": "groups/a73efab5-7bf7-11e4-bd21-3c15c2da029e", 
+                    "title": "Group1"
+                }, 
+                {
+                    "href": "datasets/a73f45b5-7bf7-11e4-b933-3c15c2da029e", 
+                    "title": "ZZZDataset3"
+                }
+            ]
+        }, 
+        {
+            "alias": [
+                "/Group1"
+            ], 
+            "attributes": [], 
+            "id": "a73efab5-7bf7-11e4-bd21-3c15c2da029e", 
+            "links": [
+                {
+                    "href": "datasets/a73f1775-7bf7-11e4-bb93-3c15c2da029e", 
+                    "title": "Dataset1"
+                }, 
+                {
+                    "href": "datasets/a73f2f0c-7bf7-11e4-aef8-3c15c2da029e", 
+                    "title": "Dataset2"
+                }
+            ]
+        }
+    ], 
+    "root": "a73df7a6-7bf7-11e4-8c8d-3c15c2da029e"
+}

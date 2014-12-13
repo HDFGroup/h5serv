@@ -63,7 +63,7 @@ def getUUID(domain, parentUuid, name):
             # soft/external links
             return None
         
-        target = rspJson['target']
+        target = rspJson['href']
         # format is: /<collection>/<id>
         npos = target.rfind('/')
         tgtUuid = target[npos+1:]

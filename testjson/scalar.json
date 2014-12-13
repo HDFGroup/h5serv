@@ -1,3 +1,5 @@
+datasets/41e49e63-7b86-11e4-852f-3c15c2da029e
+datasets/41e4b5a8-7b86-11e4-b6f6-3c15c2da029e
 {
     "datasets": [
         {
@@ -72,16 +74,12 @@
             "id": "41e373c0-7b86-11e4-a863-3c15c2da029e", 
             "links": [
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "41e49e63-7b86-11e4-852f-3c15c2da029e", 
-                    "name": "0d"
+                    "href": "datasets/41e49e63-7b86-11e4-852f-3c15c2da029e", 
+                    "title": "0d"
                 }, 
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "41e4b5a8-7b86-11e4-b6f6-3c15c2da029e", 
-                    "name": "1d"
+                    "href": "datasets/41e4b5a8-7b86-11e4-b6f6-3c15c2da029e", 
+                    "title": "1d"
                 }
             ]
         }

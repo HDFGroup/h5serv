@@ -1,3 +1,5 @@
+datatypes/9eb9cf05-7bf7-11e4-8dda-3c15c2da029e
+datatypes/9eb9ddab-7bf7-11e4-927d-3c15c2da029e
 {
     "datasets": [], 
     "datatypes": [
@@ -63,16 +65,12 @@
             "id": "9eb8d02e-7bf7-11e4-896e-3c15c2da029e", 
             "links": [
                 {
-                    "class": "hard", 
-                    "className": "Datatype", 
-                    "id": "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e", 
-                    "name": "dtype_compound"
+                    "href": "datatypes/9eb9cf05-7bf7-11e4-8dda-3c15c2da029e", 
+                    "title": "dtype_compound"
                 }, 
                 {
-                    "class": "hard", 
-                    "className": "Datatype", 
-                    "id": "9eb9ddab-7bf7-11e4-927d-3c15c2da029e", 
-                    "name": "dtype_simple"
+                    "href": "datatypes/9eb9ddab-7bf7-11e4-927d-3c15c2da029e", 
+                    "title": "dtype_simple"
                 }
             ]
         }

@@ -15,6 +15,7 @@ cfg = {
     'server': '127.0.0.1',
     'port':   5000,
     'domain':  'test.hdf.io'
+    #'domain':   'test.data.hdfgroup.org'
 }
    
 def get(x):

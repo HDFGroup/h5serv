@@ -1,3 +1,4 @@
+datasets/a831762e-7bf7-11e4-afae-3c15c2da029e
 {
     "datasets": [
         {
@@ -64,10 +65,8 @@
             "id": "a8307d8c-7bf7-11e4-8e1a-3c15c2da029e", 
             "links": [
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "a831762e-7bf7-11e4-afae-3c15c2da029e", 
-                    "name": "DS1"
+                    "href": "datasets/a831762e-7bf7-11e4-afae-3c15c2da029e", 
+                    "title": "DS1"
                 }
             ]
         }

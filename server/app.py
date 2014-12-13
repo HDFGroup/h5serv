@@ -185,9 +185,9 @@ class LinkHandler(RequestHandler):
                          
         # got everything we need, put together the response
         
-        response['name'] = item['name']
+        response['title'] = item['name']
         response['class'] = item['class']
-        response['target'] = getLinkTarget(item)
+        response['href'] = getLinkTarget(item, self.request.protocol)
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['created'] = unixTimeToUTC(item['ctime'])
          

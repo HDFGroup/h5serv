@@ -124,31 +124,17 @@ def makeDirs(filePath):
   Get the target for a givein link item  
     item: item object returned by db.getLinkItem
 """
-def getLinkTarget(item, protocol="http"):
+def getLinkTarget(item, protocol="file"):
     target = None
     if item['class'] == 'hard':
-        target = "/" + item['className'].lower() + 's/' + item['id']
+        target = item['className'].lower() + 's/' + item['id']
     elif item['class'] == 'soft':
-        target = "/#h5path(" + json_encode(item['path']) + ")"
+        path = url_escape(item['path'])
+        target = "/#h5path(" + path + ")"
     elif item['class'] == 'external':
-        filename = item['filename']
-        externalDomain = None
-        path = None
-        if filename.startswith("http"):
-            # this link was apparently saved as a URI, just use it directly
-            externalDomain = filename
-        else:
-            externalDomain = protocol + "://"
-            if len(filename) > 0:
-                externalDomain += getDomain(filename)
-             
-            path = url_escape(item['path'])
-            if (path.startswith("/datasets") or path.startswith("/groups") or 
-                path.startswith("/datatypes")):
-                logging.info("use id path: " + path)
-            else:
-                path = "/#h5path(" + path + ")"
-        target = externalDomain + path
+        filename = url_escape(item['filename'])
+        path = url_escape(item['path']) 
+        target =  protocol + "://" + filename + "/#h5path(" + path + ")"
     elif item['class'] == 'user':
         target = "???"
     else:

@@ -1,3 +1,4 @@
+datasets/9faa470f-7bf7-11e4-8eb6-3c15c2da029e
 {
     "datasets": [
         {
@@ -34,10 +35,8 @@
             "id": "9fa94f7d-7bf7-11e4-9081-3c15c2da029e", 
             "links": [
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "9faa470f-7bf7-11e4-8eb6-3c15c2da029e", 
-                    "name": "DS1"
+                    "href": "datasets/9faa470f-7bf7-11e4-8eb6-3c15c2da029e", 
+                    "title": "DS1"
                 }
             ]
         }

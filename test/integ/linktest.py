@@ -32,12 +32,12 @@ class LinkTest(unittest.TestCase):
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
-            target = rspJson['target']
-            self.assertTrue(target.startswith("/groups/"))
+            target = rspJson['href']
+            self.assertTrue(target.startswith("groups/"))
             self.assertTrue("created" in rspJson)
             self.assertTrue("lastModified" in rspJson)
             self.failUnlessEqual(rspJson['class'], 'hard')
-            self.failUnlessEqual(rspJson['name'], 'g1')
+            self.failUnlessEqual(rspJson['title'], 'g1')
             
     def testGetSoft(self):
         logging.info("LinkTest.testGetSoft")
@@ -53,12 +53,12 @@ class LinkTest(unittest.TestCase):
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
-            target = rspJson['target']
-            self.failUnlessEqual(target, '/#h5path("somevalue")')
+            target = rspJson['href']
+            self.failUnlessEqual(target, '/#h5path(somevalue)')
             self.assertTrue("created" in rspJson)
             self.assertTrue("lastModified" in rspJson)
             self.failUnlessEqual(rspJson['class'], 'soft')
-            self.failUnlessEqual(rspJson['name'], 'slink')
+            self.failUnlessEqual(rspJson['title'], 'slink')
             
     def testGetExternal(self):
         logging.info("LinkTest.testGetExternal")
@@ -73,13 +73,12 @@ class LinkTest(unittest.TestCase):
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
-            target = rspJson['target']
-            self.assertTrue(target.startswith("http://somefile."))
-            self.assertTrue(target.endswith("/#h5path(somepath)"))  
+            target = rspJson['href']
+            self.failUnlessEqual(target, "http://somefile/#h5path(somepath)")
             self.assertTrue("created" in rspJson)
             self.assertTrue("lastModified" in rspJson)
             self.failUnlessEqual(rspJson['class'], 'external')
-            self.failUnlessEqual(rspJson['name'], 'extlink')
+            self.failUnlessEqual(rspJson['title'], 'extlink')
             
     def testGetUDLink(self):
         logging.info("LinkTest.testGetUDLink")
@@ -95,8 +94,8 @@ class LinkTest(unittest.TestCase):
         self.assertTrue("created" in rspJson)
         self.assertTrue("lastModified" in rspJson)
         self.failUnlessEqual(rspJson['class'], 'user')
-        self.failUnlessEqual(rspJson['name'], 'udlink')
-        self.failUnlessEqual(rspJson['target'], '???')
+        self.failUnlessEqual(rspJson['title'], 'udlink')
+        self.failUnlessEqual(rspJson['href'], '???')
                             
     def testGetBatch(self):
         logging.info("LinkTest.testGetBatch")
@@ -157,7 +156,7 @@ class LinkTest(unittest.TestCase):
             count += len(links)
             for link in links:
                 # delete link
-                del_req = helper.getEndpoint() + "/groups/" + root_uuid + "/links/" + link['name']
+                del_req = helper.getEndpoint() + "/groups/" + root_uuid + "/links/" + link['title']
                 rsp = requests.delete(del_req, headers=headers)
                 self.failUnlessEqual(rsp.status_code, 200)
         self.failUnlessEqual(count, 1000)  # should get 1000 unique links

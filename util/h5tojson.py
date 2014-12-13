@@ -13,6 +13,7 @@ import sys
 import json
 
 sys.path.append('../server')
+from fileUtil import getLinkTarget
 from hdf5db import Hdf5db
 import hdf5dtype 
 
@@ -46,8 +47,16 @@ class DumpJson:
         return items      
     
     def dumpLinks(self, uuid):
-        links = self.db.getLinkItems(uuid)
-        return links
+        link_list = self.db.getLinkItems(uuid)
+        items = []
+        for link in link_list:
+            item = {}
+            link_target = getLinkTarget(link)
+            print link_target
+            item['title'] = link['name']
+            item['href'] = link_target
+            items.append(item)
+        return items
        
         
     def dumpGroup(self, uuid):

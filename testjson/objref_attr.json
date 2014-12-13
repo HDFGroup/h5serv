@@ -1,3 +1,6 @@
+datasets/a09a7f14-7bf7-11e4-8eef-3c15c2da029e
+datasets/a09a8efa-7bf7-11e4-9fb6-3c15c2da029e
+groups/a09a9b99-7bf7-11e4-aa4b-3c15c2da029e
 {
     "datasets": [
         {
@@ -59,22 +62,16 @@
             "id": "a099880c-7bf7-11e4-82d6-3c15c2da029e", 
             "links": [
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "a09a7f14-7bf7-11e4-8eef-3c15c2da029e", 
-                    "name": "DS1"
+                    "href": "datasets/a09a7f14-7bf7-11e4-8eef-3c15c2da029e", 
+                    "title": "DS1"
                 }, 
                 {
-                    "class": "hard", 
-                    "className": "Dataset", 
-                    "id": "a09a8efa-7bf7-11e4-9fb6-3c15c2da029e", 
-                    "name": "DS2"
+                    "href": "datasets/a09a8efa-7bf7-11e4-9fb6-3c15c2da029e", 
+                    "title": "DS2"
                 }, 
                 {
-                    "class": "hard", 
-                    "className": "Group", 
-                    "id": "a09a9b99-7bf7-11e4-aa4b-3c15c2da029e", 
-                    "name": "G1"
+                    "href": "groups/a09a9b99-7bf7-11e4-aa4b-3c15c2da029e", 
+                    "title": "G1"
                 }
             ]
         }, 
