@@ -52,7 +52,6 @@ class DumpJson:
         for link in link_list:
             item = {}
             link_target = getLinkTarget(link)
-            print link_target
             item['title'] = link['name']
             item['href'] = link_target
             items.append(item)
