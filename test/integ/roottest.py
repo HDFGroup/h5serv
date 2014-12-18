@@ -22,6 +22,7 @@ class RootTest(unittest.TestCase):
         
     def testGet(self):
         domain = 'tall.' + config.get('domain')   
+        print 'domain', domain
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
@@ -46,7 +47,7 @@ class RootTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 404)
         
     def testWrongTopLevelDomain(self):
-        domain = "www.hdfgroup.org"    
+        domain = "www.baddomain.org"    
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
@@ -120,8 +121,7 @@ class RootTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         href = (rspJson["hrefs"][0])[u"href"]
-        self.failUnlessEqual(href, 
-        u"http://newfile.newsubsubdir.newsubdirparent.test.hdf.io/")
+        self.failUnlessEqual(href, "http://" + domain + "/")
                
     def testDelete(self):
         #test DELETE_root
