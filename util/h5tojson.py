@@ -11,6 +11,7 @@
 ##############################################################################
 import sys
 import json
+import argparse
 
 sys.path.append('../server')
 from fileUtil import getLinkTarget
@@ -23,8 +24,10 @@ DumpJson - return json representation of all objects within the given file
 """
 
 class DumpJson:
-    def __init__(self, db):
+    def __init__(self, db, options=None):
+        self.options = options
         self.db = db
+        self.options = options
         self.json = {}
         
     def dumpAttribute(self, col_name, uuid, attr_name):
@@ -33,7 +36,8 @@ class DumpJson:
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
         response['shape'] = item['shape']
-        response['value'] = item['value']
+        if not self.options.H:
+            response['value'] = item['value']   # dump values unless header flag was passed
         return response
      
         
@@ -111,7 +115,9 @@ class DumpJson:
         attributes = self.dumpAttributes('datasets', uuid)
         response['attributes'] = attributes
         value = self.db.getDatasetValuesByUuid(uuid)
-        response['value'] = value
+        
+        if not self.options.H:
+            response['value'] = value   # dump values unless header flag was passed
         return response
         
     def dumpDatasets(self):
@@ -157,13 +163,15 @@ class DumpJson:
            
 
 def main():
-    if len(sys.argv) < 2:
-        print "usage: h5tojson <filename>"
-        sys.exit(); 
-    filepath = sys.argv[1]
-    with Hdf5db(filepath, readonly=True) as db:
-        dumper = DumpJson(db)
+    parser = argparse.ArgumentParser(usage='%(prog)s [-h] [-H] <hdf5_file>')
+    parser.add_argument('-H', action='store_true', help='suppress data output')
+    parser.add_argument('filename', nargs='+', help='HDF5 to be converted to json')
+    args = parser.parse_args()
+    
+    with Hdf5db(args.filename[0], readonly=True) as db:
+        dumper = DumpJson(db, options=args)
         dumper.dumpFile()    
+    
 
 main()
 
