@@ -1673,7 +1673,7 @@ def make_app():
 def main():
     # os.chdir(config.get('datapath'))
     logging.basicConfig(level=logging.DEBUG)
-    port = config.get('port')
+    port = int(config.get('port'))
     global server
     app = make_app()
     server = tornado.httpserver.HTTPServer(app)

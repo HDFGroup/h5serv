@@ -10,15 +10,15 @@
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
 import os
+import sys
 
 cfg = {
     'server': '127.0.0.1',
     'port':   5000,
-    'domain':  'test.hdf.io'
-    #'domain':   'test.data.hdfgroup.org'
+    'domain':   'test.hdfgroup.org'
 }
    
-def get(x):
+def get(x):     
     # see if there are an environment variable override
     if x.upper() in os.environ:
         return os.environ[x.upper()]

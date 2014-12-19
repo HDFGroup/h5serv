@@ -9,17 +9,33 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
+import os
+import sys
+
 cfg = {
     'port':   5000,
     'debug':  True,
     'datapath': '../data/',
-    'domain': 'hdf.io',
+    #'domain': 'hdf.io',
+    'domain':  'hdfgroup.org',
     'hdf5_ext': '.h5',
     'local_ip': '127.0.0.1',
     'default_dns': '8.8.8.8'  # used by local_dns.py
 }
    
 def get(x):     
+    # see if there is a command-line override   
+    option = '--'+x+'='
+    for i in range(1, len(sys.argv)):
+        print i, sys.argv[i]
+        if sys.argv[i].startswith(option):
+            # found an override
+            arg = sys.argv[i]
+            return arg[len(option):]  # return text after option string
+    # see if there are an environment variable override
+    if x.upper() in os.environ:
+        return os.environ[x.upper()]
+    # no command line override, just return the cfg value        
     return cfg[x]
 
   
