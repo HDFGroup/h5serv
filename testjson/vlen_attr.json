@@ -1,6 +1,6 @@
 {
-    "datasets": [
-        {
+    "datasets": {
+        "a831762e-7bf7-11e4-afae-3c15c2da029e": {
             "alias": [
                 "/DS1"
             ], 
@@ -43,7 +43,6 @@
                     ]
                 }
             ], 
-            "id": "a831762e-7bf7-11e4-afae-3c15c2da029e", 
             "shape": {
                 "class": "H5S_NULL"
             }, 
@@ -53,15 +52,12 @@
             }, 
             "value": null
         }
-    ], 
-    "datatypes": [], 
-    "groups": [
-        {
+    }, 
+    "groups": {
+        "a8307d8c-7bf7-11e4-8e1a-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
-            "attributes": [], 
-            "id": "a8307d8c-7bf7-11e4-8e1a-3c15c2da029e", 
             "links": [
                 {
                     "href": "datasets/a831762e-7bf7-11e4-afae-3c15c2da029e", 
@@ -69,6 +65,6 @@
                 }
             ]
         }
-    ], 
+    }, 
     "root": "a8307d8c-7bf7-11e4-8e1a-3c15c2da029e"
 }

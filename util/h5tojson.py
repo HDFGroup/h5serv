@@ -72,28 +72,31 @@ class DumpJson:
             del item['linkCount']
         if 'attributeCount' in item:
             del item['attributeCount']
-        item['id'] = uuid
+        if 'id' in item:
+            del item['id']
         attributes = self.dumpAttributes('groups', uuid)
-        item['attributes'] = attributes
+        if attributes:
+            item['attributes'] = attributes
         links = self.dumpLinks(uuid)
-        item['links'] = links
+        if links:
+            item['links'] = links
         return item
         
         
     def dumpGroups(self):
-        groupList = []
+        groups = {}
         item = self.dumpGroup(self.root_uuid)
-        groupList.append(item)
+        groups[self.root_uuid] = item
         uuids = self.db.getCollection("groups") 
         for uuid in uuids:
             item = self.dumpGroup(uuid)
-            groupList.append(item)
+            groups[uuid] = item
         
-        self.json['groups'] = groupList
+        self.json['groups'] = groups
         
         
     def dumpDataset(self, uuid):
-        response = { 'id': uuid }
+        response = { }
         item = self.db.getDatasetItemByUuid(uuid)
         response['alias'] = item['alias']
         typeItem = item['type']
@@ -113,7 +116,8 @@ class DumpJson:
                 response['fillvalue'] = item['fillvalue']
         
         attributes = self.dumpAttributes('datasets', uuid)
-        response['attributes'] = attributes
+        if attributes:
+            response['attributes'] = attributes
         value = self.db.getDatasetValuesByUuid(uuid)
         
         if not self.options.H:
@@ -121,33 +125,36 @@ class DumpJson:
         return response
         
     def dumpDatasets(self):
-        datasetList = []
         uuids = self.db.getCollection("datasets") 
-        for uuid in uuids:
-            item = self.dumpDataset(uuid)
-            datasetList.append(item)
+        if uuids:
+            datasets = {}
+            for uuid in uuids:
+                item = self.dumpDataset(uuid)
+                datasets[uuid] = item
         
-        self.json['datasets'] = datasetList
+            self.json['datasets'] = datasets
         
     def dumpDatatype(self, uuid):
-        response = { 'id': uuid }
+        response = { }
         item = self.db.getCommittedTypeItemByUuid(uuid)
         response['alias'] = item['alias']
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
         attributes = self.dumpAttributes('datatypes', uuid)
-        response['attributes'] = attributes
+        if attributes:
+            response['attributes'] = attributes
         return response
          
         
-    def dumpDatatypes(self):
-        datatypeList = []
+    def dumpDatatypes(self):    
         uuids = self.db.getCollection("datatypes") 
-        for uuid in uuids:
-            item = self.dumpDatatype(uuid)
-            datatypeList.append(item)
+        if uuids:
+            datatypes = {}
+            for uuid in uuids:
+                item = self.dumpDatatype(uuid)
+                datatypes[uuid] = item
         
-        self.json['datatypes'] = datatypeList
+            self.json['datatypes'] = datatypes
         
     def dumpFile(self):
         self.root_uuid = self.db.getUUIDByPath('/')

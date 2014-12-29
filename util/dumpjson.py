@@ -239,7 +239,7 @@ def main():
         sys.exit(); 
         
     dumper = DumpJson()
-    dumper.endpoint = "http://127.0.0.1:5000"
+    dumper.endpoint = sys.argv[1]  # "http://127.0.0.1:5000"
     dumper.domain = sys.argv[1]
     dumper.dumpDomain()
     

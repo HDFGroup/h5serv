@@ -1,6 +1,6 @@
 {
-    "datasets": [
-        {
+    "datasets": {
+        "a09a7f14-7bf7-11e4-8eef-3c15c2da029e": {
             "alias": [
                 "/DS1"
             ], 
@@ -23,7 +23,6 @@
                     ]
                 }
             ], 
-            "id": "a09a7f14-7bf7-11e4-8eef-3c15c2da029e", 
             "shape": {
                 "class": "H5S_NULL"
             }, 
@@ -33,12 +32,10 @@
             }, 
             "value": null
         }, 
-        {
+        "a09a8efa-7bf7-11e4-9fb6-3c15c2da029e": {
             "alias": [
                 "/DS2"
             ], 
-            "attributes": [], 
-            "id": "a09a8efa-7bf7-11e4-9fb6-3c15c2da029e", 
             "shape": {
                 "class": "H5S_NULL"
             }, 
@@ -48,15 +45,12 @@
             }, 
             "value": null
         }
-    ], 
-    "datatypes": [], 
-    "groups": [
-        {
+    }, 
+    "groups": {
+        "a099880c-7bf7-11e4-82d6-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
-            "attributes": [], 
-            "id": "a099880c-7bf7-11e4-82d6-3c15c2da029e", 
             "links": [
                 {
                     "href": "datasets/a09a7f14-7bf7-11e4-8eef-3c15c2da029e", 
@@ -72,14 +66,11 @@
                 }
             ]
         }, 
-        {
+        "a09a9b99-7bf7-11e4-aa4b-3c15c2da029e": {
             "alias": [
                 "/G1"
-            ], 
-            "attributes": [], 
-            "id": "a09a9b99-7bf7-11e4-aa4b-3c15c2da029e", 
-            "links": []
+            ]
         }
-    ], 
+    }, 
     "root": "a099880c-7bf7-11e4-82d6-3c15c2da029e"
 }

@@ -1,11 +1,9 @@
 {
-    "datasets": [
-        {
+    "datasets": {
+        "a73f1775-7bf7-11e4-bb93-3c15c2da029e": {
             "alias": [
                 "/Group1/Dataset1"
             ], 
-            "attributes": [], 
-            "id": "a73f1775-7bf7-11e4-bb93-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -26,12 +24,10 @@
                 9
             ]
         }, 
-        {
+        "a73f2f0c-7bf7-11e4-aef8-3c15c2da029e": {
             "alias": [
                 "/Group1/Dataset2"
             ], 
-            "attributes": [], 
-            "id": "a73f2f0c-7bf7-11e4-aef8-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -52,12 +48,10 @@
                 0
             ]
         }, 
-        {
+        "a73f45b5-7bf7-11e4-b933-3c15c2da029e": {
             "alias": [
                 "/ZZZDataset3"
             ], 
-            "attributes": [], 
-            "id": "a73f45b5-7bf7-11e4-b933-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -77,15 +71,12 @@
                 "/groups/a73efab5-7bf7-11e4-bd21-3c15c2da029e"
             ]
         }
-    ], 
-    "datatypes": [], 
-    "groups": [
-        {
+    }, 
+    "groups": {
+        "a73df7a6-7bf7-11e4-8c8d-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
-            "attributes": [], 
-            "id": "a73df7a6-7bf7-11e4-8c8d-3c15c2da029e", 
             "links": [
                 {
                     "href": "groups/a73efab5-7bf7-11e4-bd21-3c15c2da029e", 
@@ -97,12 +88,10 @@
                 }
             ]
         }, 
-        {
+        "a73efab5-7bf7-11e4-bd21-3c15c2da029e": {
             "alias": [
                 "/Group1"
             ], 
-            "attributes": [], 
-            "id": "a73efab5-7bf7-11e4-bd21-3c15c2da029e", 
             "links": [
                 {
                     "href": "datasets/a73f1775-7bf7-11e4-bb93-3c15c2da029e", 
@@ -114,6 +103,6 @@
                 }
             ]
         }
-    ], 
+    }, 
     "root": "a73df7a6-7bf7-11e4-8c8d-3c15c2da029e"
 }

@@ -1,11 +1,9 @@
 {
-    "datasets": [
-        {
+    "datasets": {
+        "9348ad51-7bf7-11e4-a66f-3c15c2da029e": {
             "alias": [
                 "/array"
             ], 
-            "attributes": [], 
-            "id": "9348ad51-7bf7-11e4-a66f-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -1029,15 +1027,12 @@
                 ]
             ]
         }
-    ], 
-    "datatypes": [], 
-    "groups": [
-        {
+    }, 
+    "groups": {
+        "9347b2d1-7bf7-11e4-857c-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
-            "attributes": [], 
-            "id": "9347b2d1-7bf7-11e4-857c-3c15c2da029e", 
             "links": [
                 {
                     "href": "datasets/9348ad51-7bf7-11e4-a66f-3c15c2da029e", 
@@ -1045,6 +1040,6 @@
                 }
             ]
         }
-    ], 
+    }, 
     "root": "9347b2d1-7bf7-11e4-857c-3c15c2da029e"
 }

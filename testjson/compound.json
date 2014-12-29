@@ -1,11 +1,9 @@
 {
-    "datasets": [
-        {
+    "datasets": {
+        "2fd9e630-7b51-11e4-b2b8-3c15c2da029e": {
             "alias": [
                 "/dset"
             ], 
-            "attributes": [], 
-            "id": "2fd9e630-7b51-11e4-b2b8-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -568,10 +566,9 @@
                 ]
             ]
         }
-    ], 
-    "datatypes": [], 
-    "groups": [
-        {
+    }, 
+    "groups": {
+        "2fd89866-7b51-11e4-9d8e-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
@@ -591,7 +588,6 @@
                     "value": "Seattle, WA Weather observations Sept 21-24, 2014. KSEA station.\nSource: NOAA"
                 }
             ], 
-            "id": "2fd89866-7b51-11e4-9d8e-3c15c2da029e", 
             "links": [
                 {
                     "href": "datasets/2fd9e630-7b51-11e4-b2b8-3c15c2da029e", 
@@ -599,6 +595,6 @@
                 }
             ]
         }
-    ], 
+    }, 
     "root": "2fd89866-7b51-11e4-9d8e-3c15c2da029e"
 }

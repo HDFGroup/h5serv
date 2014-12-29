@@ -1,11 +1,9 @@
 {
-    "datasets": [
-        {
+    "datasets": {
+        "68ee8647-7bed-11e4-9397-3c15c2da029e": {
             "alias": [
                 "/DS1"
             ], 
-            "attributes": [], 
-            "id": "68ee8647-7bed-11e4-9397-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -90,12 +88,10 @@
                 }
             ]
         }, 
-        {
+        "68ee967a-7bed-11e4-819c-3c15c2da029e": {
             "alias": [
                 "/DS2"
             ], 
-            "attributes": [], 
-            "id": "68ee967a-7bed-11e4-819c-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -168,15 +164,12 @@
                 ]
             ]
         }
-    ], 
-    "datatypes": [], 
-    "groups": [
-        {
+    }, 
+    "groups": {
+        "68ed8eee-7bed-11e4-b61c-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
-            "attributes": [], 
-            "id": "68ed8eee-7bed-11e4-b61c-3c15c2da029e", 
             "links": [
                 {
                     "href": "datasets/68ee8647-7bed-11e4-9397-3c15c2da029e", 
@@ -188,6 +181,6 @@
                 }
             ]
         }
-    ], 
+    }, 
     "root": "68ed8eee-7bed-11e4-b61c-3c15c2da029e"
 }

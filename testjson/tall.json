@@ -1,6 +1,6 @@
 {
-    "datasets": [
-        {
+    "datasets": {
+        "7f335a2e-7ab1-11e4-87a5-3c15c2da029e": {
             "alias": [
                 "/g1/g1.1/dset1.1.1"
             ], 
@@ -90,7 +90,6 @@
                     ]
                 }
             ], 
-            "id": "7f335a2e-7ab1-11e4-87a5-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -229,12 +228,10 @@
                 ]
             ]
         }, 
-        {
+        "7f3374a6-7ab1-11e4-94e2-3c15c2da029e": {
             "alias": [
                 "/g1/g1.1/dset1.1.2"
             ], 
-            "attributes": [], 
-            "id": "7f3374a6-7ab1-11e4-94e2-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -271,12 +268,10 @@
                 19
             ]
         }, 
-        {
+        "7f33c885-7ab1-11e4-ac4d-3c15c2da029e": {
             "alias": [
                 "/g2/dset2.1"
             ], 
-            "attributes": [], 
-            "id": "7f33c885-7ab1-11e4-ac4d-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -303,12 +298,10 @@
                 1.899999976158142
             ]
         }, 
-        {
+        "7f33e211-7ab1-11e4-8669-3c15c2da029e": {
             "alias": [
                 "/g2/dset2.2"
             ], 
-            "attributes": [], 
-            "id": "7f33e211-7ab1-11e4-8669-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
@@ -348,10 +341,9 @@
                 ]
             ]
         }
-    ], 
-    "datatypes": [], 
-    "groups": [
-        {
+    }, 
+    "groups": {
+        "7f323835-7ab1-11e4-b6da-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
@@ -406,7 +398,6 @@
                     ]
                 }
             ], 
-            "id": "7f323835-7ab1-11e4-b6da-3c15c2da029e", 
             "links": [
                 {
                     "href": "groups/7f332f8f-7ab1-11e4-9a20-3c15c2da029e", 
@@ -418,12 +409,10 @@
                 }
             ]
         }, 
-        {
+        "7f332f8f-7ab1-11e4-9a20-3c15c2da029e": {
             "alias": [
                 "/g1"
             ], 
-            "attributes": [], 
-            "id": "7f332f8f-7ab1-11e4-9a20-3c15c2da029e", 
             "links": [
                 {
                     "href": "groups/7f334102-7ab1-11e4-94b4-3c15c2da029e", 
@@ -435,12 +424,10 @@
                 }
             ]
         }, 
-        {
+        "7f334102-7ab1-11e4-94b4-3c15c2da029e": {
             "alias": [
                 "/g1/g1.1"
             ], 
-            "attributes": [], 
-            "id": "7f334102-7ab1-11e4-94b4-3c15c2da029e", 
             "links": [
                 {
                     "href": "datasets/7f335a2e-7ab1-11e4-87a5-3c15c2da029e", 
@@ -452,12 +439,10 @@
                 }
             ]
         }, 
-        {
+        "7f338cb8-7ab1-11e4-9185-3c15c2da029e": {
             "alias": [
                 "/g1/g1.2"
             ], 
-            "attributes": [], 
-            "id": "7f338cb8-7ab1-11e4-9185-3c15c2da029e", 
             "links": [
                 {
                     "href": "groups/7f339ef5-7ab1-11e4-9ee3-3c15c2da029e", 
@@ -469,12 +454,10 @@
                 }
             ]
         }, 
-        {
+        "7f339ef5-7ab1-11e4-9ee3-3c15c2da029e": {
             "alias": [
                 "/g1/g1.2/g1.2.1"
             ], 
-            "attributes": [], 
-            "id": "7f339ef5-7ab1-11e4-9ee3-3c15c2da029e", 
             "links": [
                 {
                     "href": "/#h5path(somevalue)", 
@@ -482,12 +465,10 @@
                 }
             ]
         }, 
-        {
+        "7f33b04c-7ab1-11e4-8c78-3c15c2da029e": {
             "alias": [
                 "/g2"
             ], 
-            "attributes": [], 
-            "id": "7f33b04c-7ab1-11e4-8c78-3c15c2da029e", 
             "links": [
                 {
                     "href": "datasets/7f33c885-7ab1-11e4-ac4d-3c15c2da029e", 
@@ -499,6 +480,6 @@
                 }
             ]
         }
-    ], 
+    }, 
     "root": "7f323835-7ab1-11e4-b6da-3c15c2da029e"
 }

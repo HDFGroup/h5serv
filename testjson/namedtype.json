@@ -1,12 +1,9 @@
 {
-    "datasets": [], 
-    "datatypes": [
-        {
+    "datatypes": {
+        "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e": {
             "alias": [
                 "/dtype_compound"
             ], 
-            "attributes": [], 
-            "id": "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e", 
             "type": {
                 "class": "H5T_COMPOUND", 
                 "fields": [
@@ -27,7 +24,7 @@
                 ]
             }
         }, 
-        {
+        "9eb9ddab-7bf7-11e4-927d-3c15c2da029e": {
             "alias": [
                 "/dtype_simple"
             ], 
@@ -47,20 +44,17 @@
                     "value": "this is a committed datatype of float32"
                 }
             ], 
-            "id": "9eb9ddab-7bf7-11e4-927d-3c15c2da029e", 
             "type": {
                 "base": "H5T_IEEE_F32LE", 
                 "class": "H5T_FLOAT"
             }
         }
-    ], 
-    "groups": [
-        {
+    }, 
+    "groups": {
+        "9eb8d02e-7bf7-11e4-896e-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
-            "attributes": [], 
-            "id": "9eb8d02e-7bf7-11e4-896e-3c15c2da029e", 
             "links": [
                 {
                     "href": "datatypes/9eb9cf05-7bf7-11e4-8dda-3c15c2da029e", 
@@ -72,6 +66,6 @@
                 }
             ]
         }
-    ], 
+    }, 
     "root": "9eb8d02e-7bf7-11e4-896e-3c15c2da029e"
 }
