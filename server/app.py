@@ -516,11 +516,9 @@ class ShapeHandler(RequestHandler):
         hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid })
         hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})   
         shape = item['shape']
-        response['class'] = shape['class'] 
         if 'fillvalue' in item:
-            response['fillvalue'] = item['fillvalue']
-        response['dims'] = shape['dims']
-        response['maxdims'] = shape['maxdims']
+            shape['fillvalue'] = item['fillvalue']
+        response['shape'] = shape
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['hrefs'] = hrefs
