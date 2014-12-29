@@ -459,6 +459,25 @@ class AttributeTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['hrefs']), 3)
         
+    def testPutFixedString(self):
+        domain = 'tall_updated.' + config.get('domain') 
+        attr_name = 'attr5'
+        rootUUID = helper.getRootUUID(domain) 
+        headers = {'host': domain}
+        data = "Hello, I'm a fixed-width string!"
+        str_type = { 'cset':   'H5T_CSET_ASCII', 
+                     'class':  'H5T_STRING', 
+                     'strpad': 'H5T_STR_NULLPAD', 
+                     'strsize': 40}
+                      
+        payload = {'type': str_type, 'shape': (1,), 'value': data}
+        req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['hrefs']), 3)
+        
+        
     def testPutCompound(self):
         domain = 'tall_updated.' + config.get('domain')
         attr_name = 'attr_compound'
