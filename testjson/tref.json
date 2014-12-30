@@ -79,12 +79,14 @@
             ], 
             "links": [
                 {
-                    "href": "groups/a73efab5-7bf7-11e4-bd21-3c15c2da029e", 
-                    "title": "Group1"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "Group1", 
+                    "uuid": "a73efab5-7bf7-11e4-bd21-3c15c2da029e"
                 }, 
                 {
-                    "href": "datasets/a73f45b5-7bf7-11e4-b933-3c15c2da029e", 
-                    "title": "ZZZDataset3"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "ZZZDataset3", 
+                    "uuid": "a73f45b5-7bf7-11e4-b933-3c15c2da029e"
                 }
             ]
         }, 
@@ -94,12 +96,14 @@
             ], 
             "links": [
                 {
-                    "href": "datasets/a73f1775-7bf7-11e4-bb93-3c15c2da029e", 
-                    "title": "Dataset1"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "Dataset1", 
+                    "uuid": "a73f1775-7bf7-11e4-bb93-3c15c2da029e"
                 }, 
                 {
-                    "href": "datasets/a73f2f0c-7bf7-11e4-aef8-3c15c2da029e", 
-                    "title": "Dataset2"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "Dataset2", 
+                    "uuid": "a73f2f0c-7bf7-11e4-aef8-3c15c2da029e"
                 }
             ]
         }

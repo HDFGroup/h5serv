@@ -25,7 +25,7 @@ import config
 from hdf5db import Hdf5db
 import hdf5dtype
 from timeUtil import unixTimeToUTC
-from fileUtil import getFilePath, getDomain, getFileModCreateTimes, makeDirs, verifyFile, getLinkTarget
+from fileUtil import getFilePath, getDomain, getFileModCreateTimes, makeDirs, verifyFile
 
     
 class DefaultHandler(RequestHandler):
@@ -106,10 +106,10 @@ class LinkCollectionHandler(RequestHandler):
         links = []
         hrefs = []
         for item in items:
-            target = getLinkTarget(item)
-            links.append({'name': item['name'],
-                'class': item['class'],
-                'target': target})
+            for key in ('mtime', 'ctime', 'type', 'href'):
+                if key in item:
+                    del item[key]
+            links.append(item)
              
         response['links'] = links
         href = self.request.protocol + '://' + domain + '/'
@@ -184,12 +184,17 @@ class LinkHandler(RequestHandler):
             rootUUID = db.getUUIDByPath('/')
                          
         # got everything we need, put together the response
-        
-        response['title'] = item['name']
-        response['class'] = item['class']
-        response['href'] = getLinkTarget(item, self.request.protocol)
+        targethref = ''
+        if 'href' in item:
+            targethref = item['href']
+            
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['created'] = unixTimeToUTC(item['ctime'])
+        for key in ('mtime', 'ctime', 'type', 'href'):
+            if key in item:
+                del item[key]
+        response['link'] = item
+        
          
         hrefs = []     
         href = self.request.protocol + '://' + domain + '/'
@@ -198,6 +203,13 @@ class LinkHandler(RequestHandler):
         hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
         hrefs.append({'rel': 'home',       'href': href }) 
         hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
+        
+        if targethref:
+            if item['class'] == 'H5L_TYPE_HARD' or item['class'] == 'H5L_TYPE_SOFT':
+                hrefs.append({'rel': 'target', 'href': href + targethref})
+            elif item['class'] == 'H5L_TYPE_EXTERNAL':
+                link_href = self.request.protocol + '://' +  getDomain(item['file'])
+                hrefs.append({'rel': 'target', 'href': link_href + targethref})
         response['hrefs'] = hrefs      
         
         self.write(json_encode(response))

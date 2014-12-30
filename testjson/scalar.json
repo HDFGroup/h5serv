@@ -66,12 +66,14 @@
             ], 
             "links": [
                 {
-                    "href": "datasets/41e49e63-7b86-11e4-852f-3c15c2da029e", 
-                    "title": "0d"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "0d", 
+                    "uuid": "41e49e63-7b86-11e4-852f-3c15c2da029e"
                 }, 
                 {
-                    "href": "datasets/41e4b5a8-7b86-11e4-b6f6-3c15c2da029e", 
-                    "title": "1d"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "1d", 
+                    "uuid": "41e4b5a8-7b86-11e4-b6f6-3c15c2da029e"
                 }
             ]
         }

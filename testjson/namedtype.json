@@ -57,12 +57,14 @@
             ], 
             "links": [
                 {
-                    "href": "datatypes/9eb9cf05-7bf7-11e4-8dda-3c15c2da029e", 
-                    "title": "dtype_compound"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "dtype_compound", 
+                    "uuid": "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e"
                 }, 
                 {
-                    "href": "datatypes/9eb9ddab-7bf7-11e4-927d-3c15c2da029e", 
-                    "title": "dtype_simple"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "dtype_simple", 
+                    "uuid": "9eb9ddab-7bf7-11e4-927d-3c15c2da029e"
                 }
             ]
         }

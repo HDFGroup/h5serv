@@ -14,7 +14,6 @@ import json
 import argparse
 
 sys.path.append('../server')
-from fileUtil import getLinkTarget
 from hdf5db import Hdf5db
 import hdf5dtype 
 
@@ -48,32 +47,30 @@ class DumpJson:
             item = self.dumpAttribute(col_name, uuid, attr['name'])
             items.append(item)
                    
-        return items      
+        return items    
+        
+    def dumpLink(self, uuid, name):
+        item = self.db.getLinkItemByUuid(uuid, name)
+        for key in ('ctime', 'mtime', 'href', 'type'):
+            if key in item:
+                del item[key]
+        return item
+        
     
     def dumpLinks(self, uuid):
         link_list = self.db.getLinkItems(uuid)
         items = []
         for link in link_list:
-            item = {}
-            link_target = getLinkTarget(link)
-            item['title'] = link['name']
-            item['href'] = link_target
+            item = self.dumpLink(uuid, link['title'])
             items.append(item)
         return items
        
         
     def dumpGroup(self, uuid):
         item = self.db.getGroupItemByUuid(uuid)
-        if 'ctime' in item:
-            del item['ctime']
-        if 'mtime' in item:
-            del item['mtime']
-        if 'linkCount' in item:
-            del item['linkCount']
-        if 'attributeCount' in item:
-            del item['attributeCount']
-        if 'id' in item:
-            del item['id']
+        for key in ('ctime', 'mtime', 'linkCount', 'attributeCount', 'id'):
+            if key in item:
+                del item[key]
         attributes = self.dumpAttributes('groups', uuid)
         if attributes:
             item['attributes'] = attributes

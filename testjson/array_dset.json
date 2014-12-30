@@ -127,8 +127,9 @@
             ], 
             "links": [
                 {
-                    "href": "datasets/146c9fb5-7b51-11e4-a549-3c15c2da029e", 
-                    "title": "DS1"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "DS1", 
+                    "uuid": "146c9fb5-7b51-11e4-a549-3c15c2da029e"
                 }
             ]
         }

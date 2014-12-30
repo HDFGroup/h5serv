@@ -22,7 +22,6 @@ class RootTest(unittest.TestCase):
         
     def testGet(self):
         domain = 'tall.' + config.get('domain')   
-        print 'domain', domain
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)

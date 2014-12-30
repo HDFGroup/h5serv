@@ -461,12 +461,14 @@
             ], 
             "links": [
                 {
-                    "href": "datasets/2f4ba161-8270-11e4-9117-3c15c2da029e", 
-                    "title": "dset"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "dset", 
+                    "uuid": "2f4ba161-8270-11e4-9117-3c15c2da029e"
                 }, 
                 {
-                    "href": "groups/2f4bb178-8270-11e4-a4e7-3c15c2da029e", 
-                    "title": "types"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "types", 
+                    "uuid": "2f4bb178-8270-11e4-a4e7-3c15c2da029e"
                 }
             ]
         }, 
@@ -476,16 +478,19 @@
             ], 
             "links": [
                 {
-                    "href": "datatypes/2f4bbf2e-8270-11e4-b46d-3c15c2da029e", 
-                    "title": "date"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "date", 
+                    "uuid": "2f4bbf2e-8270-11e4-b46d-3c15c2da029e"
                 }, 
                 {
-                    "href": "datatypes/2f4bcbcc-8270-11e4-97b3-3c15c2da029e", 
-                    "title": "temp"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "temp", 
+                    "uuid": "2f4bcbcc-8270-11e4-97b3-3c15c2da029e"
                 }, 
                 {
-                    "href": "datatypes/2f4bd7d4-8270-11e4-a886-3c15c2da029e", 
-                    "title": "time"
+                    "class": "H5L_TYPE_HARD", 
+                    "title": "time", 
+                    "uuid": "2f4bd7d4-8270-11e4-a886-3c15c2da029e"
                 }
             ]
         }

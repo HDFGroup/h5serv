@@ -121,9 +121,9 @@ def makeDirs(filePath):
     os.mkdir(filePath)  # should succeed since parent directory is created  
     
 """
-  Get the target for a givein link item  
+  Get the target for a given link item  
     item: item object returned by db.getLinkItem
-"""
+
 def getLinkTarget(item, protocol="file"):
     target = None
     if item['class'] == 'hard':
@@ -141,4 +141,4 @@ def getLinkTarget(item, protocol="file"):
         logging.error("unexpected link item class: " + item['class'])
         raise HTTPError(500) 
     return target
-    
+"""    

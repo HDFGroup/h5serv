@@ -59,14 +59,11 @@ def getUUID(domain, parentUuid, name):
     tgtUuid = None
     if rsp.status_code == 200:
         rspJson = json.loads(rsp.text)
-        if rspJson['class'] != 'hard':
+        target = rspJson['link']
+        if target['class'] != 'H5L_TYPE_HARD':
             # soft/external links
             return None
-        
-        target = rspJson['href']
-        # format is: /<collection>/<id>
-        npos = target.rfind('/')
-        tgtUuid = target[npos+1:]
+        tgtUuid = target['uuid']
 
     return tgtUuid
 """
