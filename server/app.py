@@ -118,7 +118,7 @@ class LinkCollectionHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href }) 
         hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
         response['hrefs'] = hrefs      
-        
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
     
         
@@ -211,7 +211,7 @@ class LinkHandler(RequestHandler):
                 link_href = self.request.protocol + '://' +  getDomain(item['file'])
                 hrefs.append({'rel': 'target', 'href': link_href + targethref})
         response['hrefs'] = hrefs      
-        
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
     
     def put(self):
@@ -368,6 +368,7 @@ class TypeHandler(RequestHandler):
         response['attributeCount'] = item['attributeCount']
         response['hrefs'] = hrefs
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
     def post(self):
@@ -410,6 +411,7 @@ class TypeHandler(RequestHandler):
         response['attributeCount'] = 0
         response['hrefs'] = hrefs
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response)) 
         self.set_status(201)  # resource created
         
@@ -479,6 +481,7 @@ class DatatypeHandler(RequestHandler):
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['hrefs'] = hrefs
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
                 
 class ShapeHandler(RequestHandler):
@@ -535,6 +538,7 @@ class ShapeHandler(RequestHandler):
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['hrefs'] = hrefs
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
     def put(self):
@@ -635,6 +639,7 @@ class DatasetHandler(RequestHandler):
         response['attributeCount'] = item['attributeCount']
         response['hrefs'] = hrefs
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
     def post(self):
@@ -725,6 +730,7 @@ class DatasetHandler(RequestHandler):
         response['attributeCount'] = 0
         response['hrefs'] = hrefs
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))  
         self.set_status(201)  # resource created
         
@@ -913,6 +919,7 @@ class ValueHandler(RequestHandler):
         hrefs.append({'rel': 'home',  'href': href })   
         response['hrefs'] = hrefs
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response)) 
         
     def post(self):
@@ -977,6 +984,7 @@ class ValueHandler(RequestHandler):
         hrefs.append({'rel': 'home',  'href': href })   
         #response['hrefs'] = hrefs
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))     
     
     def put(self):
@@ -1206,6 +1214,7 @@ class AttributeHandler(RequestHandler):
                 response[k] = responseItem[k]
         response['hrefs'] = hrefs   
          
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
     def put(self):
@@ -1283,6 +1292,7 @@ class AttributeHandler(RequestHandler):
         hrefs.append({'rel': 'root',   'href': root_href }) 
         response['hrefs'] = hrefs 
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))  
         self.set_status(201)  # resource created
         
@@ -1355,6 +1365,7 @@ class GroupHandler(RequestHandler):
         response['linkCount'] = item['linkCount']
         response['hrefs'] = hrefs
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
     def delete(self): 
@@ -1382,6 +1393,7 @@ class GroupHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href }) 
         response['hrefs'] = hrefs
          
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response)) 
                 
 class GroupCollectionHandler(RequestHandler):
@@ -1419,6 +1431,7 @@ class GroupCollectionHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href }) 
         response['hrefs'] = hrefs
          
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
     def post(self):
@@ -1460,8 +1473,9 @@ class GroupCollectionHandler(RequestHandler):
         response['attributeCount'] = item['attributeCount']
         response['linkCount'] = item['linkCount']
         response['hrefs'] = hrefs
-        self.write(json_encode(response))
-                
+        
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response))               
         self.set_status(201)  # resource created
         
 class DatasetCollectionHandler(RequestHandler):
@@ -1499,6 +1513,7 @@ class DatasetCollectionHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href }) 
         response['hrefs'] = hrefs
          
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
 class TypeCollectionHandler(RequestHandler):
@@ -1536,12 +1551,12 @@ class TypeCollectionHandler(RequestHandler):
         hrefs.append({'rel': 'home',       'href': href }) 
         response['hrefs'] = hrefs
          
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
           
         
 class RootHandler(RequestHandler):
-     
-    
+
     def getRootResponse(self, filePath):
         # used by GET / and PUT /
         domain = self.request.host
@@ -1578,6 +1593,7 @@ class RootHandler(RequestHandler):
         verifyFile(filePath)
         response = self.getRootResponse(filePath)
         
+        self.set_header('Content-Type', 'application/json') 
         self.write(json_encode(response)) 
         
     def put(self): 
@@ -1595,6 +1611,7 @@ class RootHandler(RequestHandler):
             raise HTTPError(500)
         response = self.getRootResponse(filePath)
         
+        self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         self.set_status(201)  # resource created
           

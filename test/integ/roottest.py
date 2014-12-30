@@ -26,6 +26,7 @@ class RootTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
         helper.validateId(rspJson["root"])
         
