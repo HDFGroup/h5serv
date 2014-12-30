@@ -112,6 +112,20 @@ def readDataset(domain, dsetUuid):
     rspJson = json.loads(rsp.text)
     data = rspJson['value']
     return data
+    
+"""
+Helper function - convert name to url-friendly format
+  Replaces all non-alphanumeric characters with '%<ascii_hex>'
+"""
+def nameEncode(name):
+    out = []
+    for ch in name:
+        if ch.isalnum():
+            out.append(ch)
+        else:
+            hex = format(ord(ch), '02X')
+            out.append('%' + hex)
+    return ''.join(out)
          
     
             

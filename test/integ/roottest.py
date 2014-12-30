@@ -162,5 +162,14 @@ class RootTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         
+    def testPutNameWithDot(self):
+        # test PUT_root
+        domain = helper.nameEncode('new.file') + '.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        rspJson = json.loads(rsp.text)
+        
 if __name__ == '__main__':
     unittest.main()
