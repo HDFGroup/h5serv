@@ -1218,12 +1218,12 @@ class Hdf5db:
         if linkClass == 'SoftLink':
             item['class'] = 'H5L_TYPE_SOFT'
             item['h5path'] = linkObj.path
-            item['href'] = '/#h5path(' + linkObj.path + ')'
+            item['href'] = '#h5path(' + linkObj.path + ')'
         elif linkClass == 'ExternalLink':
             item['class'] = 'H5L_TYPE_EXTERNAL'
             item['h5path'] = linkObj.path
             item['file'] = linkObj.filename
-            item['href'] = '/#h5path(' + linkObj.path + ')'
+            item['href'] = '#h5path(' + linkObj.path + ')'
         elif linkClass == 'HardLink':
             # Hardlink doesn't have any properties itself, just get the linked
             # object
@@ -1233,11 +1233,11 @@ class Hdf5db:
             item['uuid'] = self.getUUIDByAddress(addr)
             item['type'] = obj.__class__.__name__ 
             if item['type'] == 'Dataset':
-                item['href'] = '/datasets/' + item['uuid']
+                item['href'] = 'datasets/' + item['uuid']
             elif item['type'] == 'Group':
-                item['href'] = '/groups/' + item['uuid']
+                item['href'] = 'groups/' + item['uuid']
             elif item['type'] == 'Datatype':
-                item['href'] = '/datatypes/' + item['uuid']
+                item['href'] = 'datatypes/' + item['uuid']
             else:
                 logging.warning("unexpected object type: " + item['type'])
         
