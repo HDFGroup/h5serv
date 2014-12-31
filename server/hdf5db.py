@@ -1231,13 +1231,16 @@ class Hdf5db:
             addr = h5py.h5o.get_info(obj.id).addr
             item['class'] = 'H5L_TYPE_HARD'
             item['uuid'] = self.getUUIDByAddress(addr)
-            item['type'] = obj.__class__.__name__ 
-            if item['type'] == 'Dataset':
+            class_name = obj.__class__.__name__ 
+            if class_name == 'Dataset':
                 item['href'] = 'datasets/' + item['uuid']
-            elif item['type'] == 'Group':
+                item['collection'] = 'datasets'
+            elif class_name == 'Group':
                 item['href'] = 'groups/' + item['uuid']
-            elif item['type'] == 'Datatype':
+                item['collection'] = 'groups'
+            elif class_name == 'Datatype':
                 item['href'] = 'datatypes/' + item['uuid']
+                item['collection'] = 'datatypes'
             else:
                 logging.warning("unexpected object type: " + item['type'])
         

@@ -139,7 +139,7 @@ class Hdf5dbTest(unittest.TestCase):
             self.assertTrue('uuid' in item)
             self.assertEqual(item['title'], 'dset1.1.1')
             self.assertEqual(item['class'], 'H5L_TYPE_HARD')
-            self.assertEqual(item['type'], 'Dataset')
+            self.assertEqual(item['collection'], 'datasets')
             self.assertTrue('target' not in item)
             self.assertTrue('mtime' in item)
             self.assertTrue('ctime' in item)
@@ -203,7 +203,7 @@ class Hdf5dbTest(unittest.TestCase):
                     hardLink = item
                 elif item['class'] == 'H5L_TYPE_EXTERNAL':
                     externalLink = item
-        self.assertEqual(hardLink['type'], 'Group')
+        self.assertEqual(hardLink['collection'], 'groups')
         self.assertTrue('uuid' in hardLink)
         self.assertTrue('uuid' not in externalLink)
         self.assertEqual(externalLink['h5path'], 'somepath')

@@ -190,7 +190,7 @@ class LinkHandler(RequestHandler):
             
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['created'] = unixTimeToUTC(item['ctime'])
-        for key in ('mtime', 'ctime', 'type', 'href'):
+        for key in ('mtime', 'ctime', 'href'):
             if key in item:
                 del item[key]
         response['link'] = item
@@ -1591,10 +1591,22 @@ class RootHandler(RequestHandler):
         # will raise exception if not found
         filePath = getFilePath(self.request.host)
         verifyFile(filePath)
-        response = self.getRootResponse(filePath)
-        
-        self.set_header('Content-Type', 'application/json') 
-        self.write(json_encode(response)) 
+        # print 'content-type:', self.request.headers['accept']
+        accept_type = ''
+        if 'accept' in self.request.headers:
+            accept= self.request.headers['accept']
+            # just extract the first type and not worry about q values for now...
+            accept_values = accept.split(',')
+            accept_types = accept_values[0].split(';')
+            accept_type = accept_types[0]
+            # print 'accept_type:', accept_type
+        if False and accept_type == 'text/html':  # disable for now
+            self.set_header('Content-Type', 'text/html') 
+            self.write("<html><body>Hello world!</body></html>")
+        else:
+            response = self.getRootResponse(filePath)
+            self.set_header('Content-Type', 'application/json') 
+            self.write(json_encode(response)) 
         
     def put(self): 
         logging.info('RootHandler.put ' + self.request.host)  
@@ -1692,6 +1704,7 @@ def make_app():
         url(r"/groups/.*", GroupHandler), 
         url(r"/groups\?.*", GroupCollectionHandler),
         url(r"/groups", GroupCollectionHandler),
+        url(r"/static/(.*)", tornado.web.StaticFileHandler, {'path', '../static/'}),
         url(r"/", RootHandler),
         url(r".*", DefaultHandler)
     ],  **settings)

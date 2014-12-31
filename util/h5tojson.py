@@ -51,7 +51,7 @@ class DumpJson:
         
     def dumpLink(self, uuid, name):
         item = self.db.getLinkItemByUuid(uuid, name)
-        for key in ('ctime', 'mtime', 'href', 'type'):
+        for key in ('ctime', 'mtime', 'href'):
             if key in item:
                 del item[key]
         return item

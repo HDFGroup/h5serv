@@ -36,6 +36,7 @@
             "links": [
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "datasets", 
                     "title": "DS1", 
                     "uuid": "a99a04b8-7bf7-11e4-b696-3c15c2da029e"
                 }

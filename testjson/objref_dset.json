@@ -44,16 +44,19 @@
             "links": [
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "datasets", 
                     "title": "DS1", 
                     "uuid": "23674021-7bed-11e4-aba3-3c15c2da029e"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "datasets", 
                     "title": "DS2", 
                     "uuid": "23675094-7bed-11e4-b08a-3c15c2da029e"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "G1", 
                     "uuid": "23676461-7bed-11e4-b95c-3c15c2da029e"
                 }

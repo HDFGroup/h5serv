@@ -39,6 +39,7 @@ class LinkTest(unittest.TestCase):
             self.assertTrue(helper.validateId(target['uuid']))
             self.failUnlessEqual(target['class'], 'H5L_TYPE_HARD')
             self.failUnlessEqual(target['title'], 'g1')
+            self.failUnlessEqual(target['collection'], 'groups')
             
     def testGetSoft(self):
         logging.info("LinkTest.testGetSoft")
@@ -60,6 +61,7 @@ class LinkTest(unittest.TestCase):
             self.failUnlessEqual(target['h5path'], 'somevalue')
             self.failUnlessEqual(target['class'], 'H5L_TYPE_SOFT')
             self.failUnlessEqual(target['title'], 'slink')
+            self.assertTrue('collection' not in target)
             
     def testGetExternal(self):
         logging.info("LinkTest.testGetExternal")
@@ -83,6 +85,7 @@ class LinkTest(unittest.TestCase):
             self.failUnlessEqual(target['file'], 'somefile')
             self.failUnlessEqual(target['h5path'], 'somepath')
             self.failUnlessEqual(target['title'], 'extlink')
+            self.assertTrue('collection' not in target)
             
     def testGetUDLink(self):
         logging.info("LinkTest.testGetUDLink")

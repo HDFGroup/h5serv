@@ -7,16 +7,19 @@
             "links": [
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g1", 
                     "uuid": "a6c3f58c-7bf7-11e4-a370-3c15c2da029e"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g2", 
                     "uuid": "a6c42494-7bf7-11e4-ab57-3c15c2da029e"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g3", 
                     "uuid": "a6c46ab3-7bf7-11e4-9229-3c15c2da029e"
                 }
@@ -29,11 +32,13 @@
             "links": [
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g1.1", 
                     "uuid": "a6c40ab5-7bf7-11e4-9279-3c15c2da029e"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g1.2", 
                     "uuid": "a6c417f5-7bf7-11e4-b5b9-3c15c2da029e"
                 }
@@ -56,6 +61,7 @@
             "links": [
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g2.1", 
                     "uuid": "a6c43326-7bf7-11e4-ad08-3c15c2da029e"
                 }
@@ -68,16 +74,19 @@
             "links": [
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g2.1.1", 
                     "uuid": "a6c4420a-7bf7-11e4-b535-3c15c2da029e"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g2.1.2", 
                     "uuid": "a6c45070-7bf7-11e4-b666-3c15c2da029e"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g2.1.3", 
                     "uuid": "a6c45e26-7bf7-11e4-bb94-3c15c2da029e"
                 }
@@ -105,21 +114,25 @@
             "links": [
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g3.1", 
                     "uuid": "a6c4782b-7bf7-11e4-b1e0-3c15c2da029e"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g3.2", 
                     "uuid": "a6c484ca-7bf7-11e4-973a-3c15c2da029e"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g3.3", 
                     "uuid": "a6c4918f-7bf7-11e4-a8fc-3c15c2da029e"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
+                    "collection": "groups", 
                     "title": "g3.4", 
                     "uuid": "a6c49d2b-7bf7-11e4-a6ca-3c15c2da029e"
                 }
