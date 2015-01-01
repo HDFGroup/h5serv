@@ -99,7 +99,7 @@ class LinkCollectionHandler(RequestHandler):
         verifyFile(filePath)
         items = None
         rootUUID = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             items = db.getLinkItems(reqUuid, marker=marker, limit=limit)
             if items == None:
                 httpError = 404  # not found
@@ -185,7 +185,7 @@ class LinkHandler(RequestHandler):
         verifyFile(filePath)
         items = None
         rootUUID = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             item = db.getLinkItemByUuid(reqUuid, linkName)
             if item == None:
                 log.info("group: [" + reqUuid + "], link: [" + linkName + "] not found")
@@ -290,7 +290,7 @@ class LinkHandler(RequestHandler):
         verifyFile(filePath)
         items = None
         rootUUID = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             if childUuid:
                 ok = db.linkObject(reqUuid, childUuid, linkName)
             elif filename:
@@ -320,7 +320,7 @@ class LinkHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             ok = db.unlinkItem(reqUuid, linkName)
             if not ok:
                 httpStatus = db.httpStatus
@@ -357,7 +357,7 @@ class TypeHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             item = db.getCommittedTypeItemByUuid(reqUuid)
             if item == None:
                 httpError = 404  # not found
@@ -403,7 +403,7 @@ class TypeHandler(RequestHandler):
             
         datatype = body["type"]     
         
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             rootUUID = db.getUUIDByPath('/')
             typeUUID = db.createCommittedType(datatype)
             if typeUUID == None:
@@ -436,7 +436,7 @@ class TypeHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             ok = db.deleteObjectByUuid(uuid)
             if not ok:
                 httpStatus = db.httpStatus
@@ -477,7 +477,7 @@ class DatatypeHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             item = db.getDatasetTypeItemByUuid(reqUuid)
             if item == None:
                 httpError = 404  # not found
@@ -534,7 +534,7 @@ class ShapeHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             item = db.getDatasetItemByUuid(reqUuid)
             if item == None:
                 httpError = 404  # not found
@@ -593,7 +593,7 @@ class ShapeHandler(RequestHandler):
                 log.info("invalid shape (negative extent)")
                 raise HTTPError(400) 
         
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             rootUUID = db.getUUIDByPath('/')
             db.resizeDataset(reqUuid, shape)
             
@@ -633,7 +633,7 @@ class DatasetHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             item = db.getDatasetItemByUuid(reqUuid)
             if item == None:
                 httpError = 404  # not found
@@ -730,7 +730,7 @@ class DatasetHandler(RequestHandler):
                 if maxextent == 0:
                     maxshape[i] = None  # this indicates unlimited
         
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             rootUUID = db.getUUIDByPath('/')
             dsetUUID = db.createDataset(datatype, shape, maxshape)
             if dsetUUID == None:
@@ -764,7 +764,7 @@ class DatasetHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             ok = db.deleteObjectByUuid(uuid)
             if not ok:
                 httpStatus = db.httpStatus
@@ -898,7 +898,7 @@ class ValueHandler(RequestHandler):
         rootUUID = None
         item = None
         values = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             item = db.getDatasetItemByUuid(reqUuid)
             if item == None:
                 httpError = 404  # not found
@@ -975,7 +975,7 @@ class ValueHandler(RequestHandler):
         rootUUID = None
         item = None
         values = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             item = db.getDatasetItemByUuid(reqUuid)
             if item == None:
                 httpError = 404  # not found
@@ -1058,7 +1058,7 @@ class ValueHandler(RequestHandler):
                             
         data = body["value"]
         
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             item = db.getDatasetItemByUuid(reqUuid)
             if item == None:
                 httpError = 404  # not found
@@ -1189,7 +1189,7 @@ class AttributeHandler(RequestHandler):
                 log.info("expected int type for limit")
                 raise HTTPError(400) 
         marker = self.get_query_argument("Marker", None)
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             if attr_name != None:
                 item = db.getAttributeItem(col_name, reqUuid, attr_name)
                 if item == None:
@@ -1305,7 +1305,7 @@ class AttributeHandler(RequestHandler):
         data = self.convertToTuple(value)
                    
         
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             db.createAttribute(col_name, reqUuid, attr_name, shape, datatype, data)
             if db.httpStatus != 200:
                 raise HTTPError(db.httpStatus)
@@ -1343,7 +1343,7 @@ class AttributeHandler(RequestHandler):
             raise HTTPError(400)
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             ok = db.deleteAttribute(col_name, obj_uuid, attr_name)
             if not ok:
                 httpStatus = db.httpStatus
@@ -1379,7 +1379,7 @@ class GroupHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             item = db.getGroupItemByUuid(reqUuid)
             if item == None:
                 httpError = 404  # not found
@@ -1413,7 +1413,7 @@ class GroupHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             ok = db.deleteObjectByUuid(uuid)
             if not ok:
                 httpStatus = db.httpStatus
@@ -1459,7 +1459,7 @@ class GroupCollectionHandler(RequestHandler):
              
         items = None
         hrefs = []
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             items = db.getCollection("groups", marker, limit)
             rootUUID = db.getUUIDByPath('/')
                          
@@ -1485,7 +1485,7 @@ class GroupCollectionHandler(RequestHandler):
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             rootUUID = db.getUUIDByPath('/')
             grpUUID = db.createGroup()
             if grpUUID == None:
@@ -1543,7 +1543,7 @@ class DatasetCollectionHandler(RequestHandler):
         rootUUID = None
              
         items = None
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             items = db.getCollection("datasets", marker, limit)
             rootUUID = db.getUUIDByPath('/')
                          
@@ -1605,7 +1605,7 @@ class RootHandler(RequestHandler):
         # used by GET / and PUT /
         domain = self.request.host
         filePath = getFilePath(domain)
-        with Hdf5db(filePath) as db:
+        with Hdf5db(filePath, app_logger=log) as db:
             rootUUID = db.getUUIDByPath('/')
             datasetCount = db.getNumberOfDatasets()
             groupCount = db.getNumberOfGroups()
@@ -1773,7 +1773,7 @@ def main():
                                        utc=True)
     
     # create formatter
-    formatter = logging.Formatter("%(asctime)s:%(levelname)s:%(filename)s:%(lineno)d:%(message)s")
+    formatter = logging.Formatter("%(asctime)s:%(levelname)s:%(filename)s:%(lineno)d::%(message)s")
     # add formatter to handler
     handler.setFormatter(formatter)
     # add handler to logger

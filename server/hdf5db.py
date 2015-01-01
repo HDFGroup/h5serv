@@ -60,6 +60,7 @@ import shutil
 import uuid
 import os.path as op
 import os
+import logging
 
 import hdf5dtype
 
@@ -75,34 +76,6 @@ def visitObj(path, obj):
     hdf5db = _db[obj.file.filename]
     hdf5db.visit(path, obj)
     
-class Logger:
-    def __init__(self, app_logger=None):
-        self.log = app_logger
-    def debug(self, msg):
-        if self.log:
-            self.log.debug(msg)
-        else:
-            print 'DEBUG:', msg
-    def info(self, msg):
-        if self.log:
-            self.log.info(msg)
-        else:
-            print 'INFO:', msg
-    def warn(self, msg):
-        if self.log:
-            self.log.warn(msg)
-        else:
-            print 'WARNING:', msg
-    def warning(self, msg):
-        if self.log:
-            self.log.warning(msg)
-        else:
-            print 'WARNING:', msg
-    def error(self, msg):
-        if self.log:
-            self.log.error(msg)
-        else:
-            print 'ERROR:', msg
     
 class Hdf5db:
         
@@ -118,7 +91,10 @@ class Hdf5db:
            
         
     def __init__(self, filePath, readonly=False, app_logger=None):
-        self.log = Logger(app_logger=app_logger)
+        if app_logger:
+            self.log = app_logger
+        else:
+            self.log = logging.getLogger()
         mode = 'r'
         if readonly:
             self.readonly = True
@@ -278,7 +254,7 @@ class Hdf5db:
         return timestamp
         
     def initFile(self):
-        self.log.info("initFile")
+        # self.log.info("initFile")
         self.httpStatus = 200
         self.httpMessage = None
         if self.readonly:
