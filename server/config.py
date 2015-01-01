@@ -27,7 +27,7 @@ def get(x):
     # see if there is a command-line override   
     option = '--'+x+'='
     for i in range(1, len(sys.argv)):
-        print i, sys.argv[i]
+        #print i, sys.argv[i]
         if sys.argv[i].startswith(option):
             # found an override
             arg = sys.argv[i]
