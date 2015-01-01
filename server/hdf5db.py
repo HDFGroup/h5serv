@@ -58,7 +58,6 @@ import h5py
 import numpy as np
 import shutil
 import uuid
-import logging
 import os.path as op
 import os
 
@@ -76,6 +75,35 @@ def visitObj(path, obj):
     hdf5db = _db[obj.file.filename]
     hdf5db.visit(path, obj)
     
+class Logger:
+    def __init__(self, app_logger=None):
+        self.log = app_logger
+    def debug(self, msg):
+        if self.log:
+            self.log.debug(msg)
+        else:
+            print 'DEBUG:', msg
+    def info(self, msg):
+        if self.log:
+            self.log.info(msg)
+        else:
+            print 'INFO:', msg
+    def warn(self, msg):
+        if self.log:
+            self.log.warn(msg)
+        else:
+            print 'WARNING:', msg
+    def warning(self, msg):
+        if self.log:
+            self.log.warning(msg)
+        else:
+            print 'WARNING:', msg
+    def error(self, msg):
+        if self.log:
+            self.log.error(msg)
+        else:
+            print 'ERROR:', msg
+    
 class Hdf5db:
         
     @staticmethod
@@ -89,7 +117,8 @@ class Hdf5db:
         return True
            
         
-    def __init__(self, filePath, readonly=False):
+    def __init__(self, filePath, readonly=False, app_logger=None):
+        self.log = Logger(app_logger=app_logger)
         mode = 'r'
         if readonly:
             self.readonly = True
@@ -99,7 +128,7 @@ class Hdf5db:
                 self.readonly = False
             else:
                 self.readonly = True
-        #logging.info("init -- filePath: " + filePath + " mode: " + mode)
+        self.log.info("init -- filePath: " + filePath + " mode: " + mode)
         
         self.f = h5py.File(filePath, mode)
         
@@ -116,20 +145,21 @@ class Hdf5db:
             dbMode = 'r+'
             if not op.isfile(dbFilePath):
                 dbMode = 'w'
-            logging.info("dbFilePath: " + dbFilePath + " mode: " + dbMode)
+            self.log.info("dbFilePath: " + dbFilePath + " mode: " + dbMode)
             self.dbf = h5py.File(dbFilePath, dbMode)
         else:
             self.dbf = None # for read only
         # create a global reference to this class
         # so visitObj can call back
         _db[filePath] = self 
+        
     
     def __enter__(self):
-        logging.info('Hdf5db __enter')
+        self.log.info('Hdf5db __enter')
         return self
 
     def __exit__(self, type, value, traceback):
-        logging.info('Hdf5db __exit')
+        self.log.info('Hdf5db __exit')
         filename = self.f.filename
         self.f.flush()
         self.f.close()
@@ -143,7 +173,7 @@ class Hdf5db:
         ts_name = uuid
         if objType != "object":
             if len(name) == 0:
-                logging.error("empty name passed to setCreateTime")
+                self.log.error("empty name passed to setCreateTime")
                 raise Exception("bad setCreateTimeParameter")
             if objType == "attribute":
                 ts_name += "_attr:["
@@ -154,7 +184,7 @@ class Hdf5db:
                 ts_name += name
                 ts_name += "]"
             else:   
-                logging.error("bad objType passed to setCreateTime")
+                self.log.error("bad objType passed to setCreateTime")
                 raise Exception("bad setCreateTimeParameter")
         return ts_name
         
@@ -177,7 +207,7 @@ class Hdf5db:
         if timestamp == None:
             timestamp = time.time()
         if ts_name in ctime_grp.attrs:
-            logging.warning("modifying create time for object: " + ts_name)
+            self.log.warn("modifying create time for object: " + ts_name)
         ctime_grp.attrs.create(ts_name, timestamp, dtype='int64')
     
     """
@@ -248,7 +278,7 @@ class Hdf5db:
         return timestamp
         
     def initFile(self):
-        # logging.info("initFile")
+        self.log.info("initFile")
         self.httpStatus = 200
         self.httpMessage = None
         if self.readonly:
@@ -264,7 +294,7 @@ class Hdf5db:
                 return;  # already initialized 
             self.dbGrp = self.f.create_group("__db__")
            
-        logging.info("initializing file") 
+        self.log.info("initializing file") 
         root_uuid = str(uuid.uuid1())
         self.dbGrp.attrs["rootUUID"] = root_uuid
         self.dbGrp.create_group("{groups}")
@@ -285,7 +315,7 @@ class Hdf5db:
         name = obj.__class__.__name__
         if len(path) >= 6 and path[:6] == '__db__':
             return  # don't include the db objects
-        logging.info('visit: ' + path +' name: ' + name)
+        self.log.info('visit: ' + path +' name: ' + name)
         col = None 
         if name == 'Group':
             col = self.dbGrp["{groups}"].attrs
@@ -294,7 +324,7 @@ class Hdf5db:
         elif name == 'Datatype':
             col = self.dbGrp["{datatypes}"].attrs
         else:
-            logging.error("unknown type: " + __name__)
+            self.log.error("unknown type: " + __name__)
             self.httpStatus = 500
             self.httpMessage = "Unexpected error"
             return
@@ -313,7 +343,7 @@ class Hdf5db:
         
     def getUUIDByAddress(self, addr):
         if "{addr}" not in self.dbGrp:
-            logging.error("expected to find {addr} group") 
+            self.log.error("expected to find {addr} group") 
             return None
         addrGrp = self.dbGrp["{addr}"]
         objUuid = None
@@ -372,9 +402,9 @@ class Hdf5db:
         
     def getUUIDByPath(self, path):
         self.initFile()
-        logging.info("getUUIDByPath: [" + path + "]")
+        self.log.info("getUUIDByPath: [" + path + "]")
         if len(path) >= 6 and path[:6] == '__db__':
-            logging.error("getUUIDByPath called with invalid path: [" + path + "]")
+            self.log.error("getUUIDByPath called with invalid path: [" + path + "]")
             raise Exception
         if path == '/':
             # just return the root UUID
@@ -395,7 +425,7 @@ class Hdf5db:
     def getObjectByUuid(self, col_type, objUuid):
         #col_type should be either "datasets", "groups", or "datatypes"
         if col_type not in ("datasets", "groups", "datatypes"):
-            logging.error("invalid col_type: [" + col_type + "]")
+            self.log.error("invalid col_type: [" + col_type + "]")
             self.httpStatus = 500
             return None
         if col_type == "groups" and objUuid == self.dbGrp.attrs["rootUUID"]:
@@ -415,8 +445,9 @@ class Hdf5db:
         return obj
         
     def getDatasetObjByUuid(self, objUuid):
-        logging.info("getDatasetObjByUuid(" + objUuid + ")")
         self.initFile()
+        self.log.info("getDatasetObjByUuid(" + objUuid + ")")
+        
         obj = self.getObjectByUuid("datasets", objUuid)
                                  
         if obj == None:
@@ -429,9 +460,10 @@ class Hdf5db:
         return obj
         
     def getGroupObjByUuid(self, objUuid):
-        logging.info("getGroupObjByUuid(" + objUuid + ")")
         self.initFile()
-        obj =  self.getObjectByUuid("groups", objUuid)
+        self.log.info("getGroupObjByUuid(" + objUuid + ")")
+        
+        obj = self.getObjectByUuid("groups", objUuid)
          
         if obj == None:
             if self.getModifiedTime(objUuid, useRoot=False):
@@ -445,7 +477,7 @@ class Hdf5db:
     def getDatasetTypeItemByUuid(self, objUuid):
         dset = self.getDatasetObjByUuid(objUuid)
         if dset == None:
-            logging.info("dataset: " + objUuid + " not found")
+            self.log.info("dataset: " + objUuid + " not found")
             return None
         item = { 'id': objUuid }
         item['type'] = hdf5dtype.getTypeItem(dset.dtype)
@@ -494,7 +526,7 @@ class Hdf5db:
     def getDatasetItemByUuid(self, objUuid):
         dset = self.getDatasetObjByUuid(objUuid)
         if dset == None:
-            logging.info("dataset: " + objUuid + " not found")
+            self.log.info("dataset: " + objUuid + " not found")
             return None
         item = { 'id': objUuid }
         
@@ -543,6 +575,7 @@ class Hdf5db:
     Returns UUID
     """   
     def createCommittedType(self, datatype):
+        self.log.info("createCommittedType")
         self.initFile()
         if self.readonly:
             self.httpStatus = 403  # Forbidden
@@ -552,12 +585,12 @@ class Hdf5db:
         objUuid = str(uuid.uuid1())
         dt = hdf5dtype.createDataType(datatype);
         if dt is None:
-            logging.error('no type returned')
+            self.log.error('no type returned')
             return None  # invalid type
         datatypes[objUuid] = np.dtype(dt)  # dt
         
         if objUuid not in datatypes:
-            logging.error('unexpected failure to create named datatype')
+            self.log.error('unexpected failure to create named datatype')
             return None
         newType = datatypes[objUuid] # this will be a h5py Datatype class 
         # store reverse map as an attribute
@@ -575,7 +608,7 @@ class Hdf5db:
     Returns type obj
     """   
     def getCommittedTypeObjByUuid(self, objUuid):
-        logging.info("getCommittedTypeObjByUuid(" + objUuid + ")")
+        self.log.info("getCommittedTypeObjByUuid(" + objUuid + ")")
         self.initFile()
         datatype = None
         datatypesGrp = self.dbGrp["{datatypes}"]
@@ -593,7 +626,7 @@ class Hdf5db:
     Returns type obj
     """   
     def getCommittedTypeItemByUuid(self, objUuid):
-        logging.info("getCommittedTypeItemByUuid(" + objUuid + ")")
+        self.log.info("getCommittedTypeItemByUuid(" + objUuid + ")")
         self.initFile()
         datatype = self.getCommittedTypeObjByUuid(objUuid)
          
@@ -622,9 +655,8 @@ class Hdf5db:
       returns: Json object 
     """ 
     def getAttributeItemByObj(self, obj, name, includeData=True):
-         
         if name not in obj.attrs:
-            logging.info("attribute: [" + name + "] not found in object: " + obj.name)
+            self.log.info("attribute: [" + name + "] not found in object: " + obj.name)
             self.httpStatus = 404  # not found
             return None
             
@@ -656,7 +688,7 @@ class Hdf5db:
             try:
                 attr = obj.attrs[name]  # returns a numpy array
             except TypeError:
-                logging.warning("type error reading attribute") 
+                self.log.warning("type error reading attribute") 
         item['shape'] = self.getShapeItemByAttrObj(attrObj)
         if includeData and attr is not None:
             if typeItem['class'] == 'H5T_VLEN':
@@ -673,16 +705,16 @@ class Hdf5db:
         return item
             
     def getAttributeItems(self, col_type, objUuid, marker=None, limit=0):
-        logging.info("db.getAttributeItems(" + objUuid + ")")
+        self.log.info("db.getAttributeItems(" + objUuid + ")")
         if marker:
-            logging.info("...marker: " + marker)
+            self.log.info("...marker: " + marker)
         if limit:
-            logging.info("...limit: " + str(limit))
+            self.log.info("...limit: " + str(limit))
         
         self.initFile()
         obj = self.getObjectByUuid(col_type, objUuid)
         if obj == None:
-            logging.error("uuid: " + objUuid + " could not be loaded")
+            self.log.error("uuid: " + objUuid + " could not be loaded")
             self.httpStatus = 404  # not found
             return None
             
@@ -710,7 +742,7 @@ class Hdf5db:
         return items
             
     def getAttributeItem(self, col_type, objUuid, name):
-        logging.info("getAttributeItemByUuid(" + col_type + ", " + objUuid + ", " + 
+        self.log.info("getAttributeItemByUuid(" + col_type + ", " + objUuid + ", " + 
             name + ")")
         self.initFile()
         obj = self.getObjectByUuid(col_type, objUuid)
@@ -726,6 +758,7 @@ class Hdf5db:
         return item
         
     def createAttribute(self, col_name, objUuid, attr_name, shape, attr_type, value):
+        self.log.info("createAttribute: [" + attr_name + "]")
         self.initFile()
         if self.readonly:
             self.httpStatus = 403  # Forbidden
@@ -748,7 +781,7 @@ class Hdf5db:
                 self.httpStatus = 400 # invalid
                 return None
         if dt is None:
-            logging.error('no type returned')
+            self.log.error('no type returned')
             self.httpStatus = 500  # unexpected
             return None  # invalid type  
             
@@ -807,7 +840,7 @@ class Hdf5db:
                           }
                          
         #if regionRef.typecode not in selectionEnums:
-        #    logging.error("Unexpected selection type: " + regionRef.typecode)
+        #    self.log.error("Unexpected selection type: " + regionRef.typecode)
         #    return None
         item = {}
         objid = h5py.h5r.dereference(regionRef, self.f.file.file.id)
@@ -817,7 +850,7 @@ class Hdf5db:
         sel = h5py.h5r.get_region(regionRef, objid)  
         select_type = sel.get_select_type()
         if select_type not in selectionEnums:
-            logging.error("Unexpected selection type: " + regionRef.typecode)
+            self.log.error("Unexpected selection type: " + regionRef.typecode)
             return None
         item['select_type'] = selectionEnums[select_type]
         points = None
@@ -851,7 +884,7 @@ class Hdf5db:
                 elif self.getCommittedTypeObjByUuid(uuid):
                     out = "/datatypes/" + uuid
                 else:
-                    logging.warning("uuid in region ref not found: [" + uuid + "]");
+                    self.log.warning("uuid in region ref not found: [" + uuid + "]");
                     return None
             else:
                 out = "null"
@@ -885,11 +918,11 @@ class Hdf5db:
                 return None
                          
         if type(slices) != list and type(slices) != tuple and slices is not Ellipsis:
-            logging.error("getDatasetValuesByUuid: bad type for dim parameter")
+            self.log.error("getDatasetValuesByUuid: bad type for dim parameter")
             return None
                 
         if (type(slices) == list or type(slices) == tuple) and len(slices) != rank:
-            logging.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
+            self.log.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
             return None 
         
         if dt.kind == 'O':    
@@ -908,10 +941,10 @@ class Hdf5db:
                     values = self.refToList(dset[slices])
                 else:     
                     self.httpStatus = 500
-                    logging.error("unknown object type")
+                    self.log.error("unknown object type")
         elif dt.kind == 'V' and  len(dt) <= 1 and len(dt.shape) == 0:
             # opaque type - skip for now
-            logging.warning("unable to print opaque type values")
+            self.log.warning("unable to print opaque type values")
             values = "????"
         else:
             # just use tolist to dump
@@ -926,7 +959,7 @@ class Hdf5db:
         self.httpStatus = 200
         dset = self.getDatasetObjByUuid(objUuid)
         if dset == None:
-            logging.info("dataset: " + objUuid + " not found")
+            self.log.info("dataset: " + objUuid + " not found")
             self.httpStatus = 404  # not found
             return False
         rank = len(dset.shape)
@@ -943,7 +976,7 @@ class Hdf5db:
                 i += 1
         except ValueError:
             # out of range error
-            logging.info("getDatasetPointSelection, out of range error")
+            self.log.info("getDatasetPointSelection, out of range error")
             self.httpStatus = 400
             return None
         return values.tolist()
@@ -952,7 +985,7 @@ class Hdf5db:
     def setDatasetValuesByUuid(self, objUuid, data, slices=None):
         dset = self.getDatasetObjByUuid(objUuid)
         if dset == None:
-            logging.info("dataset: " + objUuid + " not found")
+            self.log.info("dataset: " + objUuid + " not found")
             self.httpStatus = 404  # not found
             return False
         if slices == None:
@@ -960,12 +993,12 @@ class Hdf5db:
             dset[()] = data
         else:
             if type(slices) != tuple:
-                logging.error("getDatasetValuesByUuid: bad type for dim parameter")
+                self.log.error("getDatasetValuesByUuid: bad type for dim parameter")
                 return False
             rank = len(dset.shape)
             
             if len(slices) != rank:
-                logging.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
+                self.log.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
                 return False 
             else: 
                 if rank == 1:
@@ -1005,14 +1038,14 @@ class Hdf5db:
                 self.httpStatus = 400 # invalid
                 return None
         if dt is None:
-            logging.error('no type returned')
+            self.log.error('no type returned')
             self.httpStatus = 500  # unexpected
             return None  # invalid type     
             
         newDataset = datasets.create_dataset(objUuid, shape=datashape, dtype=dt, 
             maxshape=max_shape, fillvalue=fill_value)
         if newDataset == None:
-            logging.error('unexpected failure to create dataset')
+            self.log.error('unexpected failure to create dataset')
             return None
         # store reverse map as an attribute
         addr = h5py.h5o.get_info(newDataset.id).addr
@@ -1029,7 +1062,7 @@ class Hdf5db:
     Resize existing Dataset
     """
     def resizeDataset(self, objUuid, shape):
-        logging.info("resizeDataset(") #  + objUuid + "): ") # + str(shape))
+        self.log.info("resizeDataset(") #  + objUuid + "): ") # + str(shape))
         self.initFile()
         self.httpStatus = 500  # will reset before returning
         if self.readonly:
@@ -1078,7 +1111,7 @@ class Hdf5db:
             if parentGroup[linkName] == targetGroup:
                 return True
         else:
-            logging.warning("unexpected linkclass: " + linkClass)
+            self.log.warning("unexpected linkclass: " + linkClass)
             return False    
      
     """
@@ -1086,7 +1119,7 @@ class Hdf5db:
     """    
     def deleteObjectByUuid(self, objUuid):
         self.initFile()
-        logging.info("delete uuid: " + objUuid)
+        self.log.info("delete uuid: " + objUuid)
         if self.readonly:
             self.httpStatus = 403  # Forbidden
             self.httpMessage = "Updates are not allowed"
@@ -1094,7 +1127,7 @@ class Hdf5db:
             
         if objUuid == self.dbGrp.attrs["rootUUID"]:
             # can't delete root group
-            logging.info("attempt to delete root group")
+            self.log.info("attempt to delete root group")
             self.httpStatus = 403
             self.httpMessage = "Root group can not be deleted"
             return False
@@ -1117,7 +1150,7 @@ class Hdf5db:
                 dbCol = self.dbGrp["{datatypes}"]
             
         if tgt == None:
-            logging.info("delete uuid: " + objUuid + " not found")
+            self.log.info("delete uuid: " + objUuid + " not found")
             self.httpStatus = 404  # Not Found
             self.httpMessage = "id: " + objUuid + " was not found"
             return False 
@@ -1154,15 +1187,15 @@ class Hdf5db:
             dbRemoved = True
         
         if not dbRemoved:
-            logging.warning("did not find: " + objUuid + " in anonymous collection")
+            self.log.warning("did not find: " + objUuid + " in anonymous collection")
                 
             if objUuid in dbCol.attrs:
-                logging.info("removing: " + objUuid + " from non-anonymous collection")
+                self.log.info("removing: " + objUuid + " from non-anonymous collection")
                 del dbCol.attrs[objUuid]
                 dbRemoved = True
              
         if not dbRemoved:
-            logging.error("expected to find reference to: " + objUuid)
+            self.log.error("expected to find reference to: " + objUuid)
         else:
             # note when the object was deleted
             self.setModifiedTime(objUuid)
@@ -1242,18 +1275,18 @@ class Hdf5db:
                 item['href'] = 'datatypes/' + item['uuid']
                 item['collection'] = 'datatypes'
             else:
-                logging.warning("unexpected object type: " + item['type'])
+                self.log.warning("unexpected object type: " + item['type'])
         
         return item
                  
         
     def getLinkItemByUuid(self, grpUuid, link_name):
-        logging.info("db.getLinkItemByUuid(" + grpUuid + ", [" + link_name + "])")
+        self.log.info("db.getLinkItemByUuid(" + grpUuid + ", [" + link_name + "])")
          
         self.initFile()
         parent = self.getGroupObjByUuid(grpUuid)
         if parent == None:
-            logging.info("grp_uuid not found")
+            self.log.info("grp_uuid not found")
             return None
          
         item = self.getLinkItemByObj(parent, link_name) 
@@ -1262,7 +1295,7 @@ class Hdf5db:
             item['ctime'] = self.getCreateTime(grpUuid, objType="link", name=link_name)
             item['mtime'] = self.getModifiedTime(grpUuid, objType="link", name=link_name)
         else:
-            logging.info("link not found")
+            self.log.info("link not found")
             mtime = self.getModifiedTime(grpUuid, objType="link", name=link_name, useRoot=False)
             if mtime:
                 self.httpStatus = 410  # Gone
@@ -1274,11 +1307,11 @@ class Hdf5db:
         return item
         
     def getLinkItems(self, grpUuid, marker=None, limit=0):
-        logging.info("db.getLinkItems(" + grpUuid + ")")
+        self.log.info("db.getLinkItems(" + grpUuid + ")")
         if marker:
-            logging.info("...marker: " + marker)
+            self.log.info("...marker: " + marker)
         if limit:
-            logging.info("...limit: " + str(limit))
+            self.log.info("...limit: " + str(limit))
         
         self.initFile()
         parent = self.getGroupObjByUuid(grpUuid)
@@ -1309,18 +1342,18 @@ class Hdf5db:
     def unlinkItem(self, grpUuid, link_name):
         grp = self.getGroupObjByUuid(grpUuid)
         if grp == None:
-            logging.info("parent group not found")
+            self.log.info("parent group not found")
             self.httpStatus = 404 # not found
             return False 
             
         if link_name not in grp:
-            logging.info("link_name not found")
+            self.log.info("link_name not found")
             self.httpStatus = 404 # not found
             return False 
             
         if link_name == "__db__":
             # don't allow db group to be unlinked!
-            logging.info("link_name not found")
+            self.log.info("link_name not found")
             self.httpStatus = 404 # not found
             return False 
             
@@ -1335,7 +1368,7 @@ class Hdf5db:
             # UDLink? Return false to indicate that we can not delete this
             self.httpStatus = 501  # Not implemented
             self.httpMessage = "Unable to remove user defined link"
-            logging.info("unable to remove udlink: " + grpUuid + 
+            self.log.info("unable to remove udlink: " + grpUuid + 
                 " link_name: " + link_name)
             return False
         
@@ -1354,10 +1387,10 @@ class Hdf5db:
         return linkDeleted
         
     def getCollection(self, col_type, marker=None, limit=None):
-        logging.info("db.getCollection(" + col_type + ")")
+        self.log.info("db.getCollection(" + col_type + ")")
         #col_type should be either "datasets", "groups", or "datatypes"
         if col_type not in ("datasets", "groups", "datatypes"):
-            logging.error("invalid col_type: [" + col_type + "]")
+            self.log.error("invalid col_type: [" + col_type + "]")
             self.httpStatus = 500
             return None
         self.initFile()
@@ -1422,13 +1455,13 @@ class Hdf5db:
             self.httpMessage = "Updates are not allowed"
             return None 
         if link_name not in parentGrp:
-            logging.info("link_name: [" + link_name + "] not found")
+            self.log.info("link_name: [" + link_name + "] not found")
             return False
         try:
             linkObj = parentGrp.get(link_name, None, False, True)
         except TypeError:
             # user defined link?
-            logging.info("Unknown link type for item: " + name)
+            self.log.info("Unknown link type for item: " + name)
             return False
         linkClass = linkObj.__class__.__name__
         # only deal with HardLinks
@@ -1444,15 +1477,15 @@ class Hdf5db:
                     # also remove the attribute UUID key
                     addr = h5py.h5o.get_info(obj.id).addr  
                     objUuid = self.getUUIDByAddress(addr)
-                    logging.info("converting: " + objUuid + " to anonymous obj")
+                    self.log.info("converting: " + objUuid + " to anonymous obj")
                     dbCol = self.getDBCollection(objUuid)
                     del dbCol.attrs[objUuid]  # remove the object ref
                     dbCol[objUuid] = obj      # add a hardlink        
-                logging.info("deleting link: [" + link_name + "] from: " + parentGrp.name)
+                self.log.info("deleting link: [" + link_name + "] from: " + parentGrp.name)
                 del parentGrp[link_name]  
                 linkDeleted = True    
         else:
-            logging.info("unlinkObjectItem: link is not a hardlink, ignoring")           
+            self.log.info("unlinkObjectItem: link is not a hardlink, ignoring")           
         return linkDeleted
         
     def unlinkObject(self, parentGrp, tgtObj):
@@ -1485,7 +1518,7 @@ class Hdf5db:
             return False
         if link_name in parentObj:
             # link already exists
-            logging.info("linkname already exists, deleting")
+            self.log.info("linkname already exists, deleting")
             self.unlinkObjectItem(parentObj, None, link_name)
         parentObj[link_name] = childObj
         
@@ -1516,7 +1549,7 @@ class Hdf5db:
             return False
         if link_name in parentObj:
             # link already exists
-            logging.info("linkname already exists, deleting")
+            self.log.info("linkname already exists, deleting")
             del parentObj[link_name]  # delete old link
         parentObj[link_name] = h5py.SoftLink(linkPath)
         self.htpStatus = 201 # set status to created
@@ -1540,7 +1573,7 @@ class Hdf5db:
             return False
         if link_name in parentObj:
             # link already exists
-            logging.info("linkname already exists, deleting")
+            self.log.info("linkname already exists, deleting")
             del parentObj[link_name]  # delete old link
         parentObj[link_name] = h5py.ExternalLink(extPath, linkPath)
         self.htpStatus = 201 # set status to created

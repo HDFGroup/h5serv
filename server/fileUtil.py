@@ -16,7 +16,6 @@ from tornado.web import HTTPError
 from tornado.escape import json_encode, json_decode, url_escape, url_unescape 
 
 from h5py import is_hdf5
-import logging
 import json
 import config
 
@@ -30,7 +29,7 @@ def getFileModCreateTimes(filePath):
     return (mtime, ctime)
 
 def getFilePath(host_value):
-    logging.info('getFilePath[' + host_value + ']')
+    # logging.info('getFilePath[' + host_value + ']')
     #strip off port specifier (if present)
     npos = host_value.rfind(':')
     if npos > 0:
@@ -70,7 +69,7 @@ def getFilePath(host_value):
 
     filePath += ".h5"   # add extension
     
-    logging.info('getFilePath[' + host + '] -> "' + filePath + '"')
+    # logging.info('getFilePath[' + host + '] -> "' + filePath + '"')
     
     return filePath
         
@@ -95,29 +94,29 @@ def getDomain(filePath):
   
 
 def verifyFile(filePath, writable=False):
-    logging.info("filePath: " + filePath)
+    # logging.info("filePath: " + filePath)
     if not op.isfile(filePath):
         raise HTTPError(404)  # not found
     if not is_hdf5(filePath):
-        logging.warning('this is not a hdf5 file!')
+        # logging.warning('this is not a hdf5 file!')
         raise HTTPError(404)
     if writable and not os.access(filePath, os.W_OK):
-        logging.warning('attempting update of read-only file')
+        # logging.warning('attempting update of read-only file')
         raise HTTPError(403)
 
 def makeDirs(filePath):
     # Make any directories along path as needed
     if len(filePath) == 0 or op.isdir(filePath):
         return
-    logging.info('makeDirs filePath: [' + filePath + ']')
+    # logging.info('makeDirs filePath: [' + filePath + ']')
     topdomain = config.get('domain')
     dirname = op.dirname(filePath)
     
     if len(dirname) >= len(filePath):
-        logging.warning('makeDirs - unexpected dirname')
+        #logging.warning('makeDirs - unexpected dirname')
         return
     makeDirs(dirname)  # recursive call
-    logging.info('mkdir("' + filePath + '")')
+    #logging.info('mkdir("' + filePath + '")')
     os.mkdir(filePath)  # should succeed since parent directory is created  
     
 """

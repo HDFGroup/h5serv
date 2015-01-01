@@ -30,49 +30,55 @@ from fileUtil import getFilePath, getDomain, getFileModCreateTimes, makeDirs, ve
     
 class DefaultHandler(RequestHandler):
     def put(self):
-        logging.warning("got default PUT request")
-        logging.warning(self.request)
+        log = logging.getLogger("h5serv")
+        log.warning("got default PUT request")
+        log.warning(self.request)
         raise HTTPError(400) 
         
     def get(self):
-        logging.warning("got default GET request")
-        logging.warning(self.request)
+        log = logging.getLogger("h5serv")
+        log.warning("got default GET request")
+        log.warning(self.request)
         raise HTTPError(400) 
         
     def post(self):
-        logging.warning("got default POST request")
-        logging.warning(self.request)
+        log = logging.getLogger("h5serv")
+        log.warning("got default POST request")
+        log.warning(self.request)
         raise HTTPError(400) 
         
     def delete(self):
-        logging.warning("got default DELETE request")
-        logging.warning(self.request)
+        log = logging.getLogger("h5serv")
+        log.warning("got default DELETE request")
+        log.warning(self.request)
         raise HTTPError(400) 
         
 class LinkCollectionHandler(RequestHandler):
     def getRequestId(self, uri):
+        log = logging.getLogger("h5serv")
         # helper method
         # uri should be in the form: /groups/<uuid>/links
         # extract the <uuid>
         uri = self.request.uri
         if uri[:len('/groups/')] != '/groups/':
             # should not get here!
-            logging.error("unexpected uri: " + uri)
+            log.error("unexpected uri: " + uri)
             raise HTTPError(500)
         uri = uri[len('/groups/'):]  # get stuff after /groups/
         npos = uri.find('/')
         if npos <= 0:
-            logging.info("bad uri")
+            log.info("bad uri")
             raise HTTPError(400)  
         id = uri[:npos]
          
-        logging.info('got id: [' + id + ']')
+        log.info('got id: [' + id + ']')
     
         return id
         
         
     def get(self):
-        logging.info('LinkCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')       
+        log = logging.getLogger("h5serv")
+        log.info('LinkCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')       
         
         reqUuid = self.getRequestId(self.request.uri)
         domain = self.request.host
@@ -84,7 +90,7 @@ class LinkCollectionHandler(RequestHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                logging.info("expected int type for limit")
+                log.info("expected int type for limit")
                 raise HTTPError(400) 
         marker = self.get_query_argument("Marker", None)
                 
@@ -98,7 +104,7 @@ class LinkCollectionHandler(RequestHandler):
             if items == None:
                 httpError = 404  # not found
                 #todo: return 410 if the group was recently deleted
-                logging.info("group: [" + reqUuid + "] not found")
+                log.info("group: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
                          
@@ -124,47 +130,50 @@ class LinkCollectionHandler(RequestHandler):
         
 class LinkHandler(RequestHandler):
     def getRequestId(self, uri):
+        log = logging.getLogger("h5serv")
         # helper method
         # uri should be in the form: /groups/<uuid>/links/<name>
         # extract the <uuid>
         uri = self.request.uri
         if uri[:len('/groups/')] != '/groups/':
             # should not get here!
-            logging.error("unexpected uri: " + uri)
+            log.error("unexpected uri: " + uri)
             raise HTTPError(500)
         uri = uri[len('/groups/'):]  # get stuff after /groups/
         npos = uri.find('/')
         if npos <= 0:
-            logging.info("bad uri")
+            log.info("bad uri")
             raise HTTPError(400)  
         id = uri[:npos]
          
-        logging.info('got id: [' + id + ']')
+        log.info('got id: [' + id + ']')
     
         return id
         
     def getName(self, uri):
+        log = logging.getLogger("h5serv")
         # helper method
         # uri should be in the form: /group/<uuid>/links/<name>
         # this method returns name
         npos = uri.find('/links/')
         if npos < 0:
             # shouldn't be possible to get here
-            logging.info("unexpected uri")
+            log.info("unexpected uri")
             raise HTTPError(500)
         if npos+len('/links/') >= len(uri):
             # no name specified
-            logging.info("no name specified")
+            log.info("no name specified")
             raise HTTPError(400)
         linkName = uri[npos+len('/links/'):]
         if linkName.find('/') >= 0:
             # can't have '/' in link name
-            logging.info("invalid linkname")
+            log.info("invalid linkname")
             raise HTTPError(400)
         return linkName
         
     def get(self):
-        logging.info('LinkHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')       
+        log = logging.getLogger("h5serv")
+        log.info('LinkHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')       
         
         reqUuid = self.getRequestId(self.request.uri)
         domain = self.request.host
@@ -179,7 +188,7 @@ class LinkHandler(RequestHandler):
         with Hdf5db(filePath) as db:
             item = db.getLinkItemByUuid(reqUuid, linkName)
             if item == None:
-                logging.info("group: [" + reqUuid + "], link: [" + linkName + "] not found")
+                log.info("group: [" + reqUuid + "], link: [" + linkName + "] not found")
                 raise HTTPError(db.httpStatus)
             rootUUID = db.getUUIDByPath('/')
                          
@@ -215,7 +224,8 @@ class LinkHandler(RequestHandler):
         self.write(json_encode(response))
     
     def put(self):
-        logging.info('LinkHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('LinkHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         # put - create a new link
         # patterns are:
         # PUT /group/<id>/links/<name> {id: <id> } 
@@ -269,7 +279,7 @@ class LinkHandler(RequestHandler):
                 
             
         else: 
-            logging.info("bad put syntax: [" + self.request.body + "]")
+            log.info("bad put syntax: [" + self.request.body + "]")
             raise HTTPError(400)                      
         
         domain = self.request.host
@@ -299,12 +309,13 @@ class LinkHandler(RequestHandler):
         self.set_status(201) 
         
     def delete(self): 
-        logging.info('LinkHandler.delete ' + self.request.host)   
+        log = logging.getLogger("h5serv")
+        log.info('LinkHandler.delete ' + self.request.host)   
         reqUuid = self.getRequestId(self.request.uri)
         
         linkName = self.getName(self.request.uri)
         
-        logging.info( " delete link  name[: " + linkName + "] parentUuid: " + reqUuid)
+        log.info( " delete link  name[: " + linkName + "] parentUuid: " + reqUuid)
            
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -321,6 +332,7 @@ class TypeHandler(RequestHandler):
     
     # or 'Snn' for fixed string or 'vlen_bytes' for variable 
     def getRequestId(self):
+        log = logging.getLogger("h5serv")
         # request is in the form /datatypes/<id>, return <id>
         uri = self.request.uri
         npos = uri.rfind('/')
@@ -329,12 +341,13 @@ class TypeHandler(RequestHandler):
         if npos == len(uri) - 1:
             raise HTTPError(400, message="missing id")
         id = uri[(npos+1):]
-        logging.info('got id: [' + id + ']')
+        log.info('got id: [' + id + ']')
     
         return id
         
     def get(self):
-        logging.info('TypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('TypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         reqUuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain) 
@@ -350,7 +363,7 @@ class TypeHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("dataset: [" + reqUuid + "] not found")
+                log.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
                          
@@ -372,9 +385,10 @@ class TypeHandler(RequestHandler):
         self.write(json_encode(response))
         
     def post(self):
-        logging.info('TypeHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('TypeHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         if self.request.uri != '/datatypes/':
-            logging.info('bad datatypes post request')
+            log.info('bad datatypes post request')
             raise HTTPError(405)  # Method not allowed
                
         domain = self.request.host
@@ -384,7 +398,7 @@ class TypeHandler(RequestHandler):
         body = json.loads(self.request.body)
             
         if "type" not in body:
-            logging.info("Type not supplied")
+            log.info("Type not supplied")
             raise HTTPError(400)  # missing type
             
         datatype = body["type"]     
@@ -396,7 +410,7 @@ class TypeHandler(RequestHandler):
                 httpError = 500
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("failed to create type (httpError: " + str(httpError) + ")")
+                log.info("failed to create type (httpError: " + str(httpError) + ")")
                 raise HTTPError(httpError)
          
         response = { }
@@ -416,7 +430,8 @@ class TypeHandler(RequestHandler):
         self.set_status(201)  # resource created
         
     def delete(self): 
-        logging.info('TypeHandler.delete ' + self.request.host)   
+        log = logging.getLogger("h5serv")
+        log.info('TypeHandler.delete ' + self.request.host)   
         uuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -431,6 +446,7 @@ class TypeHandler(RequestHandler):
                 
 class DatatypeHandler(RequestHandler):
     def getRequestId(self):
+        log = logging.getLogger("h5serv")
         # request is in the form /datasets/<id>/type, return <id>
         uri = self.request.uri
         npos = uri.rfind('/type')
@@ -444,12 +460,13 @@ class DatatypeHandler(RequestHandler):
         if npos == len(id_part) - 1:
             raise HTTPError(400, message="missing id")
         id = id_part[(npos+1):]
-        logging.info('got id: [' + id + ']')
+        log.info('got id: [' + id + ']')
     
         return id
         
     def get(self):
-        logging.info('DatatypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('DatatypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -466,7 +483,7 @@ class DatatypeHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("dataset: [" + reqUuid + "] not found")
+                log.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
                          
@@ -486,6 +503,7 @@ class DatatypeHandler(RequestHandler):
                 
 class ShapeHandler(RequestHandler):
     def getRequestId(self):
+        log = logging.getLogger("h5serv")
         # request is in the form /datasets/<id>/shape, return <id>
         uri = self.request.uri
         npos = uri.rfind('/shape')
@@ -499,12 +517,13 @@ class ShapeHandler(RequestHandler):
         if npos == len(id_part) - 1:
             raise HTTPError(400, message="missing id")
         id = id_part[(npos+1):]
-        logging.info('got id: [' + id + ']')
+        log.info('got id: [' + id + ']')
     
         return id
         
     def get(self):
-        logging.info('ShapeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('ShapeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -521,7 +540,7 @@ class ShapeHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("dataset: [" + reqUuid + "] not found")
+                log.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
                          
@@ -542,7 +561,8 @@ class ShapeHandler(RequestHandler):
         self.write(json_encode(response))
         
     def put(self):
-        logging.info('ShapeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('ShapeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         reqUuid = self.getRequestId()       
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -551,7 +571,7 @@ class ShapeHandler(RequestHandler):
         body = json.loads(self.request.body)
         
         if "shape" not in body:
-            logging.info("Shape not supplied")
+            log.info("Shape not supplied")
             raise HTTPError(400)  # missing shape
             
         shape = body["shape"]
@@ -561,16 +581,16 @@ class ShapeHandler(RequestHandler):
         elif type(shape) == list or type(shape) == tuple: 
             pass # can use as is
         else:
-            logging.info("invalid shape argument")
+            log.info("invalid shape argument")
             raise HTTPError(400)
             
         # validate shape
         for extent in shape:
             if type(extent) != int:
-                logging.info("invalid shape type")
+                log.info("invalid shape type")
                 raise HTTPError(400)
             if extent < 0:
-                logging.info("invalid shape (negative extent)")
+                log.info("invalid shape (negative extent)")
                 raise HTTPError(400) 
         
         with Hdf5db(filePath) as db:
@@ -579,14 +599,15 @@ class ShapeHandler(RequestHandler):
             
             if db.httpStatus != 200:
                 httpError = db.httpStatus # library may have more specific error code
-                logging.info("failed to resize dataset (httpError: " + str(httpError) + ")")
+                log.info("failed to resize dataset (httpError: " + str(httpError) + ")")
                 raise HTTPError(httpError)
-        logging.info("resize OK")    
+        log.info("resize OK")    
         self.set_status(201)  # resource created    
                 
 class DatasetHandler(RequestHandler):
    
     def getRequestId(self):
+        log = logging.getLogger("h5serv")
         # request is in the form /datasets/<id>, return <id>
         uri = self.request.uri
         npos = uri.rfind('/')
@@ -595,12 +616,13 @@ class DatasetHandler(RequestHandler):
         if npos == len(uri) - 1:
             raise HTTPError(400, message="missing id")
         id = uri[(npos+1):]
-        logging.info('got id: [' + id + ']')
+        log.info('got id: [' + id + ']')
     
         return id
         
     def get(self):
-        logging.info('DatasetHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('DatasetHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -617,7 +639,7 @@ class DatasetHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("dataset: [" + reqUuid + "] not found")
+                log.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
             
@@ -643,9 +665,10 @@ class DatasetHandler(RequestHandler):
         self.write(json_encode(response))
         
     def post(self):
-        logging.info('DatasetHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('DatasetHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         if self.request.uri != '/datasets/':
-            logging.info('bad datasets post request')
+            log.info('bad datasets post request')
             raise HTTPError(405)  # Method not allowed
                
         domain = self.request.host
@@ -656,7 +679,7 @@ class DatasetHandler(RequestHandler):
         body = json.loads(self.request.body)
         
         if "type" not in body:
-            logging.info("Type not supplied")
+            log.info("Type not supplied")
             raise HTTPError(400)  # missing type
             
         if "shape" in body:
@@ -667,7 +690,7 @@ class DatasetHandler(RequestHandler):
             elif type(shape) == list or type(shape) == tuple: 
                 pass # can use as is
             else:
-                logging.info("invalid shape argument")
+                log.info("invalid shape argument")
                 raise HTTPError(400)
         else:
             shape = ()  # empty tuple
@@ -683,26 +706,26 @@ class DatasetHandler(RequestHandler):
             elif type(maxshape) == list or type(maxshape) == tuple: 
                 pass # can use as is
             else:
-                logging.info("invalid maxshape argument")
+                log.info("invalid maxshape argument")
                 raise HTTPError(400)     
            
         # validate shape
         for extent in shape:
             if type(extent) != int:
-                logging.info("invalid shape type")
+                log.info("invalid shape type")
                 raise HTTPError(400)
             if extent < 0:
-                logging.info("invalid shape (negative extent)")
+                log.info("invalid shape (negative extent)")
                 raise HTTPError(400) 
             
         if maxshape:
             if len(maxshape) != len(shape):
-                logging.info("invalid maxshape length")
+                log.info("invalid maxshape length")
                 raise HTTPError(400)
             for i in range(len(shape)):
                 maxextent = maxshape[i]
                 if maxextent != 0 and maxextent < shape[i]:
-                    logging.info("invalid maxshape extent")
+                    log.info("invalid maxshape extent")
                     raise HTTPError(400)
                 if maxextent == 0:
                     maxshape[i] = None  # this indicates unlimited
@@ -714,7 +737,7 @@ class DatasetHandler(RequestHandler):
                 httpError = 500
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("failed to create dataset (httpError: " + str(httpError) + ")")
+                log.info("failed to create dataset (httpError: " + str(httpError) + ")")
                 raise HTTPError(httpError)
                 
         response = { }
@@ -735,7 +758,8 @@ class DatasetHandler(RequestHandler):
         self.set_status(201)  # resource created
         
     def delete(self): 
-        logging.info('DatasetHandler.delete host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('DatasetHandler.delete host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         uuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -753,6 +777,7 @@ class ValueHandler(RequestHandler):
     Helper method - return slice for dim based on query params
     """
     def getSliceQueryParam(self, dim, extent):
+        log = logging.getLogger("h5serv")
         # Get optional query parameters for given dim
         dimQuery = 'dim' + str(dim + 1)
         try:
@@ -760,19 +785,19 @@ class ValueHandler(RequestHandler):
             stop =  int(self.get_query_argument(dimQuery + '_stop', extent))
             step =  int(self.get_query_argument(dimQuery + '_step', 1))
         except ValueError:
-            logging.info("invalid selection parameter (can't convert to int)")
+            log.info("invalid selection parameter (can't convert to int)")
             raise HTTPError(400)
         if start < 0 or start > extent:
-            logging.info("bad selection start parameter for dimension: " + dimQuery)
+            log.info("bad selection start parameter for dimension: " + dimQuery)
             raise HTTPError(400)
         if stop > extent:
-            logging.info("bad selection stop parameter for dimension: " + dimQuery)
+            log.info("bad selection stop parameter for dimension: " + dimQuery)
             raise HTTPError(400)
         if step == 0:
-            logging.info("bad selection step parameter for dimension: " + dimQuery)
+            log.info("bad selection step parameter for dimension: " + dimQuery)
             raise HTTPError(400)
         s = slice(start, stop, step)
-        logging.info(dimQuery + " start: " + str(start) + " stop: " + str(stop) + " step: " + 
+        log.info(dimQuery + " start: " + str(start) + " stop: " + str(stop) + " step: " + 
             str(step)) 
         return s
         
@@ -780,16 +805,17 @@ class ValueHandler(RequestHandler):
     Get slices given lists of start, stop, step values
     """
     def getHyperslabSelection(self, dsetshape, start, stop, step):
+        log = logging.getLogger("h5serv")
         rank = len(dsetshape)
         if start:
             if type(start) is not list:
                 start = [start,]
             if len(start) != rank:
-                logging.info("request start array length not equal to dataset rank")
+                log.info("request start array length not equal to dataset rank")
                 raise HTTPError(400)
             for dim in range(rank):
                 if start[dim] < 0 or start[dim] >= dsetshape[dim]:
-                    logging.info("request start index invalid for dim: " + str(dim))
+                    log.info("request start index invalid for dim: " + str(dim))
                     raise HTTPError(400)
         else:
             start = []
@@ -800,11 +826,11 @@ class ValueHandler(RequestHandler):
             if type(stop) is not list:
                 stop = [stop,]
             if len(stop) != rank:
-                logging.info("request stop array length not equal to dataset rank")
+                log.info("request stop array length not equal to dataset rank")
                 raise HTTPError(400)
             for dim in range(rank):
                 if stop[dim] <= start[dim] or stop[dim] > dsetshape[dim]:
-                    logging.info("request stop index invalid for dim: " + str(dim))
+                    log.info("request stop index invalid for dim: " + str(dim))
                     raise HTTPError(400)
         else:
             stop = []
@@ -815,11 +841,11 @@ class ValueHandler(RequestHandler):
             if type(step) is not list:
                 step = [step,]
             if len(step) != rank:
-                logging.info("request step array length not equal to dataset rank")
+                log.info("request step array length not equal to dataset rank")
                 raise HTTPError(400)
             for dim in range(rank):
                 if step[dim] <= 0 or step[dim] > dsetshape[dim]:
-                    logging.info("request step index invalid for dim: " + str(dim))
+                    log.info("request step index invalid for dim: " + str(dim))
                     raise HTTPError(400)
         else:
             step = []
@@ -831,7 +857,7 @@ class ValueHandler(RequestHandler):
             try:
                 s = slice(int(start[dim]), int(stop[dim]), int(step[dim]))
             except ValueError:
-                logging.info("invalid start/stop/step value")
+                log.info("invalid start/stop/step value")
                 raise HTTPError(400)
             slices.append(s)
         return tuple(slices)
@@ -840,25 +866,27 @@ class ValueHandler(RequestHandler):
     Helper method - get uuid for the dataset
     """    
     def getRequestId(self):
+        log = logging.getLogger("h5serv")
         # request is in the form /datasets/<id>/value?xxx, return <id>
         uri = self.request.uri
         if uri[:len('/datasets/')] != '/datasets/':
             # should not get here!
-            logging.error("unexpected uri: " + uri)
+            log.error("unexpected uri: " + uri)
             raise HTTPError(500)
         uri = uri[len('/datasets/'):]  # get stuff after /datasets/
         npos = uri.find('/')
         if npos <= 0:
-            logging.info("bad uri")
+            log.info("bad uri")
             raise HTTPError(400)  
         id = uri[:npos]
          
-        logging.info('got id: [' + id + ']')
+        log.info('got id: [' + id + ']')
     
         return id
         
     def get(self):
-        logging.info('ValueHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('ValueHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -876,16 +904,16 @@ class ValueHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("dataset: [" + reqUuid + "] not found")
+                log.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             itemType = item['type']
             if itemType['class'] == 'H5T_VLEN':
                 #todo - support for returning VLEN data...
-                logging.info("GET VLEN data not supported")
+                log.info("GET VLEN data not supported")
                 # raise HTTPError(501)  # Not implemented
             if itemType['class'] == 'H5T_OPAQUE':
                 #todo - support for returning OPAQUE data...
-                logging.info("GET OPAQUE data not supported")
+                log.info("GET OPAQUE data not supported")
                 raise HTTPError(501)  # Not implemented
             shape = item['shape']
             if shape['class'] == 'H5S_NULL':
@@ -902,7 +930,7 @@ class ValueHandler(RequestHandler):
          
                 values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
             else:
-                logging.error("unexpected shape class: " + shape['class'])
+                log.error("unexpected shape class: " + shape['class'])
                 raise HTTPError(500)
                 
             rootUUID = db.getUUIDByPath('/')
@@ -923,7 +951,8 @@ class ValueHandler(RequestHandler):
         self.write(json_encode(response)) 
         
     def post(self):
-        logging.info('ValueHandler.post host=[' + self.request.host + '] uri=[' +
+        log = logging.getLogger("h5serv")
+        log.info('ValueHandler.post host=[' + self.request.host + '] uri=[' +
              self.request.uri + ']')
         
         reqUuid = self.getRequestId()
@@ -933,11 +962,11 @@ class ValueHandler(RequestHandler):
         
         body = json.loads(self.request.body)
         if "points" not in body:
-            logging.info("value post request without points in body")
+            log.info("value post request without points in body")
             raise HTTPError(400)
         points = body['points']
         if type(points) != list:
-            logging.info("expecting list of points")
+            log.info("expecting list of points")
             raise HTTPError(400)
         
         
@@ -952,23 +981,23 @@ class ValueHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("dataset: [" + reqUuid + "] not found")
+                log.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             shape = item['shape']
             if shape['class'] == 'H5S_SCALAR':
-                logging.info("point selection is not supported on scalar datasets")
+                log.info("point selection is not supported on scalar datasets")
                 raise HTTPError(400)
             rank = len(shape['dims'])
                 
             for point in points:
                 if rank == 1 and type(point) != int:
-                    logging.info("elements of points to be int type for datasets of rank 1")
+                    log.info("elements of points to be int type for datasets of rank 1")
                     raise HTTPError(400)
                 elif rank > 1 and type(point) != list:
-                    logging.info("elements of points to be list type for datasets of rank >1")
+                    log.info("elements of points to be list type for datasets of rank >1")
                     raise HTTPError(400)
                     if len(point) != rank:
-                        logging.info("one or more points have missing coordinate value")
+                        log.info("one or more points have missing coordinate value")
                         raise HTTPError(400)
              
             values = db.getDatasetPointSelectionByUuid(reqUuid, points) 
@@ -988,7 +1017,8 @@ class ValueHandler(RequestHandler):
         self.write(json_encode(response))     
     
     def put(self):
-        logging.info('ValueHandler.put host=[' + self.request.host + '] uri=[' + 
+        log = logging.getLogger("h5serv")
+        log.info('ValueHandler.put host=[' + self.request.host + '] uri=[' + 
             self.request.uri + ']')
         
         reqUuid = self.getRequestId()
@@ -1003,19 +1033,19 @@ class ValueHandler(RequestHandler):
         body = json.loads(self.request.body)
         
         if "value" not in body:
-            logging.info("Value not supplied")
+            log.info("Value not supplied")
             raise HTTPError(400) # missing data
             
         if "points" in body:
             points = body['points']
             if type(points) != list:
-                logging.info("expecting list of points")
+                log.info("expecting list of points")
                 raise HTTPError(400)
             if 'start' in body or 'stop' in body or 'step' in body:
-                logging.info("can use hyperslab selection with points")
+                log.info("can use hyperslab selection with points")
                 raise HTTPError(400)
             if len(points) > len(value):
-                logging.info("more points provided than values")
+                log.info("more points provided than values")
                 raise HTTPError(400)
         else:
             # hyperslab selection
@@ -1034,7 +1064,7 @@ class ValueHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("dataset: [" + reqUuid + "] not found")
+                log.info("dataset: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             dsetshape = item['shape']
             dims = dsetshape['dims']
@@ -1051,9 +1081,9 @@ class ValueHandler(RequestHandler):
                     httpError = 500  # internal error
                     if db.httpStatus != 200:
                         httpError = db.httpStatus # library may have more specific error code
-                    logging.info("dataset put error")
+                    log.info("dataset put error")
                     raise HTTPError(httpError)   
-            logging.info("value post succeeded")   
+            log.info("value post succeeded")   
            
 class AttributeHandler(RequestHandler):
 
@@ -1068,6 +1098,7 @@ class AttributeHandler(RequestHandler):
             return data
     
     def getRequestId(self):
+        log = logging.getLogger("h5serv")
         # request is in the form /(datasets|groups|datatypes)/<id>/attributes(/<name>), 
         # return <id>
         uri = self.request.uri
@@ -1080,20 +1111,21 @@ class AttributeHandler(RequestHandler):
             idpart = uri[len('/datatypes/'):]  # get stuff after /datatypes/
         else:
             # should not get here!
-            logging.error("unexpected uri: " + uri)
+            log.error("unexpected uri: " + uri)
             raise HTTPError(500)
         
         npos = idpart.find('/')
         if npos <= 0:
-            logging.info("bad uri")
+            log.info("bad uri")
             raise HTTPError(400)  
         id = idpart[:npos]
          
-        logging.info('got id: [' + id + ']')
+        log.info('got id: [' + id + ']')
     
         return id
         
     def getRequestName(self):
+        log = logging.getLogger("h5serv")
         # request is in the form /(datasets|groups|datatypes)/<id>/attributes(/<name>), 
         # return <name>
         # return None if the uri doesn't end with ".../<name>"
@@ -1101,31 +1133,32 @@ class AttributeHandler(RequestHandler):
         name = None
         npos = uri.rfind('/attributes')
         if npos <= 0:
-            logging.info("bad uri")
+            log.info("bad uri")
             raise HTTPError(400)  
         uri = uri[npos+len('/attributes'):]
         if uri[0:1] == '/':
             uri = uri[1:]
             if len(uri) > 0:
                 name = url_unescape(uri)  # todo: handle possible query string?
-                logging.info('got name: [' + name + ']') 
+                log.info('got name: [' + name + ']') 
     
         return name
         
     def getRequestCollectionName(self):
+        log = logging.getLogger("h5serv")
         # request is in the form /(datasets|groups|datatypes)/<id>/attributes(/<name>), 
         # return datasets | groups | datatypes
         uri = self.request.uri
         
         npos = uri.find('/')
         if npos < 0:
-            logging.info("bad uri")
+            log.info("bad uri")
             raise HTTPError(400)  
         uri = uri[(npos+1):]
         npos = uri.find('/')  # second '/'
         col_name = uri[:npos]
          
-        logging.info('got collection name: [' + col_name + ']')
+        log.info('got collection name: [' + col_name + ']')
         if col_name not in ('datasets', 'groups', 'datatypes'):
             raise HTTPError(500)   # shouldn't get routed here in this case
     
@@ -1133,7 +1166,8 @@ class AttributeHandler(RequestHandler):
         
         
     def get(self):
-        logging.info('AttrbiuteHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('AttrbiuteHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -1152,7 +1186,7 @@ class AttributeHandler(RequestHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                logging.info("expected int type for limit")
+                log.info("expected int type for limit")
                 raise HTTPError(400) 
         marker = self.get_query_argument("Marker", None)
         with Hdf5db(filePath) as db:
@@ -1162,7 +1196,7 @@ class AttributeHandler(RequestHandler):
                     httpError = 404  # not found
                     if db.httpStatus != 200:
                         httpError = db.httpStatus # library may have more specific error code
-                    logging.info("attribute: [" + reqUuid + "]/" + attr_name + " not found")
+                    log.info("attribute: [" + reqUuid + "]/" + attr_name + " not found")
                     raise HTTPError(httpError)
                 items.append(item)
             else:
@@ -1207,7 +1241,7 @@ class AttributeHandler(RequestHandler):
         else:
             if len(responseItems) == 0:
                 # should have raised exception earlier
-                logging.error("attribute not found: " + attr_name) 
+                log.error("attribute not found: " + attr_name) 
                 raise HTTPError(404)
             responseItem = responseItems[0]
             for k in responseItem:
@@ -1218,14 +1252,15 @@ class AttributeHandler(RequestHandler):
         self.write(json_encode(response))
         
     def put(self):
-        logging.info('AttributeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('AttributeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         
         domain = self.request.host
         col_name = self.getRequestCollectionName()
         reqUuid = self.getRequestId()
         attr_name = self.getRequestName()
         if attr_name == None:
-            logging.info("Attribute name not supplied")
+            log.info("Attribute name not supplied")
             raise HTTPError(400)
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -1233,15 +1268,15 @@ class AttributeHandler(RequestHandler):
         body = json.loads(self.request.body)
         
         if "shape" not in body:
-            logging.info("Shape not supplied")
+            log.info("Shape not supplied")
             raise HTTPError(400)  # missing shape
             
         if "type" not in body:
-            logging.info("Type not supplied")
+            log.info("Type not supplied")
             raise HTTPError(400)  # missing type
             
         if "value" not in body:
-            logging.info("Value not supplied")
+            log.info("Value not supplied")
             raise HTTPError(400)  # missing value
             
         shape = body["shape"]
@@ -1254,16 +1289,16 @@ class AttributeHandler(RequestHandler):
         elif type(shape) == list or type(shape) == tuple: 
             pass # can use as is
         else:
-            logging.info("invalid shape argument")
+            log.info("invalid shape argument")
             raise HTTPError(400)
             
         # validate shape
         for extent in shape:
             if type(extent) != int:
-                logging.info("invalid shape type")
+                log.info("invalid shape type")
                 raise HTTPError(400)
             if extent < 0:
-                logging.info("invalid shape (negative extent)")
+                log.info("invalid shape (negative extent)")
                 raise HTTPError(400)   
                 
         # convert list values to tuples (otherwise h5py is not happy)
@@ -1297,13 +1332,14 @@ class AttributeHandler(RequestHandler):
         self.set_status(201)  # resource created
         
     def delete(self): 
-        logging.info('AttributeHandler.delete ' + self.request.host)   
+        log = logging.getLogger("h5serv")
+        log.info('AttributeHandler.delete ' + self.request.host)   
         obj_uuid = self.getRequestId()
         domain = self.request.host
         col_name = self.getRequestCollectionName()
         attr_name = self.getRequestName()
         if attr_name == None:
-            logging.info("Attribute name not supplied")
+            log.info("Attribute name not supplied")
             raise HTTPError(400)
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
@@ -1318,6 +1354,7 @@ class AttributeHandler(RequestHandler):
          
 class GroupHandler(RequestHandler):
     def getRequestId(self):
+        log = logging.getLogger("h5serv")
         uri = self.request.uri
         npos = uri.rfind('/')
         if npos < 0:
@@ -1325,12 +1362,13 @@ class GroupHandler(RequestHandler):
         if npos == len(uri) - 1:
             raise HTTPError(400, message="missing id")
         id = uri[(npos+1):]
-        logging.info('got id: [' + id + ']')
+        log.info('got id: [' + id + ']')
     
         return id
             
     def get(self):
-        logging.info('GroupHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('GroupHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         reqUuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain) 
@@ -1347,7 +1385,7 @@ class GroupHandler(RequestHandler):
                 httpError = 404  # not found
                 if db.httpStatus != 200:
                     httpError = db.httpStatus # library may have more specific error code
-                logging.info("group: [" + reqUuid + "] not found")
+                log.info("group: [" + reqUuid + "] not found")
                 raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
                          
@@ -1369,7 +1407,8 @@ class GroupHandler(RequestHandler):
         self.write(json_encode(response))
         
     def delete(self): 
-        logging.info('GroupHandler.delete ' + self.request.host)   
+        log = logging.getLogger("h5serv")
+        log.info('GroupHandler.delete ' + self.request.host)   
         uuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -1399,7 +1438,8 @@ class GroupHandler(RequestHandler):
 class GroupCollectionHandler(RequestHandler):
             
     def get(self):
-        logging.info('GroupCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('GroupCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         domain = self.request.host
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -1411,7 +1451,7 @@ class GroupCollectionHandler(RequestHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                logging.info("expected int type for limit")
+                log.info("expected int type for limit")
                 raise HTTPError(400) 
         marker = self.get_query_argument("Marker", None)
         
@@ -1435,9 +1475,10 @@ class GroupCollectionHandler(RequestHandler):
         self.write(json_encode(response))
         
     def post(self):
-        logging.info('GroupHandlerCollection.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('GroupHandlerCollection.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         if self.request.uri != '/groups':
-            logging.info('bad group post request')
+            log.info('bad group post request')
             raise HTTPError(405)  # Method not allowed
                
         domain = self.request.host
@@ -1481,7 +1522,8 @@ class GroupCollectionHandler(RequestHandler):
 class DatasetCollectionHandler(RequestHandler):
             
     def get(self):
-        logging.info('DatasetCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('DatasetCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         domain = self.request.host
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -1492,7 +1534,7 @@ class DatasetCollectionHandler(RequestHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                logging.info("expected int type for limit")
+                log.info("expected int type for limit")
                 raise HTTPError(400) 
         marker = self.get_query_argument("Marker", None)
         
@@ -1519,7 +1561,8 @@ class DatasetCollectionHandler(RequestHandler):
 class TypeCollectionHandler(RequestHandler):
             
     def get(self):
-        logging.info('TypeCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log = logging.getLogger("h5serv")
+        log.info('TypeCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         domain = self.request.host
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -1530,7 +1573,7 @@ class TypeCollectionHandler(RequestHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                logging.info("expected int type for limit")
+                log.info("expected int type for limit")
                 raise HTTPError(400) 
         marker = self.get_query_argument("Marker", None)
         
@@ -1558,6 +1601,7 @@ class TypeCollectionHandler(RequestHandler):
 class RootHandler(RequestHandler):
 
     def getRootResponse(self, filePath):
+        log = logging.getLogger("h5serv")
         # used by GET / and PUT /
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -1586,7 +1630,8 @@ class RootHandler(RequestHandler):
         return response
         
     def get(self):
-        logging.info('RootHandler.get ' + self.request.host)
+        log = logging.getLogger("h5serv")
+        log.info('RootHandler.get ' + self.request.host)
         # get file path for the domain
         # will raise exception if not found
         filePath = getFilePath(self.request.host)
@@ -1609,17 +1654,18 @@ class RootHandler(RequestHandler):
             self.write(json_encode(response)) 
         
     def put(self): 
-        logging.info('RootHandler.put ' + self.request.host)  
+        log = logging.getLogger("h5serv")
+        log.info('RootHandler.put ' + self.request.host)  
         filePath = getFilePath(self.request.host)
-        logging.info("put filePath: " + filePath)
+        log.info("put filePath: " + filePath)
         if op.isfile(filePath):
-            logging.info("path exists")
+            log.info("path exists")
             raise HTTPError(409)  # Conflict - is this the correct code?
         # create directories as needed
         makeDirs(op.dirname(filePath))
-        logging.info("creating file: [" + filePath + "]")
+        log.info("creating file: [" + filePath + "]")
         if not Hdf5db.createHDF5File(filePath):
-            logging.error("unexpected error creating HDF5: " + filePath)
+            log.error("unexpected error creating HDF5: " + filePath)
             raise HTTPError(500)
         response = self.getRootResponse(filePath)
         
@@ -1628,7 +1674,8 @@ class RootHandler(RequestHandler):
         self.set_status(201)  # resource created
           
     def delete(self): 
-        logging.info('RootHandler.delete ' + self.request.host)   
+        log = logging.getLogger("h5serv")
+        log.info('RootHandler.delete ' + self.request.host)   
         filePath = getFilePath(self.request.host)
         verifyFile(filePath, True)
         
@@ -1643,15 +1690,17 @@ class RootHandler(RequestHandler):
         os.remove(filePath)    
         
 def sig_handler(sig, frame):
-    logging.warning('Caught signal: %s', sig)
+    log = logging.getLogger("h5serv")
+    log.warning('Caught signal: %s', sig)
     IOLoop.instance().add_callback(shutdown)
  
 def shutdown():
+    log = logging.getLogger("h5serv")
     MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 2
-    logging.info('Stopping http server')
+    log.info('Stopping http server')
     server.stop()
  
-    logging.info('Will shutdown in %s seconds ...', MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
+    log.info('Will shutdown in %s seconds ...', MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
     io_loop = tornado.ioloop.IOLoop.instance()
  
     deadline = time.time() + MAX_WAIT_SECONDS_BEFORE_SHUTDOWN
@@ -1662,10 +1711,10 @@ def shutdown():
             io_loop.add_timeout(now + 1, stop_loop)
         else:
             io_loop.stop()
-            logging.info('Shutdown')
+            log.info('Shutdown')
     stop_loop() 
     
-    logging.info("closing db")
+    log.info("closing db")
 
 def make_app():
     settings = {
@@ -1712,7 +1761,23 @@ def make_app():
 
 def main():
     # os.chdir(config.get('datapath'))
-    logging.basicConfig(level=logging.DEBUG)
+    
+    # create logger
+    log = logging.getLogger("h5serv")
+    log.setLevel(logging.INFO)
+    # set daily rotating log
+    handler = logging.handlers.TimedRotatingFileHandler('../log/h5serv.log',
+                                       when="midnight",
+                                       interval=1,
+                                       backupCount=0,
+                                       utc=True)
+    
+    # create formatter
+    formatter = logging.Formatter("%(asctime)s:%(levelname)s:%(filename)s:%(lineno)d:%(message)s")
+    # add formatter to handler
+    handler.setFormatter(formatter)
+    # add handler to logger
+    log.addHandler(handler)
     port = int(config.get('port'))
     global server
     app = make_app()
@@ -1720,7 +1785,7 @@ def main():
     server.listen(port)
     signal.signal(signal.SIGTERM, sig_handler)
     signal.signal(signal.SIGINT, sig_handler)
-    logging.info("INITIALIZING...")
+    log.info("INITIALIZING...")
     print "Starting event loop on port: ", port
     IOLoop.current().start()
 

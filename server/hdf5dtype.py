@@ -17,7 +17,6 @@ This class is used to map between HDF5 type representations and numpy types
 import sys
 import numpy as np
 import h5py
-import logging
 
 
 """
@@ -276,7 +275,6 @@ def getNumpyTypename(hdf5TypeName, typeClass=None):
     
     
 def createBaseDataType(typeItem):
-    logging.info("createDatatype (" + str(typeItem) + ") type: " + str(type(typeItem)))
     dtRet = None
     if type(typeItem) == str or type(typeItem) == unicode:
         # should be one of the predefined types
@@ -368,7 +366,6 @@ def createBaseDataType(typeItem):
     return dtRet  
     
 def createDataType(typeItem):
-    logging.info("createDatatype(" + str(typeItem) + ") type: " + str(type(typeItem)))
     
     dtRet = None
     if type(typeItem) == str or type(typeItem) == unicode:
