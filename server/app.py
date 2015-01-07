@@ -32,24 +32,28 @@ class DefaultHandler(RequestHandler):
     def put(self):
         log = logging.getLogger("h5serv")
         log.warning("got default PUT request")
+        log.info('remote_ip: ' + self.request.remote_ip)
         log.warning(self.request)
         raise HTTPError(400) 
         
     def get(self):
         log = logging.getLogger("h5serv")
         log.warning("got default GET request")
+        log.info('remote_ip: ' + self.request.remote_ip)
         log.warning(self.request)
         raise HTTPError(400) 
         
     def post(self):
-        log = logging.getLogger("h5serv")
+        log = logging.getLogger("h5serv") 
         log.warning("got default POST request")
+        log.info('remote_ip: ' + self.request.remote_ip)
         log.warning(self.request)
         raise HTTPError(400) 
         
     def delete(self):
         log = logging.getLogger("h5serv")
         log.warning("got default DELETE request")
+        log.info('remote_ip: ' + self.request.remote_ip)
         log.warning(self.request)
         raise HTTPError(400) 
         
@@ -78,7 +82,8 @@ class LinkCollectionHandler(RequestHandler):
         
     def get(self):
         log = logging.getLogger("h5serv")
-        log.info('LinkCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')       
+        log.info('LinkCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']') 
+        log.info('remote_ip: ' + self.request.remote_ip)      
         
         reqUuid = self.getRequestId(self.request.uri)
         domain = self.request.host
@@ -173,7 +178,8 @@ class LinkHandler(RequestHandler):
         
     def get(self):
         log = logging.getLogger("h5serv")
-        log.info('LinkHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')       
+        log.info('LinkHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')  
+        log.info('remote_ip: ' + self.request.remote_ip)     
         
         reqUuid = self.getRequestId(self.request.uri)
         domain = self.request.host
@@ -226,6 +232,7 @@ class LinkHandler(RequestHandler):
     def put(self):
         log = logging.getLogger("h5serv")
         log.info('LinkHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         # put - create a new link
         # patterns are:
         # PUT /group/<id>/links/<name> {id: <id> } 
@@ -311,6 +318,7 @@ class LinkHandler(RequestHandler):
     def delete(self): 
         log = logging.getLogger("h5serv")
         log.info('LinkHandler.delete ' + self.request.host)   
+        log.info('remote_ip: ' + self.request.remote_ip)
         reqUuid = self.getRequestId(self.request.uri)
         
         linkName = self.getName(self.request.uri)
@@ -348,6 +356,7 @@ class TypeHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('TypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         reqUuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain) 
@@ -387,6 +396,7 @@ class TypeHandler(RequestHandler):
     def post(self):
         log = logging.getLogger("h5serv")
         log.info('TypeHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         if self.request.uri != '/datatypes/':
             log.info('bad datatypes post request')
             raise HTTPError(405)  # Method not allowed
@@ -432,6 +442,7 @@ class TypeHandler(RequestHandler):
     def delete(self): 
         log = logging.getLogger("h5serv")
         log.info('TypeHandler.delete ' + self.request.host)   
+        log.info('remote_ip: ' + self.request.remote_ip)
         uuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -467,6 +478,7 @@ class DatatypeHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('DatatypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -524,6 +536,7 @@ class ShapeHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('ShapeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -563,6 +576,7 @@ class ShapeHandler(RequestHandler):
     def put(self):
         log = logging.getLogger("h5serv")
         log.info('ShapeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         reqUuid = self.getRequestId()       
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -623,6 +637,7 @@ class DatasetHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('DatasetHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -667,6 +682,7 @@ class DatasetHandler(RequestHandler):
     def post(self):
         log = logging.getLogger("h5serv")
         log.info('DatasetHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         if self.request.uri != '/datasets/':
             log.info('bad datasets post request')
             raise HTTPError(405)  # Method not allowed
@@ -760,6 +776,7 @@ class DatasetHandler(RequestHandler):
     def delete(self): 
         log = logging.getLogger("h5serv")
         log.info('DatasetHandler.delete host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         uuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -887,6 +904,7 @@ class ValueHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('ValueHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -954,6 +972,7 @@ class ValueHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('ValueHandler.post host=[' + self.request.host + '] uri=[' +
              self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -1020,6 +1039,7 @@ class ValueHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('ValueHandler.put host=[' + self.request.host + '] uri=[' + 
             self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -1168,6 +1188,7 @@ class AttributeHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('AttrbiuteHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
         domain = self.request.host
@@ -1254,6 +1275,7 @@ class AttributeHandler(RequestHandler):
     def put(self):
         log = logging.getLogger("h5serv")
         log.info('AttributeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         
         domain = self.request.host
         col_name = self.getRequestCollectionName()
@@ -1334,6 +1356,7 @@ class AttributeHandler(RequestHandler):
     def delete(self): 
         log = logging.getLogger("h5serv")
         log.info('AttributeHandler.delete ' + self.request.host)   
+        log.info('remote_ip: ' + self.request.remote_ip)
         obj_uuid = self.getRequestId()
         domain = self.request.host
         col_name = self.getRequestCollectionName()
@@ -1369,6 +1392,7 @@ class GroupHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('GroupHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         reqUuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain) 
@@ -1409,6 +1433,7 @@ class GroupHandler(RequestHandler):
     def delete(self): 
         log = logging.getLogger("h5serv")
         log.info('GroupHandler.delete ' + self.request.host)   
+        log.info('remote_ip: ' + self.request.remote_ip)
         uuid = self.getRequestId()
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -1440,6 +1465,7 @@ class GroupCollectionHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('GroupCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         domain = self.request.host
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -1477,6 +1503,7 @@ class GroupCollectionHandler(RequestHandler):
     def post(self):
         log = logging.getLogger("h5serv")
         log.info('GroupHandlerCollection.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         if self.request.uri != '/groups':
             log.info('bad group post request')
             raise HTTPError(405)  # Method not allowed
@@ -1524,6 +1551,7 @@ class DatasetCollectionHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('DatasetCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         domain = self.request.host
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -1563,6 +1591,7 @@ class TypeCollectionHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('TypeCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
         domain = self.request.host
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -1632,6 +1661,7 @@ class RootHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('RootHandler.get ' + self.request.host)
+        log.info('remote_ip: ' + self.request.remote_ip)
         # get file path for the domain
         # will raise exception if not found
         filePath = getFilePath(self.request.host)
@@ -1656,6 +1686,7 @@ class RootHandler(RequestHandler):
     def put(self): 
         log = logging.getLogger("h5serv")
         log.info('RootHandler.put ' + self.request.host)  
+        log.info('remote_ip: ' + self.request.remote_ip)
         filePath = getFilePath(self.request.host)
         log.info("put filePath: " + filePath)
         if op.isfile(filePath):
@@ -1675,7 +1706,8 @@ class RootHandler(RequestHandler):
           
     def delete(self): 
         log = logging.getLogger("h5serv")
-        log.info('RootHandler.delete ' + self.request.host)   
+        log.info('RootHandler.delete ' + self.request.host)  
+        log.info('remote_ip: ' + self.request.remote_ip) 
         filePath = getFilePath(self.request.host)
         verifyFile(filePath, True)
         
