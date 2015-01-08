@@ -26,7 +26,6 @@ class DumpJson:
     def __init__(self, db, options=None):
         self.options = options
         self.db = db
-        self.options = options
         self.json = {}
         
     def dumpAttribute(self, col_name, uuid, attr_name):
@@ -35,8 +34,8 @@ class DumpJson:
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
         response['shape'] = item['shape']
-        if not self.options.H:
-            response['value'] = item['value']   # dump values unless header flag was passed
+        if not self.options.D:
+            response['value'] = item['value']   # dump values unless header -D was passed
         return response
      
         
@@ -117,7 +116,7 @@ class DumpJson:
             response['attributes'] = attributes
         value = self.db.getDatasetValuesByUuid(uuid)
         
-        if not self.options.H:
+        if not (self.options.D or self.options.d):
             response['value'] = value   # dump values unless header flag was passed
         return response
         
@@ -154,6 +153,7 @@ class DumpJson:
             self.json['datatypes'] = datatypes
         
     def dumpFile(self):
+        
         self.root_uuid = self.db.getUUIDByPath('/')
         self.json['root'] = self.root_uuid
         
@@ -167,8 +167,10 @@ class DumpJson:
            
 
 def main():
-    parser = argparse.ArgumentParser(usage='%(prog)s [-h] [-H] <hdf5_file>')
-    parser.add_argument('-H', action='store_true', help='suppress data output')
+    parser = argparse.ArgumentParser(usage='%(prog)s [-h] [-D|-d] <hdf5_file>')
+    parser.add_argument('-D', action='store_true', help='surpress all data output')
+    parser.add_argument('-d', action='store_true', help='surpress data output for' +
+        ' datasets (but not attribute values)')
     parser.add_argument('filename', nargs='+', help='HDF5 to be converted to json')
     args = parser.parse_args()
     
