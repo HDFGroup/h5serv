@@ -478,13 +478,18 @@ class Hdf5db:
             item['class'] = 'H5S_SIMPLE'
             item['dims'] = obj.shape
             maxshape = []
+            include_maxdims = False
             for i in range(len(obj.shape)):
                 extent = 0
                 if len(obj.maxshape) > i:
-                    if obj.maxshape[i] != None:
-                        extent = obj.maxshape[i]
+                    extent = obj.maxshape[i]
+                    if extent == None:
+                        extent = 0
+                    if extent > obj.shape[i] or extent == 0:
+                        include_maxdims = True
                 maxshape.append(extent)
-            item['maxdims'] = maxshape
+            if include_maxdims:
+                item['maxdims'] = maxshape
         return item
         
     def getShapeItemByAttrObj(self, obj):

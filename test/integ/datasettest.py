@@ -40,7 +40,7 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 10)  
-        self.assertEqual(shape['maxdims'][0], 10)
+        self.assertTrue('maxdims' not in shape)
         
     def testGetResizable(self):
         domain = 'resizable.' + config.get('domain')  
