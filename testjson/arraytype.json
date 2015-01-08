@@ -8,9 +8,6 @@
                 "class": "H5S_SIMPLE", 
                 "dims": [
                     100
-                ], 
-                "maxdims": [
-                    100
                 ]
             }, 
             "type": {

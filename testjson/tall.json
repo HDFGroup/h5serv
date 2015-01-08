@@ -95,10 +95,6 @@
                 "dims": [
                     10, 
                     10
-                ], 
-                "maxdims": [
-                    10, 
-                    10
                 ]
             }, 
             "type": {
@@ -236,9 +232,6 @@
                 "class": "H5S_SIMPLE", 
                 "dims": [
                     20
-                ], 
-                "maxdims": [
-                    20
                 ]
             }, 
             "type": {
@@ -276,9 +269,6 @@
                 "class": "H5S_SIMPLE", 
                 "dims": [
                     10
-                ], 
-                "maxdims": [
-                    10
                 ]
             }, 
             "type": {
@@ -305,10 +295,6 @@
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
-                    3, 
-                    5
-                ], 
-                "maxdims": [
                     3, 
                     5
                 ]

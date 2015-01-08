@@ -8,9 +8,6 @@
                 "class": "H5S_SIMPLE", 
                 "dims": [
                     4
-                ], 
-                "maxdims": [
-                    4
                 ]
             }, 
             "type": {
@@ -32,9 +29,6 @@
                 "class": "H5S_SIMPLE", 
                 "dims": [
                     4
-                ], 
-                "maxdims": [
-                    4
                 ]
             }, 
             "type": {
@@ -55,9 +49,6 @@
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
-                    3
-                ], 
-                "maxdims": [
                     3
                 ]
             }, 
