@@ -755,6 +755,33 @@ class DatasetTest(unittest.TestCase):
         req = self.endpoint + "/datasets/"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 400)
+        
+    def testPostNoBody(self):
+        domain = 'tall.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        headers = {'host': domain}
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 400)
+        
+    def testPostWithLink(self):
+        domain = 'newdsetwithlink.datasettest.' + config.get('domain')
+        
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        root_uuid = helper.getRootUUID(domain)
+        
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10,
+             'link': {'id': root_uuid, 'name': 'linked_dset'} }
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
        
     def testDelete(self):
         domain = 'tall_dset112_deleted.' + config.get('domain')  

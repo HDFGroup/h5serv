@@ -64,6 +64,28 @@ class GroupTest(unittest.TestCase):
         self.failUnlessEqual(rspJson["linkCount"], 0)
         self.failUnlessEqual(rspJson["attributeCount"], 0)
         self.assertTrue(helper.validateId(rspJson["id"]) ) 
+        
+    def testPostWithLink(self):
+        # test PUT_root
+        domain = 'testGroupPostWithLink.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  
+        
+        root_uuid = helper.getRootUUID(domain)
+        
+        payload = { 'link': {'id': root_uuid, 'name': 'linked_dset'} }
+         
+        req = self.endpoint + "/groups"
+        headers = {'host': domain}
+        # create a new group
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) 
+        rspJson = json.loads(rsp.text)
+        self.failUnlessEqual(rspJson["linkCount"], 0)
+        self.failUnlessEqual(rspJson["attributeCount"], 0)
+        self.assertTrue(helper.validateId(rspJson["id"]) ) 
        
     def testBadPost(self):
         domain = 'tall.' + config.get('domain')    

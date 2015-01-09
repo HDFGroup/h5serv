@@ -243,7 +243,12 @@ class LinkHandler(RequestHandler):
         
         linkName = url_unescape(self.getName(self.request.uri))
         
-        body = json.loads(self.request.body)
+        body = None
+        try:
+            body = json.loads(self.request.body)
+        except ValueError:
+            log.info("json not supplied")
+            raise HTTPError(400)
         
         childUuid = None
         h5path = None
@@ -405,7 +410,12 @@ class TypeHandler(RequestHandler):
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
-        body = json.loads(self.request.body)
+        body = None
+        try:
+            body = json.loads(self.request.body)
+        except ValueError:
+            log.info("json not supplied")
+            raise HTTPError(400)
             
         if "type" not in body:
             log.info("Type not supplied")
@@ -582,7 +592,12 @@ class ShapeHandler(RequestHandler):
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
-        body = json.loads(self.request.body)
+        body = None
+        try:
+            body = json.loads(self.request.body)
+        except ValueError:
+            log.info("json not supplied")
+            raise HTTPError(400)
         
         if "shape" not in body:
             log.info("Shape not supplied")
@@ -691,8 +706,15 @@ class DatasetHandler(RequestHandler):
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         shape = None
+        group_uuid = None
+        link_name = None
         
-        body = json.loads(self.request.body)
+        body = None
+        try:
+            body = json.loads(self.request.body)
+        except ValueError:
+            log.info("json not supplied")
+            raise HTTPError(400)
         
         if "type" not in body:
             log.info("Type not supplied")
@@ -710,6 +732,17 @@ class DatasetHandler(RequestHandler):
                 raise HTTPError(400)
         else:
             shape = ()  # empty tuple
+            
+        if "link" in body:
+            
+            link_options = body["link"]
+            print link_options
+            if "id" not in link_options or "name" not in link_options:
+                log.info("missing link parameter")
+                raise HTTPError(400)
+            group_uuid = link_options["id"]
+            link_name = link_options["name"]
+            log.info("add link to: " + group_uuid + " with name: " + link_name);
             
         datatype = body["type"]
         
@@ -747,6 +780,14 @@ class DatasetHandler(RequestHandler):
                     maxshape[i] = None  # this indicates unlimited
         
         with Hdf5db(filePath, app_logger=log) as db:
+            if group_uuid:
+                group_item = db.getGroupItemByUuid(group_uuid)
+                if group_item == None:
+                    httpError = 404  # not found
+                    if db.httpStatus != 200:
+                        httpError = db.httpStatus # library may have more specific error code
+                        log.info("failed to get parent group (httpError: " + str(httpError) + ")")
+                        raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
             dsetUUID = db.createDataset(datatype, shape, maxshape)
             if dsetUUID == None:
@@ -755,6 +796,15 @@ class DatasetHandler(RequestHandler):
                     httpError = db.httpStatus # library may have more specific error code
                 log.info("failed to create dataset (httpError: " + str(httpError) + ")")
                 raise HTTPError(httpError)
+            if group_uuid:
+                # link the new dataset
+                ok = db.linkObject(group_uuid, dsetUUID, link_name)
+            
+                if not ok:
+                    httpStatus = 500
+                    if db.httpStatus != 201:
+                        httpStatus = db.httpStatus
+                    raise HTTPError(httpStatus)
                 
         response = { }
       
@@ -979,7 +1029,13 @@ class ValueHandler(RequestHandler):
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
-        body = json.loads(self.request.body)
+        body = None
+        try:
+            body = json.loads(self.request.body)
+        except ValueError:
+            log.info("json not supplied")
+            raise HTTPError(400)
+        
         if "points" not in body:
             log.info("value post request without points in body")
             raise HTTPError(400)
@@ -1050,7 +1106,12 @@ class ValueHandler(RequestHandler):
         stop = None
         step = None
         
-        body = json.loads(self.request.body)
+        body = None
+        try:
+            body = json.loads(self.request.body)
+        except ValueError:
+            log.info("json not supplied")
+            raise HTTPError(400)
         
         if "value" not in body:
             log.info("Value not supplied")
@@ -1287,7 +1348,12 @@ class AttributeHandler(RequestHandler):
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
-        body = json.loads(self.request.body)
+        body = None
+        try:
+            body = json.loads(self.request.body)
+        except ValueError:
+            log.info("json not supplied")
+            raise HTTPError(400)
         
         if "shape" not in body:
             log.info("Shape not supplied")
@@ -1507,6 +1573,27 @@ class GroupCollectionHandler(RequestHandler):
         if self.request.uri != '/groups':
             log.info('bad group post request')
             raise HTTPError(405)  # Method not allowed
+        
+        parent_group_uuid = None
+        link_name = None
+        
+        body = {}
+        if self.request.body:
+            try:
+                body = json.loads(self.request.body)
+            except ValueError:
+                log.info("json not supplied")
+                raise HTTPError(400)
+        
+        if "link" in body:    
+            link_options = body["link"]
+            print link_options
+            if "id" not in link_options or "name" not in link_options:
+                log.info("missing link parameter")
+                raise HTTPError(400)
+            parent_group_uuid = link_options["id"]
+            link_name = link_options["name"]
+            log.info("add link to: " + parent_group_uuid + " with name: " + link_name);
                
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -1514,13 +1601,30 @@ class GroupCollectionHandler(RequestHandler):
         
         with Hdf5db(filePath, app_logger=log) as db:
             rootUUID = db.getUUIDByPath('/')
+            if parent_group_uuid:
+                parent_group_item = db.getGroupItemByUuid(parent_group_uuid)
+                if parent_group_item == None:
+                    httpError = 404  # not found
+                    if db.httpStatus != 200:
+                        httpError = db.httpStatus # library may have more specific error code
+                        log.info("failed to get parent group (httpError: " + str(httpError) + ")")
+                        raise HTTPError(httpError)
             grpUUID = db.createGroup()
             if grpUUID == None:
                 raise HTTPError(db.httpStatus)
             item = db.getGroupItemByUuid(grpUUID)
             if item == None:
                 # unexpected!
-                raise HTTPError(500)          
+                raise HTTPError(500)  
+            # if link info is provided, link the new group
+            if parent_group_uuid:
+                # link the new dataset
+                ok = db.linkObject(parent_group_uuid, grpUUID, link_name)      
+                if not ok:
+                    httpStatus = 500
+                    if db.httpStatus != 201:
+                        httpStatus = db.httpStatus
+                    raise HTTPError(httpStatus)        
            
         href = self.request.protocol + '://' + domain  
         self.set_header('Location', href + '/groups/' + grpUUID)
