@@ -531,6 +531,17 @@ class AttributeTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['hrefs']), 3)
         
+    def testPutInvalid(self):
+        domain = 'tall_updated.' + config.get('domain') 
+        attr_name = 'attr_invalid'
+        rootUUID = helper.getRootUUID(domain) 
+        headers = {'host': domain}
+        # attempt to pass in a string directly (which is not valid JSON)
+        payload = "{'type': 'H5T_IEEE_F32LE', 'shape': (0,), 'value': 3.12}"
+        req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
+        rsp = requests.put(req, data=payload, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 400)  # Bad Request 
+         
     def testDelete(self):
         domain = 'tall_updated.' + config.get('domain') 
         attr_name = 'attr1'
