@@ -438,16 +438,46 @@ class AttributeTest(unittest.TestCase):
         rootUUID = helper.getRootUUID(domain) 
         headers = {'host': domain}
            
-        payload = {'type': 'H5T_IEEE_F32LE', 'shape': (0,), 'value': 3.12}
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': (1,), 'value': (3.12,)}
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['hrefs']), 3)
+        # do a get and verify the space is simple
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # get attribute
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.failUnlessEqual(shape['class'], 'H5S_SIMPLE')
+        dims = shape['dims']
+        self.failUnlessEqual(len(dims), 1)
+        self.failUnlessEqual(dims[0], 1)
+        
+    def testPutScalar(self):
+        domain = 'tall_updated.' + config.get('domain') 
+        attr_name = 'attr4'
+        rootUUID = helper.getRootUUID(domain) 
+        headers = {'host': domain}
+           
+        payload = {'type': 'H5T_STD_I32LE', 'value': 42}
+        req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['hrefs']), 3)
+        # do a get and verify the space is scalar
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # get attribute
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.failUnlessEqual(shape['class'], 'H5S_SCALAR')
+        
+     
         
     def testPutList(self):
         domain = 'tall_updated.' + config.get('domain') 
-        attr_name = 'attr4'
+        attr_name = 'attr5'
         rootUUID = helper.getRootUUID(domain) 
         headers = {'host': domain}
         data = range(10)
@@ -459,9 +489,10 @@ class AttributeTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['hrefs']), 3)
         
+        
     def testPutFixedString(self):
         domain = 'tall_updated.' + config.get('domain') 
-        attr_name = 'attr5'
+        attr_name = 'attr6'
         rootUUID = helper.getRootUUID(domain) 
         headers = {'host': domain}
         data = "Hello, I'm a fixed-width string!"

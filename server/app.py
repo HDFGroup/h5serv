@@ -1353,11 +1353,7 @@ class AttributeHandler(RequestHandler):
             body = json.loads(self.request.body)
         except ValueError:
             log.info("json not supplied")
-            raise HTTPError(400)
-        
-        if "shape" not in body:
-            log.info("Shape not supplied")
-            raise HTTPError(400)  # missing shape
+            raise HTTPError(400, reason="bad json")
             
         if "type" not in body:
             log.info("Type not supplied")
@@ -1366,8 +1362,10 @@ class AttributeHandler(RequestHandler):
         if "value" not in body:
             log.info("Value not supplied")
             raise HTTPError(400)  # missing value
-            
-        shape = body["shape"]
+          
+        shape = () # default as empty tuple (will create a scalar attribute)
+        if shape in body:    
+            shape = body["shape"]
         datatype = body["type"]
         value = body["value"]
         if type(shape) == int:

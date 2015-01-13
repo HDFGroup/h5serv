@@ -555,6 +555,49 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
         
+        # verify the dataspace is scalar
+        req = self.endpoint + "/datasets/" + dset_uuid
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SCALAR')
+        
+    def testPostZeroDim(self):
+        domain = 'new0d.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        payload = {'type': 'H5T_STD_I32LE', 'shape': (1,)}
+        req = self.endpoint + "/datasets/"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'dset1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dset1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
+        # verify the dataspace is one dimensional/one-element
+        req = self.endpoint + "/datasets/" + dset_uuid
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SIMPLE')
+        self.assertEqual(len(shape['dims']), 1)
+        self.assertEqual(shape['dims'][0], 1)  
+        
+        
     def testPostTypes(self):
         domain = 'datatypes.datasettest.' + config.get('domain')
         req = self.endpoint + "/"
