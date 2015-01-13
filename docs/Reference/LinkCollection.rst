@@ -65,13 +65,13 @@ For other link types, the resource may or may not exist.
 
    {
     "links": [ 
-        { "name": <name>, 
+        { "name": "<name>", 
           "class": "hard|soft|external|user",
           "target":  "/(datasets|datatypes|groups)/<id>" |
                   "/#h5(<HDF5 path name>)" |
                   "http://<domain>/(datasets|datatypes|groups)/<id>" |
                   "http://<domain>/#h5(<HDF5 path name>)" }, 
-        ...
+        
     
     ],
     "hrefs": [

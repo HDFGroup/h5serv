@@ -40,13 +40,10 @@ Response
 .. code-block:: json
 
     {
-    "created": <utctime>,
-    "lastModified": <utctime>,
+    "created": "<utctime>",
+    "lastModified": "<utctime>",
 
-    "groupCount": <non_negative_integer>,
-    "datasetCount": <non_negative_integer>,
-    "typeCount": <non_negative_integer>,
-    "root": <root_uuid>,
+    "root": "<root_uuid>",
 
     "refs": [
       { "rel": "self",      "href": "http://<domain>/" } ,
@@ -66,6 +63,8 @@ Creates a new HDF5 domain.
 
 *Note:* The domain will initially contain one object, the root group, whose UUID is 
 returned by this call.
+
+*Note:* A 409 error will be returned in the domain already exists.
 
 
 Request
@@ -89,13 +88,10 @@ Response
 .. code-block:: json
 
     {
-    "created": <utctime>,
-    "lastModified": <utctime>,
+    "created": "<utctime>",
+    "lastModified": "<utctime>",
 
-    "groupCount": <non_negative_integer>,
-    "datasetCount": <non_negative_integer>,
-    "typeCount": <non_negative_integer>,
-    "root": <root_uuid>,
+    "root": "<root_uuid>",
 
     "refs": [
       { "rel": "self",      "href": "http://<domain>/" } ,
@@ -142,7 +138,6 @@ return the following errors:
 
    -  The domain name is not well formed.
    
-
 -  ``403 Forbidden``
 
    - The requestor does not have sufficient privileges for this action.
@@ -153,7 +148,7 @@ return the following errors:
    
 - ``409 Conflict``
 
-   - The domain name already exists
+   - The domain name already exists (for PUT)
    
 - ``410 Gone``
 

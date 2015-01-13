@@ -1,13 +1,14 @@
-###########
+:tocdepth: 3
+
+**********************************************
 Group
-###########
+**********************************************
 
 This resource represents an HDF5 group - a group can contain any number of attributes 
 (see attributes), as well as any number of links (see links).  
 
 *Supported Operations:*  GET, DELETE
 
- 
 
 GET /groups/<id> 
 -----------------
@@ -33,13 +34,13 @@ Response
 .. code-block:: json
 
    {
-    "id": <id>,
+    "id": "<id>",
 
-    "created": <utctime>,
-    "lastModified": <utctime>,
+    "created": "<utctime>",
+    "lastModified": "<utctime>",
 
-    "attributeCount": <non_negative_integer>,
-    "linkCount": <non_negative_integer>,
+    "attributeCount": "<non_negative_integer>",
+    "linkCount": "<non_negative_integer>",
 
     "hrefs": [
         { "rel": "attributes",   "href": "http://<domain>/groups/<id>/attributes" },
@@ -50,52 +51,7 @@ Response
     ]
     }
 
-POST /groups 
--------------
 
-Creates a new group. 
-
-*Note:*   The new group group will initially be *anonymous*, i.e. it will not be linked
-to by any other group within the domain.  However it can be accessed via: GET /groups/<id>.
-
-
-Request
-~~~~~~~
-
-.. code-block:: http
-
-    POST /groups HTTP/1.1
-    Host: DOMAIN
-    Authorization: <authorization_string>
-    Content-Type: application/json
- 
-
-Response
-~~~~~~~~
-.. code-block:: http
-
-    HTTP/1.1 201 Created
-    Content-Type: application/json
-    
-.. code-block:: json
-
-    {
-    "created": <utctime>,
-    "lastModified": <utctime>,
-
-    "groupCount": <non_negative_integer>,
-    "datasetCount": <non_negative_integer>,
-    "typeCount": <non_negative_integer>,
-    "root": <root_uuid>,
-
-    "refs": [
-      { "rel": "self",      "href": "http://<domain>/" } ,
-      { "rel": "database",  "href": "http://<domain>/datasets" } ,
-      { "rel": "groupbase", "href": "http://<domain>/groups" } ,
-      { "rel": "typebase",  "href": "http://<domain>/datatypes" } ,
-      { "rel": "root",      "href": "http://<domain>/groups/{root_uuid}" }
-    ]
-    }
     
 DELETE /groups/<id>
 -------------------
@@ -106,7 +62,7 @@ be removed.
 *WARNING:* all attributes and links of the group will be removed.  Groups and Datasets
 that are referenced by this group's links will not be removed however.
 
-*NOTE:*  The Root Group can not be deleted (except by deleting the domain).  Attempting
+*NOTE:*  The Root Group of a collection can not be deleted (except by deleting the domain).  Attempting
 to delete the Root Group will return a status of 403 - Forbidden. 
 
 Request
@@ -141,7 +97,7 @@ Response
 Errors
 ------
 
-In addition to the general errors, requests to the domain resource may
+In addition to the common errors, requests to the group resource may
 return the following errors:
 
 -  ``400 Bad Request``
@@ -155,8 +111,6 @@ return the following errors:
 - ``404 Not Found``
 
    - The domain or group id could not be found
-   
-   - The domain name already exists
    
 - ``410 Gone``
 

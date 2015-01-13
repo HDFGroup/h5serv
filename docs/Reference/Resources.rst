@@ -3,6 +3,7 @@ Resources
 ###########
 
 List of Resources
+-----------------
 
 +---------------------+------+------+------+--------+-----------------------------------------+
 | Resource            | GET  | PUT  | POST | DELETE |  Description                            |
@@ -15,21 +16,25 @@ List of Resources
 +---------------------+------+------+------+--------+-----------------------------------------+   
 | Link                |  Y   |  Y   |  N   |    Y   | Represents an HDF link                  |
 +---------------------+------+------+------+--------+-----------------------------------------+   
-| Dataset             |  Y   |  N   |  Y   |    Y   | Represents an HDF Dataset               |
+| Dataset             |  Y   |  N   |  N   |    Y   | Represents an HDF Dataset               |
 +---------------------+------+------+------+--------+-----------------------------------------+   
 | Attributes          |  Y   |  N   |  N   |    N   | Collection of Attributes                |
 +---------------------+------+------+------+--------+-----------------------------------------+   
 | Attribute           |  Y   |  Y   |  N   |    Y   | Reresents an HDF Attribute              |
 +---------------------+------+------+------+--------+-----------------------------------------+   
 | Dataspace           |  Y   |  Y   |  N   |    N   | Shape of a dataset                      |
++---------------------+------+------+------+--------+-----------------------------------------+ 
+| Type                |  Y   |  N   |  N   |    N   | Type of a dataset                       |
 +---------------------+------+------+------+--------+-----------------------------------------+   
 | Value               |  Y   |  Y   |  Y   |    N   | Data values of a datset                 | 
 +---------------------+------+------+------+--------+-----------------------------------------+   
 | Datatype            |  Y   |  N   |  N   |    Y   | Committed datatype                      |
 +---------------------+------+------+------+--------+-----------------------------------------+   
-| Group Collection    |  Y   |  N   |  N   |    N   | Collection of groups within a domain    |
+| Group Collection    |  Y   |  N   |  Y   |    N   | Collection of groups within a domain    |
 +---------------------+------+------+------+--------+-----------------------------------------+   
-| Dataset Collection  |  Y   |  N   |  N   |    N   | Collection of datasets within a domain  |
+| Dataset Collection  |  Y   |  N   |  Y   |    N   | Collection of datasets within a domain  |
 +---------------------+------+------+------+--------+-----------------------------------------+   
-| Datatype Collection |  Y   |  N   |  N   |    N   | Collection of datatypes within a domain |
+| Datatype Collection |  Y   |  N   |  Y   |    N   | Collection of datatypes within a domain |
 +---------------------+------+------+------+--------+-----------------------------------------+   
+
+ 
