@@ -15,7 +15,7 @@
 import sys
 import os
 
-sys.path.append(os.path.abspath("sphinx_ext"))
+#sys.path.append(os.path.abspath("sphinx_ext"))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -30,7 +30,7 @@ sys.path.append(os.path.abspath("sphinx_ext"))
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['JSONLexer']
+#extensions = ['JSONLexer']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

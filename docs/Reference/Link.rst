@@ -121,7 +121,7 @@ For external links the json response will be:
     
 In this response, "<href>" will be in the form:
 
-*"http://<domain>/(datasets|datatypes|groups)/<id>" *
+*"http://<domain>/(datasets|datatypes|groups)/<id>"*
 
 if the value of the link is a UUID.  Or:
 
