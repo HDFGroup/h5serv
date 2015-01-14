@@ -26,6 +26,7 @@ from hdf5db import Hdf5db
 import hdf5dtype
 from timeUtil import unixTimeToUTC
 from fileUtil import getFilePath, getDomain, getFileModCreateTimes, makeDirs, verifyFile
+from httpErrorUtil import errNoToHttpStatus
 
     
 class DefaultHandler(RequestHandler):
@@ -34,28 +35,28 @@ class DefaultHandler(RequestHandler):
         log.warning("got default PUT request")
         log.info('remote_ip: ' + self.request.remote_ip)
         log.warning(self.request)
-        raise HTTPError(400) 
+        raise HTTPError(400, reason="No route matches") 
         
     def get(self):
         log = logging.getLogger("h5serv")
         log.warning("got default GET request")
         log.info('remote_ip: ' + self.request.remote_ip)
         log.warning(self.request)
-        raise HTTPError(400) 
+        raise HTTPError(400, reason="No route matches") 
         
     def post(self):
         log = logging.getLogger("h5serv") 
         log.warning("got default POST request")
         log.info('remote_ip: ' + self.request.remote_ip)
         log.warning(self.request)
-        raise HTTPError(400) 
+        raise HTTPError(400, reason="No route matches") 
         
     def delete(self):
         log = logging.getLogger("h5serv")
         log.warning("got default DELETE request")
         log.info('remote_ip: ' + self.request.remote_ip)
         log.warning(self.request)
-        raise HTTPError(400) 
+        raise HTTPError(400, reason="No route matches") 
         
 class LinkCollectionHandler(RequestHandler):
     def getRequestId(self, uri):
@@ -71,8 +72,9 @@ class LinkCollectionHandler(RequestHandler):
         uri = uri[len('/groups/'):]  # get stuff after /groups/
         npos = uri.find('/')
         if npos <= 0:
-            log.info("bad uri")
-            raise HTTPError(400)  
+            msg = "Bad Request: uri is invalid"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  
         id = uri[:npos]
          
         log.info('got id: [' + id + ']')
@@ -95,8 +97,9 @@ class LinkCollectionHandler(RequestHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                log.info("expected int type for limit")
-                raise HTTPError(400) 
+                msg = "Bad Request: Expected into type for limit"
+                log.info(msg)
+                raise HTTPError(400, reason=msg) 
         marker = self.get_query_argument("Marker", None)
                 
         response = { }
@@ -107,10 +110,10 @@ class LinkCollectionHandler(RequestHandler):
         with Hdf5db(filePath, app_logger=log) as db:
             items = db.getLinkItems(reqUuid, marker=marker, limit=limit)
             if items == None:
-                httpError = 404  # not found
+                msg = "Not Found: Link not found"
+                log.info(msg)
+                raise HTTPError(404, reason=msg)
                 #todo: return 410 if the group was recently deleted
-                log.info("group: [" + reqUuid + "] not found")
-                raise HTTPError(httpError)
             rootUUID = db.getUUIDByPath('/')
                          
         # got everything we need, put together the response
@@ -142,8 +145,9 @@ class LinkHandler(RequestHandler):
         uri = self.request.uri
         if uri[:len('/groups/')] != '/groups/':
             # should not get here!
-            log.error("unexpected uri: " + uri)
-            raise HTTPError(500)
+            msg = "Internal Server Error: Unexpected uri"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)
         uri = uri[len('/groups/'):]  # get stuff after /groups/
         npos = uri.find('/')
         if npos <= 0:
@@ -163,17 +167,20 @@ class LinkHandler(RequestHandler):
         npos = uri.find('/links/')
         if npos < 0:
             # shouldn't be possible to get here
-            log.info("unexpected uri")
-            raise HTTPError(500)
+            msg = "Internal Server Error: Unexpected uri"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)
         if npos+len('/links/') >= len(uri):
             # no name specified
-            log.info("no name specified")
-            raise HTTPError(400)
+            msg = "Bad Request: no name specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         linkName = uri[npos+len('/links/'):]
         if linkName.find('/') >= 0:
             # can't have '/' in link name
-            log.info("invalid linkname")
-            raise HTTPError(400)
+            msg = "Bad Request: invalid linkname, '/' not allowed"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         return linkName
         
     def get(self):
@@ -194,8 +201,9 @@ class LinkHandler(RequestHandler):
         with Hdf5db(filePath, app_logger=log) as db:
             item = db.getLinkItemByUuid(reqUuid, linkName)
             if item == None:
-                log.info("group: [" + reqUuid + "], link: [" + linkName + "] not found")
-                raise HTTPError(db.httpStatus)
+                msg = "Not Found: link not found"
+                log.info(msg)
+                raise HTTPError(404, reason=msg)
             rootUUID = db.getUUIDByPath('/')
                          
         # got everything we need, put together the response
@@ -246,9 +254,10 @@ class LinkHandler(RequestHandler):
         body = None
         try:
             body = json.loads(self.request.body)
-        except ValueError:
-            log.info("json not supplied")
-            raise HTTPError(400)
+        except ValueError as e:
+            msg = "JSON Parser Error: " + e.message
+            log.info(msg)
+            raise HTTPError(400, reason=msg )
         
         childUuid = None
         h5path = None
@@ -257,7 +266,9 @@ class LinkHandler(RequestHandler):
         if "id" in body:
             childUuid = body["id"]
             if childUuid == None or len(childUuid) == 0:
-                raise HTTPError(400)
+                msg = "Bad Request: id not specified"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
         elif "h5path" in body:
             # todo
             h5path = body["h5path"]
@@ -267,12 +278,18 @@ class LinkHandler(RequestHandler):
         elif "href" in body:
             href = body["href"]
             if href == None or len(href) == 0 or not href.startswith('http'):
-                raise HTTPError(400)
+                msg = "Bad Request: missing or invalid href value"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             o = urlparse(href)
             if len(o.scheme) == 0 or len(o.netloc) == 0:
-                raise HTTPError(400)
+                msg = "Bad Request: invalid href value"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             if len(o.query) > 0:
-                raise HTTPError(400)  # no query param
+                msg = "Bad Request: invalid href value"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             filename = o.scheme + "://" + o.netloc
             if len(o.fragment) > 0:
                 # url should be in the form: /#h5path(<path>)
@@ -291,8 +308,9 @@ class LinkHandler(RequestHandler):
                 
             
         else: 
-            log.info("bad put syntax: [" + self.request.body + "]")
-            raise HTTPError(400)                      
+            msg = "Bad request: put syntax: [" + self.request.body + "]"
+            log.info(msg)
+            raise HTTPError(400, reasoln=msg)                      
         
         domain = self.request.host
         filePath = getFilePath(domain) 
@@ -303,19 +321,28 @@ class LinkHandler(RequestHandler):
         items = None
         rootUUID = None
         with Hdf5db(filePath, app_logger=log) as db:
-            if childUuid:
-                ok = db.linkObject(reqUuid, childUuid, linkName)
-            elif filename:
-                ok = db.createExternalLink(reqUuid, filename, h5path, linkName)
-            elif h5path:
-                ok = db.createSoftLink(reqUuid, h5path, linkName)
-            else:
-                raise HTTPError(500)
-            if not ok:
-                httpStatus = 500
-                if db.httpStatus != 201:
-                    httpStatus = db.httpStatus
-                raise HTTPError(httpStatus)
+            try:
+                if childUuid:
+                    db.linkObject(reqUuid, childUuid, linkName)
+                elif filename:
+                    db.createExternalLink(reqUuid, filename, h5path, linkName)
+                elif h5path:
+                    db.createSoftLink(reqUuid, h5path, linkName)
+            except IOError as e:
+                if e.errno == 2:
+                    msg = "Not Found: " + e.strerror
+                    log.info(msg)
+                    raise HTTPError(404, reason=msg)
+                else:
+                    msg = "Forbidden: " + e.strerror
+                    log.info(msg)
+                    raise HTTPError(403, reason=msg)
+            except ValueError as e:
+                msg = "Bad Request: " + e.message
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+                
+                
             rootUUID = db.getUUIDByPath('/')
             
         self.set_status(201) 
@@ -333,13 +360,18 @@ class LinkHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        with Hdf5db(filePath, app_logger=log) as db:
-            ok = db.unlinkItem(reqUuid, linkName)
-            if not ok:
-                httpStatus = db.httpStatus
-                if httpStatus == 200:
-                    httpStatus = 500
-                raise HTTPError(httpStatus)  
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                db.unlinkItem(reqUuid, linkName)
+        except IOError as e:
+            if e.errno == 17:
+                msg = "Forbidden: " + e.strerror
+                log.info(msg)
+                raise HTTPError(403, reason=msg)
+            else:
+                msg = "Not Found: " + e.strerror
+                log.info(msg)
+                raise HTTPError(404, reason=msg)
                 
 class TypeHandler(RequestHandler):
     
@@ -350,9 +382,13 @@ class TypeHandler(RequestHandler):
         uri = self.request.uri
         npos = uri.rfind('/')
         if npos < 0:
-            raise HTTPError(500)  # should not get routed to TypeHandler in this case
+            msg = "Internal Server Error: Unexpected routing"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)  # should not get routed to TypeHandler in this case
         if npos == len(uri) - 1:
-            raise HTTPError(400, message="missing id")
+            msg = "Bad Request: id is not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         id = uri[(npos+1):]
         log.info('got id: [' + id + ']')
     
@@ -403,8 +439,9 @@ class TypeHandler(RequestHandler):
         log.info('TypeHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
         if self.request.uri != '/datatypes/':
-            log.info('bad datatypes post request')
-            raise HTTPError(405)  # Method not allowed
+            msg = "Method not Allowed: invalid URI"
+            log.info(msg)
+            raise HTTPError(405, reason=msg)  # Method not allowed
                
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -413,13 +450,15 @@ class TypeHandler(RequestHandler):
         body = None
         try:
             body = json.loads(self.request.body)
-        except ValueError:
-            log.info("json not supplied")
-            raise HTTPError(400)
+        except ValueError as e:
+            msg = "JSON Parser Error: " + e.message
+            log.info(msg)
+            raise HTTPError(400, reason=msg )
             
         if "type" not in body:
-            log.info("Type not supplied")
-            raise HTTPError(400)  # missing type
+            msg = "Type not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  # missing type
             
         datatype = body["type"]     
         
@@ -472,14 +511,20 @@ class DatatypeHandler(RequestHandler):
         uri = self.request.uri
         npos = uri.rfind('/type')
         if npos < 0:
-            raise HTTPError(500)  # should not get routed to DatatypeHandler in this case
+            msg = "Internal Server Error: Unexpected routing"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)  # should not get routed to DatatypeHandler in this case
         id_part = uri[:npos]
         npos = id_part.rfind('/')
         if npos < 0:
-            raise HTTPError(500)  # should not get routed to DatatypeHandler in this case
+            msg = "Internal Server Error: Unexpected routing"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)  # should not get routed to DatatypeHandler in this case
         
         if npos == len(id_part) - 1:
-            raise HTTPError(400, message="missing id")
+            msg = "Bad Request: id is not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         id = id_part[(npos+1):]
         log.info('got id: [' + id + ']')
     
@@ -530,14 +575,20 @@ class ShapeHandler(RequestHandler):
         uri = self.request.uri
         npos = uri.rfind('/shape')
         if npos < 0:
-            raise HTTPError(500)  # should not get routed to ShapeHandler in this case
+            msg = "Internal Server Error: Unexpected routing"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)  # should not get routed to ShapeHandler in this case
         id_part = uri[:npos]
         npos = id_part.rfind('/')
         if npos < 0:
-            raise HTTPError(500)  # should not get routed to ShapeHandler in this case
+            msg = "Internal Server Error: Unexpected routing"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)  # should not get routed to ShapeHandler in this case
         
         if npos == len(id_part) - 1:
-            raise HTTPError(400, message="missing id")
+            msg = "Bad Request: id is not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         id = id_part[(npos+1):]
         log.info('got id: [' + id + ']')
     
@@ -595,13 +646,15 @@ class ShapeHandler(RequestHandler):
         body = None
         try:
             body = json.loads(self.request.body)
-        except ValueError:
-            log.info("json not supplied")
-            raise HTTPError(400)
+        except ValueError as e:
+            msg = "JSON Parser Error: " + e.message
+            log.info(msg)
+            raise HTTPError(400, reason=msg )
         
         if "shape" not in body:
-            log.info("Shape not supplied")
-            raise HTTPError(400)  # missing shape
+            msg = "Bad Request: Shape not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  # missing shape
             
         shape = body["shape"]
         if type(shape) == int:
@@ -610,26 +663,30 @@ class ShapeHandler(RequestHandler):
         elif type(shape) == list or type(shape) == tuple: 
             pass # can use as is
         else:
-            log.info("invalid shape argument")
-            raise HTTPError(400)
+            msg = "Bad Request: invalid shape argument"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
             
         # validate shape
         for extent in shape:
             if type(extent) != int:
-                log.info("invalid shape type")
-                raise HTTPError(400)
+                msg = "Bad Request: invalid shape type (expecting int)"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             if extent < 0:
-                log.info("invalid shape (negative extent)")
-                raise HTTPError(400) 
+                msg = "Bad Request: invalid shape (negative extent)"
+                log.info(msg)
+                raise HTTPError(400, reason=msg) 
         
-        with Hdf5db(filePath, app_logger=log) as db:
-            rootUUID = db.getUUIDByPath('/')
-            db.resizeDataset(reqUuid, shape)
-            
-            if db.httpStatus != 200:
-                httpError = db.httpStatus # library may have more specific error code
-                log.info("failed to resize dataset (httpError: " + str(httpError) + ")")
-                raise HTTPError(httpError)
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                db.resizeDataset(reqUuid, shape)
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
+                
         log.info("resize OK")    
         self.set_status(201)  # resource created    
                 
@@ -641,9 +698,13 @@ class DatasetHandler(RequestHandler):
         uri = self.request.uri
         npos = uri.rfind('/')
         if npos < 0:
-            raise HTTPError(500)  # should not get routed to TypeHandler in this case
+            msg = "Internal Server Error: unexpected routing"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)  # should not get routed to TypeHandler in this case
         if npos == len(uri) - 1:
-            raise HTTPError(400, message="missing id")
+            msg = "Bad Request: id not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         id = uri[(npos+1):]
         log.info('got id: [' + id + ']')
     
@@ -699,8 +760,9 @@ class DatasetHandler(RequestHandler):
         log.info('DatasetHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
         if self.request.uri != '/datasets/':
-            log.info('bad datasets post request')
-            raise HTTPError(405)  # Method not allowed
+            msg = "Method not Allowed: invalid datasets post request"
+            log.info(msg)
+            raise HTTPError(405, reason=msg)  # Method not allowed
                
         domain = self.request.host
         filePath = getFilePath(domain)
@@ -712,13 +774,15 @@ class DatasetHandler(RequestHandler):
         body = None
         try:
             body = json.loads(self.request.body)
-        except ValueError:
-            log.info("json not supplied")
-            raise HTTPError(400)
+        except ValueError as e:
+            msg = "JSON Parser Error: " + e.message
+            log.info(msg)
+            raise HTTPError(400, reason=msg )
         
         if "type" not in body:
-            log.info("Type not supplied")
-            raise HTTPError(400)  # missing type
+            msg = "Bad Request: Type not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  # missing type
             
         if "shape" in body:
             shape = body["shape"]
@@ -728,8 +792,9 @@ class DatasetHandler(RequestHandler):
             elif type(shape) == list or type(shape) == tuple: 
                 pass # can use as is
             else:
-                log.info("invalid shape argument")
-                raise HTTPError(400)
+                msg="Bad Request: shape is invalid"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
         else:
             shape = ()  # empty tuple
             
@@ -738,8 +803,10 @@ class DatasetHandler(RequestHandler):
             link_options = body["link"]
             print link_options
             if "id" not in link_options or "name" not in link_options:
-                log.info("missing link parameter")
-                raise HTTPError(400)
+                msg="Bad Request: No 'name' or 'id' not specified"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+                
             group_uuid = link_options["id"]
             link_name = link_options["name"]
             log.info("add link to: " + group_uuid + " with name: " + link_name);
@@ -755,27 +822,32 @@ class DatasetHandler(RequestHandler):
             elif type(maxshape) == list or type(maxshape) == tuple: 
                 pass # can use as is
             else:
-                log.info("invalid maxshape argument")
-                raise HTTPError(400)     
+                msg="Bad Request: maxshape is invalid"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)     
            
         # validate shape
         for extent in shape:
             if type(extent) != int:
-                log.info("invalid shape type")
-                raise HTTPError(400)
+                msg="Bad Request: Invalid shape type"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             if extent < 0:
-                log.info("invalid shape (negative extent)")
-                raise HTTPError(400) 
+                msg="Bad Request: shape dimension is negative"
+                log.info("msg")
+                raise HTTPError(400, reason=msg) 
             
         if maxshape:
             if len(maxshape) != len(shape):
-                log.info("invalid maxshape length")
-                raise HTTPError(400)
+                msg="Bad Request: maxshape array length must equal shape array length"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             for i in range(len(shape)):
                 maxextent = maxshape[i]
                 if maxextent != 0 and maxextent < shape[i]:
-                    log.info("invalid maxshape extent")
-                    raise HTTPError(400)
+                    msg="Bad Request: Maxshape extent can't be smaller than shape extent"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
                 if maxextent == 0:
                     maxshape[i] = None  # this indicates unlimited
         
@@ -852,17 +924,21 @@ class ValueHandler(RequestHandler):
             stop =  int(self.get_query_argument(dimQuery + '_stop', extent))
             step =  int(self.get_query_argument(dimQuery + '_step', 1))
         except ValueError:
-            log.info("invalid selection parameter (can't convert to int)")
-            raise HTTPError(400)
+            msg ="Bad Request: invalid selection parameter (can't convert to int)"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         if start < 0 or start > extent:
-            log.info("bad selection start parameter for dimension: " + dimQuery)
-            raise HTTPError(400)
+            msg = "Bad Request: Invalid selection start parameter for dimension: " + dimQuery
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         if stop > extent:
-            log.info("bad selection stop parameter for dimension: " + dimQuery)
-            raise HTTPError(400)
+            msg = "Bad Request: Invalid selection stop parameter for dimension: " + dimQuery
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         if step == 0:
-            log.info("bad selection step parameter for dimension: " + dimQuery)
-            raise HTTPError(400)
+            msg = "Bad Request: invalid selection step parameter for dimension: " + dimQuery
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         s = slice(start, stop, step)
         log.info(dimQuery + " start: " + str(start) + " stop: " + str(stop) + " step: " + 
             str(step)) 
@@ -878,12 +954,14 @@ class ValueHandler(RequestHandler):
             if type(start) is not list:
                 start = [start,]
             if len(start) != rank:
-                log.info("request start array length not equal to dataset rank")
-                raise HTTPError(400)
+                msg = "Bad Request: start array length not equal to dataset rank"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             for dim in range(rank):
                 if start[dim] < 0 or start[dim] >= dsetshape[dim]:
-                    log.info("request start index invalid for dim: " + str(dim))
-                    raise HTTPError(400)
+                    msg = "Bad Request: start index invalid for dim: " + str(dim)
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
         else:
             start = []
             for dim in range(rank):
@@ -893,12 +971,14 @@ class ValueHandler(RequestHandler):
             if type(stop) is not list:
                 stop = [stop,]
             if len(stop) != rank:
-                log.info("request stop array length not equal to dataset rank")
-                raise HTTPError(400)
+                msg = "Bad Request: stop array length not equal to dataset rank"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             for dim in range(rank):
                 if stop[dim] <= start[dim] or stop[dim] > dsetshape[dim]:
-                    log.info("request stop index invalid for dim: " + str(dim))
-                    raise HTTPError(400)
+                    msg = "Bad Request: stop index invalid for dim: " + str(dim)
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
         else:
             stop = []
             for dim in range(rank):
@@ -908,12 +988,14 @@ class ValueHandler(RequestHandler):
             if type(step) is not list:
                 step = [step,]
             if len(step) != rank:
-                log.info("request step array length not equal to dataset rank")
-                raise HTTPError(400)
+                msg = "Bad Request: step array length not equal to dataset rank"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             for dim in range(rank):
                 if step[dim] <= 0 or step[dim] > dsetshape[dim]:
-                    log.info("request step index invalid for dim: " + str(dim))
-                    raise HTTPError(400)
+                    msg = "Bad Request: step index invalid for dim: " + str(dim)
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
         else:
             step = []
             for dim in range(rank):
@@ -924,8 +1006,9 @@ class ValueHandler(RequestHandler):
             try:
                 s = slice(int(start[dim]), int(stop[dim]), int(step[dim]))
             except ValueError:
-                log.info("invalid start/stop/step value")
-                raise HTTPError(400)
+                msg = "Bad Request: invalid start/stop/step value"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             slices.append(s)
         return tuple(slices)
         
@@ -943,8 +1026,9 @@ class ValueHandler(RequestHandler):
         uri = uri[len('/datasets/'):]  # get stuff after /datasets/
         npos = uri.find('/')
         if npos <= 0:
-            log.info("bad uri")
-            raise HTTPError(400)  
+            msg = "Bad Request: uri is invalid"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  
         id = uri[:npos]
          
         log.info('got id: [' + id + ']')
@@ -977,12 +1061,14 @@ class ValueHandler(RequestHandler):
             itemType = item['type']
             if itemType['class'] == 'H5T_VLEN':
                 #todo - support for returning VLEN data...
-                log.info("GET VLEN data not supported")
+                msg = "Not Implemented: GET VLEN data not supported"
+                log.info(msg)
                 # raise HTTPError(501)  # Not implemented
             if itemType['class'] == 'H5T_OPAQUE':
                 #todo - support for returning OPAQUE data...
-                log.info("GET OPAQUE data not supported")
-                raise HTTPError(501)  # Not implemented
+                msg = "Not Implemented: GET OPAQUE data not supported"
+                log.info(msg)
+                raise HTTPError(501, reason=msg)  # Not implemented
             shape = item['shape']
             if shape['class'] == 'H5S_NULL':
                 pass   # don't return a value
@@ -998,8 +1084,9 @@ class ValueHandler(RequestHandler):
          
                 values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
             else:
-                log.error("unexpected shape class: " + shape['class'])
-                raise HTTPError(500)
+                msg = "Internal Server Error: unexpected shape class: " + shape['class']
+                log.error(msg)
+                raise HTTPError(500, reason=msg)
                 
             rootUUID = db.getUUIDByPath('/')
                          
@@ -1032,17 +1119,20 @@ class ValueHandler(RequestHandler):
         body = None
         try:
             body = json.loads(self.request.body)
-        except ValueError:
-            log.info("json not supplied")
-            raise HTTPError(400)
+        except ValueError as e:
+            msg = "JSON Parser Error: " + e.message
+            log.info(msg)
+            raise HTTPError(400, reason=msg )
         
         if "points" not in body:
-            log.info("value post request without points in body")
-            raise HTTPError(400)
+            msg = "Bad Request: value post request without points in body"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         points = body['points']
         if type(points) != list:
-            log.info("expecting list of points")
-            raise HTTPError(400)
+            msg = "Bad Request: expecting list of points"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         
         
         response = { }
@@ -1060,20 +1150,24 @@ class ValueHandler(RequestHandler):
                 raise HTTPError(httpError)
             shape = item['shape']
             if shape['class'] == 'H5S_SCALAR':
-                log.info("point selection is not supported on scalar datasets")
-                raise HTTPError(400)
+                msg = "Bad Request: point selection is not supported on scalar datasets"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             rank = len(shape['dims'])
                 
             for point in points:
                 if rank == 1 and type(point) != int:
-                    log.info("elements of points to be int type for datasets of rank 1")
-                    raise HTTPError(400)
+                    msg = "Bad Request: elements of points should be int type for datasets of rank 1"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
                 elif rank > 1 and type(point) != list:
-                    log.info("elements of points to be list type for datasets of rank >1")
-                    raise HTTPError(400)
+                    msg = "Bad Request: elements of points should be list type for datasets of rank >1"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
                     if len(point) != rank:
-                        log.info("one or more points have missing coordinate value")
-                        raise HTTPError(400)
+                        msg = "Bad Request: one or more points have a missing coordinate value"
+                        log.info(msg)
+                        raise HTTPError(400, reason=msg)
              
             values = db.getDatasetPointSelectionByUuid(reqUuid, points) 
             rootUUID = db.getUUIDByPath('/')
@@ -1109,25 +1203,30 @@ class ValueHandler(RequestHandler):
         body = None
         try:
             body = json.loads(self.request.body)
-        except ValueError:
-            log.info("json not supplied")
-            raise HTTPError(400)
+        except ValueError as e:
+            msg = "JSON Parser Error: " + e.message
+            log.info(msg)
+            raise HTTPError(400, reason=msg )
         
         if "value" not in body:
-            log.info("Value not supplied")
-            raise HTTPError(400) # missing data
+            msg = "Bad Request: Value not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg) # missing data
             
         if "points" in body:
             points = body['points']
             if type(points) != list:
-                log.info("expecting list of points")
-                raise HTTPError(400)
+                msg = "Bad Request: expecting list of points"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             if 'start' in body or 'stop' in body or 'step' in body:
-                log.info("can use hyperslab selection with points")
-                raise HTTPError(400)
+                msg = "Bad Request: can use hyperslab selection and points selection in one request"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             if len(points) > len(value):
-                log.info("more points provided than values")
-                raise HTTPError(400)
+                msg = "Bad Request: more points provided than values"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
         else:
             # hyperslab selection
             if 'start' in body:
@@ -1192,13 +1291,15 @@ class AttributeHandler(RequestHandler):
             idpart = uri[len('/datatypes/'):]  # get stuff after /datatypes/
         else:
             # should not get here!
-            log.error("unexpected uri: " + uri)
-            raise HTTPError(500)
+            msg = "Internal Server Error: unexpected uri: " + uri
+            log.error(msg)
+            raise HTTPError(500, reason=msg)
         
         npos = idpart.find('/')
         if npos <= 0:
-            log.info("bad uri")
-            raise HTTPError(400)  
+            msg = "Bad Request: URI is invalid"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  
         id = idpart[:npos]
          
         log.info('got id: [' + id + ']')
@@ -1214,8 +1315,9 @@ class AttributeHandler(RequestHandler):
         name = None
         npos = uri.rfind('/attributes')
         if npos <= 0:
-            log.info("bad uri")
-            raise HTTPError(400)  
+            msg = "Bad Request: URI is invalid"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  
         uri = uri[npos+len('/attributes'):]
         if uri[0:1] == '/':
             uri = uri[1:]
@@ -1241,7 +1343,9 @@ class AttributeHandler(RequestHandler):
          
         log.info('got collection name: [' + col_name + ']')
         if col_name not in ('datasets', 'groups', 'datatypes'):
-            raise HTTPError(500)   # shouldn't get routed here in this case
+            msg = "Internal Server Error: collection name unexpected"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)   # shouldn't get routed here in this case
     
         return col_name
         
@@ -1343,25 +1447,28 @@ class AttributeHandler(RequestHandler):
         reqUuid = self.getRequestId()
         attr_name = self.getRequestName()
         if attr_name == None:
-            log.info("Attribute name not supplied")
-            raise HTTPError(400)
+            msg = "Bad Request: attribute name not supplied"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
         body = None
         try:
             body = json.loads(self.request.body)
-        except ValueError:
-            log.info("json not supplied")
-            raise HTTPError(400, reason="bad json")
+        except ValueError as e:
+            msg = "JSON Parser Error: " + e.message
+            log.info(msg)
+            raise HTTPError(400, reason=msg )
             
         if "type" not in body:
             log.info("Type not supplied")
             raise HTTPError(400)  # missing type
             
         if "value" not in body:
-            log.info("Value not supplied")
-            raise HTTPError(400)  # missing value
+            msg = "Bad Request: value not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  # missing value
           
         shape = () # default as empty tuple (will create a scalar attribute)
         if shape in body:    
@@ -1375,17 +1482,20 @@ class AttributeHandler(RequestHandler):
         elif type(shape) == list or type(shape) == tuple: 
             pass # can use as is
         else:
-            log.info("invalid shape argument")
-            raise HTTPError(400)
+            msg = "Bad Request: invalid shape argument"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
             
         # validate shape
         for extent in shape:
             if type(extent) != int:
-                log.info("invalid shape type")
-                raise HTTPError(400)
+                msg = "Bad Request: invalid shape type"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             if extent < 0:
-                log.info("invalid shape (negative extent)")
-                raise HTTPError(400)   
+                msg = "Bad Request: invalid shape (negative extent)"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)   
                 
         # convert list values to tuples (otherwise h5py is not happy)
         data = self.convertToTuple(value)
@@ -1426,8 +1536,9 @@ class AttributeHandler(RequestHandler):
         col_name = self.getRequestCollectionName()
         attr_name = self.getRequestName()
         if attr_name == None:
-            log.info("Attribute name not supplied")
-            raise HTTPError(400)
+            msg = "Bad Request: attribute name not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         with Hdf5db(filePath, app_logger=log) as db:
@@ -1445,9 +1556,13 @@ class GroupHandler(RequestHandler):
         uri = self.request.uri
         npos = uri.rfind('/')
         if npos < 0:
-            raise HTTPError(500)  # should not get routed to GroupHandler in this case
+            msg = "Internal Server Error: unexpected routing"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)  # should not get routed to GroupHandler in this case
         if npos == len(uri) - 1:
-            raise HTTPError(400, message="missing id")
+            msg = "Bad Request: id could not be found in URI"
+            log.info(msg)
+            raise HTTPError(400, message=msg)
         id = uri[(npos+1):]
         log.info('got id: [' + id + ']')
     
@@ -1569,8 +1684,9 @@ class GroupCollectionHandler(RequestHandler):
         log.info('GroupHandlerCollection.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
         if self.request.uri != '/groups':
-            log.info('bad group post request')
-            raise HTTPError(405)  # Method not allowed
+            msg = "Method Not Allowed: bad group post request"
+            log.info(msg)
+            raise HTTPError(405, reason=msg)  # Method not allowed
         
         parent_group_uuid = None
         link_name = None
@@ -1579,16 +1695,18 @@ class GroupCollectionHandler(RequestHandler):
         if self.request.body:
             try:
                 body = json.loads(self.request.body)
-            except ValueError:
-                log.info("json not supplied")
-                raise HTTPError(400)
+            except ValueError as e:
+                msg = "JSON Parser Error: " + e.message
+                log.info(msg)
+                raise HTTPError(400, reason=msg )
         
         if "link" in body:    
             link_options = body["link"]
             print link_options
             if "id" not in link_options or "name" not in link_options:
-                log.info("missing link parameter")
-                raise HTTPError(400)
+                msg = "Bad Request: missing link parameter"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
             parent_group_uuid = link_options["id"]
             link_name = link_options["name"]
             log.info("add link to: " + parent_group_uuid + " with name: " + link_name);
@@ -1664,8 +1782,9 @@ class DatasetCollectionHandler(RequestHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                log.info("expected int type for limit")
-                raise HTTPError(400) 
+                msg = "Bad Request: expected int type for limit"
+                log.info(msg)
+                raise HTTPError(400, reason=msg) 
         marker = self.get_query_argument("Marker", None)
         
         response = { }
@@ -1704,8 +1823,9 @@ class TypeCollectionHandler(RequestHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                log.info("expected int type for limit")
-                raise HTTPError(400) 
+                msg = "Bad Request: expected int type for Limit"
+                log.info(msg)
+                raise HTTPError(400, reason=msg) 
         marker = self.get_query_argument("Marker", None)
         
         response = { }
@@ -1792,14 +1912,16 @@ class RootHandler(RequestHandler):
         filePath = getFilePath(self.request.host)
         log.info("put filePath: " + filePath)
         if op.isfile(filePath):
-            log.info("path exists")
-            raise HTTPError(409)  # Conflict - is this the correct code?
+            msg = "Conflict: resource exists"
+            log.info(msg)    
+            raise HTTPError(409, reason=msg)  # Conflict - is this the correct code?
         # create directories as needed
         makeDirs(op.dirname(filePath))
         log.info("creating file: [" + filePath + "]")
         if not Hdf5db.createHDF5File(filePath):
-            log.error("unexpected error creating HDF5: " + filePath)
-            raise HTTPError(500)
+            msg = "Internal Server Error: unexpected error creating HDF5: " + filePath
+            log.error(msg)
+            raise HTTPError(500, reason=msg)
         response = self.getRootResponse(filePath)
         
         self.set_header('Content-Type', 'application/json')
@@ -1815,11 +1937,15 @@ class RootHandler(RequestHandler):
         
         if not op.isfile(filePath):
             # file not there
-            raise HTTPError(404)  # Not found
+            msg = "Not found: resource does not exist"
+            log.info(msg)
+            raise HTTPError(404, reason=msg)  # Not found
              
         if not os.access(filePath, os.W_OK):
             # file is read-only
-            raise HTTPError(403) # Forbidden
+            msg = "Forbidden: Resource is read-only"
+            log.info(msg)
+            raise HTTPError(403, reason=msg) # Forbidden
             
         os.remove(filePath)    
         

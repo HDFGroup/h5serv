@@ -444,6 +444,7 @@ class AttributeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['hrefs']), 3)
+        
         # do a get and verify the space is simple
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)  # get attribute
@@ -489,6 +490,17 @@ class AttributeTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['hrefs']), 3)
         
+        # do a get and verify the space has 10 elements
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # get attribute
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.failUnlessEqual(shape['class'], 'H5S_SIMPLE')
+        dims = shape['dims']
+        self.failUnlessEqual(len(dims), 1)
+        self.failUnlessEqual(dims[0], 10)
+        
+    
         
     def testPutFixedString(self):
         domain = 'tall_updated.' + config.get('domain') 
