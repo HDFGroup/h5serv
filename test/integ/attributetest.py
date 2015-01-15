@@ -595,6 +595,14 @@ class AttributeTest(unittest.TestCase):
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)  # delete attribute
         
+    def testGetInvalidName(self):
+        domain = 'tall.' + config.get('domain')
+        rootUUID = helper.getRootUUID(domain)
+        req = helper.getEndpoint() + "/groups/" + rootUUID + "/attributes/no_attr_here"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 404)
+        
                          
             
 if __name__ == '__main__':

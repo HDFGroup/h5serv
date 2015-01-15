@@ -751,13 +751,13 @@ class Hdf5db:
             return None
         item = self.getAttributeItemByObj(obj, name)
         if item == None:
-            if self.getModifiedTime(obj_uuid, objType="attribute", name=nam, useRoot=False):
+            if self.getModifiedTime(obj_uuid, objType="attribute", name=name, useRoot=False):
                 # attribute has been removed
                 msg = "Attribute: [" + name + "] of object: " + obj_uuid + " has been previously deleted"
                 self.log(msg)
                 raise IOError(errno.EIDRM, msg)
             msg = "Attribute: [" + name + "] of object: " + obj_uuid + " not found"
-            self.log(msg)
+            self.log.info(msg)
             raise IOError(errno.ENXIO, msg)
         # mix-in timestamps
         item['ctime'] = self.getCreateTime(obj_uuid, objType="attribute", name=name)
