@@ -352,7 +352,7 @@ class LinkTest(unittest.TestCase):
         
         # get should fail
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)  # todo - should return 410
+        self.failUnlessEqual(rsp.status_code, 410)   
         
         # Group should still be accessible via uuid
         req = self.endpoint + "/groups/" + grpId

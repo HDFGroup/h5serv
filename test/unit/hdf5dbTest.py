@@ -12,6 +12,7 @@
 import unittest
 import sys
 import os
+import errno
 import os.path as op
 import stat
 import logging
@@ -97,7 +98,7 @@ class Hdf5dbTest(unittest.TestCase):
             g1Links = db.getLinkItems(g1uuid)
             self.failUnlessEqual(len(g1Links), 2)
             g11uuid = db.getUUIDByPath("/g1/g1.1")
-            db.deleteObjectByUuid(g11uuid)
+            db.deleteObjectByUuid("group", g11uuid)
             
     def testCreateGroup(self):
         # get test file
@@ -228,8 +229,13 @@ class Hdf5dbTest(unittest.TestCase):
             g2Uuid = db.getUUIDByPath('/g2')
             numG2Children = len(db.getLinkItems(g2Uuid))
             self.assertEqual(numG2Children, 3)
-            rc = db.unlinkItem(g2Uuid, "udlink")
-            self.assertFalse(rc)
+            got_exception = False
+            try:
+                db.unlinkItem(g2Uuid, "udlink")
+            except IOError as ioe:
+                got_exception = True
+                self.assertEqual(ioe.errno, errno.EPERM)
+            self.assertTrue(got_exception)
             numG2Children = len(db.getLinkItems(g2Uuid))
             self.assertEqual(numG2Children, 3)
     

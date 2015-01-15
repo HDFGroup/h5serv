@@ -118,26 +118,3 @@ def makeDirs(filePath):
     makeDirs(dirname)  # recursive call
     #logging.info('mkdir("' + filePath + '")')
     os.mkdir(filePath)  # should succeed since parent directory is created  
-    
-"""
-  Get the target for a given link item  
-    item: item object returned by db.getLinkItem
-
-def getLinkTarget(item, protocol="file"):
-    target = None
-    if item['class'] == 'hard':
-        target = item['className'].lower() + 's/' + item['id']
-    elif item['class'] == 'soft':
-        path = url_escape(item['path'])
-        target = "/#h5path(" + path + ")"
-    elif item['class'] == 'external':
-        filename = url_escape(item['filename'])
-        path = url_escape(item['path']) 
-        target =  protocol + "://" + filename + "/#h5path(" + path + ")"
-    elif item['class'] == 'user':
-        target = "???"
-    else:
-        logging.error("unexpected link item class: " + item['class'])
-        raise HTTPError(500) 
-    return target
-"""    

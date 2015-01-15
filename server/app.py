@@ -107,15 +107,15 @@ class LinkCollectionHandler(RequestHandler):
         verifyFile(filePath)
         items = None
         rootUUID = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            items = db.getLinkItems(reqUuid, marker=marker, limit=limit)
-            if items == None:
-                msg = "Not Found: Link not found"
-                log.info(msg)
-                raise HTTPError(404, reason=msg)
-                #todo: return 410 if the group was recently deleted
-            rootUUID = db.getUUIDByPath('/')
-                         
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                items = db.getLinkItems(reqUuid, marker=marker, limit=limit)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
+                             
         # got everything we need, put together the response
         links = []
         hrefs = []
@@ -198,13 +198,14 @@ class LinkHandler(RequestHandler):
         verifyFile(filePath)
         items = None
         rootUUID = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            item = db.getLinkItemByUuid(reqUuid, linkName)
-            if item == None:
-                msg = "Not Found: link not found"
-                log.info(msg)
-                raise HTTPError(404, reason=msg)
-            rootUUID = db.getUUIDByPath('/')
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                item = db.getLinkItemByUuid(reqUuid, linkName)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror)
                          
         # got everything we need, put together the response
         targethref = ''
@@ -320,30 +321,19 @@ class LinkHandler(RequestHandler):
         verifyFile(filePath)
         items = None
         rootUUID = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            try:
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
                 if childUuid:
                     db.linkObject(reqUuid, childUuid, linkName)
                 elif filename:
                     db.createExternalLink(reqUuid, filename, h5path, linkName)
                 elif h5path:
                     db.createSoftLink(reqUuid, h5path, linkName)
-            except IOError as e:
-                if e.errno == 2:
-                    msg = "Not Found: " + e.strerror
-                    log.info(msg)
-                    raise HTTPError(404, reason=msg)
-                else:
-                    msg = "Forbidden: " + e.strerror
-                    log.info(msg)
-                    raise HTTPError(403, reason=msg)
-            except ValueError as e:
-                msg = "Bad Request: " + e.message
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-                
-                
-            rootUUID = db.getUUIDByPath('/')
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror)   
             
         self.set_status(201) 
         
@@ -364,14 +354,9 @@ class LinkHandler(RequestHandler):
             with Hdf5db(filePath, app_logger=log) as db:
                 db.unlinkItem(reqUuid, linkName)
         except IOError as e:
-            if e.errno == 17:
-                msg = "Forbidden: " + e.strerror
-                log.info(msg)
-                raise HTTPError(403, reason=msg)
-            else:
-                msg = "Not Found: " + e.strerror
-                log.info(msg)
-                raise HTTPError(404, reason=msg)
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                 
 class TypeHandler(RequestHandler):
     
@@ -407,15 +392,14 @@ class TypeHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            item = db.getCommittedTypeItemByUuid(reqUuid)
-            if item == None:
-                httpError = 404  # not found
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                log.info("dataset: [" + reqUuid + "] not found")
-                raise HTTPError(httpError)
-            rootUUID = db.getUUIDByPath('/')
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                item = db.getCommittedTypeItemByUuid(reqUuid)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
@@ -462,16 +446,18 @@ class TypeHandler(RequestHandler):
             
         datatype = body["type"]     
         
-        with Hdf5db(filePath, app_logger=log) as db:
-            rootUUID = db.getUUIDByPath('/')
-            typeUUID = db.createCommittedType(datatype)
-            if typeUUID == None:
-                httpError = 500
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                log.info("failed to create type (httpError: " + str(httpError) + ")")
-                raise HTTPError(httpError)
-         
+        typeUUID = None
+        rootUUID = None
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                typeUUID = db.createCommittedType(datatype)
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
+            
         response = { }
       
         # got everything we need, put together the response
@@ -496,13 +482,13 @@ class TypeHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        with Hdf5db(filePath, app_logger=log) as db:
-            ok = db.deleteObjectByUuid(uuid)
-            if not ok:
-                httpStatus = db.httpStatus
-                if httpStatus == 200:
-                    httpStatus = 500
-                raise HTTPError(httpStatus)  
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                db.deleteObjectByUuid('datatype', uuid)
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                 
 class DatatypeHandler(RequestHandler):
     def getRequestId(self):
@@ -544,15 +530,14 @@ class DatatypeHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            item = db.getDatasetTypeItemByUuid(reqUuid)
-            if item == None:
-                httpError = 404  # not found
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                log.info("dataset: [" + reqUuid + "] not found")
-                raise HTTPError(httpError)
-            rootUUID = db.getUUIDByPath('/')
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                item = db.getDatasetTypeItemByUuid(reqUuid)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
@@ -608,15 +593,15 @@ class ShapeHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            item = db.getDatasetItemByUuid(reqUuid)
-            if item == None:
-                httpError = 404  # not found
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                log.info("dataset: [" + reqUuid + "] not found")
-                raise HTTPError(httpError)
-            rootUUID = db.getUUIDByPath('/')
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                item = db.getDatasetItemByUuid(reqUuid)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
@@ -724,15 +709,14 @@ class DatasetHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            item = db.getDatasetItemByUuid(reqUuid)
-            if item == None:
-                httpError = 404  # not found
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                log.info("dataset: [" + reqUuid + "] not found")
-                raise HTTPError(httpError)
-            rootUUID = db.getUUIDByPath('/')
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                item = db.getDatasetItemByUuid(reqUuid)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
             
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
@@ -798,8 +782,7 @@ class DatasetHandler(RequestHandler):
         else:
             shape = ()  # empty tuple
             
-        if "link" in body:
-            
+        if "link" in body:          
             link_options = body["link"]
             print link_options
             if "id" not in link_options or "name" not in link_options:
@@ -851,32 +834,19 @@ class DatasetHandler(RequestHandler):
                 if maxextent == 0:
                     maxshape[i] = None  # this indicates unlimited
         
-        with Hdf5db(filePath, app_logger=log) as db:
-            if group_uuid:
-                group_item = db.getGroupItemByUuid(group_uuid)
-                if group_item == None:
-                    httpError = 404  # not found
-                    if db.httpStatus != 200:
-                        httpError = db.httpStatus # library may have more specific error code
-                        log.info("failed to get parent group (httpError: " + str(httpError) + ")")
-                        raise HTTPError(httpError)
-            rootUUID = db.getUUIDByPath('/')
-            dsetUUID = db.createDataset(datatype, shape, maxshape)
-            if dsetUUID == None:
-                httpError = 500
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                log.info("failed to create dataset (httpError: " + str(httpError) + ")")
-                raise HTTPError(httpError)
-            if group_uuid:
-                # link the new dataset
-                ok = db.linkObject(group_uuid, dsetUUID, link_name)
-            
-                if not ok:
-                    httpStatus = 500
-                    if db.httpStatus != 201:
-                        httpStatus = db.httpStatus
-                    raise HTTPError(httpStatus)
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                if group_uuid:
+                    group_item = db.getGroupItemByUuid(group_uuid)
+                rootUUID = db.getUUIDByPath('/')
+                dsetUUID = db.createDataset(datatype, shape, maxshape)
+                if group_uuid:
+                    # link the new dataset
+                    db.linkObject(group_uuid, dsetUUID, link_name)
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                 
         response = { }
       
@@ -903,13 +873,15 @@ class DatasetHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        with Hdf5db(filePath, app_logger=log) as db:
-            ok = db.deleteObjectByUuid(uuid)
-            if not ok:
-                httpStatus = db.httpStatus
-                if httpStatus == 200:
-                    httpStatus = 500
-                raise HTTPError(httpStatus)  
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                db.deleteObjectByUuid('dataset', uuid)
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
+            
                 
 class ValueHandler(RequestHandler):
     """
@@ -1050,45 +1022,41 @@ class ValueHandler(RequestHandler):
         rootUUID = None
         item = None
         values = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            item = db.getDatasetItemByUuid(reqUuid)
-            if item == None:
-                httpError = 404  # not found
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                log.info("dataset: [" + reqUuid + "] not found")
-                raise HTTPError(httpError)
-            itemType = item['type']
-            if itemType['class'] == 'H5T_VLEN':
-                #todo - support for returning VLEN data...
-                msg = "Not Implemented: GET VLEN data not supported"
-                log.info(msg)
-                # raise HTTPError(501)  # Not implemented
-            if itemType['class'] == 'H5T_OPAQUE':
-                #todo - support for returning OPAQUE data...
-                msg = "Not Implemented: GET OPAQUE data not supported"
-                log.info(msg)
-                raise HTTPError(501, reason=msg)  # Not implemented
-            shape = item['shape']
-            if shape['class'] == 'H5S_NULL':
-                pass   # don't return a value
-            elif shape['class'] == 'H5S_SCALAR':
-                values = db.getDatasetValuesByUuid(reqUuid, Ellipsis)
-            elif shape['class'] == 'H5S_SIMPLE':
-                dims = shape['dims']
-                rank = len(dims)
-                slices = []
-                for dim in range(rank):
-                    slice = self.getSliceQueryParam(dim, dims[dim])
-                    slices.append(slice)
-         
-                values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
-            else:
-                msg = "Internal Server Error: unexpected shape class: " + shape['class']
-                log.error(msg)
-                raise HTTPError(500, reason=msg)
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                item = db.getDatasetItemByUuid(reqUuid)
+                itemType = item['type']
                 
-            rootUUID = db.getUUIDByPath('/')
+                if itemType['class'] == 'H5T_OPAQUE':
+                    #todo - support for returning OPAQUE data...
+                    msg = "Not Implemented: GET OPAQUE data not supported"
+                    log.info(msg)
+                    raise HTTPError(501, reason=msg)  # Not implemented
+                shape = item['shape']
+                if shape['class'] == 'H5S_NULL':
+                    pass   # don't return a value
+                elif shape['class'] == 'H5S_SCALAR':
+                    values = db.getDatasetValuesByUuid(reqUuid, Ellipsis)
+                elif shape['class'] == 'H5S_SIMPLE':
+                    dims = shape['dims']
+                    rank = len(dims)
+                    slices = []
+                    for dim in range(rank):
+                        slice = self.getSliceQueryParam(dim, dims[dim])
+                        slices.append(slice)
+         
+                    values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
+                else:
+                    msg = "Internal Server Error: unexpected shape class: " + shape['class']
+                    log.error(msg)
+                    raise HTTPError(500, reason=msg)
+                
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
@@ -1140,37 +1108,37 @@ class ValueHandler(RequestHandler):
         rootUUID = None
         item = None
         values = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            item = db.getDatasetItemByUuid(reqUuid)
-            if item == None:
-                httpError = 404  # not found
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                log.info("dataset: [" + reqUuid + "] not found")
-                raise HTTPError(httpError)
-            shape = item['shape']
-            if shape['class'] == 'H5S_SCALAR':
-                msg = "Bad Request: point selection is not supported on scalar datasets"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-            rank = len(shape['dims'])
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                item = db.getDatasetItemByUuid(reqUuid)
+                shape = item['shape']
+                if shape['class'] == 'H5S_SCALAR':
+                    msg = "Bad Request: point selection is not supported on scalar datasets"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
+                rank = len(shape['dims'])
                 
-            for point in points:
-                if rank == 1 and type(point) != int:
-                    msg = "Bad Request: elements of points should be int type for datasets of rank 1"
-                    log.info(msg)
-                    raise HTTPError(400, reason=msg)
-                elif rank > 1 and type(point) != list:
-                    msg = "Bad Request: elements of points should be list type for datasets of rank >1"
-                    log.info(msg)
-                    raise HTTPError(400, reason=msg)
-                    if len(point) != rank:
-                        msg = "Bad Request: one or more points have a missing coordinate value"
+                for point in points:
+                    if rank == 1 and type(point) != int:
+                        msg = "Bad Request: elements of points should be int type for datasets of rank 1"
                         log.info(msg)
                         raise HTTPError(400, reason=msg)
+                    elif rank > 1 and type(point) != list:
+                        msg = "Bad Request: elements of points should be list type for datasets of rank >1"
+                        log.info(msg)
+                        raise HTTPError(400, reason=msg)
+                        if len(point) != rank:
+                            msg = "Bad Request: one or more points have a missing coordinate value"
+                            log.info(msg)
+                            raise HTTPError(400, reason=msg)
              
-            values = db.getDatasetPointSelectionByUuid(reqUuid, points) 
-            rootUUID = db.getUUIDByPath('/')
+                values = db.getDatasetPointSelectionByUuid(reqUuid, points) 
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
@@ -1238,32 +1206,25 @@ class ValueHandler(RequestHandler):
                             
         data = body["value"]
         
-        with Hdf5db(filePath, app_logger=log) as db:
-            item = db.getDatasetItemByUuid(reqUuid)
-            if item == None:
-                httpError = 404  # not found
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                log.info("dataset: [" + reqUuid + "] not found")
-                raise HTTPError(httpError)
-            dsetshape = item['shape']
-            dims = dsetshape['dims']
-            rank = len(dims) 
-            if points:
-                for point in points:
-                    pass
-                    
-            else:
-                slices = self.getHyperslabSelection(dims, start, stop, step)
-                # todo - check that the types are compatible
-                ok = db.setDatasetValuesByUuid(reqUuid, data, slices)
-                if not ok:
-                    httpError = 500  # internal error
-                    if db.httpStatus != 200:
-                        httpError = db.httpStatus # library may have more specific error code
-                    log.info("dataset put error")
-                    raise HTTPError(httpError)   
-            log.info("value post succeeded")   
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                item = db.getDatasetItemByUuid(reqUuid)
+                dsetshape = item['shape']
+                dims = dsetshape['dims']
+                rank = len(dims) 
+                if points:
+                    for point in points:
+                        pass  # todo        
+                else:
+                    slices = self.getHyperslabSelection(dims, start, stop, step)
+                    # todo - check that the types are compatible
+                    db.setDatasetValuesByUuid(reqUuid, data, slices)
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
+        
+        log.info("value post succeeded")   
            
 class AttributeHandler(RequestHandler):
 
@@ -1375,20 +1336,21 @@ class AttributeHandler(RequestHandler):
                 log.info("expected int type for limit")
                 raise HTTPError(400) 
         marker = self.get_query_argument("Marker", None)
-        with Hdf5db(filePath, app_logger=log) as db:
-            if attr_name != None:
-                item = db.getAttributeItem(col_name, reqUuid, attr_name)
-                if item == None:
-                    httpError = 404  # not found
-                    if db.httpStatus != 200:
-                        httpError = db.httpStatus # library may have more specific error code
-                    log.info("attribute: [" + reqUuid + "]/" + attr_name + " not found")
-                    raise HTTPError(httpError)
-                items.append(item)
-            else:
-                # get all attributes (but without data)
-                items = db.getAttributeItems(col_name, reqUuid, marker, limit)
-            rootUUID = db.getUUIDByPath('/')
+        
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                if attr_name != None:
+                    item = db.getAttributeItem(col_name, reqUuid, attr_name)
+                    items.append(item)
+                else:
+                    # get all attributes (but without data)
+                    items = db.getAttributeItems(col_name, reqUuid, marker, limit)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                          
         
         # got everything we need, put together the response
@@ -1500,12 +1462,14 @@ class AttributeHandler(RequestHandler):
         # convert list values to tuples (otherwise h5py is not happy)
         data = self.convertToTuple(value)
                    
-        
-        with Hdf5db(filePath, app_logger=log) as db:
-            db.createAttribute(col_name, reqUuid, attr_name, shape, datatype, data)
-            if db.httpStatus != 200:
-                raise HTTPError(db.httpStatus)
-            rootUUID = db.getUUIDByPath('/')
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                db.createAttribute(col_name, reqUuid, attr_name, shape, datatype, data)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                 
         response = { }
       
@@ -1541,13 +1505,16 @@ class AttributeHandler(RequestHandler):
             raise HTTPError(400, reason=msg)
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        with Hdf5db(filePath, app_logger=log) as db:
-            ok = db.deleteAttribute(col_name, obj_uuid, attr_name)
-            if not ok:
-                httpStatus = db.httpStatus
-                if httpStatus == 200:
-                    httpStatus = 500
-                raise HTTPError(httpStatus) 
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                db.deleteAttribute(col_name, obj_uuid, attr_name)
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
+        
+        log.info("Attribute delete succeeded")
                 
          
 class GroupHandler(RequestHandler):
@@ -1582,15 +1549,15 @@ class GroupHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            item = db.getGroupItemByUuid(reqUuid)
-            if item == None:
-                httpError = 404  # not found
-                if db.httpStatus != 200:
-                    httpError = db.httpStatus # library may have more specific error code
-                log.info("group: [" + reqUuid + "] not found")
-                raise HTTPError(httpError)
-            rootUUID = db.getUUIDByPath('/')
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                item = db.getGroupItemByUuid(reqUuid)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
@@ -1617,14 +1584,15 @@ class GroupHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        with Hdf5db(filePath, app_logger=log) as db:
-            ok = db.deleteObjectByUuid(uuid)
-            if not ok:
-                httpStatus = db.httpStatus
-                if httpStatus == 200:
-                    httpStatus = 500
-                raise HTTPError(httpStatus) 
-            rootUUID = db.getUUIDByPath('/') 
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                db.deleteObjectByUuid('group', uuid)
+                rootUUID = db.getUUIDByPath('/') 
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
          
         response = {}        
         hrefs = []
@@ -1664,9 +1632,15 @@ class GroupCollectionHandler(RequestHandler):
              
         items = None
         hrefs = []
-        with Hdf5db(filePath, app_logger=log) as db:
-            items = db.getCollection("groups", marker, limit)
-            rootUUID = db.getUUIDByPath('/')
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                items = db.getCollection("groups", marker, limit)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                          
         # write the response
         response['groups'] = items
@@ -1715,32 +1689,22 @@ class GroupCollectionHandler(RequestHandler):
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
-        with Hdf5db(filePath, app_logger=log) as db:
-            rootUUID = db.getUUIDByPath('/')
-            if parent_group_uuid:
-                parent_group_item = db.getGroupItemByUuid(parent_group_uuid)
-                if parent_group_item == None:
-                    httpError = 404  # not found
-                    if db.httpStatus != 200:
-                        httpError = db.httpStatus # library may have more specific error code
-                        log.info("failed to get parent group (httpError: " + str(httpError) + ")")
-                        raise HTTPError(httpError)
-            grpUUID = db.createGroup()
-            if grpUUID == None:
-                raise HTTPError(db.httpStatus)
-            item = db.getGroupItemByUuid(grpUUID)
-            if item == None:
-                # unexpected!
-                raise HTTPError(500)  
-            # if link info is provided, link the new group
-            if parent_group_uuid:
-                # link the new dataset
-                ok = db.linkObject(parent_group_uuid, grpUUID, link_name)      
-                if not ok:
-                    httpStatus = 500
-                    if db.httpStatus != 201:
-                        httpStatus = db.httpStatus
-                    raise HTTPError(httpStatus)        
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                if parent_group_uuid:
+                    parent_group_item = db.getGroupItemByUuid(parent_group_uuid)
+                grpUUID = db.createGroup()
+                item = db.getGroupItemByUuid(grpUUID)
+                # if link info is provided, link the new group
+                if parent_group_uuid:
+                    # link the new dataset
+                    db.linkObject(parent_group_uuid, grpUUID, link_name) 
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror)      
            
         href = self.request.protocol + '://' + domain  
         self.set_header('Location', href + '/groups/' + grpUUID)
@@ -1792,9 +1756,15 @@ class DatasetCollectionHandler(RequestHandler):
         rootUUID = None
              
         items = None
-        with Hdf5db(filePath, app_logger=log) as db:
-            items = db.getCollection("datasets", marker, limit)
-            rootUUID = db.getUUIDByPath('/')
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                items = db.getCollection("datasets", marker, limit)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                          
         # write the response
         response['datasets'] = items
@@ -1833,9 +1803,14 @@ class TypeCollectionHandler(RequestHandler):
         rootUUID = None
              
         items = None
-        with Hdf5db(filePath) as db:
-            items = db.getCollection("datatypes", marker, limit)
-            rootUUID = db.getUUIDByPath('/')
+        try:
+            with Hdf5db(filePath) as db:
+                items = db.getCollection("datatypes", marker, limit)
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
                          
         # write the response
         response['datatypes'] = items
@@ -1856,11 +1831,14 @@ class RootHandler(RequestHandler):
         # used by GET / and PUT /
         domain = self.request.host
         filePath = getFilePath(domain)
-        with Hdf5db(filePath, app_logger=log) as db:
-            rootUUID = db.getUUIDByPath('/')
-            datasetCount = db.getNumberOfDatasets()
-            groupCount = db.getNumberOfGroups()
-            datatypeCount = db.getNumberOfDatatypes()
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
          
         # generate response 
         hrefs = [ ]
@@ -1875,8 +1853,7 @@ class RootHandler(RequestHandler):
         response['created'] = unixTimeToUTC(op.getctime(filePath))
         response['lastModified'] = unixTimeToUTC(op.getmtime(filePath))
         response['root'] = rootUUID
-        response['hrefs'] = hrefs
-        
+        response['hrefs'] = hrefs  
       
         return response
         
@@ -1918,10 +1895,13 @@ class RootHandler(RequestHandler):
         # create directories as needed
         makeDirs(op.dirname(filePath))
         log.info("creating file: [" + filePath + "]")
-        if not Hdf5db.createHDF5File(filePath):
-            msg = "Internal Server Error: unexpected error creating HDF5: " + filePath
-            log.error(msg)
-            raise HTTPError(500, reason=msg)
+        
+        try:
+            Hdf5db.createHDF5File(filePath)
+        except IOError as e:
+            log.info("IOError creating new HDF5 file: " + str(e.errno) + " " + e.strerror)
+            raise HTTPError(500, "Unexpected error: unable to create collection") 
+            
         response = self.getRootResponse(filePath)
         
         self.set_header('Content-Type', 'application/json')
@@ -1946,8 +1926,13 @@ class RootHandler(RequestHandler):
             msg = "Forbidden: Resource is read-only"
             log.info(msg)
             raise HTTPError(403, reason=msg) # Forbidden
-            
-        os.remove(filePath)    
+        
+        try:    
+            os.remove(filePath)  
+        except IOError as ioe:
+            log.info("IOError deleting HDF5 file: " + str(e.errno) + " " + e.strerror)
+            raise HTTPError(500, "Unexpected error: unable to delete collection") 
+              
         
 def sig_handler(sig, frame):
     log = logging.getLogger("h5serv")
