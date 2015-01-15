@@ -257,8 +257,6 @@ class Hdf5db:
         
     def initFile(self):
         # self.log.info("initFile")
-        self.httpStatus = 200
-        self.httpMessage = None
         if self.readonly:
             self.dbGrp = self.dbf
             if "{groups}" in self.dbf:
@@ -1073,7 +1071,6 @@ class Hdf5db:
     def resizeDataset(self, obj_uuid, shape):
         self.log.info("resizeDataset(") #  + obj_uuid + "): ") # + str(shape))
         self.initFile()
-        self.httpStatus = 500  # will reset before returning
         if self.readonly:
             msg = "Unable to resize dataset (Updates are not allowed)"
             self.log.info(msg)
