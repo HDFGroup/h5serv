@@ -1,5 +1,5 @@
 ###################
-References 
+Reference
 ###################
 
 .. toctree::
@@ -7,10 +7,15 @@ References
 
    Resources
    Diagram
-   Domain
-   GroupCollection
-   DatasetCollection
-   DatatypeCollection
-   Group
-   LinkCollection
-   Link
+   CommonRequestHeaders
+   CommonResponseHeaders
+   CommonErrorResponses
+   Authorization
+   UsingIteration
+   Hypermedia
+   DomainOps/index
+   AttrOps/index
+   DatasetOps/index
+   DatatypeOps/index
+   GroupOps/index
+    
