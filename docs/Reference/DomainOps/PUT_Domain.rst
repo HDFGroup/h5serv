@@ -4,7 +4,12 @@ PUT Domain
 
 Description
 ===========
-Creates a new domain.
+This operation creates a new domain.
+
+*Note*: Initially the only object contained in the domain is the root group.  Use other
+PUT and POST operations to create new objects in the domain.
+
+*Note*: The operation will fail if the domain already exists (a 409 code will be returned).
 
 Requests
 ========
@@ -13,7 +18,7 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    PUT / HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -40,6 +45,19 @@ Response Elements
 
 On success, a JSON response will be returned with the following elements:
 
+root
+^^^^
+The UUID of the root group of this domain.
+
+created
+^^^^^^^
+A timestamp giving the time the domain was created in UTC (ISO-8601 format).
+
+lastModified
+^^^^^^^^^^^^
+A timestamp giving the most recent time that any content in the domain has been
+modified in UTC (ISO-8601 format).
+
 hrefs
 ^^^^^
 An array of links to related resources.  See :doc:`../Hypermedia`.
@@ -47,8 +65,10 @@ An array of links to related resources.  See :doc:`../Hypermedia`.
 Special Errors
 --------------
 
-The implementation of the operation does not return special errors.  For general 
+The implementation of the operation does not return any special errors.  For general 
 information on standard error codes, see :doc:`../CommonErrorResponses`.
+
+An http status code of 409 (Conflict) will be returned if the domain already exists.
 
 Examples
 ========
@@ -58,31 +78,39 @@ Sample Request
 
 .. code-block:: http
 
-    DELETE /groups/45a882e1-9d01-11e4-8acf-3c15c2da029e HTTP/1.1
-    Host: testGroupDelete.test.hdfgroup.org
-    Authorization: authorization_string
+    PUT / HTTP/1.1
+    Content-Length: 0
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    host: newfile.test.hdfgroup.org
+    Accept: */*
+    Accept-Encoding: gzip, deflate
     
 Sample Response
 ---------------
 
 .. code-block:: http
 
-    HTTP/1.1 200 OK
-    Date: Thu, 15 Jan 2015 21:55:51 GMT
-    Content-Length: 270
+    HTTP/1.1 201 Created
+    Date: Fri, 16 Jan 2015 04:11:52 GMT
+    Content-Length: 523
     Content-Type: application/json
     Server: TornadoServer/3.2.2
     
 .. code-block:: json
 
     
-    {
+  {
+    "root": "cd31cfdc-9d35-11e4-aa58-3c15c2da029e",
+    "created": "2015-01-16T04:11:52Z",
+    "lastModified": "2015-01-16T04:11:52Z", 
     "hrefs": [
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups", "rel": "self"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups/45a06719-9d01-11e4-9b1c-3c15c2da029e", "rel": "root"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/", "rel": "home"}
-    ]
-    }
+       {"href": "http://newfile.test.hdfgroup.org/", "rel": "self"}, 
+       {"href": "http://newfile.test.hdfgroup.org/datasets", "rel": "database"}, 
+       {"href": "http://newfile.test.hdfgroup.org/groups", "rel": "groupbase"}, 
+       {"href": "http://newfile.test.hdfgroup.org/datatypes", "rel": "typebase"}, 
+       {"href": "http://newfile.test.hdfgroup.org/groups/cd31cfdc-9d35-11e4-aa58-3c15c2da029e", "rel": "root"}
+       ]    
+  }
     
 Related Resources
 =================

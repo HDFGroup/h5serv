@@ -103,6 +103,26 @@ class LinkTest(unittest.TestCase):
         target = rspJson['link']
         self.failUnlessEqual(target['class'], 'H5L_TYPE_USER_DEFINED')
         self.failUnlessEqual(target['title'], 'udlink')
+        
+    def testGetLinks(self):
+        logging.info("LinkTest.testGetLinks")
+        for domain_name in ('tall', 'tall_ro'):
+            g1_uuid = None
+            domain = domain_name + '.' + config.get('domain')   
+            root_uuid = helper.getRootUUID(domain) 
+            g1_uuid = helper.getUUID(domain, root_uuid, 'g1')
+            g12_uuid = helper.getUUID(domain, g1_uuid, 'g1.2')    
+            req = self.endpoint + "/groups/" + g12_uuid + "/links"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertTrue("links" in rspJson)
+            links = rspJson["links"]
+            self.assertEqual(len(links), 2)
+            for link in links:
+                self.assertTrue("title" in link)
+                self.assertTrue("class" in link)
                             
     def testGetBatch(self):
         logging.info("LinkTest.testGetBatch")

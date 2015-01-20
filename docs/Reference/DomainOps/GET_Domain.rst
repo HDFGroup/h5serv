@@ -4,7 +4,17 @@ GET Domain
 
 Description
 ===========
-Gets a Domain
+This operation retrieves information about the requested domain.
+
+*Note:* If the HDF DNS Server (see DNS) is configured 
+(see: :doc:`../../Installation/dns`), the  
+operations can specify the domain as part of the URI.  Example:  
+http://tall.data.hdfgroup.org:7253/ 
+returns data about the domain "tall" hosted on data.hdfgroup.org.  
+The DNS server will determine the proper IP that maps to this domain.
+
+If the DNS Server is not setup, specify the desired domain in the Host line of the http
+header.
 
 Requests
 ========
@@ -13,7 +23,7 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    GET / HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -40,6 +50,19 @@ Response Elements
 
 On success, a JSON response will be returned with the following elements:
 
+root
+^^^^
+The UUID of the root group of this domain.
+
+created
+^^^^^^^
+A timestamp giving the time the domain was created in UTC (ISO-8601 format).
+
+lastModified
+^^^^^^^^^^^^
+A timestamp giving the most recent time that any content in the domain has been
+modified in UTC (ISO-8601 format).
+
 hrefs
 ^^^^^
 An array of links to related resources.  See :doc:`../Hypermedia`.
@@ -47,7 +70,7 @@ An array of links to related resources.  See :doc:`../Hypermedia`.
 Special Errors
 --------------
 
-The implementation of the operation does not return special errors.  For general 
+The implementation of the operation does not return any special errors.  For general 
 information on standard error codes, see :doc:`../CommonErrorResponses`.
 
 Examples
@@ -58,9 +81,11 @@ Sample Request
 
 .. code-block:: http
 
-    DELETE /groups/45a882e1-9d01-11e4-8acf-3c15c2da029e HTTP/1.1
-    Host: testGroupDelete.test.hdfgroup.org
-    Authorization: authorization_string
+    GET / HTTP/1.1
+    host: tall.test.hdfgroup.org
+    Accept-Encoding: gzip, deflate
+    Accept: */*
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
     
 Sample Response
 ---------------
@@ -68,20 +93,25 @@ Sample Response
 .. code-block:: http
 
     HTTP/1.1 200 OK
-    Date: Thu, 15 Jan 2015 21:55:51 GMT
-    Content-Length: 270
+    Date: Fri, 16 Jan 2015 03:51:58 GMT
+    Content-Length: 508
+    Etag: "e45bef255ffc0530c33857b88b15f551f371de38"
     Content-Type: application/json
     Server: TornadoServer/3.2.2
     
 .. code-block:: json
-
     
     {
+    "root": "052dcbbd-9d33-11e4-86ce-3c15c2da029e", 
+    "created": "2015-01-16T03:51:58Z",
+    "lastModified": "2015-01-16T03:51:58Z", 
     "hrefs": [
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups", "rel": "self"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups/45a06719-9d01-11e4-9b1c-3c15c2da029e", "rel": "root"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/", "rel": "home"}
-    ]
+        {"href": "http://tall.test.hdfgroup.org/", "rel": "self"},
+        {"href": "http://tall.test.hdfgroup.org/datasets", "rel": "database"}, 
+        {"href": "http://tall.test.hdfgroup.org/groups", "rel": "groupbase"}, 
+        {"href": "http://tall.test.hdfgroup.org/datatypes", "rel": "typebase"},
+        {"href": "http://tall.test.hdfgroup.org/groups/052dcbbd-9d33-11e4-86ce-3c15c2da029e", "rel": "root"}
+    ]      
     }
     
 Related Resources

@@ -92,7 +92,7 @@ Related Resources
 * :doc:`../DatasetOps/GET_Dataset`
 * :doc:`../DatatypeOps/GET_Datatype`
 * :doc:`../GroupOps/GET_Group`
-* :doc:`PUT_Attribute
+* :doc:`PUT_Attribute`
  
 
  

@@ -4,11 +4,11 @@ DELETE Group
 
 Description
 ===========
-The implementation of the DELETE operation deletes the group named in the URI.  All 
-attributes and links of the group will also be deleted.
+The implementation of the DELETE operation deletes the group with the UUID given in the
+URI.  All attributes and links of the group will also be deleted.
 
-Groups, datatypes, and datasets that are referenced by the group's links will **not** be
-deleted.
+*Note:* Groups, datatypes, and datasets that are referenced by the group's links will 
+**not** be deleted.  Use the DELETE operation for those objects to remove.
 
 Requests
 ========
@@ -92,6 +92,7 @@ Related Resources
 =================
 
 * :doc:`POST_Group`
+* :doc:`GET_Group`
  
 
  

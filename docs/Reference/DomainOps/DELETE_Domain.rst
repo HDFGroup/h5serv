@@ -4,8 +4,8 @@ DELETE Domain
 
 Description
 ===========
-The implementation of the DELETE operation deletes the given domain and
-all it's resources.
+The DELETE operation deletes the given domain and
+all it's resources (groups, datasets, attributes, etc.).
 
 Requests
 ========
@@ -14,7 +14,7 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    DELETE /  HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -39,11 +39,8 @@ most responses.  See :doc:`../CommonResponseHeaders`.
 Response Elements
 -----------------
 
-On success, a JSON response will be returned with the following elements:
+This implementation of the operation does not return any response elements.
 
-hrefs
-^^^^^
-An array of links to related resources.  See :doc:`../Hypermedia`.
 
 Special Errors
 --------------
@@ -59,9 +56,11 @@ Sample Request
 
 .. code-block:: http
 
-    DELETE /groups/45a882e1-9d01-11e4-8acf-3c15c2da029e HTTP/1.1
-    Host: testGroupDelete.test.hdfgroup.org
-    Authorization: authorization_string
+   DELETE / HTTP/1.1
+   Content-Length: 0
+   User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+   host: deleteme.test.hdfgroup.org
+   Accept: */*
     
 Sample Response
 ---------------
@@ -69,26 +68,16 @@ Sample Response
 .. code-block:: http
 
     HTTP/1.1 200 OK
-    Date: Thu, 15 Jan 2015 21:55:51 GMT
-    Content-Length: 270
-    Content-Type: application/json
+    Date: Fri, 16 Jan 2015 03:47:33 GMT
+    Content-Length: 0
+    Content-Type: text/html; charset=UTF-8
     Server: TornadoServer/3.2.2
     
-.. code-block:: json
-
-    
-    {
-    "hrefs": [
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups", "rel": "self"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups/45a06719-9d01-11e4-9b1c-3c15c2da029e", "rel": "root"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/", "rel": "home"}
-    ]
-    }
+ 
     
 Related Resources
 =================
 
-* :doc:`../GroupOps/GET_Group`
 * :doc:`GET_Domain`
 * :doc:`PUT_Domain`
  

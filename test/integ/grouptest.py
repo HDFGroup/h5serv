@@ -38,15 +38,6 @@ class GroupTest(unittest.TestCase):
             self.failUnlessEqual(rspJson["linkCount"], 2)
             self.failUnlessEqual(rspJson["attributeCount"], 2)
             self.failUnlessEqual(rsp.status_code, 200)
-        
-    def testGetGroups(self):
-        domain = 'tall.' + config.get('domain')    
-        headers = {'host': domain}
-        req = self.endpoint + "/groups/" 
-        rsp = requests.get(req, headers=headers)
-        # to do - implement groups (iterate through all groups)
-        # self.failUnlessEqual(rsp.status_code, 200)
-        # rspJson = json.loads(rsp.text)
           
     def testPost(self):
         # test PUT_root

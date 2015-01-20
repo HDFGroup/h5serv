@@ -348,15 +348,28 @@ class LinkHandler(RequestHandler):
         log.info( " delete link  name[: " + linkName + "] parentUuid: " + reqUuid)
            
         domain = self.request.host
+        response = { }
+        rootUUID = None
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 db.unlinkItem(reqUuid, linkName)
+                rootUUID = db.getUUIDByPath('/')
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror) 
+            
+        hrefs = []     
+        href = self.request.protocol + '://' + domain + '/'
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'home',       'href': href }) 
+        hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
+        
+        response['hrefs'] = hrefs      
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response))
                 
 class TypeHandler(RequestHandler):
     

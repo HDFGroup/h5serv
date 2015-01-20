@@ -13,7 +13,7 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    PUT /groups/<id>/link/<name> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -90,8 +90,6 @@ Related Resources
 * :doc:`DELETE_Link`
 * :doc:`GET_Link`
 * :doc:`GET_Links`
-* :doc:`GET_Dataset`
-* :doc:`GET_Datatype`
 * :doc:`GET_Group`
  
 

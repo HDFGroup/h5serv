@@ -6,3 +6,4 @@ Installation
    :maxdepth: 2
 
    0.1
+   dns
