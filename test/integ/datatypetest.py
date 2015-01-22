@@ -86,6 +86,30 @@ class DatatypeTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
         
+    def testPostWithLink(self):
+        # test PUT_root
+        domain = 'newlinkedtype.datatypetest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  
+        
+        root_uuid = helper.getRootUUID(domain)
+        
+        payload = { 
+            'type': 'H5T_IEEE_F64LE', 
+            'link': {'id': root_uuid, 'name': 'linked_dtype'} 
+        }
+         
+        req = self.endpoint + "/datatypes"
+        headers = {'host': domain}
+        # create a new group
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) 
+        rspJson = json.loads(rsp.text)
+        self.failUnlessEqual(rspJson["attributeCount"], 0)
+        self.assertTrue(helper.validateId(rspJson["id"]) ) 
+        
         
     def testPostTypes(self):
         domain = 'datatypes.datatypetest.' + config.get('domain')
