@@ -1,10 +1,10 @@
 **********************************************
-GET Link
+PUT Value
 **********************************************
 
 Description
 ===========
-Gets information about a Link.
+Update the Values in a dataset.
 
 Requests
 ========

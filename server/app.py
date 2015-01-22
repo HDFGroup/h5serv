@@ -1698,15 +1698,16 @@ class DatasetCollectionHandler(RequestHandler):
                 if maxextent == 0:
                     maxshape[i] = None  # this indicates unlimited
         
+        item = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 if group_uuid:
                     group_item = db.getGroupItemByUuid(group_uuid)
                 rootUUID = db.getUUIDByPath('/')
-                dsetUUID = db.createDataset(datatype, shape, maxshape)
+                item = db.createDataset(datatype, shape, maxshape)
                 if group_uuid:
                     # link the new dataset
-                    db.linkObject(group_uuid, dsetUUID, link_name)
+                    db.linkObject(group_uuid, item['id'], link_name)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -1717,13 +1718,15 @@ class DatasetCollectionHandler(RequestHandler):
         # got everything we need, put together the response
         hrefs = [ ]
         href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datasets/' + dsetUUID})
+        hrefs.append({'rel': 'self',       'href': href + 'datasets/' + item['id']})
         hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})   
-        hrefs.append({'rel': 'value', 'href': href + 'datasets/' + dsetUUID + '/value'})        
-        response['id'] = dsetUUID
-        response['attributeCount'] = 0
+        hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + item['id'] + '/attributes'})   
+        hrefs.append({'rel': 'value', 'href': href + 'datasets/' + item['id'] + '/value'})        
+        response['id'] = item['id']
+        response['attributeCount'] = item['attributeCount']
         response['hrefs'] = hrefs
+        response['created'] = unixTimeToUTC(item['ctime'])
+        response['lastModified'] = unixTimeToUTC(item['mtime'])
         
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))  
@@ -1771,6 +1774,7 @@ class TypeCollectionHandler(RequestHandler):
         hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
         hrefs.append({'rel': 'home',       'href': href }) 
         response['hrefs'] = hrefs
+        
          
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
@@ -1816,19 +1820,20 @@ class TypeCollectionHandler(RequestHandler):
             
         datatype = body["type"]     
         
-        typeUUID = None
+        item = None
         rootUUID = None
+
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
                 if parent_group_uuid:
                     parent_group_item = db.getGroupItemByUuid(parent_group_uuid)
-                typeUUID = db.createCommittedType(datatype)
+                item = db.createCommittedType(datatype)
                 # if link info is provided, link the new group
                 if parent_group_uuid:
                     # link the new dataset
-                    db.linkObject(parent_group_uuid, typeUUID, link_name) 
+                    db.linkObject(parent_group_uuid, item['id'], link_name) 
                             
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
@@ -1840,12 +1845,14 @@ class TypeCollectionHandler(RequestHandler):
         # got everything we need, put together the response
         hrefs = [ ]
         href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + typeUUID})
+        hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + item['id']})
         hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + typeUUID + '/attributes'})   
-        response['id'] = typeUUID
+        hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + item['id'] + '/attributes'})   
+        response['id'] = item['id']
         response['attributeCount'] = 0
         response['hrefs'] = hrefs
+        response['created'] = unixTimeToUTC(item['ctime'])
+        response['lastModified'] = unixTimeToUTC(item['mtime'])
         
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response)) 

@@ -40,6 +40,11 @@ Response Elements
 
 On success, a JSON response will be returned with the following elements:
 
+id
+^^
+
+The UUID of the datatype object.
+
 type
 ^^^^
 A JSON object representing the type.
@@ -98,6 +103,7 @@ Sample Response
 .. code-block:: json
 
     {
+    "id": "f545543d-a1b4-11e4-8fa4-3c15c2da029e",
     "type": {
         "base": "H5T_IEEE_F32LE", 
         "class": "H5T_FLOAT"
@@ -110,9 +116,8 @@ Sample Response
         {"href": "http://namedtype.test.hdfgroup.org/groups/f545103d-a1b4-11e4-b4a1-3c15c2da029e", "rel": "root"}, 
         {"href": "http://namedtype.test.hdfgroup.org/datatypes/f545543d-a1b4-11e4-8fa4-3c15c2da029e/attributes", "rel": "attributes"}, 
         {"href": "http://namedtype.test.hdfgroup.org/", "rel": "home"}
-      ],  
-      "id": "f545543d-a1b4-11e4-8fa4-3c15c2da029e"
-      }
+      ]     
+    }
     
 Related Resources
 =================

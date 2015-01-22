@@ -8,8 +8,8 @@ Creates a new Group.
 
 *Note:* The new Group will not be linked to any other group in the domain and a link
 element is included in the request body.
-If not including the link in the request, use the POST link to link the new group to 
-another group.
+If not including the link in the request, use the *PUT link* operation to link the new 
+group to another group.
 
 Requests
 ========
@@ -96,6 +96,8 @@ Examples
 Sample Request
 --------------
 
+Create a new, un-linked Group.
+
 .. code-block:: http
 
     POST /groups HTTP/1.1
@@ -137,6 +139,8 @@ Sample Response
     
 Sample Request with Link
 ------------------------
+
+Create a new Group, link to root (which has uuid of "36b921f3-...") as "linked_group".
 
 .. code-block:: http
 

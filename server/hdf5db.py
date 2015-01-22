@@ -566,7 +566,7 @@ class Hdf5db:
         
     """
     createCommittedType - creates new named datatype  
-    Returns UUID
+    Returns item
     """   
     def createCommittedType(self, datatype):
         self.log.info("createCommittedType")
@@ -594,7 +594,12 @@ class Hdf5db:
         now = time.time()
         self.setCreateTime(obj_uuid, timestamp=now)
         self.setModifiedTime(obj_uuid, timestamp=now)
-        return obj_uuid
+        item = { 'id': obj_uuid }
+        item['attributeCount'] = len(newType.attrs)
+        #item['type'] = hdf5dtype.getTypeItem(datatype.dtype) 
+        item['ctime'] = self.getCreateTime(obj_uuid)
+        item['mtime'] = self.getModifiedTime(obj_uuid) 
+        return item
       
     """
     getCommittedTypeObjByUuid - get obj from {datatypes} collection 
@@ -1022,7 +1027,7 @@ class Hdf5db:
     
     """
     createDataset - creates new dataset given shape and datatype
-    Returns UUID
+    Returns item
     """   
     def createDataset(self, datatype, datashape, max_shape=None, fill_value=None):
         self.initFile()
@@ -1033,6 +1038,7 @@ class Hdf5db:
         datasets = self.dbGrp["{datasets}"]
         obj_uuid = str(uuid.uuid1())
         dt = None
+        item = {}
         if type(datatype) in (str, unicode) and len(datatype) == UUID_LEN:
             # assume datatype is a uuid of a named datatype
             tgt = self.getCommittedTypeObjByUuid(datatype)
@@ -1063,7 +1069,12 @@ class Hdf5db:
         now = time.time()
         self.setCreateTime(obj_uuid, timestamp=now)
         self.setModifiedTime(obj_uuid, timestamp=now)
-        return obj_uuid
+        
+        item['id'] = obj_uuid
+        item['ctime'] = self.getCreateTime(obj_uuid)
+        item['mtime'] = self.getModifiedTime(obj_uuid)
+        item['attributeCount'] = len(newDataset.attrs)
+        return item
         
     """
     Resize existing Dataset

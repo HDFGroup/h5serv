@@ -13,6 +13,7 @@ Reference
    Authorization
    UsingIteration
    Hypermedia
+   Types
    DomainOps/index
    AttrOps/index
    DatasetOps/index
