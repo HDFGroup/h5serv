@@ -31,8 +31,8 @@ Request Headers
 This implementation of the operation uses only the request headers that are common
 to most requests.  See :doc:`../CommonRequestHeaders`
 
-Request Body
-------------
+Request Elements
+----------------
 Optionally the request body can be a JSON object that has a link key with subkeys:
 
 id

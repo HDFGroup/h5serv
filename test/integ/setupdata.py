@@ -14,6 +14,7 @@ import os
 import stat
 from shutil import copyfile
 import h5py
+import numpy as np
 
 SRC = "../../testfiles"
 DES = "../../data/test"
@@ -31,6 +32,7 @@ testfiles = {
     'subdir/deleteme.h5', 'subdir/subdir/deleteme.h5'),
     'group1k.h5': ('.', 'group1k_updated.h5'),
     'attr1k.h5': ('.',),
+    'type1k.h5': ('.',),
     'fillvalue.h5': ('.'),
     'null_space_dset.h5': ('.'),
     'compound.h5': ('.',),
@@ -90,6 +92,22 @@ def makeAttr1k():
         name = 'a{:04d}'.format(i)
         f.attrs[name] = "this is attribute: " + str(i)
     f.close()
+    
+"""
+Make a testfile with 1000 types
+"""
+def makeType1k():
+    print "type!"
+    file_path = SRC + "/type1k.h5" 
+    print file_path
+    if os.path.exists(file_path):
+        return # don't waste time re-creating  
+    print 'makeType1k()' 
+    f = h5py.File(file_path, "w")
+    for i in range(1000):
+        name = 'S{:04d}'.format(i+1)
+        f[name] = np.dtype(name)  #create fixed length string
+    f.close()
 
 """
 Remove files from given directory
@@ -119,8 +137,8 @@ def removeFilesFromDir(dir_name):
 main
 """
 # verify we are in the right place and the correct argument has been passed
-if len(sys.argv) < 2:
-    print "this will remove all files from ../../data/test and repopulate using files from ../../testdata!  run with -f to proceed"
+if len(sys.argv) > 1 and sys.argv[1] == '-h':
+    print "this script will remove all files from ../../data/test and repopulate using files from ../../testdata"
     sys.exit(); 
     
 if not os.path.exists(SRC):
@@ -136,6 +154,9 @@ makeGroup1k()
 
 # create attr1k.h5 (if not created before)
 makeAttr1k()
+
+# create type1k.h5 (if not created before)
+makeType1k()
 
 removeFilesFromDir(DES)
 

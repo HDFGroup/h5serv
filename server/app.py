@@ -217,6 +217,13 @@ class LinkHandler(RequestHandler):
         for key in ('mtime', 'ctime', 'href'):
             if key in item:
                 del item[key]
+                
+        # replace 'file' key by 'h5domain' if present
+        if 'file' in item:
+            h5domain = item['file']
+            del item['file']
+            item['h5domain'] = h5domain
+             
         response['link'] = item
         
          
@@ -232,7 +239,7 @@ class LinkHandler(RequestHandler):
             if item['class'] == 'H5L_TYPE_HARD' or item['class'] == 'H5L_TYPE_SOFT':
                 hrefs.append({'rel': 'target', 'href': href + targethref})
             elif item['class'] == 'H5L_TYPE_EXTERNAL':
-                link_href = self.request.protocol + '://' +  getDomain(item['file'])
+                link_href = self.request.protocol + '://' +  getDomain(item['h5domain'])
                 hrefs.append({'rel': 'target', 'href': link_href + targethref})
         response['hrefs'] = hrefs      
         self.set_header('Content-Type', 'application/json')
@@ -246,7 +253,7 @@ class LinkHandler(RequestHandler):
         # patterns are:
         # PUT /group/<id>/links/<name> {id: <id> } 
         # PUT /group/<id>/links/<name> {h5path: <path> } 
-        # PUT /group/<id>/links/<name> {href: <href> }
+        # PUT /group/<id>/links/<name> {h5path: <path>, h5domain: <href> }
         uri = self.request.uri
         reqUuid = self.getRequestId(self.request.uri)
         
@@ -262,6 +269,7 @@ class LinkHandler(RequestHandler):
         
         childUuid = None
         h5path = None
+        h5domain = None
         filename = None   # fake filename
         
         if "id" in body:
@@ -275,39 +283,11 @@ class LinkHandler(RequestHandler):
             h5path = body["h5path"]
             if h5path == None or len(h5path) == 0 or not h5path.startswith('/'):
                 raise HTTPError(400)
-                 
-        elif "href" in body:
-            href = body["href"]
-            if href == None or len(href) == 0 or not href.startswith('http'):
-                msg = "Bad Request: missing or invalid href value"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-            o = urlparse(href)
-            if len(o.scheme) == 0 or len(o.netloc) == 0:
-                msg = "Bad Request: invalid href value"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-            if len(o.query) > 0:
-                msg = "Bad Request: invalid href value"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-            filename = o.scheme + "://" + o.netloc
-            if len(o.fragment) > 0:
-                # url should be in the form: /#h5path(<path>)
-                if (o.path != "/" or not o.fragment.startswith("h5path(/") or
-                    not  o.fragment.endswith(")")):
-                    raise HTTPError(400)
-                h5path = o.fragment[len("h5path("):-1]
-                h5path = h5path.strip()
-            else:
-                # url should be in the form:  /(datasets|datatypes|groups)/<id>
-                if (o.path.startswith("/datasets/") or   o.path.startswith("/groups/") or 
-                     o.path.startswith("/datatypes/")):
-                    h5path = o.path
-                else:
-                    raise HTTPError(400)
-                
-            
+             
+            # if h5domain is present, this will be an external link     
+            if "h5domain" in body:
+                h5domain = body["h5domain"]
+                    
         else: 
             msg = "Bad request: put syntax: [" + self.request.body + "]"
             log.info(msg)
@@ -326,7 +306,7 @@ class LinkHandler(RequestHandler):
                 if childUuid:
                     db.linkObject(reqUuid, childUuid, linkName)
                 elif filename:
-                    db.createExternalLink(reqUuid, filename, h5path, linkName)
+                    db.createExternalLink(reqUuid, h5domain, h5path, linkName)
                 elif h5path:
                     db.createSoftLink(reqUuid, h5path, linkName)
                 rootUUID = db.getUUIDByPath('/')
@@ -335,6 +315,17 @@ class LinkHandler(RequestHandler):
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror)   
             
+        hrefs = []     
+        href = self.request.protocol + '://' + domain + '/'
+        hrefs.append({'rel': 'self',       'href': href + 'groups/' + reqUuid + 
+            '/links/' + url_escape(linkName)})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'home',       'href': href }) 
+        hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
+        response['hrefs'] = hrefs
+        
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response))
         self.set_status(201) 
         
     def delete(self): 
@@ -431,61 +422,7 @@ class TypeHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
-    def post(self):
-        log = logging.getLogger("h5serv")
-        log.info('TypeHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
-        log.info('remote_ip: ' + self.request.remote_ip)
-        if self.request.uri != '/datatypes/':
-            msg = "Method not Allowed: invalid URI"
-            log.info(msg)
-            raise HTTPError(405, reason=msg)  # Method not allowed
-               
-        domain = self.request.host
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
-        
-        body = None
-        try:
-            body = json.loads(self.request.body)
-        except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
-            log.info(msg)
-            raise HTTPError(400, reason=msg )
-            
-        if "type" not in body:
-            msg = "Type not specified"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)  # missing type
-            
-        datatype = body["type"]     
-        
-        typeUUID = None
-        rootUUID = None
-        
-        try:
-            with Hdf5db(filePath, app_logger=log) as db:
-                rootUUID = db.getUUIDByPath('/')
-                typeUUID = db.createCommittedType(datatype)
-        except IOError as e:
-            log.info("IOError: " + str(e.errno) + " " + e.strerror)
-            status = errNoToHttpStatus(e.errno)
-            raise HTTPError(status, reason=e.strerror) 
-            
-        response = { }
-      
-        # got everything we need, put together the response
-        hrefs = [ ]
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + typeUUID})
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + typeUUID + '/attributes'})   
-        response['id'] = typeUUID
-        response['attributeCount'] = 0
-        response['hrefs'] = hrefs
-        
-        self.set_header('Content-Type', 'application/json')
-        self.write(json_encode(response)) 
-        self.set_status(201)  # resource created
+    
         
     def delete(self): 
         log = logging.getLogger("h5serv")
@@ -752,131 +689,6 @@ class DatasetHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
-    def post(self):
-        log = logging.getLogger("h5serv")
-        log.info('DatasetHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
-        log.info('remote_ip: ' + self.request.remote_ip)
-        if self.request.uri != '/datasets/':
-            msg = "Method not Allowed: invalid datasets post request"
-            log.info(msg)
-            raise HTTPError(405, reason=msg)  # Method not allowed
-               
-        domain = self.request.host
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
-        shape = None
-        group_uuid = None
-        link_name = None
-        
-        body = None
-        try:
-            body = json.loads(self.request.body)
-        except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
-            log.info(msg)
-            raise HTTPError(400, reason=msg )
-        
-        if "type" not in body:
-            msg = "Bad Request: Type not specified"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)  # missing type
-            
-        if "shape" in body:
-            shape = body["shape"]
-            if type(shape) == int:
-                dim1 = shape
-                shape = [dim1]
-            elif type(shape) == list or type(shape) == tuple: 
-                pass # can use as is
-            else:
-                msg="Bad Request: shape is invalid"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-        else:
-            shape = ()  # empty tuple
-            
-        if "link" in body:          
-            link_options = body["link"]
-            print link_options
-            if "id" not in link_options or "name" not in link_options:
-                msg="Bad Request: No 'name' or 'id' not specified"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-                
-            group_uuid = link_options["id"]
-            link_name = link_options["name"]
-            log.info("add link to: " + group_uuid + " with name: " + link_name);
-            
-        datatype = body["type"]
-        
-        maxshape = None
-        if "maxshape" in body:
-            maxshape = body["maxshape"]
-            if type(maxshape) == int:
-                dim1 = maxshape
-                maxshape = [dim1]
-            elif type(maxshape) == list or type(maxshape) == tuple: 
-                pass # can use as is
-            else:
-                msg="Bad Request: maxshape is invalid"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)     
-           
-        # validate shape
-        for extent in shape:
-            if type(extent) != int:
-                msg="Bad Request: Invalid shape type"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-            if extent < 0:
-                msg="Bad Request: shape dimension is negative"
-                log.info("msg")
-                raise HTTPError(400, reason=msg) 
-            
-        if maxshape:
-            if len(maxshape) != len(shape):
-                msg="Bad Request: maxshape array length must equal shape array length"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-            for i in range(len(shape)):
-                maxextent = maxshape[i]
-                if maxextent != 0 and maxextent < shape[i]:
-                    msg="Bad Request: Maxshape extent can't be smaller than shape extent"
-                    log.info(msg)
-                    raise HTTPError(400, reason=msg)
-                if maxextent == 0:
-                    maxshape[i] = None  # this indicates unlimited
-        
-        try:
-            with Hdf5db(filePath, app_logger=log) as db:
-                if group_uuid:
-                    group_item = db.getGroupItemByUuid(group_uuid)
-                rootUUID = db.getUUIDByPath('/')
-                dsetUUID = db.createDataset(datatype, shape, maxshape)
-                if group_uuid:
-                    # link the new dataset
-                    db.linkObject(group_uuid, dsetUUID, link_name)
-        except IOError as e:
-            log.info("IOError: " + str(e.errno) + " " + e.strerror)
-            status = errNoToHttpStatus(e.errno)
-            raise HTTPError(status, reason=e.strerror) 
-                
-        response = { }
-      
-        # got everything we need, put together the response
-        hrefs = [ ]
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datasets/' + dsetUUID})
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})   
-        hrefs.append({'rel': 'value', 'href': href + 'datasets/' + dsetUUID + '/value'})        
-        response['id'] = dsetUUID
-        response['attributeCount'] = 0
-        response['hrefs'] = hrefs
-        
-        self.set_header('Content-Type', 'application/json')
-        self.write(json_encode(response))  
-        self.set_status(201)  # resource created
         
     def delete(self): 
         log = logging.getLogger("h5serv")
@@ -1619,6 +1431,8 @@ class GroupHandler(RequestHandler):
          
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response)) 
+        
+    
                 
 class GroupCollectionHandler(RequestHandler):
             
@@ -1689,20 +1503,18 @@ class GroupCollectionHandler(RequestHandler):
         
         if "link" in body:    
             link_options = body["link"]
-            print link_options
             if "id" not in link_options or "name" not in link_options:
                 msg = "Bad Request: missing link parameter"
                 log.info(msg)
                 raise HTTPError(400, reason=msg)
             parent_group_uuid = link_options["id"]
             link_name = link_options["name"]
-            log.info("add link to: " + parent_group_uuid + " with name: " + link_name);
+            log.info("add link to: " + parent_group_uuid + " with name: " + link_name)
                
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        
-        
+              
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
@@ -1742,6 +1554,7 @@ class GroupCollectionHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))               
         self.set_status(201)  # resource created
+        
         
 class DatasetCollectionHandler(RequestHandler):
             
@@ -1790,6 +1603,132 @@ class DatasetCollectionHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
+    def post(self):
+        log = logging.getLogger("h5serv")
+        log.info('DatasetHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
+        if self.request.uri != '/datasets':
+            msg = "Method not Allowed: invalid datasets post request"
+            log.info(msg)
+            raise HTTPError(405, reason=msg)  # Method not allowed
+               
+        domain = self.request.host
+        filePath = getFilePath(domain)
+        verifyFile(filePath, True)
+        shape = None
+        group_uuid = None
+        link_name = None
+        
+        body = None
+        try:
+            body = json.loads(self.request.body)
+        except ValueError as e:
+            msg = "JSON Parser Error: " + e.message
+            log.info(msg)
+            raise HTTPError(400, reason=msg )
+        
+        if "type" not in body:
+            msg = "Bad Request: Type not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  # missing type
+            
+        if "shape" in body:
+            shape = body["shape"]
+            if type(shape) == int:
+                dim1 = shape
+                shape = [dim1]
+            elif type(shape) == list or type(shape) == tuple: 
+                pass # can use as is
+            else:
+                msg="Bad Request: shape is invalid"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+        else:
+            shape = ()  # empty tuple
+            
+        if "link" in body:          
+            link_options = body["link"]
+            print link_options
+            if "id" not in link_options or "name" not in link_options:
+                msg="Bad Request: No 'name' or 'id' not specified"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+                
+            group_uuid = link_options["id"]
+            link_name = link_options["name"]
+            log.info("add link to: " + group_uuid + " with name: " + link_name);
+            
+        datatype = body["type"]
+        
+        maxshape = None
+        if "maxshape" in body:
+            maxshape = body["maxshape"]
+            if type(maxshape) == int:
+                dim1 = maxshape
+                maxshape = [dim1]
+            elif type(maxshape) == list or type(maxshape) == tuple: 
+                pass # can use as is
+            else:
+                msg="Bad Request: maxshape is invalid"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)     
+           
+        # validate shape
+        for extent in shape:
+            if type(extent) != int:
+                msg="Bad Request: Invalid shape type"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+            if extent < 0:
+                msg="Bad Request: shape dimension is negative"
+                log.info("msg")
+                raise HTTPError(400, reason=msg) 
+            
+        if maxshape:
+            if len(maxshape) != len(shape):
+                msg="Bad Request: maxshape array length must equal shape array length"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+            for i in range(len(shape)):
+                maxextent = maxshape[i]
+                if maxextent != 0 and maxextent < shape[i]:
+                    msg="Bad Request: Maxshape extent can't be smaller than shape extent"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
+                if maxextent == 0:
+                    maxshape[i] = None  # this indicates unlimited
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                if group_uuid:
+                    group_item = db.getGroupItemByUuid(group_uuid)
+                rootUUID = db.getUUIDByPath('/')
+                dsetUUID = db.createDataset(datatype, shape, maxshape)
+                if group_uuid:
+                    # link the new dataset
+                    db.linkObject(group_uuid, dsetUUID, link_name)
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
+                
+        response = { }
+      
+        # got everything we need, put together the response
+        hrefs = [ ]
+        href = self.request.protocol + '://' + domain + '/'
+        hrefs.append({'rel': 'self',       'href': href + 'datasets/' + dsetUUID})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + dsetUUID + '/attributes'})   
+        hrefs.append({'rel': 'value', 'href': href + 'datasets/' + dsetUUID + '/value'})        
+        response['id'] = dsetUUID
+        response['attributeCount'] = 0
+        response['hrefs'] = hrefs
+        
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response))  
+        self.set_status(201)  # resource created
+        
 class TypeCollectionHandler(RequestHandler):
             
     def get(self):
@@ -1835,6 +1774,82 @@ class TypeCollectionHandler(RequestHandler):
          
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
+        
+    def post(self):
+        log = logging.getLogger("h5serv")
+        log.info('TypeHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
+        if self.request.uri != '/datatypes':
+            msg = "Method not Allowed: invalid URI"
+            log.info(msg)
+            raise HTTPError(405, reason=msg)  # Method not allowed
+               
+        domain = self.request.host
+        filePath = getFilePath(domain)
+        verifyFile(filePath, True)
+        
+        body = None
+        try:
+            body = json.loads(self.request.body)
+        except ValueError as e:
+            msg = "JSON Parser Error: " + e.message
+            log.info(msg)
+            raise HTTPError(400, reason=msg )
+            
+        parent_group_uuid = None
+        link_name = None
+        
+        if "type" not in body:
+            msg = "Type not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  # missing type
+            
+        if "link" in body:    
+            link_options = body["link"]
+            if "id" not in link_options or "name" not in link_options:
+                msg = "Bad Request: missing link parameter"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+            parent_group_uuid = link_options["id"]
+            link_name = link_options["name"]
+            log.info("add link to: " + parent_group_uuid + " with name: " + link_name)
+            
+        datatype = body["type"]     
+        
+        typeUUID = None
+        rootUUID = None
+        
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                if parent_group_uuid:
+                    parent_group_item = db.getGroupItemByUuid(parent_group_uuid)
+                typeUUID = db.createCommittedType(datatype)
+                # if link info is provided, link the new group
+                if parent_group_uuid:
+                    # link the new dataset
+                    db.linkObject(parent_group_uuid, typeUUID, link_name) 
+                            
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
+            
+        response = { }
+      
+        # got everything we need, put together the response
+        hrefs = [ ]
+        href = self.request.protocol + '://' + domain + '/'
+        hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + typeUUID})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + typeUUID + '/attributes'})   
+        response['id'] = typeUUID
+        response['attributeCount'] = 0
+        response['hrefs'] = hrefs
+        
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response)) 
+        self.set_status(201)  # resource created
           
         
 class RootHandler(RequestHandler):

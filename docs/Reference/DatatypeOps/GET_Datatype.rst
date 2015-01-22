@@ -1,10 +1,10 @@
 **********************************************
-GET Dataset
+GET Datatype
 **********************************************
 
 Description
 ===========
-Gets a Dataset
+Returns information about the committed datatype with the UUID given in the URI.
 
 Requests
 ========
@@ -13,7 +13,7 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    GET /datatypes/<id> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -40,6 +40,23 @@ Response Elements
 
 On success, a JSON response will be returned with the following elements:
 
+type
+^^^^
+A JSON object representing the type.
+
+attributeCount
+^^^^^^^^^^^^^^
+The number of attributes belonging to the datatype.
+
+created
+^^^^^^^
+A timestamp giving the time the group was created in UTC (ISO-8601 format).
+
+lastModified
+^^^^^^^^^^^^
+A timestamp giving the most recent time the group has been modified (i.e. attributes or 
+links updated) in UTC (ISO-8601 format).
+
 hrefs
 ^^^^^
 An array of links to related resources.  See :doc:`../Hypermedia`.
@@ -53,14 +70,18 @@ information on standard error codes, see :doc:`../CommonErrorResponses`.
 Examples
 ========
 
+Get the committed datatype with UUID: "f545543d-...".
+
 Sample Request
 --------------
 
 .. code-block:: http
 
-    DELETE /groups/45a882e1-9d01-11e4-8acf-3c15c2da029e HTTP/1.1
-    Host: testGroupDelete.test.hdfgroup.org
-    Authorization: authorization_string
+    GET /datatypes/f545543d-a1b4-11e4-8fa4-3c15c2da029e HTTP/1.1
+    host: namedtype.test.hdfgroup.org
+    Accept-Encoding: gzip, deflate
+    Accept: */*
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
     
 Sample Response
 ---------------
@@ -68,21 +89,30 @@ Sample Response
 .. code-block:: http
 
     HTTP/1.1 200 OK
-    Date: Thu, 15 Jan 2015 21:55:51 GMT
-    Content-Length: 270
+    Date: Wed, 21 Jan 2015 21:36:49 GMT
+    Content-Length: 619
+    Etag: "c53bc5b2d3c3b5059b71ef92ca7d144a2df54456"
     Content-Type: application/json
     Server: TornadoServer/3.2.2
     
 .. code-block:: json
 
-    
     {
+    "type": {
+        "base": "H5T_IEEE_F32LE", 
+        "class": "H5T_FLOAT"
+      }, 
+    "created": "2015-01-21T21:32:01Z", 
+    "lastModified": "2015-01-21T21:32:01Z", 
+    "attributeCount": 1, 
     "hrefs": [
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups", "rel": "self"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups/45a06719-9d01-11e4-9b1c-3c15c2da029e", "rel": "root"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/", "rel": "home"}
-    ]
-    }
+        {"href": "http://namedtype.test.hdfgroup.org/datatypes/f545543d-a1b4-11e4-8fa4-3c15c2da029e", "rel": "self"}, 
+        {"href": "http://namedtype.test.hdfgroup.org/groups/f545103d-a1b4-11e4-b4a1-3c15c2da029e", "rel": "root"}, 
+        {"href": "http://namedtype.test.hdfgroup.org/datatypes/f545543d-a1b4-11e4-8fa4-3c15c2da029e/attributes", "rel": "attributes"}, 
+        {"href": "http://namedtype.test.hdfgroup.org/", "rel": "home"}
+      ],  
+      "id": "f545543d-a1b4-11e4-8fa4-3c15c2da029e"
+      }
     
 Related Resources
 =================

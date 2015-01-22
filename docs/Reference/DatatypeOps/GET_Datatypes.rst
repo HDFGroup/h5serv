@@ -13,13 +13,24 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    GET /datatypes HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
 Request Parameters
 ------------------
-This implementation of the operation does not use request parameters.
+This implementation of the operation uses the following request parameters (both 
+optional):
+
+Limit
+^^^^^
+If provided, a positive integer value specifying the maximum number of UUID's to return.
+
+Marker
+^^^^^^
+If provided, a string value indicating that only UUID's that occur after the
+marker value will be returned.
+
 
 Request Headers
 ---------------
@@ -58,9 +69,11 @@ Sample Request
 
 .. code-block:: http
 
-    DELETE /groups/45a882e1-9d01-11e4-8acf-3c15c2da029e HTTP/1.1
-    Host: testGroupDelete.test.hdfgroup.org
-    Authorization: authorization_string
+    GET /datatypes HTTP/1.1
+    host: namedtype.test.hdfgroup.org
+    Accept-Encoding: gzip, deflate
+    Accept: */*
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
     
 Sample Response
 ---------------
@@ -68,21 +81,70 @@ Sample Response
 .. code-block:: http
 
     HTTP/1.1 200 OK
-    Date: Thu, 15 Jan 2015 21:55:51 GMT
-    Content-Length: 270
+    Date: Wed, 21 Jan 2015 22:42:30 GMT
+    Content-Length: 350
+    Etag: "e01f56869a9a919b1496c463f3569a2a7c319f11"
     Content-Type: application/json
     Server: TornadoServer/3.2.2
     
 .. code-block:: json
 
-    
     {
+    "datatypes": [
+        "f54542e6-a1b4-11e4-90bf-3c15c2da029e", 
+        "f545543d-a1b4-11e4-8fa4-3c15c2da029e"
+    ], 
     "hrefs": [
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups", "rel": "self"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups/45a06719-9d01-11e4-9b1c-3c15c2da029e", "rel": "root"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/", "rel": "home"}
-    ]
+        {"href": "http://namedtype.test.hdfgroup.org/datatypes", "rel": "self"}, 
+        {"href": "http://namedtype.test.hdfgroup.org/groups/f545103d-a1b4-11e4-b4a1-3c15c2da029e", "rel": "root"}, 
+        {"href": "http://namedtype.test.hdfgroup.org/", "rel": "home"}
+      ]
     }
+    
+Sample Request with Marker and Limit
+------------------------------------
+
+This example uses the "Marker" request parameter to return only UUIDs after the given
+Marker value.
+Also the "Limit" request parameter is used to limit the number of UUIDs in the response to 5.
+
+.. code-block:: http
+
+    GET /datatypes?Marker=d779cd5e-a1e6-11e4-8fc5-3c15c2da029e&Limit=5 HTTP/1.1
+    host: type1k.test.hdfgroup.org
+    Accept-Encoding: gzip, deflate
+    Accept: */*
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+ 
+Sample Response with Marker and Limit
+-------------------------------------
+
+ .. code-block:: http
+ 
+    HTTP/1.1 200 OK
+    Date: Thu, 22 Jan 2015 03:32:13 GMT
+    Content-Length: 461
+    Etag: "a2e2d5a3ae63cd504d02b51d99f27b30d17b75b5"
+    Content-Type: application/json
+    Server: TornadoServer/3.2.2
+   
+ .. code-block:: json
+      
+    {
+    "datatypes": [
+        "d779ddd9-a1e6-11e4-89e5-3c15c2da029e", 
+        "d779ef11-a1e6-11e4-8837-3c15c2da029e", 
+        "d77a008a-a1e6-11e4-8840-3c15c2da029e", 
+        "d77a121e-a1e6-11e4-b2b0-3c15c2da029e", 
+        "d77a2523-a1e6-11e4-aa6d-3c15c2da029e"
+      ], 
+    "hrefs": [
+        {"href": "http://type1k.test.hdfgroup.org/datatypes", "rel": "self"}, 
+        {"href": "http://type1k.test.hdfgroup.org/groups/d7742c14-a1e6-11e4-b2a8-3c15c2da029e", "rel": "root"}, 
+        {"href": "http://type1k.test.hdfgroup.org/", "rel": "home"}
+      ]
+    }
+        
     
 Related Resources
 =================

@@ -82,7 +82,7 @@ class LinkTest(unittest.TestCase):
             # self.failUnlessEqual(target, "http://somefile/#h5path(somepath)")
             
             self.failUnlessEqual(target['class'], 'H5L_TYPE_EXTERNAL')
-            self.failUnlessEqual(target['file'], 'somefile')
+            self.failUnlessEqual(target['h5domain'], 'somefile')
             self.failUnlessEqual(target['h5path'], 'somepath')
             self.failUnlessEqual(target['title'], 'extlink')
             self.assertTrue('collection' not in target)
@@ -304,12 +304,13 @@ class LinkTest(unittest.TestCase):
     def testPutExternalLink(self):
         logging.info("LinkTest.testPutExternalLink")
         domain = 'tall_updated.' + config.get('domain') 
-        href = 'http://external_target.' + config.get('domain') + '/#h5path(/dset1)'
+        target_domain = 'external_target.' + config.get('domain')  
+        target_path = '/dset1'
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)   
         name = 'extlink'
         req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
-        payload = {"href": href}
+        payload = {"h5path": target_path, "h5domain": target_domain}
         headers = {'host': domain}
         # verify extlink does not exist
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)
@@ -317,35 +318,21 @@ class LinkTest(unittest.TestCase):
         # make request
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) 
-        
-    def testPutExternalLinkId(self):
-        logging.info("LinkTest.testPutExternalLinkId")
-        fakeId = "14bfeeb8-68b1-11e4-a69a-3c15c2da029e"
-        domain = 'tall_updated.' + config.get('domain') 
-        href = 'http://external_target.' + config.get('domain') + '/datasets/' + fakeId
-        grpId = helper.createGroup(domain)
-        rootId = helper.getRootUUID(domain)   
-        name = 'extlinkid'
-        req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
-        payload = {"href": href}
-        headers = {'host': domain}
-        # verify extlink does not exist
+        # verify link is created
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)
-        # make request
-        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)    
+        self.failUnlessEqual(rsp.status_code, 200)
+
         
-    def testPutExternalLinkBadHref(self):
-        logging.info("LinkTest.testPutExternalLinkId")
+    def testPutExternalMissingPath(self):
+        logging.info("LinkTest.testPutExternalMissingPath")
         fakeId = "14bfeeb8-68b1-11e4-a69a-3c15c2da029e"
         domain = 'tall_updated.' + config.get('domain') 
-        href = 'http://external_target.' + config.get('domain') + '/foobar/' + fakeId
+        external_domain = 'external_target.' + config.get('domain') 
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)   
         name = 'extlinkid'
         req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
-        payload = {"href": href}
+        payload = {"h5domain": external_domain}
         headers = {'host': domain}
         # verify extlink does not exist
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)

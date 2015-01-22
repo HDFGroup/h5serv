@@ -478,7 +478,7 @@ class ValueTest(unittest.TestCase):
         
         #create 1d dataset
         payload = {'type': 'H5T_STD_I32LE', 'shape': 10}
-        req = self.endpoint + "/datasets/"
+        req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
         rspJson = json.loads(rsp.text)
@@ -501,7 +501,7 @@ class ValueTest(unittest.TestCase):
         
         #create 2d dataset
         payload = {'type': 'H5T_STD_I32LE', 'shape': (10,10)}
-        req = self.endpoint + "/datasets/"
+        req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
         rspJson = json.loads(rsp.text)
@@ -537,7 +537,7 @@ class ValueTest(unittest.TestCase):
         
         #create 1d dataset
         payload = {'type': 'H5T_STD_I32LE', 'shape': 10}
-        req = self.endpoint + "/datasets/"
+        req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
         rspJson = json.loads(rsp.text)

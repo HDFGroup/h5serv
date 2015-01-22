@@ -70,7 +70,7 @@ class DatatypeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
         payload = {'type': 'H5T_IEEE_F32LE'}
-        req = self.endpoint + "/datatypes/"
+        req = self.endpoint + "/datatypes"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create datatype
         rspJson = json.loads(rsp.text)
@@ -106,7 +106,7 @@ class DatatypeTest(unittest.TestCase):
                #todo: check on  'vlen_bytes', 'vlen_unicode'
         for datatype in datatypes:  
             payload = {'type': datatype}
-            req = self.endpoint + "/datatypes/"
+            req = self.endpoint + "/datatypes"
             rsp = requests.post(req, data=json.dumps(payload), headers=headers)
             self.failUnlessEqual(rsp.status_code, 201)  # create datatypes
             rspJson = json.loads(rsp.text)
@@ -133,7 +133,7 @@ class DatatypeTest(unittest.TestCase):
                     {'name': 'pressure', 'type': 'H5T_IEEE_F32LE'}) 
         datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
         payload = {'type': datatype}
-        req = self.endpoint + "/datatypes/"
+        req = self.endpoint + "/datatypes"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create datatype
         rspJson = json.loads(rsp.text)
@@ -153,7 +153,7 @@ class DatatypeTest(unittest.TestCase):
         root_uuid = helper.getRootUUID(domain)
         payload = {'type': 'badtype'}
         headers = {'host': domain}
-        req = self.endpoint + "/datasets/"
+        req = self.endpoint + "/datatypes"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 400)
         
@@ -186,6 +186,31 @@ class DatatypeTest(unittest.TestCase):
         self.failUnlessEqual(len(datatypeIds), 2)
         for uuid in datatypeIds:
             self.assertTrue(helper.validateId(uuid))
+            
+    def testGetCollectionBatch(self):
+        domain = 'type1k.' + config.get('domain')   
+        req = self.endpoint + "/datatypes" 
+        headers = {'host': domain}
+        params = {'Limit': 50 }
+        uuids = set()
+        # get ids in 20 batches of 50 links each
+        last_uuid = None
+        for batchno in range(20):
+            if last_uuid:
+                params['Marker'] = last_uuid
+            rsp = requests.get(req, headers=headers, params=params)
+            self.failUnlessEqual(rsp.status_code, 200)
+            if rsp.status_code != 200:
+                break
+            rspJson = json.loads(rsp.text)
+            typeIds = rspJson["datatypes"]
+            self.failUnlessEqual(len(typeIds) <= 50, True)
+            for typeId in typeIds:
+                uuids.add(typeId)
+                last_uuid = typeId
+            if len(typeIds) == 0:
+                break
+        self.failUnlessEqual(len(uuids), 1000)  # should get 1000 unique uuid's 
         
     
      

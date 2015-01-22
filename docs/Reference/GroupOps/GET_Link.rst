@@ -67,10 +67,10 @@ link["h5path"]
 For symbolic links ("H5L_TYPE_SOFT" or "H5L_TYPE_EXTERNAL"), the path to the resource the
 link references.  
 
-link["file"]
-^^^^^^^^^^^^
-For external links, the path of the external "file" (the actual meaning is application
-defined), that contains the external resource.
+link["h5domain"]
+^^^^^^^^^^^^^^^^
+For external links, the path of the external domain containing the object that is linked.
+*Note:* The domain may or may not exist.  Use GET / with the domain to verify.
 
 link["uuid"]
 ^^^^^^^^^^^^
@@ -216,7 +216,7 @@ Sample Response - External Link
         "title": "extlink", 
         "class": "H5L_TYPE_EXTERNAL",
         "h5path": "somepath",
-        "file": "somefile"
+        "h5domain": "somefile"
     }, 
     "created": "2015-01-16T03:47:22Z",
     "lastModified": "2015-01-16T03:47:22Z", 

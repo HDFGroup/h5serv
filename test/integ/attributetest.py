@@ -547,7 +547,7 @@ class AttributeTest(unittest.TestCase):
         
         # create the datatype
         payload = {'type': 'H5T_IEEE_F32LE'}
-        req = self.endpoint + "/datatypes/"
+        req = self.endpoint + "/datatypes"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create datatype
         rspJson = json.loads(rsp.text)
