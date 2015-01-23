@@ -5,7 +5,8 @@ DELETE Dataset
 Description
 ===========
 The implementation of the DELETE operation deletes the dataset named in the URI.  All 
-attributes and links of the dataset will also be deleted.
+attributes and links of the dataset will also be deleted.  In addition any 
+links from other groups to the deleted group will be removed.
 
 Requests
 ========
@@ -14,7 +15,7 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    DELETE /datasets/<id> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -59,9 +60,12 @@ Sample Request
 
 .. code-block:: http
 
-    DELETE /groups/45a882e1-9d01-11e4-8acf-3c15c2da029e HTTP/1.1
-    Host: testGroupDelete.test.hdfgroup.org
-    Authorization: authorization_string
+    DELETE /datasets/289bb654-a2c6-11e4-97d8-3c15c2da029e HTTP/1.1
+    Content-Length: 0
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    host: tall_dset112_deleted.test.hdfgroup.org
+    Accept: */*
+    Accept-Encoding: gzip, deflate
     
 Sample Response
 ---------------
@@ -69,26 +73,25 @@ Sample Response
 .. code-block:: http
 
     HTTP/1.1 200 OK
-    Date: Thu, 15 Jan 2015 21:55:51 GMT
-    Content-Length: 270
+    Date: Fri, 23 Jan 2015 06:07:49 GMT
+    Content-Length: 287
     Content-Type: application/json
     Server: TornadoServer/3.2.2
     
 .. code-block:: json
 
-    
     {
     "hrefs": [
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups", "rel": "self"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups/45a06719-9d01-11e4-9b1c-3c15c2da029e", "rel": "root"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/", "rel": "home"}
-    ]
+        {"href": "http://tall_dset112_deleted.test.hdfgroup.org/datasets", "rel": "self"}, 
+        {"href": "http://tall_dset112_deleted.test.hdfgroup.org/groups/289b4873-a2c6-11e4-adfb-3c15c2da029e", "rel": "root"}, 
+        {"href": "http://tall_dset112_deleted.test.hdfgroup.org/", "rel": "home"}
+      ]
     }
     
 Related Resources
 =================
 
-* :doc:`../AttrOps/GET_Attributes`
+* :doc:`GET_Datasets`
 * :doc:`GET_Dataset`
 * :doc:`POST_Dataset`
  

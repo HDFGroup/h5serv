@@ -5,7 +5,8 @@ DELETE Group
 Description
 ===========
 The implementation of the DELETE operation deletes the group with the UUID given in the
-URI.  All attributes and links of the group will also be deleted.
+URI.  All attributes and links of the group will also be deleted.  In addition any 
+links from other groups **TO** the deleted group will be removed.
 
 *Note:* Groups, datatypes, and datasets that are referenced by the group's links will 
 **not** be deleted.  Use the DELETE operation for those objects to remove.

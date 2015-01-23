@@ -699,13 +699,28 @@ class DatasetHandler(RequestHandler):
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
+        response = {}        
+        hrefs = []
+        rootUUID = None
+        
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 db.deleteObjectByUuid('dataset', uuid)
+                rootUUID = db.getUUIDByPath('/')
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
-            raise HTTPError(status, reason=e.strerror) 
+            raise HTTPError(status, reason=e.strerror)     
+                        
+        # write the response
+        href = self.request.protocol + '://' + domain + '/'
+        hrefs.append({'rel': 'self',       'href': href + 'datasets' })
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
+        hrefs.append({'rel': 'home',       'href': href }) 
+        response['hrefs'] = hrefs
+         
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response)) 
             
                 
 class ValueHandler(RequestHandler):
