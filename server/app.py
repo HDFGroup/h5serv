@@ -709,37 +709,100 @@ class DatasetHandler(RequestHandler):
             
                 
 class ValueHandler(RequestHandler):
+     
+    
     """
     Helper method - return slice for dim based on query params
+    
+    Query arg should be in the form: [<dim1>, <dim2>, ... , <dimn>]
+     brackets are optional for one dimensional arrays.
+     Each dimension, valid formats are:
+        single integer: n
+        start and end: n:m
+        start, end, and stride: n:m:s
     """
+
     def getSliceQueryParam(self, dim, extent):
         log = logging.getLogger("h5serv")
         # Get optional query parameters for given dim
-        dimQuery = 'dim' + str(dim + 1)
-        try:
-            start = int(self.get_query_argument(dimQuery + '_start', 0))
-            stop =  int(self.get_query_argument(dimQuery + '_stop', extent))
-            step =  int(self.get_query_argument(dimQuery + '_step', 1))
-        except ValueError:
-            msg ="Bad Request: invalid selection parameter (can't convert to int)"
+        log.info("getSliceQueryParam: " + str(dim) + ", " + str(extent))
+        query = self.get_query_argument("select", default='ALL') 
+        if query == 'ALL':
+            # just return a slice for the entire dimension
+            log.info("getSliceQueryParam: return default")
+            return slice(0, extent)
+            
+        log.info("select query value: [" + query + "]");
+            
+        if not query.startswith('['):
+            msg = "Bad Request: selection query missing start bracket"
             log.info(msg)
             raise HTTPError(400, reason=msg)
+        if not query.endswith(']'):
+            msg = "Bad Request: selection query missing end bracket"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
+            
+        # now strip out brackets
+        query = query[1:-1]
+        
+        query_array = query.split(',')
+        if dim > len(query_array):
+            msg = "Not enough dimensions supplied to query argument"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
+        dim_query = query_array[dim].strip()
+        start = 0
+        stop = extent
+        step = 1
+        if dim_query.find(':') < 0:
+            # just a number - return start = stop for this value
+            try:
+                start = int(dim_query)
+            except ValueError:
+                msg ="Bad Request: invalid selection parameter (can't convert to int) for dimension: " + str(dim)
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+            stop = start
+        elif dim_query == ':':
+            # select everything
+            pass
+        else:
+            fields = dim_query.split(":")
+            if len(fields) > 3:
+                msg ="Bad Request: Too many ':' seperators for dimension: " + str(dim)
+                log.info(msg)
+                raise HTTPError(400, reason=msg)       
+            try:
+                if fields[0]:
+                    start = int(fields[0])
+                if fields[1]:
+                    stop = int(fields[1])
+                if len(fields) > 2 and fields[2]:
+                    step = int(fields[2])
+            except ValueError:
+                msg ="Bad Request: invalid selection parameter (can't convert to int) for dimension: " + str(dim)
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+        
         if start < 0 or start > extent:
-            msg = "Bad Request: Invalid selection start parameter for dimension: " + dimQuery
+            msg = "Bad Request: Invalid selection start parameter for dimension: " + str(dim)
             log.info(msg)
             raise HTTPError(400, reason=msg)
         if stop > extent:
-            msg = "Bad Request: Invalid selection stop parameter for dimension: " + dimQuery
+            msg = "Bad Request: Invalid selection stop parameter for dimension: " + str(dim)
             log.info(msg)
             raise HTTPError(400, reason=msg)
-        if step == 0:
-            msg = "Bad Request: invalid selection step parameter for dimension: " + dimQuery
+        if step <= 0:
+            msg = "Bad Request: invalid selection step parameter for dimension: " + str(dim)
             log.info(msg)
             raise HTTPError(400, reason=msg)
         s = slice(start, stop, step)
-        log.info(dimQuery + " start: " + str(start) + " stop: " + str(stop) + " step: " + 
-            str(step)) 
+        log.info("dim query[" + str(dim) + "] returning: start: " + str(start) + " stop: " +
+             str(stop) + " step: " +  str(step)) 
         return s
+    
+    
         
     """
     Get slices given lists of start, stop, step values

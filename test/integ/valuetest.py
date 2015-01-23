@@ -14,6 +14,7 @@ import config
 import helper
 import unittest
 import json
+ 
 
 class ValueTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -93,7 +94,7 @@ class ValueTest(unittest.TestCase):
         
             # get values starting at index 2
             req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
-             "?dim1_start=2"
+             "?select=[2:]"
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
@@ -103,7 +104,7 @@ class ValueTest(unittest.TestCase):
         
             # get values starting at index 2 with stop of 10
             req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
-             "?dim1_start=2&dim1_stop=10"
+             "?select=[2:10]"
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
@@ -113,7 +114,7 @@ class ValueTest(unittest.TestCase):
         
             # get values starting at index 2 with stop of 10, and stride of 2
             req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
-             "?dim1_start=2&dim1_stop=10&dim1_step=2"
+             "?select=[2:10:2]"
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
@@ -128,7 +129,7 @@ class ValueTest(unittest.TestCase):
         
             # get rows 2, 3, 4, and 5
             req = helper.getEndpoint() + "/datasets/" + dset111UUID + "/value" + \
-             "?dim2_start=2&dim2_stop=6"
+             "?select=[:,2:6]"
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
@@ -142,13 +143,13 @@ class ValueTest(unittest.TestCase):
                 
             # get 2d subregion with stride
             req = helper.getEndpoint() + "/datasets/" + dset111UUID + "/value" + \
-             "?dim1_start=1&dim1_end=9&dim2_start=1&dim2_stop=9&dim2_step=2"
+             "?select=[1:9,1:9:2]"
             rsp = requests.get(req, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             data = rspJson['value']   
-            self.assertEqual(len(data), 9)  
-            for i in range(9):
+            self.assertEqual(len(data), 8)  
+            for i in range(8):
                 arr = data[i]
                 self.assertEqual(len(arr), 4)
                 for j in range(4):
@@ -163,16 +164,34 @@ class ValueTest(unittest.TestCase):
                
         # rank 1 dataset
         dset112UUID = helper.getUUID(domain, g11UUID, 'dset1.1.2') 
-         
-        # pass in non-numeric start
+    
+        # don't use  bracket
         req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
-             "?dim1_start=abc"
+             "?select=abc"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 400)
+        
+        # not a number
+        req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
+             "?select=[a:b:c]"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 400)
+        
+        # start is negative
+        req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
+             "?select=[-1:3]"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 400)
+        
+        # stop past extent
+        req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
+             "?select=[1:25]"
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 400)
         
         # pass in 0 step
         req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
-             "?dim1_start=2&dim1_step=0"
+             "?select=[1:2:0]"
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 400)  
         
