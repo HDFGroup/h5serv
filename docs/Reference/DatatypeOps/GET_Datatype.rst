@@ -47,7 +47,7 @@ The UUID of the datatype object.
 
 type
 ^^^^
-A JSON object representing the type.
+A JSON object representing the type of the datatype object.
 
 attributeCount
 ^^^^^^^^^^^^^^
@@ -55,12 +55,11 @@ The number of attributes belonging to the datatype.
 
 created
 ^^^^^^^
-A timestamp giving the time the group was created in UTC (ISO-8601 format).
+A timestamp giving the time the dataset was created in UTC (ISO-8601 format).
 
 lastModified
 ^^^^^^^^^^^^
-A timestamp giving the most recent time the group has been modified (i.e. attributes or 
-links updated) in UTC (ISO-8601 format).
+A timestamp giving the most recent time the dataset has been modified (i.e. attributes updated) in UTC (ISO-8601 format).
 
 hrefs
 ^^^^^

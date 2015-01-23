@@ -33,6 +33,7 @@ testfiles = {
     'group1k.h5': ('.', 'group1k_updated.h5'),
     'attr1k.h5': ('.',),
     'type1k.h5': ('.',),
+    'dset1k.h5': ('.',),
     'fillvalue.h5': ('.'),
     'null_space_dset.h5': ('.'),
     'compound.h5': ('.',),
@@ -97,16 +98,29 @@ def makeAttr1k():
 Make a testfile with 1000 types
 """
 def makeType1k():
-    print "type!"
     file_path = SRC + "/type1k.h5" 
-    print file_path
     if os.path.exists(file_path):
         return # don't waste time re-creating  
-    print 'makeType1k()' 
     f = h5py.File(file_path, "w")
     for i in range(1000):
         name = 'S{:04d}'.format(i+1)
         f[name] = np.dtype(name)  #create fixed length string
+    f.close()
+    
+"""
+Make a testfile with 1000 datasets
+"""
+def makeDataset1k():
+    print "type!"
+    file_path = SRC + "/dset1k.h5" 
+    print file_path
+    if os.path.exists(file_path):
+        return # don't waste time re-creating  
+    f = h5py.File(file_path, "w")
+    for i in range(1000):
+        name = 'd{:04d}'.format(i+1)
+        dim = i+1
+        f.create_dataset(name, (dim,), dtype=np.int32)
     f.close()
 
 """
@@ -157,6 +171,9 @@ makeAttr1k()
 
 # create type1k.h5 (if not created before)
 makeType1k()
+
+# create dset1k.h5 (if not created before)
+makeDataset1k()
 
 removeFilesFromDir(DES)
 

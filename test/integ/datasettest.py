@@ -924,6 +924,31 @@ class DatasetTest(unittest.TestCase):
             self.failUnlessEqual(len(datasetIds), 4)
             for uuid in datasetIds:
                 self.assertTrue(helper.validateId(uuid))
+                
+    def testGetCollectionBatch(self):
+        domain = 'dset1k.' + config.get('domain')   
+        req = self.endpoint + "/datasets" 
+        headers = {'host': domain}
+        params = {'Limit': 50 }
+        uuids = set()
+        # get ids in 20 batches of 50 links each
+        last_uuid = None
+        for batchno in range(20):
+            if last_uuid:
+                params['Marker'] = last_uuid
+            rsp = requests.get(req, headers=headers, params=params)
+            self.failUnlessEqual(rsp.status_code, 200)
+            if rsp.status_code != 200:
+                break
+            rspJson = json.loads(rsp.text)
+            dsetIds = rspJson['datasets']
+            self.failUnlessEqual(len(dsetIds) <= 50, True)
+            for dsetId in dsetIds:
+                uuids.add(dsetId)
+                last_uuid = dsetId
+            if len(dsetIds) == 0:
+                break
+        self.failUnlessEqual(len(uuids), 1000)  # should get 1000 unique uuid's 
         
 if __name__ == '__main__':
     unittest.main()
