@@ -125,7 +125,7 @@ The "Limit" request parameter is used to limit the number of UUIDs in the respon
 Sample Response with Marker and Limit
 -------------------------------------
 
- .. code-block:: http
+.. code-block:: http
  
     HTTP/1.1 200 OK
     Date: Fri, 23 Jan 2015 06:53:52 GMT
@@ -134,7 +134,7 @@ Sample Response with Marker and Limit
     Content-Type: application/json
     Server: TornadoServer/3.2.2
    
- .. code-block:: json
+.. code-block:: json
      
     {
     "datasets": [

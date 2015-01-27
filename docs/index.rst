@@ -14,10 +14,18 @@ Contents:
    :maxdepth: 2
    
    Introduction/index
-   WhatsNew/index
    Installation/index
+   DomainOps/index
+   GroupOps/index
+   DatasetOps/index
+   DatatypeOps/index
+   AttrOps/index
+   Reference
+   WhatsNew/index
    Tutorials/index
-   Reference/index
+   BugReports/index
+   FAQ/index
+   License/index
 
 
 
