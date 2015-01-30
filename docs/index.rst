@@ -20,6 +20,7 @@ Contents:
    DatasetOps/index
    DatatypeOps/index
    AttrOps/index
+   Types/index
    Reference
    WhatsNew/index
    Tutorials/index

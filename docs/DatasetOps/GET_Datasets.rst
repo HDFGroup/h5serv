@@ -13,7 +13,7 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /datasets HTTP/1.1
+    GET /datasets HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     

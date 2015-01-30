@@ -496,8 +496,6 @@ class DatatypeHandler(RequestHandler):
         hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})
         response['type'] = item['type']
        
-        response['created'] = unixTimeToUTC(item['ctime'])
-        response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['hrefs'] = hrefs
         
         self.set_header('Content-Type', 'application/json')
@@ -578,6 +576,9 @@ class ShapeHandler(RequestHandler):
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
+        response = { }
+        hrefs = []
+        rootUUID = None
         body = None
         try:
             body = json.loads(self.request.body)
@@ -622,8 +623,17 @@ class ShapeHandler(RequestHandler):
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror) 
                 
-        log.info("resize OK")    
+        log.info("resize OK")   
+        # put together the response
+        href = self.request.protocol + '://' + domain + '/'
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid})
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid })
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})    
+        response['hrefs'] = hrefs
+        
         self.set_status(201)  # resource created    
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response)) 
                 
 class DatasetHandler(RequestHandler):
    

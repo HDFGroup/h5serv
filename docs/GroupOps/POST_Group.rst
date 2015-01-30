@@ -61,7 +61,7 @@ On success, a JSON response will be returned with the following elements:
 
 id
 ^^
-The UUID of the requested group
+The UUID of the newly created group
 
 attributeCount
 ^^^^^^^^^^^^^^

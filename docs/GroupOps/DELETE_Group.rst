@@ -21,6 +21,8 @@ Syntax
     DELETE /groups/<id> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
+ 
+*<id>* is the UUID of the group to be deleted.
     
 Request Parameters
 ------------------

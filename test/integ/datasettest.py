@@ -537,8 +537,11 @@ class DatasetTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
-        
-        payload = {'type': 'H5T_STD_I32LE'}
+        str_type = { 'cset':   'H5T_CSET_ASCII', 
+                     'class':  'H5T_STRING', 
+                     'strpad': 'H5T_STR_NULLPAD', 
+                     'strsize': 40}
+        payload = {'type': str_type}
         req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
@@ -562,6 +565,9 @@ class DatasetTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SCALAR')
+        # verify type class is string
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_STRING')
         
     def testPostZeroDim(self):
         domain = 'new0d.datasettest.' + config.get('domain')
@@ -697,7 +703,7 @@ class DatasetTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201)
         
         # create the dataset
-        payload = {'type': dtype_uuid, 'shape': 10}
+        payload = {'type': dtype_uuid, 'shape': [10, 10]}
         req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
@@ -816,7 +822,12 @@ class DatasetTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         root_uuid = helper.getRootUUID(domain)
         
-        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10,
+        type_vstr = {"cset": "H5T_CSET_ASCII", 
+            "order": "H5T_ORDER_NONE", 
+            "class": "H5T_STRING", 
+            "strpad": "H5T_STR_NULLTERM", 
+            "strsize": "H5T_VARIABLE" } 
+        payload = {'type': type_vstr, 'shape': 10,
              'link': {'id': root_uuid, 'name': 'linked_dset'} }
         req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)

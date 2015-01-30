@@ -67,7 +67,7 @@ On success, a JSON response will be returned with the following elements:
 id
 ^^
 
-The UUID of the datatype object.
+The UUID of the newly created datatype object.
 
 attributeCount
 ^^^^^^^^^^^^^^

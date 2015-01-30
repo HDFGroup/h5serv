@@ -19,6 +19,8 @@ Syntax
     Host: DOMAIN
     Authorization: <authorization_string>
     
+*<id>* is the UUID of the requested dataset to be deleted.
+    
 Request Parameters
 ------------------
 This implementation of the operation does not use request parameters.
