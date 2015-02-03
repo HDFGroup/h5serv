@@ -510,7 +510,8 @@ class ValueTest(unittest.TestCase):
         
         req = self.endpoint + "/datasets/" + dset1UUID + "/value" 
         data = [2,3,5,7,11,13,17,19,23,29]
-        payload = {'type': 'H5T_STD_I32LE', 'shape': 10, 'value': data }
+        # payload = {'type': 'H5T_STD_I32LE', 'shape': 10, 'value': data }
+        payload = { 'value': data }
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
@@ -538,7 +539,7 @@ class ValueTest(unittest.TestCase):
             for j in range(10):
                 row.append(i*10 + j)
             data.append(row)
-        payload = {'type': 'H5T_STD_I32LE', 'shape': [10, 10], 'value': data }
+        payload = { 'value': data }
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
@@ -572,12 +573,12 @@ class ValueTest(unittest.TestCase):
         data_part1 = data[0:5]
         data_part2 = data[5:10]
         # write part 1
-        payload = {'type': 'H5T_STD_I32LE', 'shape': 5, 'start': 0, 'stop': 5, 'value': data_part1 }
+        payload = { 'start': 0, 'stop': 5, 'value': data_part1 }
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         # write part 2
-        payload = {'type': 'H5T_STD_I32LE', 'shape': 5, 'start': 5, 'stop': 10, 'value': data_part2 }
+        payload = { 'start': 5, 'stop': 10, 'value': data_part2 }
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)  

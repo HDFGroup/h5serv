@@ -4,7 +4,8 @@ POST Value
 
 Description
 ===========
-Gets values of a data for a given point selection.
+Gets values of a data for a given point selection (provided in the body of the 
+request).
 
 Requests
 ========
@@ -13,7 +14,7 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    POST /datasets/<id>/value HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -27,6 +28,18 @@ Request Headers
 ---------------
 This implementation of the operation uses only the request headers that are common
 to most requests.  See :doc:`../CommonRequestHeaders`
+
+Request Body
+------------
+
+The request body should be a JSON object with the following key:
+
+points
+^^^^^^
+
+An array of points defining the selection.  Each point can either be an integer
+(if the dataset has just one dimension), or an array where the length of the 
+array is equal to the number of dimensions of the dataset.
 
 Responses
 =========
@@ -42,9 +55,11 @@ Response Elements
 
 On success, a JSON response will be returned with the following elements:
 
-hrefs
+value
 ^^^^^
-An array of links to related resources.  See :doc:`../Hypermedia`.
+An array of values where the length of the array is equal to the number of points 
+in the request.  Each value will be a string, integer, or JSON object consist
+with the dataset type (e.g. an compound type).
 
 Special Errors
 --------------
@@ -60,9 +75,12 @@ Sample Request
 
 .. code-block:: http
 
-    DELETE /groups/45a882e1-9d01-11e4-8acf-3c15c2da029e HTTP/1.1
-    Host: testGroupDelete.test.hdfgroup.org
-    Authorization: authorization_string
+    POST /datasets/4e83ad1c-ab6e-11e4-babb-3c15c2da029e/value HTTP/1.1
+    Content-Length: 92
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    host: tall.test.hdfgroup.org
+    Accept: */*
+    Accept-Encoding: gzip, deflate
     
 Sample Response
 ---------------
@@ -70,20 +88,15 @@ Sample Response
 .. code-block:: http
 
     HTTP/1.1 200 OK
-    Date: Thu, 15 Jan 2015 21:55:51 GMT
-    Content-Length: 270
+    Date: Tue, 03 Feb 2015 06:31:38 GMT
+    Content-Length: 47
     Content-Type: application/json
     Server: TornadoServer/3.2.2
     
 .. code-block:: json
-
-    
+ 
     {
-    "hrefs": [
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups", "rel": "self"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups/45a06719-9d01-11e4-9b1c-3c15c2da029e", "rel": "root"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/", "rel": "home"}
-    ]
+    "value": [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
     }
     
 Related Resources

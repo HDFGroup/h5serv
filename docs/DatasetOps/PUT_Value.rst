@@ -4,7 +4,7 @@ PUT Value
 
 Description
 ===========
-Update the Values in a dataset.
+Update the values in a dataset.
 
 Requests
 ========
@@ -13,7 +13,7 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    PUT /datasets/<id> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -28,6 +28,40 @@ Request Headers
 This implementation of the operation uses only the request headers that are common
 to most requests.  See :doc:`../CommonRequestHeaders`
 
+Request Body
+------------
+The request body should be a JSON object with the following keys:
+
+start:
+^^^^^^
+An optional key that gives the starting coordinate of the selection to be updated.  The
+start value can either be an integer (for 1 dimensional arrays) or an array of integers
+where the length of the array is equal to the number of dimensions of the dataset.  Each
+value must be greater than equal to zero and less than the extent of the corresponding
+dimension.
+
+If start is not provided, the selection starts at 0 for each dimension.
+
+stop:
+^^^^^
+An optional key that gives the ending coordinate of the selection to be updated.
+The stop value can either be an integer (for 1 dimensional arrays) or an array of integers
+where the length of the array is equal to the number of dimensions of the dataset.  Each
+value must be greater than equal to start (or zero if start is not provided) and less than
+the extent of the corresponding dimension.
+
+step:
+^^^^^
+An optional key that gives the step value (i.e. the increment of the coordinate for
+each supplied value). The step value can either be an integer (for 1 dimensional arrays) or
+an array of integers where the length of the array is equal to the number of dimensions of
+the dataset.  Each value must be greater than equal to start (or zero if start is not 
+provided) and less than the extent of the corresponding dimension.
+
+value:
+^^^^^^
+A JSON array containing the data values to be written.
+
 Responses
 =========
 
@@ -40,11 +74,7 @@ most responses.  See :doc:`../CommonResponseHeaders`.
 Response Elements
 -----------------
 
-On success, a JSON response will be returned with the following elements:
-
-hrefs
-^^^^^
-An array of links to related resources.  See :doc:`../Hypermedia`.
+No response elements are returned.
 
 Special Errors
 --------------
@@ -55,14 +85,37 @@ information on standard error codes, see :doc:`../CommonErrorResponses`.
 Examples
 ========
 
+
 Sample Request
 --------------
 
+This example writes a 10x10 integer datasets with the values 0-99 inclusive.
+
 .. code-block:: http
 
-    DELETE /groups/45a882e1-9d01-11e4-8acf-3c15c2da029e HTTP/1.1
-    Host: testGroupDelete.test.hdfgroup.org
-    Authorization: authorization_string
+    PUT /datasets/817e2280-ab5d-11e4-afe6-3c15c2da029e/value HTTP/1.1
+    Content-Length: 465
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    host: valueput.datasettest.test.hdfgroup.org
+    Accept: */*
+    Accept-Encoding: gzip, deflate
+    
+.. code-block:: json
+
+    {
+    "value": [
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 
+        [10, 11, 12, 13, 14, 15, 16, 17, 18, 19], 
+        [20, 21, 22, 23, 24, 25, 26, 27, 28, 29], 
+        [30, 31, 32, 33, 34, 35, 36, 37, 38, 39], 
+        [40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 
+        [50, 51, 52, 53, 54, 55, 56, 57, 58, 59], 
+        [60, 61, 62, 63, 64, 65, 66, 67, 68, 69], 
+        [70, 71, 72, 73, 74, 75, 76, 77, 78, 79], 
+        [80, 81, 82, 83, 84, 85, 86, 87, 88, 89], 
+        [90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+      ]
+    }
     
 Sample Response
 ---------------
@@ -70,21 +123,46 @@ Sample Response
 .. code-block:: http
 
     HTTP/1.1 200 OK
-    Date: Thu, 15 Jan 2015 21:55:51 GMT
-    Content-Length: 270
-    Content-Type: application/json
+    Date: Tue, 03 Feb 2015 04:31:22 GMT
+    Content-Length: 0
+    Content-Type: text/html; charset=UTF-8
     Server: TornadoServer/3.2.2
+    
+    
+Sample Request - Selection
+--------------------------
+
+This example writes a portion of the dataset by using the start and stop keys in the
+request.
+
+.. code-block:: http
+
+    PUT /datasets/b2d0af00-ab65-11e4-a874-3c15c2da029e/value HTTP/1.1
+    Content-Length: 92
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    host: valueputsel.datasettest.test.hdfgroup.org
+    Accept: */*
+    Accept-Encoding: gzip, deflate
     
 .. code-block:: json
 
-    
-    {
-    "hrefs": [
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups", "rel": "self"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups/45a06719-9d01-11e4-9b1c-3c15c2da029e", "rel": "root"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/", "rel": "home"}
-    ]
+    {     
+    "start": 5, 
+    "stop": 10,
+    "value": [13, 17, 19, 23, 29]
     }
+    
+Sample Response
+---------------
+
+.. code-block:: http
+
+    HTTP/1.1 200 OK
+    Date: Tue, 03 Feb 2015 05:30:01 GMT
+    Content-Length: 0
+    Content-Type: text/html; charset=UTF-8
+    Server: TornadoServer/3.2.2
+    
     
 Related Resources
 =================

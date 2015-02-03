@@ -21,7 +21,22 @@ Syntax
     
 Request Parameters
 ------------------
-This implementation of the operation does not use request parameters.
+
+select
+^^^^^^
+Optionally the request can provide a select value to indicate a hyperslab selection for
+the values to be returned - i.e. a rectangular (in 1, 2, or more dimensions) region of 
+the dataset.   Format is the following as a url-encoded value:
+
+[dim1_start:dim1_end:dim1_step, dim2_start:dim2_end:dim2_step, ... , dimn_start:dimn_stop:dimn_step]
+
+The number of tuples "start:stop:step" should equal the number of dimensions of the dataset. 
+
+For each tuple:
+
+* start must be greater than equal to zero and less than the dimension extent
+* stop must be greater than or equal to start and less than the dimension extent
+* step is optional and if provided must be greater than 0.  If not provided, the step value for that dimension is assumed to be 1.
 
 Request Headers
 ---------------
@@ -41,6 +56,11 @@ Response Elements
 -----------------
 
 On success, a JSON response will be returned with the following elements:
+
+value
+^^^^^
+A json array (or value for scalar datasets) giving the values of the requested 
+dataset region.
 
 hrefs
 ^^^^^
@@ -102,6 +122,50 @@ Sample Response
       ] 
     }
     
+Sample Request - Selection
+--------------------------
+
+.. code-block:: http
+
+    GET /datasets/a299db70-ab57-11e4-9c00-3c15c2da029e/value?select=[1:9,1:9:2] HTTP/1.1
+    host: tall.test.hdfgroup.org
+    Accept-Encoding: gzip, deflate
+    Accept: */*
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    
+Sample Response - Selection
+---------------------------
+
+.. code-block:: http
+
+    HTTP/1.1 200 OK
+    Date: Tue, 03 Feb 2015 04:01:41 GMT
+    Content-Length: 529
+    Etag: "b370a3d34bdd7ebf57a496bc7f0da7bc5a1aafb9"
+    Content-Type: application/json
+    Server: TornadoServer/3.2.2    
+    
+.. code-block:: json
+   
+    {
+    "value": [
+       [1, 3, 5, 7], 
+       [2, 6, 10, 14], 
+       [3, 9, 15, 21], 
+       [4, 12, 20, 28], 
+       [5, 15, 25, 35], 
+       [6, 18, 30, 42], 
+       [7, 21, 35, 49], 
+       [8, 24, 40, 56]
+    ],  
+    "hrefs": [
+        {"href": "http://tall.test.hdfgroup.org/datasets/a299db70-ab57-11e4-9c00-3c15c2da029e/value", "rel": "self"}, 
+        {"href": "http://tall.test.hdfgroup.org/groups/a29982cf-ab57-11e4-b976-3c15c2da029e", "rel": "root"}, 
+        {"href": "http://tall.test.hdfgroup.org/datasets/a299db70-ab57-11e4-9c00-3c15c2da029e", "rel": "owner"}, 
+        {"href": "http://tall.test.hdfgroup.org/", "rel": "home"}
+      ]
+    }
+       
 Related Resources
 =================
 
