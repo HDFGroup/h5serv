@@ -15,13 +15,20 @@ Use the :doc:`POST_Dataset` operation to create new datasets.  As part of the PO
 request, JSON descriptions for the type and shape of the dataset are included with the
 request.  
 
+Getting information about a dataset
+-----------------------------------
+Use the :doc:`GET_Dataset` operation to retrieve information about a datasets type,
+shape, and number of attributes.  To list all the datasets within a domain use 
+:doc:`GET_Datasets`.  To list the datasets linked to a particular group use 
+:doc:`../GroupOps/GET_Links`.
+
 Writing data to a dataset
 -------------------------
 To write data into the dataset, use the :doc:`PUT_Value` operation.  The request can
 either provide values for the entire dataset, or values for a hyperslab (rectangular
 sub-region) selection.  In addition, if it desired to update a specific list of 
 data elements, a point selection (series of element coordinates) can be passed to the 
-PUT operation.
+:doc:`PUT_Value` operation.
  
 Reading data from a dataset
 ---------------------------
@@ -43,11 +50,11 @@ Deleting datasets
 The :doc:`DELETE_Dataset` operation will remove the dataset, its attributes, and any
 links to the object.
 
-Operations
-----------
+List of Operations
+-------------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    DELETE_Dataset
    GET_Dataset

@@ -59,7 +59,7 @@ On success, a JSON response will be returned with the following elements:
 
 value
 ^^^^^
-A json array (or value for scalar datasets) giving the values of the requested 
+A json array (integer or string for scalar datasets) giving the values of the requested 
 dataset region.
 
 hrefs

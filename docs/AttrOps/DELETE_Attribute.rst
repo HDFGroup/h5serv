@@ -59,9 +59,12 @@ Sample Request
 
 .. code-block:: http
 
-    DELETE /groups/45a882e1-9d01-11e4-8acf-3c15c2da029e HTTP/1.1
-    Host: testGroupDelete.test.hdfgroup.org
-    Authorization: authorization_string
+    DELETE /groups/36ae688a-ac0e-11e4-a44b-3c15c2da029e/attributes/attr1 HTTP/1.1
+    Content-Length: 0
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    host: tall_updated.test.hdfgroup.org
+    Accept: */*
+    Accept-Encoding: gzip, deflate
     
 Sample Response
 ---------------
@@ -69,20 +72,20 @@ Sample Response
 .. code-block:: http
 
     HTTP/1.1 200 OK
-    Date: Thu, 15 Jan 2015 21:55:51 GMT
-    Content-Length: 270
+    Date: Wed, 04 Feb 2015 01:36:17 GMT
+    Content-Length: 420
     Content-Type: application/json
     Server: TornadoServer/3.2.2
     
 .. code-block:: json
-
-    
+  
     {
     "hrefs": [
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups", "rel": "self"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups/45a06719-9d01-11e4-9b1c-3c15c2da029e", "rel": "root"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/", "rel": "home"}
-    ]
+        {"href": "http://tall_updated.test.hdfgroup.org/groups/36ae688a-ac0e-11e4-a44b-3c15c2da029e/attributes", "rel": "self"}, 
+        {"href": "http://tall_updated.test.hdfgroup.org/groups/36ae688a-ac0e-11e4-a44b-3c15c2da029e", "rel": "owner"}, 
+        {"href": "http://tall_updated.test.hdfgroup.org/groups/36ae688a-ac0e-11e4-a44b-3c15c2da029e", "rel": "root"}, 
+        {"href": "http://tall_updated.test.hdfgroup.org/", "rel": "home"}
+      ]
     }
     
 Related Resources

@@ -1419,13 +1419,33 @@ class AttributeHandler(RequestHandler):
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
+        response = { }
+        hrefs = []
+        rootUUID = None
+        
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 db.deleteAttribute(col_name, obj_uuid, attr_name)
+                rootUUID = db.getUUIDByPath('/')
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror) 
+            
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/' 
+        root_href = href + 'groups/' + rootUUID
+        owner_href = href + col_name + '/' + obj_uuid 
+        self_href = owner_href + '/attributes'
+            
+        hrefs.append({'rel': 'self',       'href': self_href})
+        hrefs.append({'rel': 'owner',      'href': owner_href })
+        hrefs.append({'rel': 'root',       'href': root_href }) 
+        hrefs.append({'rel': 'home',       'href': href }) 
+        response['hrefs'] = hrefs 
+        
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response))  
         
         log.info("Attribute delete succeeded")
                 
