@@ -20,7 +20,7 @@ Getting information about a dataset
 Use the :doc:`GET_Dataset` operation to retrieve information about a datasets type,
 shape, and number of attributes.  To list all the datasets within a domain use 
 :doc:`GET_Datasets`.  To list the datasets linked to a particular group use 
-:doc:`../GroupOps/GET_Links`.
+:doc:`../GroupOps/GET_Links` and look at links with a "collection" key of "datsets".
 
 Writing data to a dataset
 -------------------------

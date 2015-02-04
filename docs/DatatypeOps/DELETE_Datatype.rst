@@ -14,7 +14,7 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    DELETE /datatypes/<id> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -61,9 +61,12 @@ Sample Request
 
 .. code-block:: http
 
-    DELETE /groups/45a882e1-9d01-11e4-8acf-3c15c2da029e HTTP/1.1
-    Host: testGroupDelete.test.hdfgroup.org
-    Authorization: authorization_string
+    DELETE /datatypes/93b6a335-ac44-11e4-8d71-3c15c2da029e HTTP/1.1
+    Content-Length: 0
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    host: namedtype_deleted.test.hdfgroup.org
+    Accept: */*
+    Accept-Encoding: gzip, deflate
     
 Sample Response
 ---------------
@@ -71,20 +74,19 @@ Sample Response
 .. code-block:: http
 
     HTTP/1.1 200 OK
-    Date: Thu, 15 Jan 2015 21:55:51 GMT
-    Content-Length: 270
+    Date: Wed, 04 Feb 2015 08:05:26 GMT
+    Content-Length: 363
     Content-Type: application/json
     Server: TornadoServer/3.2.2
     
 .. code-block:: json
-
-    
+  
     {
     "hrefs": [
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups", "rel": "self"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/groups/45a06719-9d01-11e4-9b1c-3c15c2da029e", "rel": "root"}, 
-        {"href": "http://testGroupDelete.test.hdfgroup.org/", "rel": "home"}
-    ]
+        {"href": "http://namedtype_deleted.test.hdfgroup.org/datatypes", "rel": "self"}, 
+        {"href": "http://namedtype_deleted.test.hdfgroup.org/", "rel": "home"}, 
+        {"href": "http://namedtype_deleted.test.hdfgroup.org/groups/93b51245-ac44-11e4-8a21-3c15c2da029e", "rel": "root"}
+      ]
     }
     
 Related Resources

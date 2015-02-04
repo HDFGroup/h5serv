@@ -432,13 +432,28 @@ class TypeHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
+        response = { }
+        hrefs = []
+        rootUUID = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 db.deleteObjectByUuid('datatype', uuid)
+                rootUUID = db.getUUIDByPath('/')
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror) 
+            
+        # got everything we need, put together the response
+        href = self.request.protocol + '://' + domain + '/'
+        hrefs.append({'rel': 'self',  'href': href + 'datatypes'})
+        hrefs.append({'rel': 'home',  'href': href})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})
+       
+        response['hrefs'] = hrefs
+        
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response))
                 
 class DatatypeHandler(RequestHandler):
     def getRequestId(self):
