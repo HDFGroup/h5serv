@@ -14,6 +14,7 @@
 
 import sys
 import os
+from datetime import datetime
 
 #sys.path.append(os.path.abspath("sphinx_ext"))
 
@@ -46,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'h5serv'
-copyright = u'2014, HDFGroup'
+copyright = unicode(datetime.now().year) + u', The HDF Group'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

@@ -35,7 +35,7 @@ committed datatype will be linked.
 type
 ^^^^
 The value of the type key can either be one of the predefined type strings 
-(see predefined types), or a JSON representation of a type. (see :doc:`../Types`).
+(see predefined types), or a JSON representation of a type. (see :doc:`../Types/index`).
 
 link
 ^^^^
