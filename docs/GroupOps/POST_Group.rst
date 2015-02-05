@@ -6,10 +6,11 @@ Description
 ===========
 Creates a new Group.
 
-*Note:* The new Group will not be linked to any other group in the domain and a link
-element is included in the request body.
-If not including the link in the request, use the *PUT link* operation to link the new 
-group to another group.
+*Note:* By default he new Group will not be linked from any other group in the domain.
+A link element can be included in the request body to have an existing group link to 
+the new group.
+Alternatively, use the *PUT link* operation to link the new 
+group.
 
 Requests
 ========
@@ -33,7 +34,7 @@ to most requests.  See :doc:`../CommonRequestHeaders`
 
 Request Elements
 ----------------
-Optionally the request body can be a JSON object that has a link key with subkeys:
+Optionally the request body can be a JSON object that has a link key with sub-keys:
 
 id
 ^^

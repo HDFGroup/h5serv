@@ -31,7 +31,6 @@ Request Elements
 The request body must include a JSON object with a "type" key.  Optionally "shape", 
 "maxdims", and "link" keys can be provided.
 
-
 type
 ^^^^
 Either a string that is one of the predefined type values, a uuid of a committed type,
@@ -279,7 +278,7 @@ Sample Request - Committed Type
     "shape": [10, 10]
     }
     
-Sample Response - Resizable Dataset
+Sample Response - Committed Type
 -----------------------------------
 
 .. code-block:: http

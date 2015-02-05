@@ -27,11 +27,11 @@ Deleting Domains
 Use :doc:`DELETE_Domain` to delete a domain.  All resources within the domain will be
 deleted!
 
-Operations
-----------
+List of Operations
+------------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    DELETE_Domain
    GET_Domain

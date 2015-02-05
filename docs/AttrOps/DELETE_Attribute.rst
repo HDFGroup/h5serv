@@ -14,9 +14,12 @@ Syntax
 ------
 .. code-block:: http
 
-    DELETE /groups/<id> HTTP/1.1
+    DELETE /groups/<id>/<name> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
+    
+* *<id>* is the UUID of the dataset/group/committed datatype
+* *<name>* is the url-encoded name of the requested attribute
     
 Request Parameters
 ------------------

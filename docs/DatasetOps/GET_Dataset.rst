@@ -48,7 +48,7 @@ The UUID of the dataset object.
 
 type
 ^^^^
-A JSON object representing the type of the dataset.  See :doc:`GET_DatasetType` for 
+A JSON object representing the type of the dataset.  See :doc:`../TypeOps/index` for 
 details of the type representation.
 
 shape
