@@ -91,7 +91,7 @@ class Hdf5db:
             
            
         
-    def __init__(self, filePath, readonly=False, app_logger=None):
+    def __init__(self, filePath, readonly=False, app_logger=None, root_uuid=None):
         if app_logger:
             self.log = app_logger
         else:
@@ -108,6 +108,8 @@ class Hdf5db:
         self.log.info("init -- filePath: " + filePath + " mode: " + mode)
         
         self.f = h5py.File(filePath, mode)
+        
+        self.root_uuid=root_uuid
         
         if self.readonly:
             # for read-only files, add a dot in front of the name to be used as the 
@@ -261,18 +263,21 @@ class Hdf5db:
             self.dbGrp = self.dbf
             if "{groups}" in self.dbf:
                 # file already initialized
+                self.root_uuid = self.dbGrp.attrs["rootUUID"]
                 return
             
         else:
             if "__db__" in self.f:
                 # file already initialized
                 self.dbGrp = self.f["__db__"]
+                self.root_uuid = self.dbGrp.attrs["rootUUID"]
                 return;  # already initialized 
             self.dbGrp = self.f.create_group("__db__")
            
         self.log.info("initializing file") 
-        root_uuid = str(uuid.uuid1())
-        self.dbGrp.attrs["rootUUID"] = root_uuid
+        if not self.root_uuid:
+            self.root_uuid = str(uuid.uuid1())
+        self.dbGrp.attrs["rootUUID"] = self.root_uuid
         self.dbGrp.create_group("{groups}")
         self.dbGrp.create_group("{datasets}")
         self.dbGrp.create_group("{datatypes}")
@@ -282,8 +287,8 @@ class Hdf5db:
         
         mtime = op.getmtime(self.f.filename)
         ctime = mtime
-        self.setCreateTime(root_uuid, timestamp=ctime)
-        self.setModifiedTime(root_uuid, timestamp=mtime)
+        self.setCreateTime(self.root_uuid, timestamp=ctime)
+        self.setModifiedTime(self.root_uuid, timestamp=mtime)
             
         self.f.visititems(visitObj)
         
@@ -568,7 +573,7 @@ class Hdf5db:
     createCommittedType - creates new named datatype  
     Returns item
     """   
-    def createCommittedType(self, datatype):
+    def createCommittedType(self, datatype, obj_uuid=None):
         self.log.info("createCommittedType")
         self.initFile()
         if self.readonly:
@@ -576,7 +581,8 @@ class Hdf5db:
             self.log.info(msg)
             raise IOError(errno.EPERM, msg)
         datatypes = self.dbGrp["{datatypes}"]
-        obj_uuid = str(uuid.uuid1())
+        if not obj_uuid:
+            obj_uuid = str(uuid.uuid1())
         dt = self.createTypeFromItem(datatype)
         
         datatypes[obj_uuid] = np.dtype(dt)  # dt
@@ -1029,14 +1035,16 @@ class Hdf5db:
     createDataset - creates new dataset given shape and datatype
     Returns item
     """   
-    def createDataset(self, datatype, datashape, max_shape=None, fill_value=None):
+    def createDataset(self, datatype, datashape, max_shape=None, 
+        fill_value=None, obj_uuid=None):
         self.initFile()
         if self.readonly:
             msg = "Unable to create dataset (Updates are not allowed)"
             self.log.info(msg)
             raise IOError(errno.EPERM, msg)
         datasets = self.dbGrp["{datasets}"]
-        obj_uuid = str(uuid.uuid1())
+        if not obj_uuid:
+            obj_uuid = str(uuid.uuid1())
         dt = None
         item = {}
         if type(datatype) in (str, unicode) and len(datatype) == UUID_LEN:
@@ -1609,14 +1617,15 @@ class Hdf5db:
         return True
         
     
-    def createGroup(self):
+    def createGroup(self, obj_uuid=None):
         self.initFile()
         if self.readonly:
             msg = "Unable to create group (Updates are not allowed)"
             self.log.info(msg)
             raise IOError(errno.EPERM, msg)    
         groups = self.dbGrp["{groups}"]
-        obj_uuid = str(uuid.uuid1())
+        if not obj_uuid:
+            obj_uuid = str(uuid.uuid1())
         newGroup = groups.create_group(obj_uuid)
         # store reverse map as an attribute
         addr = h5py.h5o.get_info(newGroup.id).addr
