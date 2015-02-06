@@ -16,7 +16,10 @@ This class is used to map between HDF5 type representations and numpy types
 """
 import sys
 import numpy as np
-import h5py
+from h5py.h5t import special_dtype 
+from h5py.h5t import check_dtype
+from h5py.h5r import Reference
+from h5py.h5r import RegionReference
 
 
 """
@@ -100,7 +103,7 @@ def getTypeElement(dt):
          
     if dt.kind == 'O':
         # numpy object type - assume this is a h5py variable length extension
-        h5t_check = h5py.h5t.check_dtype(vlen=dt)
+        h5t_check = check_dtype(vlen=dt)
         if h5t_check is not None:
             type_info['base_size'] = 8  # machine pointer size
             if h5t_check == str:
@@ -125,14 +128,14 @@ def getTypeElement(dt):
                 raise TypeError("Unknown h5py vlen type: " + h5t_check)
         else:
             # check for reference type
-            h5t_check = h5py.h5t.check_dtype(ref=dt)
+            h5t_check = check_dtype(ref=dt)
             if h5t_check is not None:
                 type_info['class'] = 'H5T_REFERENCE'
                 type_info['order'] = 'H5T_ORDER_NONE'
                 basedt = None
-                if h5t_check is h5py.h5r.Reference:
+                if h5t_check is Reference:
                     type_info['base'] = 'H5T_STD_REF_OBJ'  # objref
-                elif h5t_check is h5py.h5r.RegionReference:
+                elif h5t_check is RegionReference:
                     type_info['base'] = 'H5T_STD_REF_DSETREG'  # region ref
                 else:
                     raise TypeError("unexpected reference type")
@@ -159,7 +162,7 @@ def getTypeElement(dt):
         baseType = getBaseType(dt)
         # numpy integer type - but check to see if this is the hypy 
         # enum extension
-        mapping = h5py.h5t.check_dtype(enum=dt)  
+        mapping = check_dtype(enum=dt)  
             
         if mapping:
             # yes, this is an enum!
@@ -319,9 +322,9 @@ def createBaseDataType(typeItem):
             if shape:
                 raise TypeError("ArrayType is not supported for variable len types")
             if typeItem['cset'] == 'H5T_CSET_ASCII':
-                dtRet = h5py.h5t.special_dtype(vlen=str)
+                dtRet = special_dtype(vlen=str)
             elif typeItem['cset'] == 'H5T_CSET_UTF8':
-                dtRet = h5py.h5t.special_dtype(vlen=unicode)
+                dtRet = special_dtype(vlen=unicode)
             else:
                 raise TypeError("unexpected 'cset' value")
         else:
@@ -335,7 +338,7 @@ def createBaseDataType(typeItem):
         if 'base' not in typeItem:
             raise KeyError("'base' not provided") 
         baseType = getNumpyTypename(typeItem['base'])
-        dtRet = h5py.h5t.special_dtype(vlen=np.dtype(baseType))
+        dtRet = special_dtype(vlen=np.dtype(baseType))
     elif typeClass == 'H5T_OPAQUE':
         if shape:
             raise TypeError("Opaque Type is not supported for variable len types")
