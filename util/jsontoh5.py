@@ -32,67 +32,11 @@ class Writeh5:
         self.db = db
         self.json = json
         self.root_uuid = None
-        self.groups = {}  # uuid to object dictionary
-        
-        
-    def createAttribute(self, attr_json, col_name, uuid):
+             
     
-        attr_name = attr_json["name"]
-        attr_type = attr_json["type"]
-        attr_value = attr_json["value"]
-        dims = None
-        if "shape" in attr_json:
-            shape = attr_json["shape"]
-            if shape["class"] == 'H5S_SIMPLE':
-                dims = shape["dims"]
-                if type(dims) == int:
-                    # convert int to array
-                    dim1 = shape
-                    dims = [dim1]
-        self.db.createAttribute(col_name, uuid, attr_name, dims, attr_type, attr_value)
-                    
-        
-    def dumpAttributes(self, col_name, uuid):
-        attr_list = self.db.getAttributeItems(col_name, uuid)
-        items = []
-        for attr in attr_list:
-            item = self.dumpAttribute(col_name, uuid, attr['name'])
-            items.append(item)
-                   
-        return items    
-        
-    def dumpLink(self, uuid, name):
-        item = self.db.getLinkItemByUuid(uuid, name)
-        for key in ('ctime', 'mtime', 'href'):
-            if key in item:
-                del item[key]
-        return item
-        
-    
-    def dumpLinks(self, uuid):
-        link_list = self.db.getLinkItems(uuid)
-        items = []
-        for link in link_list:
-            item = self.dumpLink(uuid, link['title'])
-            items.append(item)
-        return items
-       
-        
-    def createGroup(self, uuid, body):
-        if uuid != self.root_uuid:
-            self.db.createGroup(obj_uuid=uuid)
-        if "attributes" in body:
-            attributes = body["attributes"]
-            for attribute in attributes:
-                self.createAttribute(attribute, "groups", uuid)
-        
-        
-    def createGroups(self):
-        groups = self.json["groups"]
-        for uuid in groups:
-            json_obj = groups[uuid]
-            self.createGroup(uuid, json_obj)
-            
+    #
+    # Create a hard, soft, or external link
+    #    
     def createLink(self, link_obj, parent_uuid):
         title = link_obj["title"]
         link_class = link_obj["class"]
@@ -108,20 +52,15 @@ class Writeh5:
             self.db.createExternalLink(parent_uuid, link_file, h5path, title)
         else:
             print "Unable to create link with class:", link_class
-         
-            
-    def createLinks(self):
-        groups = self.json["groups"]
-        for uuid in groups:
-            json_obj = groups[uuid]
-            if "links" in json_obj:
-                links = json_obj["links"]
-                for link in links:
-                    self.createLink(link, uuid)
-            
     
+    #
+    # Create HDF5 dataset object and write data values
+    #        
     def createDataset(self, uuid, body):
         datatype = body['type']
+        if type(datatype) in (str, unicode) and datatype.startswith("datatypes/"):
+            #committed datatype, just pass in the UUID part
+            datatype = datatype[len("datatypes/"):]
         dims = None
         max_shape=None
         fill_value=None
@@ -135,63 +74,141 @@ class Writeh5:
                     dims = [dim1]
                 if "maxdims" in shape:
                     max_shape = shape["maxdims"]
-                    if type(maxdims) == int:
+                    if type(max_shape) == int:
                         #convert to array
                         dim1 = max_shape
                         max_shape = [dim1]
+                    # convert 0's to None's
+                    for i in range(len(max_shape)):
+                        if max_shape[i] == 0:
+                            max_shape[i] = None
                 if "filvalue" in body:
                     fill_value = body["fillvalue"]
-          
+                    
         self.db.createDataset(datatype, dims, max_shape=max_shape, fill_value=fill_value,
             obj_uuid=uuid)
             
         if "value" in body:
             data = body["value"]
-            self.db.setDatasetValuesByUuid(uuid, data)
+            self.db.setDatasetValuesByUuid(uuid, data) 
             
-        if "attributes" in body:
-            attributes = body["attributes"]
-            for attribute in attributes:
-                self.createAttribute(attribute, "datasets", uuid)
+    def createAttribute(self, attr_json, col_name, uuid):
+    
+        attr_name = attr_json["name"]
+        datatype = attr_json["type"]
+        if type(datatype) in (str, unicode) and datatype.startswith("datatypes/"):
+            #committed datatype, just pass in the UUID part
+            datatype = datatype[len("datatypes/"):]
             
-        
+        attr_value = attr_json["value"]
+        dims = None
+        if "shape" in attr_json:
+            shape = attr_json["shape"]
+            if shape["class"] == 'H5S_SIMPLE':
+                dims = shape["dims"]
+                if type(dims) == int:
+                    # convert int to array
+                    dim1 = shape
+                    dims = [dim1]
+        self.db.createAttribute(col_name, uuid, attr_name, dims, datatype, attr_value)
+                    
             
-    def createDatasets(self):
-        datasets = self.json["datasets"]
-        
-        for uuid in datasets:
-            json_obj = datasets[uuid]
-            self.createDataset(uuid, json_obj)
-            
+    #
+    # create committed datatype HDF5 object
+    #   
     def createDatatype(self, uuid, body):
         datatype = body['type']
-        self.db.createCommittedType(datatype, obj_uuid=uuid)
-        if "attributes" in body:
-            attributes = body["attributes"]
-            for attribute in attributes:
-                self.createAttribute(attribute, "datatypes", uuid)
+        self.db.createCommittedType(datatype, obj_uuid=uuid)    
             
+    #
+    # Create HDF5 group object  (links and attributes will be added later)
+    #        
+    def createGroup(self, uuid, body):
+        if uuid != self.root_uuid:
+            self.db.createGroup(obj_uuid=uuid)
+                 
+    # 
+    # Create all the HDF5 objects defined in the JSON file
+    #       
+    def createObjects(self):
+        # create datatypes
+        if "datatypes" in self.json:
+            datatypes = self.json["datatypes"]      
+            for uuid in datatypes:
+                json_obj = datatypes[uuid]
+                self.createDatatype(uuid, json_obj) 
+        # create groups
+        if "groups" in self.json:
+            groups = self.json["groups"]
+            for uuid in groups:
+                json_obj = groups[uuid]
+                self.createGroup(uuid, json_obj)
+        # create datasets
+        if "datasets" in self.json:
+            datasets = self.json["datasets"]    
+            for uuid in datasets:
+                json_obj = datasets[uuid]
+                self.createDataset(uuid, json_obj)
+       
             
-    def createDatatypes(self):
-        datatypes = self.json["datatypes"]
-        
-        for uuid in datatypes:
-            json_obj = datatypes[uuid]
-            self.createDatatype(uuid, json_obj)  
+    # 
+    # Create all the attributes for HDF5 objects defined in the JSON file
+    # Note: this needs to be done after createObjects since an attribute
+    # may use a committed datatype
+    #       
+    def createAttributes(self):
+        # create datatype attributes
+        if "datatypes" in self.json:
+            datatypes = self.json["datatypes"]      
+            for uuid in datatypes:
+                body = datatypes[uuid]
+                if "attributes" in body:
+                    attributes = body["attributes"]
+                    for attribute in attributes:
+                        self.createAttribute(attribute, "datatypes", uuid)
+        # create group attributes
+        if "groups" in self.json:
+            groups = self.json["groups"]
+            for uuid in groups:
+                body = groups[uuid]
+                if "attributes" in body:
+                    attributes = body["attributes"]
+                    for attribute in attributes:
+                        self.createAttribute(attribute, "groups", uuid)
+        # create datasets   
+        if "datasets" in self.json:  
+            datasets = self.json["datasets"]  
+            for uuid in datasets:
+                body = datasets[uuid]
+                if "attributes" in body:
+                    attributes = body["attributes"]
+                    for attribute in attributes:
+                        self.createAttribute(attribute, "datasets", uuid)
+                    
+    #
+    # Link all the objects 
+    # Note: this will "de-anonymous-ize" objects defined in the HDF5 file
+    #   Any non-linked objects will be deleted when the __db__ group is deleted
+    #               
+    def createLinks(self):
+        if "groups" in self.json:
+            groups = self.json["groups"]
+            for uuid in groups:
+                json_obj = groups[uuid]
+                if "links" in json_obj:
+                    links = json_obj["links"]
+                    for link in links:
+                        self.createLink(link, uuid)
+              
         
     def writeFile(self):
         
         self.root_uuid = self.json["root"]
+        
+        self.createObjects()    # create datasets, groups, committed datatypes
+        self.createAttributes() # create attributes for objects
+        self.createLinks()      # link it all together
            
-        self.createGroups()
-        
-        self.createDatasets()
-        
-        self.createDatatypes()
-        
-        self.createLinks()
-           
-
 def main():
     parser = argparse.ArgumentParser(usage='%(prog)s [-h] <json_file> <h5_file>')
     parser.add_argument('in_filename', nargs='+', help='JSon file to be converted to h5')
@@ -200,6 +217,7 @@ def main():
     
     text = open(args.in_filename[0]).read()
     
+    # parse the json file
     h5json = json.loads(text)
     
     if "root" not in h5json:
@@ -217,6 +235,7 @@ def main():
         h5writer.writeFile() 
         
     # open with h5py and remove the _db_ group
+    # Note: this will delete any anonymous (un-linked) objects
     f = h5py.File(filename, 'a') 
     del f["__db__"]
     f.close()

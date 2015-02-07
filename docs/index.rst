@@ -22,6 +22,7 @@ Contents:
    AttrOps/index
    Types/index
    Reference
+   Utilities
    WhatsNew/index
    Tutorials/index
    BugReports/index

@@ -288,6 +288,7 @@ def createBaseDataType(typeItem):
     if type(typeItem) != dict:
         raise TypeError("Type Error: invalid type")
         
+        
     if 'class' not in typeItem:
         raise KeyError("'class' not provided")
     typeClass = typeItem['class']
@@ -366,7 +367,6 @@ def createBaseDataType(typeItem):
     return dtRet  
     
 def createDataType(typeItem):
-    
     dtRet = None
     if type(typeItem) == str or type(typeItem) == unicode:
         # should be one of the predefined types
@@ -376,6 +376,7 @@ def createDataType(typeItem):
         
     if type(typeItem) != dict:
         raise TypeError("invalid type")
+        
         
     if 'class' not in typeItem:
         raise KeyError("'class' not provided")

@@ -498,9 +498,7 @@ class AttributeTest(unittest.TestCase):
         self.failUnlessEqual(shape['class'], 'H5S_SIMPLE')
         dims = shape['dims']
         self.failUnlessEqual(len(dims), 1)
-        self.failUnlessEqual(dims[0], 10)
-        
-    
+        self.failUnlessEqual(dims[0], 10)  
         
     def testPutFixedString(self):
         domain = 'tall_updated.' + config.get('domain') 
@@ -514,6 +512,24 @@ class AttributeTest(unittest.TestCase):
                      'strsize': 40}
                       
         payload = {'type': str_type, 'shape': (1,), 'value': data}
+        req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['hrefs']), 3)
+        
+    def testPutVariableString(self):
+        domain = 'tall_updated.' + config.get('domain') 
+        attr_name = 'attr7'
+        rootUUID = helper.getRootUUID(domain) 
+        headers = {'host': domain}
+        data = ["Hypermedia", "as", "the", "engine", "of", "state."]
+        str_type = { 'cset':   'H5T_CSET_ASCII', 
+                     'class':  'H5T_STRING', 
+                     'strpad': 'H5T_STR_NULLPAD', 
+                     'strsize': 'H5T_VARIABLE'}
+                      
+        payload = {'type': str_type, 'shape': (6,), 'value': data}
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
@@ -538,6 +554,7 @@ class AttributeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['hrefs']), 3)
+    
         
     def testPutCommittedType(self):
         domain = 'tall_updated.' + config.get('domain')
