@@ -171,6 +171,40 @@ class DatatypeTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
+    
+    """
+    This test fails due to h5py issue #540: https://github.com/h5py/h5py/issues/540
+    Commenting out for now.
+        
+    def testPostVLenStringType(self):
+        domain = 'vlenstr.datatypetest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        root_uuid = helper.getRootUUID(domain)
+        data_type = { 'cset':   'H5T_CSET_ASCII', 
+                     'class':  'H5T_STRING', 
+                     'strpad': 'H5T_STR_NULLPAD', 
+                     'strsize': 'H5T_VARIABLE'}
+                     
+        payload = {'type': data_type}
+        req = self.endpoint + "/datatypes"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create datatype
+        rspJson = json.loads(rsp.text)
+        dtype_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dtype_uuid))
+         
+        # link the new datatype 
+        name = "dtype_vlenstr"
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dtype_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+    """
          
     def testPostInvalidType(self):
         domain = 'tall.' + config.get('domain')  
