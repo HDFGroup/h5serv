@@ -19,7 +19,7 @@ cfg = {
     #'domain': 'hdf.io',
     'domain':  'hdfgroup.org',
     'hdf5_ext': '.h5',
-    'local_ip': '127.0.0.1',
+    'local_ip': '127.0.0.1',  # used by lcoal_dns.py
     'default_dns': '8.8.8.8'  # used by local_dns.py
 }
    
