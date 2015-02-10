@@ -56,7 +56,7 @@ local_dns on the same host.
 
 Next, start the local_dns server: ``sudo python local_dns.py``
 
-*Note:* You will need to run as admin since local_dns using port 53 (the standard DNS port).
+*Note:* You will need to run as root since local_dns using port 53 (the standard DNS port).
 
 Now when you run: ``nslookup hdf_data.mydata.myorg.org 127.0.0.1``, you should see a response:
 ``Non-authoritative answer:``
@@ -71,10 +71,12 @@ url and see the JSON response.
 
 Integrating with you organization's network
 -------------------------------------------
-If you would like *any* computer to recognize the domain name of hdf_data.myserv.mydata.org
-you will need to update your system admin update your organization's master DNS server to 
-configure "myserv" as a zone of "mydata".  Details of how this is done will vary based on 
-what DNS server software your network is running.
+If you would like *any* computer to recognize the domain name of hdf_data.myserv.myorg.org
+you will need to have your system admin update your organization's master DNS server to 
+configure "myserv" as a zone of "myorg".  In our example, this would have the effect
+of any sub-domain of "myserv.myorg" managed by its own DNS server.  In our case, the DNS
+server will be local_dns.py.  Details of how zone's are setup will vary based on 
+what DNS server software your network is running.  Your sysadmin should be able to help.
 
  
 An Example
