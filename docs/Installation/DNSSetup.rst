@@ -82,7 +82,7 @@ what DNS server software your network is running.  Your sysadmin should be able 
 An Example
 ----------
 As an example of how this would work we can look at the h5serv instance setup by The HDF
-Group.  Entering <http://tall.data.hdfgroup.org:7253/> in your browser will return the JSON
+Group.  Entering http://tall.data.hdfgroup.org:7253/ in your browser will return the JSON
 domain response for tall.h5.  
 
 If we trace the chain of events in displaying this page it

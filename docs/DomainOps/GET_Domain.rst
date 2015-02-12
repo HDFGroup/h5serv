@@ -7,7 +7,7 @@ Description
 This operation retrieves information about the requested domain.
 
 *Note:* If the HDF DNS Server (see DNS) is configured 
-(see: :doc:`../../Installation/dns`), the  
+(see: :doc:`../Installation/DNSSetup`), the  
 operations can specify the domain as part of the URI.  Example:  
 http://tall.data.hdfgroup.org:7253/ 
 returns data about the domain "tall" hosted on data.hdfgroup.org.  

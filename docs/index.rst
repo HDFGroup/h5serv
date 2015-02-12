@@ -25,7 +25,6 @@ Contents:
    Utilities
    WhatsNew/index
    Tutorials/index
-   BugReports/index
    FAQ/index
    License/index
 

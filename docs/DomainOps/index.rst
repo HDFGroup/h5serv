@@ -7,7 +7,7 @@ file in the traditional HDF5 library.
 Other than :doc:`PUT_Domain`, every operation of the service explicitly
 includes the domain resource in the *Host* line of the http request.
 
-If the included DNS server is set up (see :doc:`../Installation/dns`), the domain
+If the included DNS server is set up (see :doc:`../Installation/DNSSetup`), the domain
 name can also be used as the endpoint of the request.
 
 *Note:* Currently h5serv does not include any functions for listing or querying which

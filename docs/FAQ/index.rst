@@ -3,4 +3,79 @@ FAQ
 ###################
 
 
-   FAQs go here
+What datatypes are supported?
+-----------------------------
+
+=========================           ============================================    
+Type                                Precisions                                       
+=========================           ============================================    
+Integer                             1, 2, 4 or 8 byte, BE/LE, signed/unsigned
+Float                               4, 8  byte, BE/LE
+Compound                            Arbitrary names and offsets
+Strings (fixed-length)              Any length
+Strings (variable-length)           Any length, ASCII 
+Opaque                              Any length
+Array                               Any supported type
+Enumeration                         Any integer type                           
+References                          Region and object
+=========================           ============================================     
+
+Unsupported types:
+
+=========================           ============================================
+Type                                Status                                 
+=========================           ============================================
+HDF5 VLEN (non-string)              Coming soon!
+HDF5 "time" type
+Opaque                              
+Bitfields                            
+=========================           ============================================
+
+
+Why does h5serv use those long ids?
+------------------------------------
+
+h5serv uses the UUID standard (http://en.wikipedia.org/wiki/Universally_unique_identifier)
+to identify objects (datasets, groups, and committed datatypes) uniquely.  The benefit of
+using UUIDs is that objects can be uniquely identified without requiring any central 
+coordination.
+
+How can I get a dataset (or group) via a pathname?
+--------------------------------------------------
+
+You will need to iterate through the path to get the UUID of each subgroup.
+E.g. suppose the path of interest is "/g1/g1.1" in the domain: "tall.data.hdfgroup.org".
+Perform these actions to get the UUID of the group at /g1/g1.1.
+
+#. ``GET /``  // returns the UUID of the root group
+#. ``GET /groups/<root_uuid>/links/g1``  // returns the UUID of the group at "/g1"
+#. ``GET /groups/<g1_uuid>/links/g1.1``  // returns the UUID of the group at "/g1/g1.1'
+
+How do I guard against an attribute (dataset/group/file) from being deleted by a request?
+-----------------------------------------------------------------------------------------
+Future releases of h5serv will support authorization and permissions to protect content
+that shouldn't be altered.
+
+For now the choices are:
+
+#. Don't expose the h5serv endpoint on a non-trusted network
+#. Make the files readonly
+#. Make periodic backups of all data files
+#. Don't share the domain name with non-trusted sources.  Since h5serv doesn't provide an operation to list all domains on the server, creating a non-trivial domain name (e.g. "mydata_18494") will be relatively secure.
+
+How can I display my data in a nice Web UI?
+-------------------------------------------
+There are many Javascript libraries (e.g. http://d3js.org) that can take the data 
+returned by h5serv to create compelling graphics.  
+
+I have a C or Fortran application that uses HDF5, how can I take advantage of h5serv?
+-------------------------------------------------------------------------------------
+We are planning on creating a hdf5 library plugin that will transparently invoke the 
+REST api.  For now, you can use C-libraries such as libcurl to invoke h5serv requests.
+
+How do I submit a bug report?
+------------------------------
+If you have a Github account, create an issue here: 
+https://github.com/HDFGroup/h5serv/issues.
+
+Alternatively, you send a email to the HDF Group help desk: help@hdfgroup.org.
