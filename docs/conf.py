@@ -49,6 +49,8 @@ master_doc = 'index'
 project = u'h5serv'
 copyright = unicode(datetime.now().year) + u', The HDF Group'
 
+rst_epilog = '.. |copyright| replace:: %s' % copyright
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.

@@ -183,7 +183,7 @@ class DumpJson:
 # Print usage and exit
 #
 def printUsage():
-    print "usage: python dumpjson.py [-v] [-D|d] [-endpoint=<server_ip>]  [-port=<port] <domain>"
+    print "usage: python exportjson.py [-v] [-D|d] [-endpoint=<server_ip>]  [-port=<port] <domain>"
     print "  options -v: verbose, print request and response codes from server"
     print "  options -D: suppress all data output"
     print "  options -d: suppress data output for datasets (but not attributes)"
@@ -191,10 +191,10 @@ def printUsage():
     print "  options -port: port address of server [default 7253]"
     print " ------------------------------------------------------------------------------"
     print "  Example - get 'tall' collection from HDF Group server:"
-    print "       python dumpjson.py tall.data.hdfgroup.org"
+    print "       python exportjson.py tall.data.hdfgroup.org"
     print "  Example - get 'tall' collection from a local server instance "
     print "        (assuming the server is using port 5000):"
-    print "        python dumpjson.py -endpoint=127.0.0.1 -port=5000 tall.test.hdfgroup.org"
+    print "        python exportjson.py -endpoint=127.0.0.1 -port=5000 tall.test.hdfgroup.org"
     sys.exit(); 
     
 #

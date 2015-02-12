@@ -17,7 +17,7 @@ Usage:
 hdf5_file is a file from the h5serv data directory.  Output is a list of All UUID's and
 a path to the associated object.
 
-dumpjson.py
+exportjson.py
 -----------
 
 This script makes a series of rest requests to the desired h5serv endpoint and
@@ -25,7 +25,7 @@ constructs a JSON file representing the domain's contents.
 
 Usage: 
 
-``python dumpjson.py [-v] [-D|d] [-endpoint=<server_ip>]  [-port=<port] <domain>``
+``python exportjson.py [-v] [-D|d] [-endpoint=<server_ip>]  [-port=<port] <domain>``
   
 Options:
  * ``-v``: verbose, print request and response codes from server
@@ -35,10 +35,10 @@ Options:
  * ``-port``: port address of server [default 7253]
 
   Example - get 'tall' collection from HDF Group server:
-       ``python dumpjson.py tall.data.hdfgroup.org``
+       ``python exportjson.py tall.data.hdfgroup.org``
   Example - get 'tall' collection from a local server instance 
         (assuming the server is using port 5000):
-        ``python dumpjson.py -endpoint=127.0.0.1 -port=5000 tall.test.hdfgroup.org``
+        ``python exportjson.py -endpoint=127.0.0.1 -port=5000 tall.test.hdfgroup.org``
 
 
 jsontoh5.py
