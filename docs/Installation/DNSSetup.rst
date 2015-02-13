@@ -1,6 +1,6 @@
-**************
-DNS Setup
-**************
+********************
+DNS Setup (optional)
+********************
 
 The dns directory contains a simple dynamic dns server server.  Setting it up takes some
 additional work, but it will be useful if you would like to display data from h5serv using a web 

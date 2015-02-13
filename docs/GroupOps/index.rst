@@ -3,9 +3,15 @@ Groups
 ####################
 
 Groups are objects that can be used to organize objects within a domain.  Groups contain
-*links* which can reference other objects and attributes, which can contain metadata 
-associated with the group.
+*links* which can reference other objects (datasets, groups or committed datatypes). a
+There are four different types of links that can be used:
 
+* hard: A direct link to a group, dataset, or committed datatype object in the domain
+* soft: A symbolic link that gives a path to an object within the domain (object may or may not be present).
+* external: A symbolic link to an object that is external to the domain
+* user-defined: A user-defined link (this implementation only provides title and class for user-defined links)
+
+Groups all have attributes which can be used to store meta-data about the group.
 
 Creating Groups
 ---------------
@@ -13,10 +19,6 @@ Creating Groups
 Use the :doc:`POST_Group` to create new Groups.  Initially the new group will have no
 links and no attributes.
 
-Adding Links
-------------
-
-Use :doc:`PUT_Link` to create hard, soft, or external links in the group.
 
 Getting information about Groups
 --------------------------------
@@ -30,6 +32,17 @@ To retrieve the links of a group use :doc:`GET_Links`. Use :doc:`GET_Link` to ge
 information about a specific link.
 
 To get a group's attributes, use :doc:`../AttrOps/GET_Attributes`. 
+
+Updating Links
+---------------
+
+To create a hard, soft, or external link,
+use :doc:`PUT_Link`.   
+
+To delete a link use :doc:`DELETE_Link`.
+
+*Note*: deleting a link doesn't delete the object that it refers to.
+
 
 Deleting Groups
 ---------------

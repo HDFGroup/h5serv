@@ -5,7 +5,7 @@ DELETE Domain
 Description
 ===========
 The DELETE operation deletes the given domain and
-all it's resources (groups, datasets, attributes, etc.).
+all its resources (groups, datasets, attributes, etc.).
 
 Requests
 ========
