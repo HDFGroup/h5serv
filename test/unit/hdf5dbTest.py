@@ -294,7 +294,6 @@ class Hdf5dbTest(unittest.TestCase):
             dsetUuid = db.getUUIDByPath('/dset')
             self.failUnlessEqual(len(dsetUuid), config.get('uuidlen'))
             dset_value = db.getDatasetValuesByUuid(dsetUuid)
-            self.assertEqual(type(dset_value), int)
             self.assertEqual(dset_value, 42)
             
     def testReadAttribute(self):
