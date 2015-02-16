@@ -499,7 +499,7 @@ class Hdf5db:
             if self.getModifiedTime(obj_uuid, useRoot=False):
                 msg = "Dataset with uuid: " + obj_uuid + " has been previously deleted"
                 self.log.info(msg)
-                raise IOError(errno.EIDRM, msg)
+                raise IOError(errno.ENOENT, msg)
             else:
                 msg = "Dataset with uuid: " + obj_uuid + " was not found"
                 self.log.info(msg)
@@ -558,11 +558,11 @@ class Hdf5db:
         except KeyError as ke:
             msg = "Unable able to create type: " + ke.message
             self.log.info(msg)
-            raise IOError(errno.EBADMSG, msg)
+            raise IOError(errno.EINVAL, msg)
         except TypeError as te:
             msg = "Unable able to create type: " + te.message
             self.log.info(msg)
-            raise IOError(errno.EBADMSG, msg)      
+            raise IOError(errno.EINVAL, msg)      
         if dt is None:
             msg = "Unexpected error creating type"
             self.log.error(msg)
@@ -641,7 +641,7 @@ class Hdf5db:
             if self.getModifiedTime(obj_uuid, useRoot=False):
                 msg = "Datatype with uuid: " + obj_uuid + " has been previously deleted"
                 self.log.info(msg)
-                raise IOError(errno.EIDRM, msg)
+                raise IOError(errno.ENOENT, msg)
             else:
                 msg = "Datatype with uuid: " + obj_uuid + " was not found"
                 self.log.info(msg)
@@ -766,7 +766,7 @@ class Hdf5db:
                 # attribute has been removed
                 msg = "Attribute: [" + name + "] of object: " + obj_uuid + " has been previously deleted"
                 self.log(msg)
-                raise IOError(errno.EIDRM, msg)
+                raise IOError(errno.ENOINT, msg)
             msg = "Attribute: [" + name + "] of object: " + obj_uuid + " not found"
             self.log.info(msg)
             raise IOError(errno.ENXIO, msg)
@@ -998,7 +998,7 @@ class Hdf5db:
             # out of range error
             msg = "getDatasetPointSelection, out of range error"
             self.log.info(msg)
-            raise IOError(errno.EBADMSG, msg)
+            raise IOError(errno.EINVAL, msg)
         return values.tolist()
                  
         
@@ -1098,16 +1098,16 @@ class Hdf5db:
         if len(shape) != len(dset.shape):
             msg = "Unable to resize dataset, shape has wrong number of dimensions"
             self.log.info(msg)
-            raise IOError(errno.EBADMSG, msg)
+            raise IOError(errno.EINVAL, msg)
         for i in range(len(shape)):
             if shape[i] < dset.shape[i]:
                 msg = "Unable to resize dataset, cannot make extent smaller"
                 self.log.info(msg)
-                raise IOError(errno.EBADMSG, msg)
+                raise IOError(errno.EINVAL, msg)
             if dset.maxshape[i] != None and shape[i] > dset.maxshape[i]:
                 msg = "Unable to resize dataset, max extent exceeded"
                 self.log.info(msg)
-                raise IOError(errno.EBADMSG, msg)
+                raise IOError(errno.EINVAL, msg)
         
         dset.resize(shape)  # resize
         
@@ -1230,7 +1230,7 @@ class Hdf5db:
             if self.getModifiedTime(obj_uuid, useRoot=False):
                 msg = "Group with uuid: " + obj_uuid + " has been previously deleted"
                 self.log.info(msg)
-                raise IOError(errno.EIDRM, msg)
+                raise IOError(errno.ENOENT, msg)
             else:
                 msg = "Group with uuid: " + obj_uuid + " was not found"
                 self.log.info(msg)
@@ -1327,7 +1327,7 @@ class Hdf5db:
             if mtime:
                 msg = "Link [" + link_name + "] of: " + grpUuid + " has been previously deleted"
                 self.log.info(msg)
-                raise IOError(errno.EIDRM, msg)
+                raise IOError(errno.ENOENT, msg)
             else:
                 msg = "Link [" + link_name + "] of: " + grpUuid + " not found"
                 self.log.info(msg)

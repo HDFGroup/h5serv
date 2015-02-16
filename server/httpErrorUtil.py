@@ -4,7 +4,7 @@ import errno
 """    
 def errNoToHttpStatus(error_code):
     httpStatus = 500
-    if error_code == errno.EBADMSG:
+    if error_code == errno.EINVAL: # formerly EBADMSG
         httpStatus = 400  # bad request
     elif error_code == errno.EACCES:
         httpStatus = 401   # unauthorized
@@ -14,7 +14,7 @@ def errNoToHttpStatus(error_code):
         httpStatus = 404  # Not Found
     elif error_code == errno.EEXIST:
         httpStatus = 409   # conflict
-    elif error_code == errno.EIDRM:
+    elif error_code == errno.ENOENT:  # formerly EIDRM
         httpStatus = 410   # Gone
     elif error_code == errno.EIO:
         httpStatus = 500   # Internal Error

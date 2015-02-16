@@ -43,19 +43,22 @@ Install Anaconda using the default options.
 Once Anaconda is installed select "Anaconda Command Prompt" from the start menu.
 
 In the command window that appears, create a new anaconda environment using the following command:
-conda create -n h5serv python=2.7 h5py twisted tornado requests pytz
+``conda create -n h5serv python=2.7 h5py twisted tornado requests pytz``
 
 Answer 'y' to the prompt, and the packages will be fetched.
 
-In the same command window, run: activate h5serv
+In the same command window, run: ``activate h5serv``
 
 In a browser go to: https://github.com/HDFGroup/h5serv and click the "Download ZIP"
 button (right side of page).  Save the file as "h5serv.zip" to your Downloads directory.
 
-In Windows Explorer, right-click on the zip file and select "Extract All...".  You can 
-choose any folder as the destination.
+Alternatively, if you have git installed, you can run: 
+``git clone https://github.com/HDFGroup/h5serv.git`` to download the h5serv source tree. 
 
-Next, cd to the folder you extracted the source files to.
+If you downloaded the ZIP file, in Windows Explorer, right-click on the file and select 
+"Extract All...".  You can choose any folder as the destination.
+
+Next, in the command window, cd to the folder you extracted the source files to.
 
 From here cd to "h5serv-master/server".
 
@@ -75,18 +78,17 @@ Anaconda from Continuum Analytics can be used to easily manage the package depen
 needed for HDF Server.  
 
 In a browser go to: http://continuum.io/downloads and click the "Mac OS X 64-bit 
-Python 2.7 Graphical Installer" button for Mac OS X or: "Linux 640Bit Python 2.7".
+Python 2.7 Graphical Installer" button for Mac OS X or: "Linux 64-bit Python 2.7".
 
 Install Anaconda using the default options.
 
-Once Anaconda is installed select "Anaconda Command Prompt" from the start menu.
+Once Anaconda is installed, open a new shell and run the following on the command line:
 
-In the command window that appears, create a new anaconda environment using the following command:
-conda create -n h5serv python=2.7 h5py twisted tornado requests pytz
+``conda create -n h5serv python=2.7 h5py twisted tornado requests pytz``
 
 Answer 'y' to the prompt, and the packages will be fetched.
 
-In the same command window, run: activate h5serv
+In the same shell, run: ``source activate h5serv``
 
 Run: ``git clone https://github.com/HDFGroup/h5serv.git`` to download the h5serv source
 tree.  Alternatively, in a browser go to: https://github.com/HDFGroup/h5serv and click 
@@ -95,9 +97,9 @@ the destination directory of your choice.
 
 Next, cd to the folder you extracted the source files to.
 
-From here cd to "h5serv-master/server".
+From here cd to "server" (or "h5serv-master/server" if you extracted from ZIP file).
 
-Run: python app.py
+Run: ``python app.py``
 You should see the output: "Starting event loop on port: 5000".
 
 At this point the server is running, waiting on any requests being sent to port 5000.
@@ -114,7 +116,7 @@ Open a new shell (on Windows, run "Annaconda Command Prompt" from the start menu
 
 In this shell, run the following commands:
 
-* Conda activate h5serv  (just: activate h5serv on Windows)
+* source activate h5serv  (just: activate h5serv on Windows)
 * cd <h5serv installation directory>
 * cd test
 * python testall.py
