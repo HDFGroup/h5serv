@@ -15,7 +15,7 @@ Websites
 * Main website: http://www.hdfgroup.org
 * Source code: https://github.com/HDFGroup/h5serv
 * Mailing list: hdf-forum@lists.hdfgroup.org <hdf-forum@lists.hdfgroup.org>
-* Documentation: tbd
+* Documentation: http://h5serv.readthedocs.org
 
 
 Installation
