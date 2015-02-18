@@ -19,7 +19,7 @@ Syntax
 ------
 .. code-block:: http
 
-    PUT /groups/<id>/link/<name> HTTP/1.1
+    PUT /groups/<id>/links/<name> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     

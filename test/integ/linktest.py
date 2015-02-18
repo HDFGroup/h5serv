@@ -218,6 +218,12 @@ class LinkTest(unittest.TestCase):
         # make a request second time (verify idempotent)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
+        # now try with a different payload
+        grpId2 = helper.createGroup(domain)
+        payload["id"] = grpId2
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
         
     def testPutNameWithSpaces(self):
         logging.info("LinkTest.testPutNameWithSpaces")

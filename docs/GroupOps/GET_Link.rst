@@ -13,7 +13,7 @@ Syntax
 ------
 .. code-block:: http
 
-    GET /groups/<id>/link/<name> HTTP/1.1
+    GET /groups/<id>/links/<name> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
