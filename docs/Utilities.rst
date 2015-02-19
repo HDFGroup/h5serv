@@ -2,7 +2,7 @@
 Utilities
 ###################
 
-The h5serve distribution includes the following utility scripts.  These are all
+The h5serv distribution includes the following utility scripts.  These are all
 located in the ``util`` directory.
 
 dumpobjdb.py
