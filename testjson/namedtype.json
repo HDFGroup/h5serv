@@ -59,14 +59,14 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datatypes", 
-                    "title": "dtype_compound", 
-                    "uuid": "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e"
+                    "id": "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e", 
+                    "title": "dtype_compound"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datatypes", 
-                    "title": "dtype_simple", 
-                    "uuid": "9eb9ddab-7bf7-11e4-927d-3c15c2da029e"
+                    "id": "9eb9ddab-7bf7-11e4-927d-3c15c2da029e", 
+                    "title": "dtype_simple"
                 }
             ]
         }

@@ -72,7 +72,7 @@ link["h5domain"]
 For external links, the path of the external domain containing the object that is linked.
 *Note:* The domain may or may not exist.  Use GET / with the domain to verify.
 
-link["uuid"]
+link["id"]
 ^^^^^^^^^^^^
 For hard links, the uuid of the object the link points to.  For symbolic links this
 element is not present
@@ -129,7 +129,7 @@ Sample Response - Hard Link
         "title": "g1", 
         "collection": "groups", 
         "class": "H5L_TYPE_HARD", 
-        "uuid": "052e001e-9d33-11e4-9a3d-3c15c2da029e"
+        "id": "052e001e-9d33-11e4-9a3d-3c15c2da029e"
     }, 
     "created": "2015-01-16T03:47:22Z",
     "lastModified": "2015-01-16T03:47:22Z", 

@@ -1289,16 +1289,16 @@ class Hdf5db:
             obj = parent[link_name]
             addr = h5py.h5o.get_info(obj.id).addr
             item['class'] = 'H5L_TYPE_HARD'
-            item['uuid'] = self.getUUIDByAddress(addr)
+            item['id'] = self.getUUIDByAddress(addr)
             class_name = obj.__class__.__name__ 
             if class_name == 'Dataset':
-                item['href'] = 'datasets/' + item['uuid']
+                item['href'] = 'datasets/' + item['id']
                 item['collection'] = 'datasets'
             elif class_name == 'Group':
-                item['href'] = 'groups/' + item['uuid']
+                item['href'] = 'groups/' + item['id']
                 item['collection'] = 'groups'
             elif class_name == 'Datatype':
-                item['href'] = 'datatypes/' + item['uuid']
+                item['href'] = 'datatypes/' + item['id']
                 item['collection'] = 'datatypes'
             else:
                 self.log.warning("unexpected object type: " + item['type'])

@@ -55,20 +55,20 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "DS1", 
-                    "uuid": "a09a7f14-7bf7-11e4-8eef-3c15c2da029e"
+                    "id": "a09a7f14-7bf7-11e4-8eef-3c15c2da029e", 
+                    "title": "DS1"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "DS2", 
-                    "uuid": "a09a8efa-7bf7-11e4-9fb6-3c15c2da029e"
+                    "id": "a09a8efa-7bf7-11e4-9fb6-3c15c2da029e", 
+                    "title": "DS2"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "groups", 
-                    "title": "G1", 
-                    "uuid": "a09a9b99-7bf7-11e4-aa4b-3c15c2da029e"
+                    "id": "a09a9b99-7bf7-11e4-aa4b-3c15c2da029e", 
+                    "title": "G1"
                 }
             ]
         }, 

@@ -102,7 +102,7 @@ Sample Response
             "title": "g1.2.1",
             "class": "H5L_TYPE_HARD",
             "collection": "groups",
-            "uuid": "0ad38d45-a06f-11e4-a909-3c15c2da029e"
+            "id": "0ad38d45-a06f-11e4-a909-3c15c2da029e"
         }, 
         {
             "title": "extlink",
@@ -147,11 +147,11 @@ Sample Response Batch
      
     {
     "links": [
-        {"title": "g0090", "uuid": "76c53485-a06e-11e4-96f3-3c15c2da029e", "class": "H5L_TYPE_HARD", "collection": "groups"}, 
-        {"title": "g0091", "uuid": "76c54d40-a06e-11e4-a342-3c15c2da029e", "class": "H5L_TYPE_HARD", "collection": "groups"}, 
-        {"title": "g0092", "uuid": "76c564f5-a06e-11e4-bccd-3c15c2da029e", "class": "H5L_TYPE_HARD", "collection": "groups"}, 
-        {"title": "g0093", "uuid": "76c57d19-a06e-11e4-a9a8-3c15c2da029e", "class": "H5L_TYPE_HARD", "collection": "groups"}, 
-        {"title": "g0094", "uuid": "76c5941c-a06e-11e4-b641-3c15c2da029e", "class": "H5L_TYPE_HARD", "collection": "groups"}
+        {"title": "g0090", "id": "76c53485-a06e-11e4-96f3-3c15c2da029e", "class": "H5L_TYPE_HARD", "collection": "groups"}, 
+        {"title": "g0091", "id": "76c54d40-a06e-11e4-a342-3c15c2da029e", "class": "H5L_TYPE_HARD", "collection": "groups"}, 
+        {"title": "g0092", "id": "76c564f5-a06e-11e4-bccd-3c15c2da029e", "class": "H5L_TYPE_HARD", "collection": "groups"}, 
+        {"title": "g0093", "id": "76c57d19-a06e-11e4-a9a8-3c15c2da029e", "class": "H5L_TYPE_HARD", "collection": "groups"}, 
+        {"title": "g0094", "id": "76c5941c-a06e-11e4-b641-3c15c2da029e", "class": "H5L_TYPE_HARD", "collection": "groups"}
       ],
     "hrefs": [
         {"href": "http://group1k.test.hdfgroup.org/groups/76bddb1e-a06e-11e4-86d6-3c15c2da029e/links", "rel": "self"}, 

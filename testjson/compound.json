@@ -589,8 +589,8 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "dset", 
-                    "uuid": "2fd9e630-7b51-11e4-b2b8-3c15c2da029e"
+                    "id": "2fd9e630-7b51-11e4-b2b8-3c15c2da029e", 
+                    "title": "dset"
                 }
             ]
         }

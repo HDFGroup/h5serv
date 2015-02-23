@@ -106,14 +106,14 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "DS1", 
-                    "uuid": "25d6f985-7b51-11e4-a037-3c15c2da029e"
+                    "id": "25d6f985-7b51-11e4-a037-3c15c2da029e", 
+                    "title": "DS1"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datatypes", 
-                    "title": "Sensor_Type", 
-                    "uuid": "25d7088f-7b51-11e4-ac9b-3c15c2da029e"
+                    "id": "25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
+                    "title": "Sensor_Type"
                 }
             ]
         }

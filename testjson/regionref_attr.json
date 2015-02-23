@@ -180,14 +180,14 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "DS1", 
-                    "uuid": "a27c4d1c-7bf7-11e4-8fa1-3c15c2da029e"
+                    "id": "a27c4d1c-7bf7-11e4-8fa1-3c15c2da029e", 
+                    "title": "DS1"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "DS2", 
-                    "uuid": "a27c5e5e-7bf7-11e4-a259-3c15c2da029e"
+                    "id": "a27c5e5e-7bf7-11e4-a259-3c15c2da029e", 
+                    "title": "DS2"
                 }
             ]
         }

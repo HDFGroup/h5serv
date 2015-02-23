@@ -36,7 +36,7 @@ class LinkTest(unittest.TestCase):
             self.assertTrue("lastModified" in rspJson)
             self.assertTrue('link' in rspJson)
             target = rspJson['link']
-            self.assertTrue(helper.validateId(target['uuid']))
+            self.assertTrue(helper.validateId(target['id']))
             self.failUnlessEqual(target['class'], 'H5L_TYPE_HARD')
             self.failUnlessEqual(target['title'], 'g1')
             self.failUnlessEqual(target['collection'], 'groups')
@@ -152,7 +152,10 @@ class LinkTest(unittest.TestCase):
         self.failUnlessEqual(len(names), 1000)  # should get 1000 unique links
     
     
-    #Fix - This is crazy slow!
+    #Fix - This needs to be made more efficient - when deleting links, the code now
+    # searches all objects to see if the linked target needs to be made anonymous or not.
+    # idea: keep back pointers for all links?
+    # Tracked as Issue #12 in Github
     """    
     def testMoveLinks(self):
         logging.info("LinkTest.testMoveLinks")

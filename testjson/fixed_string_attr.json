@@ -47,8 +47,8 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "DS1", 
-                    "uuid": "08baa31e-7b81-11e4-9c29-3c15c2da029e"
+                    "id": "08baa31e-7b81-11e4-9c29-3c15c2da029e", 
+                    "title": "DS1"
                 }
             ]
         }

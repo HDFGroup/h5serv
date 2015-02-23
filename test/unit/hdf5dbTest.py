@@ -65,7 +65,7 @@ class Hdf5dbTest(unittest.TestCase):
             g1links = db.getLinkItems(g1Uuid)
             self.failUnlessEqual(len(g1links), 2)
             for item in g1links:
-                self.failUnlessEqual(len(item['uuid']), config.get('uuidlen'))
+                self.failUnlessEqual(len(item['id']), config.get('uuidlen'))
           
         # end of with will close file
         # open again and verify we can get obj by name
@@ -137,7 +137,7 @@ class Hdf5dbTest(unittest.TestCase):
         with Hdf5db('tall.h5') as db:
             grpUuid = db.getUUIDByPath('/g1/g1.1')
             item = db.getLinkItemByUuid(grpUuid, "dset1.1.1")
-            self.assertTrue('uuid' in item)
+            self.assertTrue('id' in item)
             self.assertEqual(item['title'], 'dset1.1.1')
             self.assertEqual(item['class'], 'H5L_TYPE_HARD')
             self.assertEqual(item['collection'], 'datasets')
@@ -149,7 +149,7 @@ class Hdf5dbTest(unittest.TestCase):
         with Hdf5db('tall.h5') as db:
             grpUuid = db.getUUIDByPath('/g1/g1.2/g1.2.1')
             item = db.getLinkItemByUuid(grpUuid, "slink")
-            self.assertTrue('uuid' not in item)
+            self.assertTrue('id' not in item)
             self.assertEqual(item['title'], 'slink')
             self.assertEqual(item['class'], 'H5L_TYPE_SOFT')
             self.assertEqual(item['h5path'], 'somevalue')
@@ -205,8 +205,8 @@ class Hdf5dbTest(unittest.TestCase):
                 elif item['class'] == 'H5L_TYPE_EXTERNAL':
                     externalLink = item
         self.assertEqual(hardLink['collection'], 'groups')
-        self.assertTrue('uuid' in hardLink)
-        self.assertTrue('uuid' not in externalLink)
+        self.assertTrue('id' in hardLink)
+        self.assertTrue('id' not in externalLink)
         self.assertEqual(externalLink['h5path'], 'somepath')
         self.assertEqual(externalLink['file'], 'somefile')
         
@@ -261,7 +261,7 @@ class Hdf5dbTest(unittest.TestCase):
             g1links = db.getLinkItems(g1Uuid)
             self.failUnlessEqual(len(g1links), 2)
             for item in g1links:
-                self.failUnlessEqual(len(item['uuid']), config.get('uuidlen'))
+                self.failUnlessEqual(len(item['id']), config.get('uuidlen'))
                 
     def testReadDataset(self):
          getFile('tall.h5')

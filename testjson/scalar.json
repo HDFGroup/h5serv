@@ -65,14 +65,14 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "0d", 
-                    "uuid": "41e49e63-7b86-11e4-852f-3c15c2da029e"
+                    "id": "41e49e63-7b86-11e4-852f-3c15c2da029e", 
+                    "title": "0d"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "1d", 
-                    "uuid": "41e4b5a8-7b86-11e4-b6f6-3c15c2da029e"
+                    "id": "41e4b5a8-7b86-11e4-b6f6-3c15c2da029e", 
+                    "title": "1d"
                 }
             ]
         }

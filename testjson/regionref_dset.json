@@ -167,14 +167,14 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "DS1", 
-                    "uuid": "68ee8647-7bed-11e4-9397-3c15c2da029e"
+                    "id": "68ee8647-7bed-11e4-9397-3c15c2da029e", 
+                    "title": "DS1"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "DS2", 
-                    "uuid": "68ee967a-7bed-11e4-819c-3c15c2da029e"
+                    "id": "68ee967a-7bed-11e4-819c-3c15c2da029e", 
+                    "title": "DS2"
                 }
             ]
         }

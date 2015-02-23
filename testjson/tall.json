@@ -388,14 +388,14 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "groups", 
-                    "title": "g1", 
-                    "uuid": "7f332f8f-7ab1-11e4-9a20-3c15c2da029e"
+                    "id": "7f332f8f-7ab1-11e4-9a20-3c15c2da029e", 
+                    "title": "g1"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "groups", 
-                    "title": "g2", 
-                    "uuid": "7f33b04c-7ab1-11e4-8c78-3c15c2da029e"
+                    "id": "7f33b04c-7ab1-11e4-8c78-3c15c2da029e", 
+                    "title": "g2"
                 }
             ]
         }, 
@@ -407,14 +407,14 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "groups", 
-                    "title": "g1.1", 
-                    "uuid": "7f334102-7ab1-11e4-94b4-3c15c2da029e"
+                    "id": "7f334102-7ab1-11e4-94b4-3c15c2da029e", 
+                    "title": "g1.1"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "groups", 
-                    "title": "g1.2", 
-                    "uuid": "7f338cb8-7ab1-11e4-9185-3c15c2da029e"
+                    "id": "7f338cb8-7ab1-11e4-9185-3c15c2da029e", 
+                    "title": "g1.2"
                 }
             ]
         }, 
@@ -426,14 +426,14 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "dset1.1.1", 
-                    "uuid": "7f335a2e-7ab1-11e4-87a5-3c15c2da029e"
+                    "id": "7f335a2e-7ab1-11e4-87a5-3c15c2da029e", 
+                    "title": "dset1.1.1"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "dset1.1.2", 
-                    "uuid": "7f3374a6-7ab1-11e4-94e2-3c15c2da029e"
+                    "id": "7f3374a6-7ab1-11e4-94e2-3c15c2da029e", 
+                    "title": "dset1.1.2"
                 }
             ]
         }, 
@@ -445,8 +445,8 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "groups", 
-                    "title": "g1.2.1", 
-                    "uuid": "7f339ef5-7ab1-11e4-9ee3-3c15c2da029e"
+                    "id": "7f339ef5-7ab1-11e4-9ee3-3c15c2da029e", 
+                    "title": "g1.2.1"
                 }, 
                 {
                     "class": "H5L_TYPE_EXTERNAL", 
@@ -476,14 +476,14 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "dset2.1", 
-                    "uuid": "7f33c885-7ab1-11e4-ac4d-3c15c2da029e"
+                    "id": "7f33c885-7ab1-11e4-ac4d-3c15c2da029e", 
+                    "title": "dset2.1"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "dset2.2", 
-                    "uuid": "7f33e211-7ab1-11e4-8669-3c15c2da029e"
+                    "id": "7f33e211-7ab1-11e4-8669-3c15c2da029e", 
+                    "title": "dset2.2"
                 }
             ]
         }

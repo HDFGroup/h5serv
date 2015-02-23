@@ -18,7 +18,7 @@ hdf5_file is a file from the h5serv data directory.  Output is a list of All UUI
 a path to the associated object.
 
 exportjson.py
------------
+-------------
 
 This script makes a series of rest requests to the desired h5serv endpoint and
 constructs a JSON file representing the domain's contents.

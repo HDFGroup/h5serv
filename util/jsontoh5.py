@@ -41,7 +41,7 @@ class Writeh5:
         title = link_obj["title"]
         link_class = link_obj["class"]
         if link_class == 'H5L_TYPE_HARD':
-            child_uuid = link_obj["uuid"]
+            child_uuid = link_obj["id"]
             self.db.linkObject(parent_uuid, child_uuid, title)
         elif link_class == 'H5L_TYPE_SOFT':
             h5path = link_obj["h5path"]

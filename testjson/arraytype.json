@@ -1034,8 +1034,8 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "array", 
-                    "uuid": "9348ad51-7bf7-11e4-a66f-3c15c2da029e"
+                    "id": "9348ad51-7bf7-11e4-a66f-3c15c2da029e", 
+                    "title": "array"
                 }
             ]
         }

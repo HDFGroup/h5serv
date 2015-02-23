@@ -12,6 +12,8 @@
 import sys
 import json
 import argparse
+import logging
+import logging.handlers
 
 sys.path.append('../server')
 from hdf5db import Hdf5db
@@ -173,6 +175,17 @@ def main():
         ' datasets (but not attribute values)')
     parser.add_argument('filename', nargs='+', help='HDF5 to be converted to json')
     args = parser.parse_args()
+    
+    # create logger
+    log = logging.getLogger("h5serv")
+    log.setLevel(logging.INFO)
+    # set daily rotating log
+    handler = logging.FileHandler('./h5tojson.log')
+    
+    # add handler to logger
+    log.addHandler(handler)
+    log.info("h5tojson " + args.filename[0])
+    
     
     with Hdf5db(args.filename[0], readonly=True) as db:
         dumper = DumpJson(db, options=args)

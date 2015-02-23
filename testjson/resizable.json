@@ -356,26 +356,26 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "resizable_1d", 
-                    "uuid": "a36df1ba-7bf7-11e4-b0ea-3c15c2da029e"
+                    "id": "a36df1ba-7bf7-11e4-b0ea-3c15c2da029e", 
+                    "title": "resizable_1d"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "resizable_2d", 
-                    "uuid": "a36e0fe3-7bf7-11e4-a278-3c15c2da029e"
+                    "id": "a36e0fe3-7bf7-11e4-a278-3c15c2da029e", 
+                    "title": "resizable_2d"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "unlimited_1d", 
-                    "uuid": "a36e207d-7bf7-11e4-ac4a-3c15c2da029e"
+                    "id": "a36e207d-7bf7-11e4-ac4a-3c15c2da029e", 
+                    "title": "unlimited_1d"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "unlimited_2d", 
-                    "uuid": "a36e3c1c-7bf7-11e4-90c4-3c15c2da029e"
+                    "id": "a36e3c1c-7bf7-11e4-90c4-3c15c2da029e", 
+                    "title": "unlimited_2d"
                 }
             ]
         }

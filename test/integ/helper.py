@@ -63,7 +63,7 @@ def getUUID(domain, parentUuid, name):
         if target['class'] != 'H5L_TYPE_HARD':
             # soft/external links
             return None
-        tgtUuid = target['uuid']
+        tgtUuid = target['id']
 
     return tgtUuid
 """

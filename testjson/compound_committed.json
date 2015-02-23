@@ -460,14 +460,14 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "title": "dset", 
-                    "uuid": "2f4ba161-8270-11e4-9117-3c15c2da029e"
+                    "id": "2f4ba161-8270-11e4-9117-3c15c2da029e", 
+                    "title": "dset"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "groups", 
-                    "title": "types", 
-                    "uuid": "2f4bb178-8270-11e4-a4e7-3c15c2da029e"
+                    "id": "2f4bb178-8270-11e4-a4e7-3c15c2da029e", 
+                    "title": "types"
                 }
             ]
         }, 
@@ -479,20 +479,20 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datatypes", 
-                    "title": "date", 
-                    "uuid": "2f4bbf2e-8270-11e4-b46d-3c15c2da029e"
+                    "id": "2f4bbf2e-8270-11e4-b46d-3c15c2da029e", 
+                    "title": "date"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datatypes", 
-                    "title": "temp", 
-                    "uuid": "2f4bcbcc-8270-11e4-97b3-3c15c2da029e"
+                    "id": "2f4bcbcc-8270-11e4-97b3-3c15c2da029e", 
+                    "title": "temp"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datatypes", 
-                    "title": "time", 
-                    "uuid": "2f4bd7d4-8270-11e4-a886-3c15c2da029e"
+                    "id": "2f4bd7d4-8270-11e4-a886-3c15c2da029e", 
+                    "title": "time"
                 }
             ]
         }
