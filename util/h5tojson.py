@@ -12,6 +12,9 @@
 import sys
 import json
 import argparse
+import os.path as op
+import os
+
 import logging
 import logging.handlers
 
@@ -25,9 +28,14 @@ DumpJson - return json representation of all objects within the given file
 """
 
 class DumpJson:
-    def __init__(self, db, options=None):
+    def __init__(self, db, app_logger=None, options=None):
         self.options = options
         self.db = db
+        if app_logger:
+            self.log = app_logger
+        else:
+            print "default logger"
+            self.log = logging.getLogger()
         self.json = {}
         
     def dumpAttribute(self, col_name, uuid, attr_name):
@@ -37,7 +45,10 @@ class DumpJson:
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
         response['shape'] = item['shape']
         if not self.options.D:
-            response['value'] = item['value']   # dump values unless header -D was passed
+            if 'value' not in item:
+                self.log.warning("no value key in attribute: " + attr_name)
+            else:
+                response['value'] = item['value']   # dump values unless header -D was passed
         return response
      
         
@@ -178,17 +189,23 @@ def main():
     
     # create logger
     log = logging.getLogger("h5serv")
-    log.setLevel(logging.INFO)
+    log.setLevel(logging.WARN)
     # set daily rotating log
     handler = logging.FileHandler('./h5tojson.log')
     
     # add handler to logger
     log.addHandler(handler)
-    log.info("h5tojson " + args.filename[0])
+    
+    filename = args.filename[0]
+    if not op.isfile(filename):
+        print "Cannot find file:", filename
+        sys.exit()
+    
+    log.info("h5tojson " + filename)
     
     
-    with Hdf5db(args.filename[0], readonly=True) as db:
-        dumper = DumpJson(db, options=args)
+    with Hdf5db(filename, readonly=True, app_logger=log) as db:
+        dumper = DumpJson(db, app_logger=log, options=args)
         dumper.dumpFile()    
     
 
