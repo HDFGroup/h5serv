@@ -647,8 +647,7 @@ class DatasetTest(unittest.TestCase):
             type = rspJson['type']
             self.assertTrue(type['class'] in ('H5T_FLOAT', 'H5T_INTEGER'))
             self.assertEqual(type['base'], datatype)      
-            
-            
+                     
     def testPostCompoundType(self):
         domain = 'compound.datasettest.' + config.get('domain')
         req = self.endpoint + "/"

@@ -1143,7 +1143,7 @@ class ValueHandler(RequestHandler):
                 rank = len(dims) 
                 if points:
                     for point in points:
-                        pass  # todo        
+                        pass  # todo - issue #36       
                 else:
                     slices = self.getHyperslabSelection(dims, start, stop, step)
                     # todo - check that the types are compatible

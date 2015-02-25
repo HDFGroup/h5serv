@@ -482,9 +482,7 @@ class ValueTest(unittest.TestCase):
             rspJson = json.loads(rsp.text)
             data = rspJson['value'] 
             self.assertEqual(len(data), len(points))
-            self.assertEqual(9, data[3])
-            
-        
+            self.assertEqual(9, data[3]) 
         
         
     def testPut(self):
@@ -586,6 +584,47 @@ class ValueTest(unittest.TestCase):
         # read back the data
         readData = helper.readDataset(domain, dset1UUID)
         self.failUnlessEqual(readData, data)  # verify we got back what we started with
+        
+    def testPutCompound(self):
+        domain = 'valueputcompound.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        root_uuid = helper.getRootUUID(domain)
+        headers = {'host': domain}
+        
+        fields = ({'name': 'temp', 'type': 'H5T_STD_I32LE'}, 
+                    {'name': 'pressure', 'type': 'H5T_IEEE_F32LE'}) 
+        datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
+        
+        #create 1d dataset
+        payload = {'type': datatype, 'shape': 2}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        
+        rspJson = json.loads(rsp.text)
+        dset1UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset1UUID))
+         
+        # link new dataset as 'dset1'
+        ok = helper.linkObject(domain, dset1UUID, 'dset_compound')
+        self.assertTrue(ok)
+        
+        """
+        fix - writing compound fails
+        value = ((55, 32.34), (59, 29.34)) 
+        payload = {'value': value}
+        req = self.endpoint + "/datasets/" + dset1UUID + "/value"
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # write value
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['hrefs']), 3)
+        """
+        
+        
              
 if __name__ == '__main__':
     unittest.main()

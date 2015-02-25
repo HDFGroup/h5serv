@@ -39,6 +39,25 @@ Options:
   Example - get 'tall' collection from a local server instance 
         (assuming the server is using port 5000):
         ``python exportjson.py -endpoint=127.0.0.1 -port=5000 tall.test.hdfgroup.org``
+        
+exporth5.py
+-----------
+
+This script makes a series of rest requests to the desired h5serv endpoint and
+constructs a HDF5 file representing the domain's contents.
+
+usage: ``python exporth5.py [-v] [-endpoint=<server_ip>]  [-port=<port] <domain> <filename>``
+
+Options:
+ * ``-v``: verbose, print request and response codes from server
+ * ``-endpoint``: specify IP endpoint of server
+ * ``-port``: port address of server [default 7253]
+ 
+  Example - get 'tall' collection from HDF Group server, save to tall.h5:
+       ``python exporth5.py tall.data.hdfgroup.org tall.h5``
+  Example - get 'tall' collection from a local server instance 
+        (assuming the server is using port 5000):
+        ``python exporth5.py -endpoint=127.0.0.1 -port=5000 tall.test.hdfgroup.org tall.h5``
 
 
 jsontoh5.py

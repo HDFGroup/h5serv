@@ -4,7 +4,7 @@ GET Groups
 
 Description
 ===========
-Returns UUIDs for all the groups in a domain.
+Returns UUIDs for all the groups in a domain (other than the root group).
 
 Requests
 ========
