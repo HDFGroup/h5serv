@@ -1133,7 +1133,7 @@ class ValueHandler(RequestHandler):
             if 'step' in body:
                 step = body['step']
                             
-        data = body["value"]
+        data = tuple(body["value"])
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:

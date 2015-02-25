@@ -913,8 +913,17 @@ class Hdf5db:
             for item in data:
                 out.append(self.refToList(item))  # recursive call
         return out
-            
-         
+        
+    """
+      Convert a list to a tuple, recursively.
+      Example. [[1,2],[3,4]] -> ((1,2),(3,4))
+    """
+    def toTuple(self, data):
+        if type(data) in (list, tuple):
+            return tuple(self.toTuple(x) for x in data)
+        else:
+            return data
+
     """
     Get values from dataset identified by obj_uuid.
     If a slices list or tuple is provided, it should have the same
@@ -1004,6 +1013,14 @@ class Hdf5db:
         
     def setDatasetValuesByUuid(self, obj_uuid, data, slices=None):
         dset = self.getDatasetObjByUuid(obj_uuid)
+        # need some special conversion for compound types --
+        # each element must be a tuple, but the JSON decoder
+        # gives us a list instead.
+        if len(dset.dtype) > 1 and type(data) in (list, tuple):
+            converted_data = []
+            for i in range(len(data)):
+                converted_data.append(self.toTuple(data[i]))  
+            data = converted_data          
         if dset == None:
             msg = "Dataset: " + obj_uuid + " not found"
             self.log.info(msg)

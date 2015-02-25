@@ -613,17 +613,11 @@ class ValueTest(unittest.TestCase):
         ok = helper.linkObject(domain, dset1UUID, 'dset_compound')
         self.assertTrue(ok)
         
-        """
-        fix - writing compound fails
         value = ((55, 32.34), (59, 29.34)) 
         payload = {'value': value}
         req = self.endpoint + "/datasets/" + dset1UUID + "/value"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  # write value
-        rspJson = json.loads(rsp.text)
-        self.assertEqual(len(rspJson['hrefs']), 3)
-        """
-        
+        self.failUnlessEqual(rsp.status_code, 200)  # write value
         
              
 if __name__ == '__main__':
