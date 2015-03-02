@@ -996,8 +996,6 @@ class Hdf5db:
         try:
             i = 0
             for point in points:
-                # need to convert to strings so result can be JSON serializable
-                #values.append(dset[[point]].tolist())
                 if rank == 1:
                     values[i] = dset[[point]]
                 else:
@@ -1010,7 +1008,10 @@ class Hdf5db:
             raise IOError(errno.EINVAL, msg)
         return values.tolist()
                  
-        
+    """
+    setDatasetValuesByUuid - update the given dataset values with supplied data
+      and optionally a hyperslab selection (slices)
+    """    
     def setDatasetValuesByUuid(self, obj_uuid, data, slices=None):
         dset = self.getDatasetObjByUuid(obj_uuid)
         # need some special conversion for compound types --
@@ -1043,6 +1044,46 @@ class Hdf5db:
                     dset[slice] = data
                 else:
                     dset[slices] = data     
+        
+        # update modified time
+        self.setModifiedTime(obj_uuid)
+        return True
+        
+    """
+    setDatasetValuesByPointSelection - Update the dataset values using the given
+      data and point selection
+    """    
+    def setDatasetValuesByPointSelection(self, obj_uuid, data, points):
+        dset = self.getDatasetObjByUuid(obj_uuid)
+        # need some special conversion for compound types --
+        # each element must be a tuple, but the JSON decoder
+        # gives us a list instead.
+        if len(dset.dtype) > 1 and type(data) in (list, tuple):
+            converted_data = []
+            for i in range(len(data)):
+                converted_data.append(self.toTuple(data[i]))  
+            data = converted_data          
+        if dset == None:
+            msg = "Dataset: " + obj_uuid + " not found"
+            self.log.info(msg)
+            raise IOError(errno.ENXIO, msg)
+        rank = len(dset.shape)
+        
+        try:
+            i = 0
+            for point in points:
+                # need to convert to strings so result can be JSON serializable
+                #values.append(dset[[point]].tolist())
+                if rank == 1:
+                    dset[[point]] = data[i]
+                else:
+                    dset[tuple(point)] = data[i]
+                i += 1
+        except ValueError:
+            # out of range error
+            msg = "setDatasetValuesByPointSelection, out of range error"
+            self.log.info(msg)
+            raise IOError(errno.EINVAL, msg)    
         
         # update modified time
         self.setModifiedTime(obj_uuid)

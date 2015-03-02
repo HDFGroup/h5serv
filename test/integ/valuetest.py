@@ -545,6 +545,7 @@ class ValueTest(unittest.TestCase):
         readData = helper.readDataset(domain, dset2UUID)
         self.failUnlessEqual(readData, data)  # verify we got back what we started with
         
+        
     def testPutSelection(self):
         # create domain
         domain = 'valueputsel.datasettest.' + config.get('domain')
@@ -584,6 +585,42 @@ class ValueTest(unittest.TestCase):
         # read back the data
         readData = helper.readDataset(domain, dset1UUID)
         self.failUnlessEqual(readData, data)  # verify we got back what we started with
+        
+    def testPutPointSelection(self):
+        # create domain
+        domain = 'valueputpointsel.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        #create 1d dataset
+        payload = {'type': 'H5T_STD_I32LE', 'shape': 100}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset1UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset1UUID))
+         
+        # link new dataset as 'dset1'
+        ok = helper.linkObject(domain, dset1UUID, 'dset1')
+        self.assertTrue(ok)
+        
+        req = self.endpoint + "/datasets/" + dset1UUID + "/value" 
+        primes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97]
+        value = [1,] * len(primes)  # write 1's at indexes that are prime
+        # write 1's to all the prime indexes
+        payload = { 'points': primes, 'value': value }
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+         
+        # read back the data
+        readData = helper.readDataset(domain, dset1UUID)
+        self.failUnlessEqual(readData[37], 1)  # prime
+        self.failUnlessEqual(readData[38], 0)  # not prime
+        
         
     def testPutCompound(self):
         domain = 'valueputcompound.datasettest.' + config.get('domain')

@@ -19,14 +19,12 @@ import json
 import tornado.httpserver
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
-from tornado.escape import json_encode, json_decode, url_escape, url_unescape
-from urlparse import urlparse
-from sets import Set
+from tornado.escape import json_encode, url_escape, url_unescape
 import config
 from hdf5db import Hdf5db
 import hdf5dtype
 from timeUtil import unixTimeToUTC
-from fileUtil import getFilePath, getDomain, getFileModCreateTimes, makeDirs, verifyFile
+from fileUtil import getFilePath, getDomain, makeDirs, verifyFile
 from httpErrorUtil import errNoToHttpStatus
 
     
@@ -197,7 +195,6 @@ class LinkHandler(RequestHandler):
         response = { }
         
         verifyFile(filePath)
-        items = None
         rootUUID = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
@@ -255,7 +252,6 @@ class LinkHandler(RequestHandler):
         # PUT /group/<id>/links/<name> {id: <id> } 
         # PUT /group/<id>/links/<name> {h5path: <path> } 
         # PUT /group/<id>/links/<name> {h5path: <path>, h5domain: <href> }
-        uri = self.request.uri
         reqUuid = self.getRequestId(self.request.uri)
         
         linkName = url_unescape(self.getName(self.request.uri))
@@ -300,7 +296,6 @@ class LinkHandler(RequestHandler):
         response = { }
         
         verifyFile(filePath)
-        items = None
         rootUUID = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
@@ -1110,6 +1105,9 @@ class ValueHandler(RequestHandler):
             log.info(msg)
             raise HTTPError(400, reason=msg) # missing data
             
+        data = body["value"]
+        
+            
         if "points" in body:
             points = body['points']
             if type(points) != list:
@@ -1120,7 +1118,7 @@ class ValueHandler(RequestHandler):
                 msg = "Bad Request: can use hyperslab selection and points selection in one request"
                 log.info(msg)
                 raise HTTPError(400, reason=msg)
-            if len(points) > len(value):
+            if len(points) > len(data):
                 msg = "Bad Request: more points provided than values"
                 log.info(msg)
                 raise HTTPError(400, reason=msg)
@@ -1133,17 +1131,15 @@ class ValueHandler(RequestHandler):
             if 'step' in body:
                 step = body['step']
                             
-        data = body["value"]
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 item = db.getDatasetItemByUuid(reqUuid)
                 dsetshape = item['shape']
                 dims = dsetshape['dims']
-                rank = len(dims) 
                 if points:
-                    for point in points:
-                        pass  # todo - issue #36       
+                    # write point selection
+                    db.setDatasetValuesByPointSelection(reqUuid, data, points)              
                 else:
                     slices = self.getHyperslabSelection(dims, start, stop, step)
                     # todo - check that the types are compatible
@@ -1642,8 +1638,6 @@ class GroupCollectionHandler(RequestHandler):
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
-                if parent_group_uuid:
-                    parent_group_item = db.getGroupItemByUuid(parent_group_uuid)
                 grpUUID = db.createGroup()
                 item = db.getGroupItemByUuid(grpUUID)
                 # if link info is provided, link the new group
@@ -1825,8 +1819,6 @@ class DatasetCollectionHandler(RequestHandler):
         item = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                if group_uuid:
-                    group_item = db.getGroupItemByUuid(group_uuid)
                 rootUUID = db.getUUIDByPath('/')
                 item = db.createDataset(datatype, shape, maxshape)
                 if group_uuid:
@@ -1951,8 +1943,6 @@ class TypeCollectionHandler(RequestHandler):
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
-                if parent_group_uuid:
-                    parent_group_item = db.getGroupItemByUuid(parent_group_uuid)
                 item = db.createCommittedType(datatype)
                 # if link info is provided, link the new group
                 if parent_group_uuid:
@@ -2089,7 +2079,7 @@ class RootHandler(RequestHandler):
         try:    
             os.remove(filePath)  
         except IOError as ioe:
-            log.info("IOError deleting HDF5 file: " + str(e.errno) + " " + e.strerror)
+            log.info("IOError deleting HDF5 file: " + str(ioe.errno) + " " + ioe.strerror)
             raise HTTPError(500, "Unexpected error: unable to delete collection") 
               
         
@@ -2102,7 +2092,6 @@ def shutdown():
     log = logging.getLogger("h5serv")
     MAX_WAIT_SECONDS_BEFORE_SHUTDOWN = 2
     log.info('Stopping http server')
-    server.stop()
  
     log.info('Will shutdown in %s seconds ...', MAX_WAIT_SECONDS_BEFORE_SHUTDOWN)
     io_loop = tornado.ioloop.IOLoop.instance()
