@@ -52,12 +52,10 @@ This class is used to manage UUID lookup tables for primary HDF objects (Groups,
     
  
 """
-import sys
 import errno
 import time
 import h5py
 import numpy as np
-import shutil
 import uuid
 import os.path as op
 import os
@@ -460,6 +458,8 @@ class Hdf5db:
             # way to determine null spaces
             try: 
                 val = obj[...]
+                if not val:
+                    self.log.warning("no value returned for scalar dataset")
                 item['class'] = 'H5S_SCALAR'
             except IOError:
                 item['class'] = 'H5S_NULL'
@@ -566,7 +566,7 @@ class Hdf5db:
         if dt is None:
             msg = "Unexpected error creating type"
             self.log.error(msg)
-            raise IOError(errno, EIO, msg)
+            raise IOError(errno, errno.EIO, msg)
         return dt
         
     """
@@ -803,7 +803,8 @@ class Hdf5db:
             
         if type(value) == tuple:
             value = list(value) 
-        newAttr = obj.attrs.create(attr_name, value, dtype=dt)
+        obj.attrs.create(attr_name, value, dtype=dt)
+     
         now = time.time()
         self.setCreateTime(obj_uuid, objType="attribute", name=attr_name, timestamp=now)
         self.setModifiedTime(obj_uuid, objType="attribute", name=attr_name, timestamp=now)
@@ -943,6 +944,8 @@ class Hdf5db:
             except IOError:
                 # assume null dataspace, return none
                 return None
+            if not val:
+                self.log.warning("no value returned from scalar dataset") 
                          
         if type(slices) != list and type(slices) != tuple and slices is not Ellipsis:
             msg = "Unexpected error: getDatasetValuesByUuid: bad type for dim parameter"
@@ -1072,8 +1075,6 @@ class Hdf5db:
         try:
             i = 0
             for point in points:
-                # need to convert to strings so result can be JSON serializable
-                #values.append(dset[[point]].tolist())
                 if rank == 1:
                     dset[[point]] = data[i]
                 else:
@@ -1495,27 +1496,27 @@ class Hdf5db:
         uuids = []
         count = 0;
         # gather the non-anonymous ids first
-        for uuid in col.attrs:
+        for obj_uuid in col.attrs:
             if marker:
-                if uuid == marker:
+                if obj_uuid == marker:
                     marker = None  # clear and pick up next item
                 continue
-            uuids.append(uuid)
+            uuids.append(obj_uuid)
             count += 1
             if limit > 0 and count == limit:
                 break
                 
         if limit == 0 or count < limit:
             # grab any anonymous obj ids next
-            for uuid in col:
+            for obj_uuid in col:
                 if marker:
-                    if uuid == marker:
+                    if obj_uuid == marker:
                         marker = None  # clear and pick up next item
                     continue
-                uuids.append(uuid)
+                uuids.append(obj_uuid)
                 count += 1
                 if limit > 0 and count == limit:
-                    breakn             
+                    break             
                 
         return uuids
 

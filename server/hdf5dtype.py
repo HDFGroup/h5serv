@@ -14,7 +14,6 @@
 This class is used to map between HDF5 type representations and numpy types   
  
 """
-import sys
 import numpy as np
 from h5py.h5t import special_dtype 
 from h5py.h5t import check_dtype
@@ -132,7 +131,6 @@ def getTypeElement(dt):
             if h5t_check is not None:
                 type_info['class'] = 'H5T_REFERENCE'
                 type_info['order'] = 'H5T_ORDER_NONE'
-                basedt = None
                 if h5t_check is Reference:
                     type_info['base'] = 'H5T_STD_REF_OBJ'  # objref
                 elif h5t_check is RegionReference:

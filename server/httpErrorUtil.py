@@ -19,7 +19,7 @@ def errNoToHttpStatus(error_code):
     elif error_code == errno.EIO:
         httpStatus = 500   # Internal Error
     elif error_code == errno.ENOSYS:
-        htpStatus = 501   # Not implemented
+        httpStatus = 501   # Not implemented
         
     return httpStatus
         

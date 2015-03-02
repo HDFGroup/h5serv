@@ -11,12 +11,9 @@
 ##############################################################################
 import os
 import os.path as op
-import posixpath as pp
 from tornado.web import HTTPError
-from tornado.escape import json_encode, json_decode, url_escape, url_unescape 
 
 from h5py import is_hdf5
-import json
 import config
 
 """
@@ -109,7 +106,6 @@ def makeDirs(filePath):
     if len(filePath) == 0 or op.isdir(filePath):
         return
     # logging.info('makeDirs filePath: [' + filePath + ']')
-    topdomain = config.get('domain')
     dirname = op.dirname(filePath)
     
     if len(dirname) >= len(filePath):
