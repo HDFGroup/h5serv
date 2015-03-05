@@ -89,7 +89,7 @@ class Hdf5db:
             
            
         
-    def __init__(self, filePath, readonly=False, app_logger=None, root_uuid=None):
+    def __init__(self, filePath, dbFilePath=None, readonly=False, app_logger=None, root_uuid=None):
         if app_logger:
             self.log = app_logger
         else:
@@ -109,16 +109,17 @@ class Hdf5db:
         
         self.root_uuid=root_uuid
         
-        if self.readonly:
+        if self.readonly:     
             # for read-only files, add a dot in front of the name to be used as the 
             # db file.  This won't collide with actual data files, since "." is not 
             # allowed as the first character in a domain name.
-            dirname = op.dirname(self.f.filename)
-            basename = op.basename(self.f.filename)
-            if len(dirname) > 0: 
-                dbFilePath = dirname + '/.' + basename
-            else:
-                dbFilePath = '.' + basename
+            if not dbFilePath:
+                dirname = op.dirname(self.f.filename)
+                basename = op.basename(self.f.filename)
+                if len(dirname) > 0: 
+                    dbFilePath = dirname + '/.' + basename
+                else:
+                    dbFilePath = '.' + basename
             dbMode = 'r+'
             if not op.isfile(dbFilePath):
                 dbMode = 'w'
