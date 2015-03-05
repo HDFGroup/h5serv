@@ -82,6 +82,11 @@ Sample Request
     Accept: */*
     Accept-Encoding: gzip, deflate
     
+.. code-block:: json
+    {
+    "points": [19, 17, 13, 11, 7, 5, 3, 2]
+    }
+    
 Sample Response
 ---------------
 
