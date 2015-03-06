@@ -1,0 +1,22 @@
+{
+    "groups": {
+        "3d9997a3-c3b6-11e4-a5f9-3c15c2da029e": {
+            "alias": [
+                "/"
+            ], 
+            "attributes": [
+                {
+                    "name": "attr1", 
+                    "shape": {
+                        "class": "H5S_NULL"
+                    }, 
+                    "type": {
+                        "base": "H5T_IEEE_F64LE", 
+                        "class": "H5T_FLOAT"
+                    }
+                }
+            ]
+        }
+    }, 
+    "root": "3d9997a3-c3b6-11e4-a5f9-3c15c2da029e"
+}
