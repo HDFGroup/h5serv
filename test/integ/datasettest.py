@@ -569,6 +569,40 @@ class DatasetTest(unittest.TestCase):
         type = rspJson['type']
         self.assertEqual(type['class'], 'H5T_STRING')
         
+    def testPostNullSpace(self):
+        domain = 'newnullspace.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 'H5S_NULL'}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'dset1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dset1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
+        # verify the dataspace is has a null dataspace
+        req = self.endpoint + "/datasets/" + dset_uuid
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_NULL')
+        # verify type class is string
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_FLOAT')
+        
     def testPostZeroDim(self):
         domain = 'new0d.datasettest.' + config.get('domain')
         req = self.endpoint + "/"

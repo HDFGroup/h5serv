@@ -987,6 +987,8 @@ class ValueHandler(RequestHandler):
         
         if values is not None:
             response['value'] = values
+        else:
+            response['value'] = None
         
         hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value'})
         hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID}) 
@@ -1295,10 +1297,12 @@ class AttributeHandler(RequestHandler):
             responseItem['shape'] = item['shape']
             responseItem['created'] = unixTimeToUTC(item['ctime']) 
             responseItem['lastModified'] = unixTimeToUTC(item['mtime']) 
-            if typeItem['class'] == 'H5T_OPAQUE':
+            if not attr_name or typeItem['class'] == 'H5T_OPAQUE':
                 pass # todo - send data for H5T_OPAQUE's
             elif 'value' in item:
                 responseItem['value'] = item['value']
+            else:
+                responseItem['value'] = None
             
             responseItems.append(responseItem)
             
@@ -1351,45 +1355,48 @@ class AttributeHandler(RequestHandler):
         if "type" not in body:
             log.info("Type not supplied")
             raise HTTPError(400)  # missing type
-            
-        if "value" not in body:
-            msg = "Bad Request: value not specified"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)  # missing value
+    
           
-        shape = () # default as empty tuple (will create a scalar attribute)
-        if shape in body:    
+        dims = () # default as empty tuple (will create a scalar attribute)
+        if "shape" in body:  
             shape = body["shape"]
+            if type(shape) == int:
+                dims = [shape,]
+            elif type(shape) == list or type(shape) == tuple: 
+                dims = shape # can use as is
+            elif type(shape) in (str, unicode) and shape == 'H5S_NULL':
+                dims = None
+            else:
+                msg="Bad Request: shape is invalid"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)  
         datatype = body["type"]
-        value = body["value"]
-        if type(shape) == int:
-            dim1 = shape
-            shape = []
-            shape = [dim1]
-        elif type(shape) == list or type(shape) == tuple: 
-            pass # can use as is
-        else:
-            msg = "Bad Request: invalid shape argument"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)
-            
+         
         # validate shape
-        for extent in shape:
-            if type(extent) != int:
-                msg = "Bad Request: invalid shape type"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-            if extent < 0:
-                msg = "Bad Request: invalid shape (negative extent)"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)   
+        if dims:
+            for extent in dims:
+                if type(extent) != int:
+                    msg = "Bad Request: invalid shape type"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
+                if extent < 0:
+                    msg = "Bad Request: invalid shape (negative extent)"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)   
                 
         # convert list values to tuples (otherwise h5py is not happy)
-        data = self.convertToTuple(value)
+        data = None
+        if dims != None:
+            if "value" not in body:
+                msg = "Bad Request: value not specified"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)  # missing value
+            value = body["value"]
+            data = self.convertToTuple(value)
                    
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                db.createAttribute(col_name, reqUuid, attr_name, shape, datatype, data)
+                db.createAttribute(col_name, reqUuid, attr_name, dims, datatype, data)
                 rootUUID = db.getUUIDByPath('/')
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
@@ -1733,7 +1740,7 @@ class DatasetCollectionHandler(RequestHandler):
         domain = self.request.host
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
-        shape = None
+        dims = None
         group_uuid = None
         link_name = None
         
@@ -1753,16 +1760,17 @@ class DatasetCollectionHandler(RequestHandler):
         if "shape" in body:
             shape = body["shape"]
             if type(shape) == int:
-                dim1 = shape
-                shape = [dim1]
+                dims = [shape,]
             elif type(shape) == list or type(shape) == tuple: 
-                pass # can use as is
+                dims = shape # can use as is
+            elif type(shape) in (str, unicode) and shape == 'H5S_NULL':
+                dims = None
             else:
                 msg="Bad Request: shape is invalid"
                 log.info(msg)
                 raise HTTPError(400, reason=msg)
         else:
-            shape = ()  # empty tuple
+            dims = ()  # empty tuple
             
         if "link" in body:          
             link_options = body["link"]
@@ -1792,24 +1800,31 @@ class DatasetCollectionHandler(RequestHandler):
                 raise HTTPError(400, reason=msg)     
            
         # validate shape
-        for extent in shape:
-            if type(extent) != int:
-                msg="Bad Request: Invalid shape type"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-            if extent < 0:
-                msg="Bad Request: shape dimension is negative"
-                log.info("msg")
-                raise HTTPError(400, reason=msg) 
+        if dims:
+            for extent in dims:
+                if type(extent) != int:
+                    msg="Bad Request: Invalid shape type"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
+                if extent < 0:
+                    msg="Bad Request: shape dimension is negative"
+                    log.info("msg")
+                    raise HTTPError(400, reason=msg) 
             
         if maxshape:
-            if len(maxshape) != len(shape):
+            if dims == None:
+                # can't use maxshape with null_space dataset
+                msg="Bad Request: maxshape not valid for H5S_NULL dataspace"
+                log.info(msg)
+                raise HTTPError(400, reason=msg) 
+                
+            if len(maxshape) != len(dims):
                 msg="Bad Request: maxshape array length must equal shape array length"
                 log.info(msg)
                 raise HTTPError(400, reason=msg)
-            for i in range(len(shape)):
+            for i in range(len(dims)):
                 maxextent = maxshape[i]
-                if maxextent != 0 and maxextent < shape[i]:
+                if maxextent != 0 and maxextent < dims[i]:
                     msg="Bad Request: Maxshape extent can't be smaller than shape extent"
                     log.info(msg)
                     raise HTTPError(400, reason=msg)
@@ -1820,7 +1835,7 @@ class DatasetCollectionHandler(RequestHandler):
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
-                item = db.createDataset(datatype, shape, maxshape)
+                item = db.createDataset(datatype, dims, maxshape)
                 if group_uuid:
                     # link the new dataset
                     db.linkObject(group_uuid, item['id'], link_name)

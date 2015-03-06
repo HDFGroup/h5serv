@@ -67,8 +67,11 @@ See :doc:`../Types/index` for details of the type specification.
 shape
 ^^^^^^
 
-An integer array describing the initial dimensions of the attribute.  If shape is not
-provided, a scalar attribute will be created.
+Either a string with the value ``H5S_NULL`` or an
+integer array describing the dimensions of the attribute. 
+If shape is not provided, a scalar attribute will be created.
+If a shape value of ``H5S_NULL`` is specified a null space attribute will be created.
+(Null space attributes can not contain any data values.)
 
 value
 ^^^^^
@@ -76,6 +79,7 @@ value
 A JSON array (or number or string for scalar attributes with primitive types) that 
 specifies the initial values for the attribute.  The elements of the array must be 
 compatible with the type of the attribute.
+Not valid to provide if the shape is ``H5S_NULL``.
 
 Responses
 =========

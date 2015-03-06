@@ -61,7 +61,7 @@ class Writeh5:
         if type(datatype) in (str, unicode) and datatype.startswith("datatypes/"):
             #committed datatype, just pass in the UUID part
             datatype = datatype[len("datatypes/"):]
-        dims = None
+        dims = ()  # if no space in body, default to scalar
         max_shape=None
         fill_value=None
         if "shape" in body:
@@ -84,13 +84,17 @@ class Writeh5:
                             max_shape[i] = None
                 if "filvalue" in body:
                     fill_value = body["fillvalue"]
+            elif shape["class"] == 'H5S_NULL':
+                print "make null space"
+                dims = None
                     
         self.db.createDataset(datatype, dims, max_shape=max_shape, fill_value=fill_value,
             obj_uuid=uuid)
             
         if "value" in body:
             data = body["value"]
-            self.db.setDatasetValuesByUuid(uuid, data) 
+            if data:
+                self.db.setDatasetValuesByUuid(uuid, data) 
             
     def createAttribute(self, attr_json, col_name, uuid):
     
@@ -100,7 +104,9 @@ class Writeh5:
             #committed datatype, just pass in the UUID part
             datatype = datatype[len("datatypes/"):]
             
-        attr_value = attr_json["value"]
+        attr_value = None
+        if "value" in attr_json:
+            attr_value = attr_json["value"]
         dims = None
         if "shape" in attr_json:
             shape = attr_json["shape"]

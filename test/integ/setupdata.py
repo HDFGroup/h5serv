@@ -60,7 +60,8 @@ testfiles = {
     'opaque_attr.h5': ('.',),
     'opaque_dset.h5': ('.',),
     'committed_type.h5': ('.',),
-    'tstr.h5': ('.',)
+    'tstr.h5': ('.',),
+    'null_space_attr.h5': ('.',)
 }
 
 # files that will get set as read-only

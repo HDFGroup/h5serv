@@ -90,6 +90,27 @@ class AttributeTest(unittest.TestCase):
                 break
         self.failUnlessEqual(len(names), 1000)  # should get 1000 unique attributes
         
+    def testGetNullSpace(self):
+        domain = "null_space_attr." + config.get('domain') 
+        rootUUID = helper.getRootUUID(domain)
+        req = helper.getEndpoint() + "/groups/" + rootUUID + "/attributes/attr1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(rspJson['name'], 'attr1')
+        self.assertTrue('type' in rspJson)
+        type = rspJson['type']
+        self.assertEqual(type['class'], 'H5T_FLOAT')
+        self.assertEqual(type['base'], 'H5T_IEEE_F64LE')
+        self.assertTrue('shape' in rspJson)
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_NULL')
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(value, None)
+        self.assertEqual(len(rspJson['hrefs']), 4)
+        
     def testGetCompound(self):
         for domain_name in ('compound_attr', ):
             domain = domain_name + '.' + config.get('domain') 
@@ -176,8 +197,8 @@ class AttributeTest(unittest.TestCase):
         # bug! - unable to read value from attribute with array type
         # code is not returning 'value' key in this case
         # h5py issue: https://github.com/h5py/h5py/issues/498 
-        if 'value' in rspJson:
-            print 'remove above if check once h5py 2.4 is released'
+        if 'value' in rspJson and rspJson['value']:
+            # remove above if check once h5py 2.4 is released
             self.assertTrue('value' in rspJson)
             value = rspJson['value']
             self.assertEqual(len(value), 4)
@@ -472,9 +493,7 @@ class AttributeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)  # get attribute
         rspJson = json.loads(rsp.text)
         shape = rspJson['shape']
-        self.failUnlessEqual(shape['class'], 'H5S_SCALAR')
-        
-     
+        self.failUnlessEqual(shape['class'], 'H5S_SCALAR') 
         
     def testPutList(self):
         domain = 'tall_updated.' + config.get('domain') 
@@ -535,6 +554,28 @@ class AttributeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['hrefs']), 3)
+        
+    def testPutNullSpace(self):
+        domain = 'tall_updated.' + config.get('domain') 
+        attr_name = 'attr8'
+        rootUUID = helper.getRootUUID(domain) 
+        headers = {'host': domain}
+           
+        payload = {'type': 'H5T_STD_I32LE', 'shape': 'H5S_NULL'}
+        req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['hrefs']), 3)
+        # do a get and verify the space is scalar
+        
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # get attribute
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.failUnlessEqual(shape['class'], 'H5S_NULL')
+        
+        
         
         
     def testPutCompound(self):

@@ -55,7 +55,7 @@ class DumpJson:
         attr_json['name'] = rsp_json['name']
         attr_json['type'] = rsp_json['type']
         attr_json['shape'] = rsp_json['shape']
-        if 'value' in rsp_json:
+        if 'value' in rsp_json and rsp_json['value']:
             attr_json['value'] = rsp_json['value']
         return attr_json
         
@@ -120,7 +120,9 @@ class DumpJson:
         if not self.noDsetData:
             # get the dataset values
             if 'value' in rsp_json:
-                dset_json['value'] = rsp_json['value']
+                data = rsp_json['value']
+                if data:
+                    dset_json['value'] = data
         
         jsonOut[dset_uuid] = dset_json 
          

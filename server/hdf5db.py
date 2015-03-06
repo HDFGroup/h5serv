@@ -484,14 +484,16 @@ class Hdf5db:
         
     def getShapeItemByAttrObj(self, obj):
         item = {}
-        if len(obj.shape) == 0:
-            # No clear way to determine if an attribute has a null space or not.
-            # for now, just return scalar.
+        if obj.get_storage_size() == 0:
+            # If storage size is 0, assume this is a null space obj
             # See: h5py issue https://github.com/h5py/h5py/issues/279  
-            item['class'] = 'H5S_SCALAR'
+            item['class'] = 'H5S_NULL'
         else:
-            item['class'] = 'H5S_SIMPLE'
-            item['dims'] = obj.shape
+            if obj.shape:
+                item['class'] = 'H5S_SIMPLE'
+                item['dims'] = obj.shape
+            else:
+                item['class'] = 'H5S_SCALAR'
         return item
         
     def getDatasetItemByUuid(self, obj_uuid):
@@ -694,12 +696,17 @@ class Hdf5db:
         
         if type(typeItem) == dict and typeItem['class'] in ('H5T_OPAQUE'):
             includeData = False
+         
+        shape_json = self.getShapeItemByAttrObj(attrObj)
+        item['shape'] = shape_json
+        if shape_json['class'] == 'H5S_NULL':
+            includeData = False
         if includeData:
             try:
                 attr = obj.attrs[name]  # returns a numpy array
             except TypeError:
                 self.log.warning("type error reading attribute") 
-        item['shape'] = self.getShapeItemByAttrObj(attrObj)
+        
         if includeData and attr is not None:
             if typeItem['class'] == 'H5T_VLEN':
                 item['value'] = self.vlenToList(attr)
@@ -802,9 +809,37 @@ class Hdf5db:
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
             
-        if type(value) == tuple:
-            value = list(value) 
-        obj.attrs.create(attr_name, value, dtype=dt)
+        if shape == None:
+            # create null space dataset
+            # null space datasets not supported in h5py yet:
+            # See: https://github.com/h5py/h5py/issues/279
+            # work around this by using low-level interface.
+            # first create a temp scalar dataset so we can pull out the typeid
+            tmpGrp = None
+            if "{tmp}" not in self.dbGrp:
+                tmpGrp = self.dbGrp.create_group("{tmp}")
+            else:
+                tmpGrp = self.dbGrp["{tmp}"]
+            tmpGrp.attrs.create(attr_name, 0, shape=(), dtype=dt)
+            tmpAttr = h5py.h5a.open(tmpGrp.id, name=attr_name)
+            if not tmpAttr:
+                msg = "Unexpected error creating datatype for nullspace attribute"
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg)                
+            tid = tmpAttr.get_type()
+            sid = sid = h5py.h5s.create(h5py.h5s.NULL)
+            # now create the permanent attribute
+            attr_id = h5py.h5a.create(obj.id, attr_name, tid, sid)
+            # delete the temp attribute
+            del tmpGrp.attrs[attr_name]
+            if not attr_id:
+                msg = "Unexpected error creating nullspace attribute"
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg)
+        else:  
+            if type(value) == tuple:
+                value = list(value) 
+            obj.attrs.create(attr_name, value, dtype=dt)
      
         now = time.time()
         self.setCreateTime(obj_uuid, objType="attribute", name=attr_name, timestamp=now)
@@ -1122,14 +1157,38 @@ class Hdf5db:
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
             
-        newDataset = datasets.create_dataset(obj_uuid, shape=datashape, dtype=dt, 
-            maxshape=max_shape, fillvalue=fill_value)
-        if newDataset == None:
+        dataset_id = None
+        if datashape == None:
+            # create null space dataset
+            # null space datasets not supported in h5py yet:
+            # See: https://github.com/h5py/h5py/issues/279
+            # work around this by using low-level interface.
+            # first create a temp scalar dataset so we can pull out the typeid
+            tmpGrp = None
+            if "{tmp}" not in self.dbGrp:
+                tmpGrp = self.dbGrp.create_group("{tmp}")
+            else:
+                tmpGrp = self.dbGrp["{tmp}"]
+            tmpDataset = tmpGrp.create_dataset(obj_uuid, shape=(0,), dtype=dt)
+            tid = tmpDataset.id.get_type()
+            sid = sid = h5py.h5s.create(h5py.h5s.NULL)
+            # now create the permanent dataset
+            gid = datasets.id
+            dataset_id = h5py.h5d.create(gid, obj_uuid, tid, sid)   
+            # delete the temp dataset
+            del tmpGrp[obj_uuid]     
+        else:       
+            newDataset = datasets.create_dataset(obj_uuid, shape=datashape, dtype=dt, 
+                maxshape=max_shape, fillvalue=fill_value)
+            if newDataset:
+                dataset_id = newDataset.id
+            
+        if dataset_id == None:
             msg = 'Unexpected failure to create dataset'
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
         # store reverse map as an attribute
-        addr = h5py.h5o.get_info(newDataset.id).addr
+        addr = h5py.h5o.get_info(dataset_id).addr
         addrGrp = self.dbGrp["{addr}"]
         addrGrp.attrs[str(addr)] = obj_uuid
         
@@ -1141,7 +1200,7 @@ class Hdf5db:
         item['id'] = obj_uuid
         item['ctime'] = self.getCreateTime(obj_uuid)
         item['mtime'] = self.getModifiedTime(obj_uuid)
-        item['attributeCount'] = len(newDataset.attrs)
+        item['attributeCount'] = 0
         return item
         
     """

@@ -39,14 +39,18 @@ type specification.
 
 shape
 ^^^^^^
-
-An integer array describing the initial dimensions of the dataset.  If shape is not
+Either a string with the value ``H5S_NULL`` or an
+integer array describing the initial dimensions of the dataset.  If shape is not
 provided, a scalar dataset will be created.
+If the shape value of ``H5S_NULL`` is specified a dataset with a null dataspace will be 
+created.  A null
+dataset has attributes and a type, but will not be able to store any values.
 
 maxdims
 ^^^^^^^
 An integer array describing the maximum extent of each dimension (or 0 for unlimited
 dimensions).  If maxdims is not provided that resulting dataset will be non-extensible.
+Not valid to include if ``H5S_NULL`` is specified for the shape.
 
 link["id"]
 ^^^^^^^^^^

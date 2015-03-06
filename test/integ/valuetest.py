@@ -208,6 +208,21 @@ class ValueTest(unittest.TestCase):
         data = rspJson['value'] 
         self.assertEqual(data, 42)
         
+    def testGetNullSpace(self):
+        domain = 'null_space_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('value' in rspJson)
+        data = rspJson['value'] 
+        self.assertEqual(data, None)
+         
+        
     def testGetScalarString(self):
         domain = 'scalar.' + config.get('domain')  
         headers = {'host': domain}
