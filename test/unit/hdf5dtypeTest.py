@@ -156,7 +156,7 @@ class Hdf5dtypeTest(unittest.TestCase):
         self.failUnlessEqual(tempFieldType['base'], 'H5T_IEEE_F32LE')  
         
     def testCreateBaseType(self):
-        dt = hdf5dtype.createDataType('H5T_STD_UI32BE') 
+        dt = hdf5dtype.createDataType('H5T_STD_U32BE') 
         self.assertEqual(dt.name, 'uint32')
         self.assertEqual(dt.byteorder, '>')
         self.assertEqual(dt.kind, 'u')

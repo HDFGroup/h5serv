@@ -21,14 +21,14 @@ jsontoh5py - output Python code that generates HDF5 file based on given JSON inp
 
 def getNumpyTypename(hdf5TypeName, typeClass=None):
     predefined_int_types = {
-          'H5T_STD_I8':   'i1', 
-          'H5T_STD_UI8':  'u1',
-          'H5T_STD_I16':  'i2', 
-          'H5T_STD_UI16': 'u2',
-          'H5T_STD_I32':  'i4', 
-          'H5T_STD_UI32': 'u4',
-          'H5T_STD_I64':  'i8',
-          'H5T_STD_UI64': 'u8' 
+          'H5T_STD_I8':  'i1', 
+          'H5T_STD_U8':  'u1',
+          'H5T_STD_I16': 'i2', 
+          'H5T_STD_U16': 'u2',
+          'H5T_STD_I32': 'i4', 
+          'H5T_STD_U32': 'u4',
+          'H5T_STD_I64': 'i8',
+          'H5T_STD_U64': 'u8' 
     }
     predefined_float_types = {
           'H5T_IEEE_F32': 'f4',

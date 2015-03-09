@@ -20,9 +20,9 @@ Predefined Types
 Predefined types are base integer and floating point types that are identified via
 one of the following strings:
 
- * ``H5T_STD_UI8{LE|BE}``: a one byte unsigned integer
+ * ``H5T_STD_U8{LE|BE}``: a one byte unsigned integer
  * ``H5T_STD_I8{LE|BE}``: a one byte signed integer
- * ``H5T_STD_U16{LE|BE}``: a two byte unsigned integer
+ * ``H5T_STD_U6{LE|BE}``: a two byte unsigned integer
  * ``H5T_STD_I16{LE|BE}``: a two byte signed integer
  * ``H5T_STD_U32{LE|BE}``: a four byte unsigned integer
  * ``H5T_STD_I32{LE|BE}``: a four byte signed integer

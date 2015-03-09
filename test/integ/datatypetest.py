@@ -121,9 +121,9 @@ class DatatypeTest(unittest.TestCase):
         root_uuid = helper.getRootUUID(domain)
         
         # list of types supported
-        datatypes = ( 'H5T_STD_I8LE',   'H5T_STD_UI8LE',  
-                      'H5T_STD_I16LE',  'H5T_STD_UI16LE',    
-                      'H5T_STD_I32LE',  'H5T_STD_UI32LE',   
+        datatypes = ( 'H5T_STD_I8LE',   'H5T_STD_U8LE',  
+                      'H5T_STD_I16LE',  'H5T_STD_U16LE',    
+                      'H5T_STD_I32LE',  'H5T_STD_U32LE',   
                       'H5T_STD_I64LE',  'H5T_STD_I64LE',  
                       'H5T_IEEE_F32LE', 'H5T_IEEE_F64LE' )
                      

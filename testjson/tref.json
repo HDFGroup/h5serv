@@ -11,7 +11,7 @@
                 ]
             }, 
             "type": {
-                "base": "H5T_STD_UI32BE", 
+                "base": "H5T_STD_U32BE", 
                 "class": "H5T_INTEGER"
             }, 
             "value": [
@@ -32,7 +32,7 @@
                 ]
             }, 
             "type": {
-                "base": "H5T_STD_UI8LE", 
+                "base": "H5T_STD_U8LE", 
                 "class": "H5T_INTEGER"
             }, 
             "value": [

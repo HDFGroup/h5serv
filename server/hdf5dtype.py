@@ -189,13 +189,13 @@ def getBaseType(dt):
              
     predefined_int_types = {
         'int8':    'H5T_STD_I8',
-        'uint8':   'H5T_STD_UI8',
+        'uint8':   'H5T_STD_U8',
         'int16':   'H5T_STD_I16',
-        'uint16':  'H5T_STD_UI16',
+        'uint16':  'H5T_STD_U16',
         'int32':   'H5T_STD_I32',
-        'uint32':  'H5T_STD_UI32',
+        'uint32':  'H5T_STD_U32',
         'int64':   'H5T_STD_I64',
-        'uint64':  'H5T_STD_UI64'
+        'uint64':  'H5T_STD_U64'
     }
     predefined_float_types = {
         'float32': 'H5T_IEEE_F32',
@@ -244,13 +244,13 @@ def getBaseType(dt):
 def getNumpyTypename(hdf5TypeName, typeClass=None):
     predefined_int_types = {
           'H5T_STD_I8':   'i1', 
-          'H5T_STD_UI8':  'u1',
+          'H5T_STD_U8':  'u1',
           'H5T_STD_I16':  'i2', 
-          'H5T_STD_UI16': 'u2',
+          'H5T_STD_U16': 'u2',
           'H5T_STD_I32':  'i4', 
-          'H5T_STD_UI32': 'u4',
+          'H5T_STD_U32': 'u4',
           'H5T_STD_I64':  'i8',
-          'H5T_STD_UI64': 'u8' 
+          'H5T_STD_U64': 'u8' 
     }
     predefined_float_types = {
           'H5T_IEEE_F32': 'f4',
