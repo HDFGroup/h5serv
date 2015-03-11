@@ -751,6 +751,32 @@ class DatasetTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
+
+    def testPostObjReference(self):
+        domain = 'objref.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+
+        datatype = {'class': 'H5T_REFERENCE', 'base': 'H5T_STD_REF_OBJ' }
+        payload = {'type': datatype, 'shape': (1,)}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'dset1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dset1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+
         
     def testPostArray(self):
         domain = 'newarraydset.datasettest.' + config.get('domain')

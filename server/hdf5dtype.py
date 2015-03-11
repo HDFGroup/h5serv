@@ -357,7 +357,13 @@ def createBaseDataType(typeItem):
             raise TypeError("Array type is only supported for predefined base types")
         # should be one of the predefined types
         dtRet = np.dtype(shape+baseType)
-        return dtRet  # return predefined type     
+        return dtRet  # return predefined type    
+    elif typeClass == 'H5T_REFERENCE':
+        if 'base' not in typeItem:
+            raise KeyError("'base' not provided") 
+        if typeItem['base'] not in ('H5T_STD_REF_OBJ', 'H5T_STD_REF_DSETREG'):
+            raise TypeError("Invalid base type for reference type")
+        dtRet = special_dtype(ref=Reference)
     else:
         raise TypeError("Invalid type class")
         

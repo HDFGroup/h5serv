@@ -49,7 +49,7 @@ testfiles = {
     'fixed_string_attr.h5': ('.',),
     'fixed_string_dset.h5': ('.',),
     'objref_attr.h5': ('.',),
-    'objref_dset.h5': ('.',),
+    'objref_dset.h5': ('.', 'objref_dset_updated.h5'),
     'null_objref_dset.h5': ('.',),
     'regionref_attr.h5': ('.',),
     'regionref_dset.h5': ('.',),    

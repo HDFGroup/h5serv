@@ -670,7 +670,27 @@ class ValueTest(unittest.TestCase):
         req = self.endpoint + "/datasets/" + dset1UUID + "/value"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)  # write value
-        
+
+   
+    def testPutObjectReference(self):
+        domain = 'objref_dset_updated.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        ds1_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        ds2_uuid = helper.getUUID(domain, root_uuid, 'DS2') 
+        g1_uuid = helper.getUUID(domain, root_uuid, 'G1') 
+        req = helper.getEndpoint() + "/datasets/" + ds1_uuid  + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+
+        value = ('datasets/' + ds2_uuid, 'groups/' + g1_uuid)
+        payload = {'value': value}
+        req = self.endpoint + "/datasets/" + ds1_uuid + "/value"
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # write value
+           
              
 if __name__ == '__main__':
     unittest.main()

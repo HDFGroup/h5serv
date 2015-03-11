@@ -449,6 +449,21 @@ class Hdf5db:
         item['mtime'] = self.getModifiedTime(obj_uuid)      
         
         return item    
+
+    """
+    getNullReference - return a null object reference
+    """
+    def getNullReference(self):
+         tmpGrp = None
+         if "{tmp}" not in self.dbGrp:
+             tmpGrp = self.dbGrp.create_group("{tmp}")
+         else:
+             tmpGrp = self.dbGrp["{tmp}"]
+         if 'nullref' not in tmpGrp:
+             dt = h5py.special_dtype(ref=h5py.Reference)
+             tmpGrp.create_dataset('nullref', (1,), dtype=dt)
+         nullref_dset = tmpGrp['nullref']
+         return nullref_dset[0]
         
     def getShapeItemByDsetObj(self, obj):
         item = {}
@@ -792,10 +807,12 @@ class Hdf5db:
             self.log.info(msg)
             raise IOError(errno.EPERM, msg)
         obj = self.getObjectByUuid(col_name, obj_uuid)
+        is_committed_type = False 
         
         dt = None
         if type(attr_type) in (str, unicode) and len(attr_type) == UUID_LEN:
             # assume attr_type is a uuid of a named datatype
+            is_committed_type = True
             tgt = self.getCommittedTypeObjByUuid(attr_type)
             if tgt is None:
                 msg = "Unable to create attribute, committed type with uuid of: " + attr_type + " not found"
@@ -839,6 +856,15 @@ class Hdf5db:
         else:  
             if type(value) == tuple:
                 value = list(value) 
+            if not is_committed_type:
+            	# apparently committed types can not be used as reference types
+                # todo - verify why that is
+		 
+            	h5t_check = h5py.check_dtype(ref=dt)
+            	if h5t_check is h5py.Reference:
+                    # convert value to data refs
+                    value = self.listToRef(value)
+                   
             obj.attrs.create(attr_name, value, dtype=dt)
      
         now = time.time()
@@ -950,6 +976,47 @@ class Hdf5db:
             for item in data:
                 out.append(self.refToList(item))  # recursive call
         return out
+
+    """
+       Convert ascii representation of data references to data ref 
+    """    
+    def listToRef(self, data):
+        # todo - verify that data is a numpy.ndarray
+        out = None
+        if not data:
+            # null reference
+            out = self.getNullReference()
+        elif type(data) in (str, unicode):
+            obj_ref = None
+            # object reference should be in the form: <collection_name>/<uuid>
+            for prefix in ("datasets", "groups", "datatypes"):
+            	if data.startswith(prefix):
+                    uuid_ref = data[len(prefix):]
+                    if len(uuid_ref) == (UUID_LEN + 1) and uuid_ref.startswith('/'):
+                    	obj = self.getObjectByUuid(prefix, uuid_ref[1:])
+                        if obj:
+                            obj_ref = obj.ref
+                        else:
+                            msg = "Invalid object refence value: [" + uuid_ref + "] not found"
+                	    self.log.info(msg)
+                	    raise IOError(errno.ENXIO, msg)
+                    break
+            if not obj_ref:
+                msg = "Invalid object refence value: [" + data + "]"
+                self.log.info(msg)
+                raise IOError(errno.EINVAL, msg)
+            else:
+                out = obj_ref
+
+        elif type(data) in (list, tuple):
+            out = []
+            for item in data:
+            	out.append(self.listToRef(item))  # recursive call
+        else:
+            msg = "Invalid object refence value: [" + data + "]"
+            self.log.info(msg)
+            raise IOError(errno.EINVAL, msg)
+        return out
         
     """
       Convert a list to a tuple, recursively.
@@ -1053,6 +1120,11 @@ class Hdf5db:
     """    
     def setDatasetValuesByUuid(self, obj_uuid, data, slices=None):
         dset = self.getDatasetObjByUuid(obj_uuid)
+        if dset == None:
+            msg = "Dataset: " + obj_uuid + " not found"
+            self.log.info(msg)
+            raise IOError(errno.ENXIO, msg)
+
         # need some special conversion for compound types --
         # each element must be a tuple, but the JSON decoder
         # gives us a list instead.
@@ -1060,11 +1132,13 @@ class Hdf5db:
             converted_data = []
             for i in range(len(data)):
                 converted_data.append(self.toTuple(data[i]))  
-            data = converted_data          
-        if dset == None:
-            msg = "Dataset: " + obj_uuid + " not found"
-            self.log.info(msg)
-            raise IOError(errno.ENXIO, msg)
+            data = converted_data  
+        else:
+            h5t_check = h5py.check_dtype(ref=dset.dtype)
+            if h5t_check is h5py.Reference:
+                # convert value to data refs
+                data = self.listToRef(data)
+        
         if slices == None:
             # write entire dataset
             dset[()] = data

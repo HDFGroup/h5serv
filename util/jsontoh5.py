@@ -85,7 +85,6 @@ class Writeh5:
                 if "filvalue" in body:
                     fill_value = body["fillvalue"]
             elif shape["class"] == 'H5S_NULL':
-                print "make null space"
                 dims = None
                     
         self.db.createDataset(datatype, dims, max_shape=max_shape, fill_value=fill_value,

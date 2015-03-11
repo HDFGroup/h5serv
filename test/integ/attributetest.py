@@ -574,9 +574,26 @@ class AttributeTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         shape = rspJson['shape']
         self.failUnlessEqual(shape['class'], 'H5S_NULL')
+
+    def testPutObjReference(self):
+        domain = 'tall_updated.' + config.get('domain')
+        attr_name = 'attr9'
+        root_uuid = helper.getRootUUID(domain)
+	g2_uuid = helper.getUUID(domain, root_uuid, 'g2') 
+        d22_uuid = helper.getUUID(domain, g2_uuid, 'dset2.2') 
         
+        headers = {'host': domain}
+         
+        datatype = {'class': 'H5T_REFERENCE', 'base': 'H5T_STD_REF_OBJ' }
         
-        
+        value = ('groups/' + g2_uuid, '', 'datasets/' + d22_uuid) 
+        payload = {'type': datatype, 'shape': 3, 'value': value}
+        req = self.endpoint + "/groups/" + root_uuid + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['hrefs']), 3)
+          
         
     def testPutCompound(self):
         domain = 'tall_updated.' + config.get('domain')
