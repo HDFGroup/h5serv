@@ -234,6 +234,19 @@ def getBaseType(dt):
         if dt.base.name in predefined_float_types:
             #maps to one of the HDF5 predefined types
             type_info['base'] = predefined_float_types[dt.base.name] + byteorder 
+    elif dt.base.kind == 'O':
+        # check for reference type
+        h5t_check = check_dtype(ref=dt)
+        if h5t_check is not None:
+            type_info['class'] = 'H5T_REFERENCE' 
+            if h5t_check is Reference:
+                type_info['base'] = 'H5T_STD_REF_OBJ'  # objref
+            elif h5t_check is RegionReference:
+                type_info['base'] = 'H5T_STD_REF_DSETREG'  # region ref
+            else:
+                raise TypeError("unexpected reference type")
+        else:     
+            raise TypeError("unknown object type")
     else:
         # unexpected kind
         raise TypeError("unexpected dtype base kind: " + dt.base.kind)

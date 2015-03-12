@@ -405,8 +405,8 @@ class ValueTest(unittest.TestCase):
         self.assertTrue('value' in rspJson)
         value = rspJson['value']
         self.assertEqual(len(value), 2)
-        self.assertEqual(value[0], '/groups/' + g1_uuid)
-        self.assertEqual(value[1], '/datasets/' + ds2_uuid)
+        self.assertEqual(value[0], 'groups/' + g1_uuid)
+        self.assertEqual(value[1], 'datasets/' + ds2_uuid)
         
     def testGetNullObjReference(self):
         domain = 'null_objref_dset.' + config.get('domain')  

@@ -40,6 +40,7 @@ class DumpJson:
         self.json = {}
         
     def dumpAttribute(self, col_name, uuid, attr_name):
+        self.log.info("dumpAttribute: [" + attr_name + "]")
         item = self.db.getAttributeItem(col_name, uuid, attr_name)
         response = { 'name': attr_name }
         typeItem = item['type']
@@ -55,6 +56,7 @@ class DumpJson:
         
     def dumpAttributes(self, col_name, uuid):
         attr_list = self.db.getAttributeItems(col_name, uuid)
+        self.log.info("dumpAttributes: " + uuid)
         items = []
         for attr in attr_list:
             item = self.dumpAttribute(col_name, uuid, attr['name'])
@@ -81,6 +83,10 @@ class DumpJson:
         
     def dumpGroup(self, uuid):
         item = self.db.getGroupItemByUuid(uuid)
+        if 'alias' in item:
+            alias = item['alias']
+            if alias:
+                self.log.info("dumpGroup alias: [" + alias[0] + "]")
         for key in ('ctime', 'mtime', 'linkCount', 'attributeCount', 'id'):
             if key in item:
                 del item[key]
@@ -107,8 +113,14 @@ class DumpJson:
         
     def dumpDataset(self, uuid):
         response = { }
+        self.log.info("dumpDataset: " + uuid)
         item = self.db.getDatasetItemByUuid(uuid)
-        response['alias'] = item['alias']
+        if 'alias' in item:
+            alias = item['alias']
+            if alias:
+                self.log.info("dumpDataset alias: [" + alias[0] + "]")
+            response['alias'] = item['alias']
+        
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
         shapeItem = item['shape']
@@ -199,8 +211,9 @@ def main():
     
     # create logger
     log = logging.getLogger("h5serv")
-    log.setLevel(logging.WARN)
-    # set daily rotating log
+    # log.setLevel(logging.WARN)
+    log.setLevel(logging.INFO)
+    # add log handler
     handler = logging.FileHandler('./h5tojson.log')
     
     # add handler to logger

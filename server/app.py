@@ -1293,6 +1293,7 @@ class AttributeHandler(RequestHandler):
             responseItem = {}
             responseItem['name'] = item['name']
             typeItem = item['type']
+            print "typeItem:", typeItem
             responseItem['type'] = hdf5dtype.getTypeResponse(typeItem)
             responseItem['shape'] = item['shape']
             responseItem['created'] = unixTimeToUTC(item['ctime']) 

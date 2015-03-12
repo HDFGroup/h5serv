@@ -363,8 +363,8 @@ class AttributeTest(unittest.TestCase):
         self.assertTrue('value' in rspJson)
         value = rspJson['value']
         self.assertEqual(len(value), 2)
-        self.assertEqual(value[0], '/groups/' + g1_uuid)
-        self.assertEqual(value[1], '/datasets/' + ds2_uuid)
+        self.assertEqual(value[0], 'groups/' + g1_uuid)
+        self.assertEqual(value[1], 'datasets/' + ds2_uuid)
         
     def testGetRegionReference(self):
         domain = 'regionref_attr.' + config.get('domain')  
@@ -452,6 +452,37 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLTERM')
         data = rspJson['value'] 
         self.assertEqual(data, "hello")   
+
+    def testGetDimensionScale(self):
+        domain = 'dim_scale.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'temperatures') 
+        scale_x_uuid = helper.getUUID(domain, root_uuid, 'scale_x') 
+        scale_y_uuid = helper.getUUID(domain, root_uuid, 'scale_y') 
+        scale_z_uuid = helper.getUUID(domain, root_uuid, 'scale_z') 
+        # now try reading the dimension list attribute
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/attributes/DIMENSION_LIST"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SIMPLE')
+        self.assertTrue('dims'  in shape)
+        dims = shape['dims']
+        self.assertEqual(len(dims), 1)
+        self.assertEqual(dims[0], 3)
+
+        typeItem = rspJson['type']
+        self.assertEqual(typeItem['class'], 'H5T_VLEN')
+        baseType = typeItem['base']
+        self.assertEqual(baseType['class'], 'H5T_REFERENCE')
+        self.assertEqual(baseType['base'], 'H5T_STD_REF_OBJ')
+        data = rspJson['value'] 
+        self.assertEqual(len(data), 3)
+        self.assertEqual(data[0], ['datasets/' + scale_x_uuid])
+        self.assertEqual(data[1], ['datasets/' + scale_y_uuid])
+        self.assertEqual(data[2], ['datasets/' + scale_z_uuid])
         
     def testPut(self):
         domain = 'tall_updated.' + config.get('domain') 

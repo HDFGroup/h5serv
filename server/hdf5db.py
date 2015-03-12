@@ -724,7 +724,11 @@ class Hdf5db:
         
         if includeData and attr is not None:
             if typeItem['class'] == 'H5T_VLEN':
-                item['value'] = self.vlenToList(attr)
+                baseType = typeItem['base']
+                if type(baseType) == dict and baseType['class'] == 'H5T_REFERENCE':
+                    item['value'] = self.refToList(attr)
+                else:
+                    item['value'] = self.vlenToList(attr)
             elif typeItem['class'] == 'H5T_REFERENCE':
                 item['value'] = self.refToList(attr)
             elif typeItem['class'] == 'H5T_COMPOUND':
@@ -959,11 +963,11 @@ class Hdf5db:
                 addr = h5py.h5o.get_info(grpref.id).addr
                 uuid = self.getUUIDByAddress(addr)
                 if self.getGroupObjByUuid(uuid):
-                    out = "/groups/" + uuid
+                    out = "groups/" + uuid
                 elif self.getDatasetObjByUuid(uuid):
-                    out = "/datasets/" + uuid
+                    out = "datasets/" + uuid
                 elif self.getCommittedTypeObjByUuid(uuid):
-                    out = "/datatypes/" + uuid
+                    out = "datatypes/" + uuid
                 else:
                     self.log.warning("uuid in region ref not found: [" + uuid + "]");
                     return None
