@@ -35,7 +35,7 @@ class DumpJson:
         if app_logger:
             self.log = app_logger
         else:
-            print "default logger"
+            # print "default logger"
             self.log = logging.getLogger()
         self.json = {}
         

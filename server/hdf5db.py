@@ -676,7 +676,8 @@ class Hdf5db:
         item['mtime'] = self.getModifiedTime(obj_uuid) 
         
         return item
-       
+
+   
     """
       Get attribute given an object and name
       returns: JSON object 
@@ -723,20 +724,14 @@ class Hdf5db:
                 self.log.warning("type error reading attribute") 
         
         if includeData and attr is not None:
-            if typeItem['class'] == 'H5T_VLEN':
-                baseType = typeItem['base']
-                if type(baseType) == dict and baseType['class'] == 'H5T_REFERENCE':
-                    item['value'] = self.refToList(attr)
-                else:
-                    item['value'] = self.vlenToList(attr)
-            elif typeItem['class'] == 'H5T_REFERENCE':
-                item['value'] = self.refToList(attr)
-            elif typeItem['class'] == 'H5T_COMPOUND':
-                item['value'] = attr.tolist()  # convert to list
-            elif len(attrObj.shape) == 0 and type(attr) in (str, unicode, int, float):
-                item['value'] = attr   # just copy value
+            if shape_json['class'] == 'H5S_SCALAR':
+                item['value'] = self.getDataValue(typeItem, attr)
             else:
-                item['value'] = attr.tolist()  # convert to list
+                dims = shape_json["dims"]
+                rank = len(dims)
+                # convert numpy object to python list
+                # values = self.toList(typeItem, attr)
+                item['value'] = self.toList(rank, typeItem, attr)
         # timestamps will be added by getAttributeItem()
         return item
             
@@ -894,7 +889,83 @@ class Hdf5db:
         self.setModifiedTime(obj_uuid, objType="attribute", name=attr_name, timestamp=now)
         
         return True
+
+    """
+      Return a json-serializable representation of the numpy value 
+    """
+    def getDataValue(self, typeItem, value):
+        out = None
+        typeClass = typeItem['class']
+        if isinstance(value, (np.ndarray, np.generic) ):
+            value = value.tolist()  # convert numpy object to list
+        if typeClass == 'H5T_COMPOUND':
+            
+            if type(value) not in (list, tuple):
+                msg = "Unexpected type for compound value" 
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg)
+            
+            fields = typeItem['fields']
+            if len(fields) != len(value):
+                msg = "Number of elements in compound type does not match type"
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg) 
+            nFields = len(fields)
+            out = []
+            for i in range(nFields):
+                field = fields[i]
+                item_value = self.getDataValue(field['type'], value[i])
+                out.append(item_value)             
+        elif typeClass == 'H5T_VLEN':
+            if type(value) not in (list, tuple):
+                msg = "Unexpected type for vlen value" 
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg)
+
+            baseType = typeItem['base']
+            out = []
+            nElements = len(value)
+            for i in range(nElements):
+                item_value = self.getDataValue(baseType, value[i])
+                out.append(item_value)
+        elif typeClass == 'H5T_REFERENCE':
+            out = self.refToList(value)
+        elif typeClass == 'H5T_OPAQUE':
+            out = "???"  # todo
+        elif typeClass == 'H5T_ARRAY':
+            out = "???"  # todo
+        elif typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING', 'H5T_ENUM'):
+            out = value  # just copy value
+        else:
+            msg = "Unexpected type class: " + typeClass 
+            self.log.info(msg)
+            raise IOError(errno.ENINVAL, msg)
+        return out
+       
         
+    """
+       Convert list to json serializable values. 
+    """
+    def toList(self, rank, typeItem, data):
+        out = None
+        typeClass = typeItem['class']
+        if typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING'):
+            out = data.tolist()  # just use as is
+            
+        elif rank == 0:
+            # scalar value
+            out = self.getDataValue(typeItem, data)
+        else:
+            out = []
+            for item in data:
+                if rank > 1:
+                    out_item = self.toList(rank - 1, typeItem, item)
+                    out.append(out_item)
+                else:
+                    out_item = self.getDataValue(typeItem, item)
+                    out.append(out_item)
+
+        return out
     """
        Create ascii representation of vlen data object
     """    

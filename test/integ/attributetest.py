@@ -194,6 +194,7 @@ class AttributeTest(unittest.TestCase):
         typeBase = typeItem['base']
         self.assertEqual(typeBase['class'], 'H5T_INTEGER')
         self.assertEqual(typeBase['base'], 'H5T_STD_I64LE')
+         
         # bug! - unable to read value from attribute with array type
         # code is not returning 'value' key in this case
         # h5py issue: https://github.com/h5py/h5py/issues/498 
@@ -483,6 +484,33 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(data[0], ['datasets/' + scale_x_uuid])
         self.assertEqual(data[1], ['datasets/' + scale_y_uuid])
         self.assertEqual(data[2], ['datasets/' + scale_z_uuid])
+
+        # read the x dimenscale and verify it refernces the temperature dataset
+        req = helper.getEndpoint() + "/datasets/" + scale_x_uuid + "/attributes/REFERENCE_LIST"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        typeItem = rspJson['type']
+        self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
+        fields = typeItem['fields']
+        self.assertEqual(len(fields), 2)
+        refType = fields[0]["type"]
+        self.assertEqual(refType["class"], 'H5T_REFERENCE')
+        intType = fields[1]["type"]
+        self.assertEqual(intType["class"], 'H5T_INTEGER')
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SIMPLE')
+        self.assertTrue('dims'  in shape)
+        dims = shape['dims']
+        self.assertEqual(len(dims), 1)
+        self.assertEqual(dims[0], 1)
+        data = rspJson['value']
+        elem = data[0]
+       
+        self.assertEqual(len(elem), 2)  # two fields of a compound type
+        self.assertEqual(elem[0], 'datasets/' + dset_uuid) #  reference primary dataset
+        self.assertEqual(elem[1], 0)  # first dimension
+         
         
     def testPut(self):
         domain = 'tall_updated.' + config.get('domain') 

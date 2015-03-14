@@ -1240,7 +1240,7 @@ class AttributeHandler(RequestHandler):
         
     def get(self):
         log = logging.getLogger("h5serv")
-        log.info('AttrbiuteHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('AttributeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
@@ -1293,7 +1293,6 @@ class AttributeHandler(RequestHandler):
             responseItem = {}
             responseItem['name'] = item['name']
             typeItem = item['type']
-            print "typeItem:", typeItem
             responseItem['type'] = hdf5dtype.getTypeResponse(typeItem)
             responseItem['shape'] = item['shape']
             responseItem['created'] = unixTimeToUTC(item['ctime']) 
@@ -1324,8 +1323,11 @@ class AttributeHandler(RequestHandler):
             responseItem = responseItems[0]
             for k in responseItem:
                 response[k] = responseItem[k]
+
+        
         response['hrefs'] = hrefs   
          
+        
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         
@@ -1775,7 +1777,6 @@ class DatasetCollectionHandler(RequestHandler):
             
         if "link" in body:          
             link_options = body["link"]
-            print link_options
             if "id" not in link_options or "name" not in link_options:
                 msg="Bad Request: No 'name' or 'id' not specified"
                 log.info(msg)
