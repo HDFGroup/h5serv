@@ -53,7 +53,7 @@ testfiles = {
     'objref_dset.h5': ('.', 'objref_dset_updated.h5'),
     'null_objref_dset.h5': ('.',),
     'regionref_attr.h5': ('.',),
-    'regionref_dset.h5': ('.',),    
+    'regionref_dset.h5': ('.', 'regionref_dset_updated.h5'),    
     'vlen_attr.h5': ('.',),
     'vlen_dset.h5': ('.',),
     'vlen_string_attr.h5': ('.',),

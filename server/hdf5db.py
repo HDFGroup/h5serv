@@ -464,6 +464,21 @@ class Hdf5db:
              tmpGrp.create_dataset('nullref', (1,), dtype=dt)
          nullref_dset = tmpGrp['nullref']
          return nullref_dset[0]
+         
+    """
+    getNullRegionReference - return a null region reference
+    """
+    def getNullRegionReference(self):
+         tmpGrp = None
+         if "{tmp}" not in self.dbGrp:
+             tmpGrp = self.dbGrp.create_group("{tmp}")
+         else:
+             tmpGrp = self.dbGrp["{tmp}"]
+         if 'nullregref' not in tmpGrp:
+             dt = h5py.special_dtype(ref=h5py.RegionReference)
+             tmpGrp.create_dataset('nullregref', (1,), dtype=dt)
+         nullref_dset = tmpGrp['nullregref']
+         return nullregref_dset[0]
         
     def getShapeItemByDsetObj(self, obj):
         item = {}
@@ -860,7 +875,7 @@ class Hdf5db:
                 # todo - verify why that is
 		 
             	h5t_check = h5py.check_dtype(ref=dt)
-            	if h5t_check is h5py.Reference:
+            	if h5t_check in (h5py.Reference, h5py.RegionReference):
                     # convert value to data refs
                     value = self.listToRef(value)
                    
@@ -984,42 +999,6 @@ class Hdf5db:
             out = data
         return out
         
-    """
-      Get item description of region reference value
-    """
-    def getRegionReference(self, regionRef):
-        selectionEnums = { h5py.h5s.SEL_NONE:       'H5S_SEL_NONE',
-                           h5py.h5s.SEL_ALL:        'H5S_SEL_ALL', 
-                           h5py.h5s.SEL_POINTS:     'H5S_SEL_POINTS',
-                           h5py.h5s.SEL_HYPERSLABS: 'H5S_SEL_HYPERSLABS'
-                          }
-                         
-        #if regionRef.typecode not in selectionEnums:
-        #    self.log.error("Unexpected selection type: " + regionRef.typecode)
-        #    return None
-        item = {}
-        objid = h5py.h5r.dereference(regionRef, self.f.file.file.id)
-        if objid:
-            item['id'] = self.getUUIDByAddress(h5py.h5o.get_info(objid).addr)
-            
-        sel = h5py.h5r.get_region(regionRef, objid)  
-        select_type = sel.get_select_type()
-        if select_type not in selectionEnums:
-            msg = "Unexpected selection type: " + regionRef.typecode
-            self.log.error(msg)
-            raise IOError(errno.EIO, msg)
-        item['select_type'] = selectionEnums[select_type]
-        points = None
-        if select_type == h5py.h5s.SEL_POINTS:
-            # retrieve a numpy array of selection points
-            points = sel.get_select_elem_pointlist()      
-        elif select_type == h5py.h5s.SEL_HYPERSLABS:
-            points = sel.get_select_hyper_blocklist()        
-        if points is not None:
-            item['selection'] = points[...].tolist()     
-        
-        return item 
-           
         
         
     """
@@ -1056,7 +1035,6 @@ class Hdf5db:
        Convert ascii representation of data references to data ref 
     """    
     def listToRef(self, data):
-        # todo - verify that data is a numpy.ndarray
         out = None
         if not data:
             # null reference
@@ -1087,11 +1065,173 @@ class Hdf5db:
             out = []
             for item in data:
             	out.append(self.listToRef(item))  # recursive call
+        elif type(data) == dict:
+             # assume region ref
+             out = self.createRegionReference(data)
         else:
             msg = "Invalid object refence value: [" + data + "]"
             self.log.info(msg)
             raise IOError(errno.EINVAL, msg)
         return out
+        
+    """
+      Get item description of region reference value
+    """
+    def getRegionReference(self, regionRef):
+        selectionEnums = { h5py.h5s.SEL_NONE:       'H5S_SEL_NONE',
+                           h5py.h5s.SEL_ALL:        'H5S_SEL_ALL', 
+                           h5py.h5s.SEL_POINTS:     'H5S_SEL_POINTS',
+                           h5py.h5s.SEL_HYPERSLABS: 'H5S_SEL_HYPERSLABS'
+                          }
+                         
+        item = {}
+        objid = h5py.h5r.dereference(regionRef, self.f.file.file.id)
+        if objid:
+            item['id'] = self.getUUIDByAddress(h5py.h5o.get_info(objid).addr)
+        else:
+        	log.info("region reference unable able to find item with objid: " + objid)
+        	return item
+            
+        sel = h5py.h5r.get_region(regionRef, objid)  
+        select_type = sel.get_select_type()
+        if select_type not in selectionEnums:
+            msg = "Unexpected selection type: " + regionRef.typecode
+            self.log.error(msg)
+            raise IOError(errno.EIO, msg)
+        item['select_type'] = selectionEnums[select_type]
+        pointlist = None
+        if select_type == h5py.h5s.SEL_POINTS:
+            # retrieve a numpy array of selection points
+            points = sel.get_select_elem_pointlist()   
+            pointlist = points.tolist()   
+        elif select_type == h5py.h5s.SEL_HYPERSLABS:
+            points = sel.get_select_hyper_blocklist()        
+            if points is not None:
+                pointlist = points[...].tolist()
+                # bump up the second coordinate by one to match api spec
+                for point in pointlist:
+                    coord2 = point[1]
+                    for i in range(len(coord2)):
+                        coord2[i] = coord2[i] + 1
+            	    
+        item['selection'] = pointlist    
+        
+        return item 
+        
+    """
+      Create region reference from item description of region reference value
+    """
+    def createRegionReference(self, item):
+        selectionEnums = { 'H5S_SEL_NONE': h5py.h5s.SEL_NONE,
+                           'H5S_SEL_ALL': h5py.h5s.SEL_ALL, 
+                           'H5S_SEL_POINTS': h5py.h5s.SEL_POINTS,
+                           'H5S_SEL_HYPERSLABS': h5py.h5s.SEL_HYPERSLABS 
+                          }
+        region_ref = None
+        #path_prefix = "/__db__/{datasets}/"
+                          
+        if 'select_type' not in item:
+            msg = "select_type not provided for region selection"
+            self.log.info(msg)
+            raise IOError(errno.EINVAL, msg)
+        select_type = item['select_type']
+        if select_type not in selectionEnums.keys():
+            msg = "selection type: [" + select_type + "] is not valid"
+            self.log.info(msg)
+            raise IOError(errno.EINVAL, msg)
+        dset = None
+        if select_type == 'H5S_SEL_NONE':
+        	if 'id' not in item:
+        		#	 select none on null dataset, return null ref
+        		out = self.getNullReference()
+        		return out  	
+        else: # select_type != 'H5S_SEL_NONE' 
+            if 'id' not in item:
+                msg = "id not provided for region selection"
+                self.log.info(msg)
+                raise IOError(errno.EINVAL, msg)
+                
+        # Otherwise need to provide uuid of dataset        
+        uuid_ref = item['id']
+        if len(uuid_ref) != UUID_LEN:
+            msg = "uuid value: [" + uuid_ref + "] for region reference is not valid"
+            self.log.info(msg)
+            raise IOError(errno.EINVAL, msg)
+                
+        obj = self.getObjectByUuid("datasets", uuid_ref)
+        if obj:
+            dset = obj
+        else:
+            msg = "Invalid region refence value: [" + uuid_ref + "] not found"
+            self.log.info(msg)
+            raise IOError(errno.EINVAL, msg)
+            
+        if select_type in ('H5S_SEL_POINTS', 'H5S_SEL_HYPERSLABS'):
+            if 'selection' not in item:
+                msg = "selection key not provided for region selection"
+                self.log.info(msg)
+                raise IOError(errno.EINVAL, msg)
+                
+        rank = len(dset.shape)
+        space_id = h5py.h5d.DatasetID.get_space(dset.id)
+        h5py.h5s.SpaceID.select_none(space_id)
+                    
+        if select_type == 'H4S_SEL_NONE':
+        	pass  # did select_none above 
+        elif select_type == 'H5S_SEL_ALL':
+            h5py.h5s.SpaceID.select_all(space_id)
+        elif select_type == 'H5S_SEL_POINTS':
+            selection = item['selection']
+            for point in selection:
+            	if len(point) != rank:
+            		msg = "point selection number of elements must mach rank of referenced dataset"
+            		self.log.info(msg)
+            		raise IOError(errno.EINVAL, msg)
+            h5py.h5s.SpaceID.select_elements(space_id, selection) 
+        elif select_type == 'H5S_SEL_HYPERSLABS':
+            selection = item['selection']
+            
+            for slab in selection:
+        	    # each item should be a two element array defining the hyperslab boundary
+        	    if len(slab) != 2:
+        	        msg = "selection value not valid (not a 2 element array)"
+        	        self.log.info(msg)
+        	        raise IOError(errno.EINVAL, msg)
+        	    start = slab[0]
+        	    if type(start) == list:
+        	        start = tuple(start)
+        	    if type(start) is not tuple or len(start) != rank:
+        	        msg = "selection value not valid, start element should have number " 
+        	        msg += "elements equal to rank of referenced dataset"
+        	        self.log.info(msg)
+        	        raise IOError(errno.EINVAL, msg)
+        	    stop = slab[1]
+        	    if type(stop) == list:
+        	        stop = tuple(stop)
+        	    if type(stop) is not tuple or len(stop) != rank:
+        	        msg = "selection value not valid, count element should have number " 
+        	        msg += "elements equal to rank of referenced dataset"
+        	        self.log.info(msg)
+        	        raise IOError(errno.EINVAL, msg)
+        	    count = []
+        	    for i in range(rank):
+        	    	if start[i] < 0:
+        	        	msg = "start value for hyperslab selection must be non-negative"
+        	        	self.log.info(msg)
+        	        	raise IOError(errno.EINVAL, msg)
+        	        if stop[i] <= start[i]:
+        	        	msg = "stop value must be greater than start value for hyperslab selection"
+        	        	self.log.info(msg)
+        	        	raise IOError(errno.EINVAL, msg)
+        	    	count.append(stop[i] - start[i])
+        	    count = tuple(count)
+        	    
+        	    h5py.h5s.SpaceID.select_hyperslab(space_id, start, count, op=h5py.h5s.SELECT_OR) 
+        	    
+        # now that we've selected the desired region in the space, return a region reference	
+        region_ref = h5py.h5r.create(self.f.id, dset.name, h5py.h5r.DATASET_REGION, space_id) 
+        	   
+        return region_ref 
         
     """
       Convert a list to a tuple, recursively.
@@ -1210,8 +1350,8 @@ class Hdf5db:
             data = converted_data  
         else:
             h5t_check = h5py.check_dtype(ref=dset.dtype)
-            if h5t_check is h5py.Reference:
-                # convert value to data refs
+            if h5t_check in (h5py.Reference, h5py.RegionReference):
+                # convert data to data refs
                 data = self.listToRef(data)
         
         if slices == None:

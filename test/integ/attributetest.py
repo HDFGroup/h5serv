@@ -406,13 +406,13 @@ class AttributeTest(unittest.TestCase):
         hyperslabs = ref1['selection'] 
         self.assertEqual(len(hyperslabs), 4)
         self.assertEqual(hyperslabs[0][0], [0, 0])
-        self.assertEqual(hyperslabs[0][1], [0, 2])
+        self.assertEqual(hyperslabs[0][1], [1, 3])
         self.assertEqual(hyperslabs[1][0], [0, 11])
-        self.assertEqual(hyperslabs[1][1], [0, 13])
+        self.assertEqual(hyperslabs[1][1], [1, 14])
         self.assertEqual(hyperslabs[2][0], [2, 0])
-        self.assertEqual(hyperslabs[2][1], [2, 2])
+        self.assertEqual(hyperslabs[2][1], [3, 3])
         self.assertEqual(hyperslabs[3][0], [2, 11])
-        self.assertEqual(hyperslabs[3][1], [2, 13])
+        self.assertEqual(hyperslabs[3][1], [3, 14])
         
             
     def testGetScalar(self):
@@ -638,7 +638,7 @@ class AttributeTest(unittest.TestCase):
         domain = 'tall_updated.' + config.get('domain')
         attr_name = 'attr9'
         root_uuid = helper.getRootUUID(domain)
-	g2_uuid = helper.getUUID(domain, root_uuid, 'g2') 
+        g2_uuid = helper.getUUID(domain, root_uuid, 'g2') 
         d22_uuid = helper.getUUID(domain, g2_uuid, 'dset2.2') 
         
         headers = {'host': domain}
@@ -647,6 +647,45 @@ class AttributeTest(unittest.TestCase):
         
         value = ('groups/' + g2_uuid, '', 'datasets/' + d22_uuid) 
         payload = {'type': datatype, 'shape': 3, 'value': value}
+        req = self.endpoint + "/groups/" + root_uuid + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
+        rspJson = json.loads(rsp.text)
+        self.assertEqual(len(rspJson['hrefs']), 3)
+        
+    def testPutRegionReference(self):
+        domain = 'tall_updated.' + config.get('domain')
+        attr_name = 'attr10'
+        root_uuid = helper.getRootUUID(domain)
+        g1_uuid = helper.getUUID(domain, root_uuid, 'g1') 
+        g11_uuid = helper.getUUID(domain, g1_uuid, 'g1.1') 
+        d111_uuid = helper.getUUID(domain, g11_uuid, 'dset1.1.1') 
+        
+        headers = {'host': domain}
+         
+        datatype = {'class': 'H5T_REFERENCE', 'base': 'H5T_STD_REF_DSETREG' }
+        
+        region_ref = { }
+        region_ref['id'] = d111_uuid
+        region_ref['select_type'] = 'H5S_SEL_HYPERSLABS'
+        region_ref['selection'] = (((0,0),(1,1)),((2,2),(4,4)), ((5,5),(10,10)))
+        
+        point_ref = { }
+        point_ref['id'] = d111_uuid
+        point_ref['select_type'] = 'H5S_SEL_POINTS'
+        point_ref['selection'] = ((0,0),(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9))
+        
+        all_ref = {}
+        all_ref['id'] = d111_uuid
+        all_ref['select_type'] = 'H5S_SEL_ALL'
+        
+        none_ref = {}
+        none_ref['id'] = d111_uuid
+        none_ref['select_type'] = 'H5S_SEL_NONE'
+        
+        value = ( region_ref , point_ref, all_ref, none_ref ) 
+         
+        payload = {'type': datatype, 'shape': 4, 'value': value}
         req = self.endpoint + "/groups/" + root_uuid + "/attributes/" + attr_name
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute

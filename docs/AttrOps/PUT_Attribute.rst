@@ -202,7 +202,7 @@ Sample Response - string attribute
       ]
     }
     
-Sample Request - comound type
+Sample Request - compound type
 ----------------------------------
 
 Create a two-element, attribute of group with UUID of 

@@ -374,9 +374,13 @@ def createBaseDataType(typeItem):
     elif typeClass == 'H5T_REFERENCE':
         if 'base' not in typeItem:
             raise KeyError("'base' not provided") 
-        if typeItem['base'] not in ('H5T_STD_REF_OBJ', 'H5T_STD_REF_DSETREG'):
+        if typeItem['base'] == 'H5T_STD_REF_OBJ':
+        	dtRet = special_dtype(ref=Reference)
+        elif typeItem['base'] == 'H5T_STD_REF_DSETREG':
+        	dtRet = special_dtype(ref=RegionReference)
+        else:
             raise TypeError("Invalid base type for reference type")
-        dtRet = special_dtype(ref=Reference)
+        
     else:
         raise TypeError("Invalid type class")
         

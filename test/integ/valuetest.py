@@ -453,13 +453,13 @@ class ValueTest(unittest.TestCase):
         hyperslabs = ref1['selection'] 
         self.assertEqual(len(hyperslabs), 4)
         self.assertEqual(hyperslabs[0][0], [0, 0])
-        self.assertEqual(hyperslabs[0][1], [0, 2])
+        self.assertEqual(hyperslabs[0][1], [1, 3])
         self.assertEqual(hyperslabs[1][0], [0, 11])
-        self.assertEqual(hyperslabs[1][1], [0, 13])
+        self.assertEqual(hyperslabs[1][1], [1, 14])
         self.assertEqual(hyperslabs[2][0], [2, 0])
-        self.assertEqual(hyperslabs[2][1], [2, 2])
+        self.assertEqual(hyperslabs[2][1], [3, 3])
         self.assertEqual(hyperslabs[3][0], [2, 11])
-        self.assertEqual(hyperslabs[3][1], [2, 13])
+        self.assertEqual(hyperslabs[3][1], [3, 14])
          
         
     def testPost(self):    
@@ -688,6 +688,28 @@ class ValueTest(unittest.TestCase):
         value = ('datasets/' + ds2_uuid, 'groups/' + g1_uuid)
         payload = {'value': value}
         req = self.endpoint + "/datasets/" + ds1_uuid + "/value"
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # write value
+        
+    def testPutRegionReference(self):
+        domain = 'regionref_dset_updated.' + config.get('domain')
+        root_uuid = helper.getRootUUID(domain)
+        ds1_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        ds2_uuid = helper.getUUID(domain, root_uuid, 'DS2')
+        
+        req = helper.getEndpoint() + "/datasets/" + ds1_uuid  + "/value"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.failUnlessEqual(len(value), 2)
+         
+        
+        updated_value = ( value[1], value[0] )  # switch elements
+        payload = {'value': updated_value}
+        
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)  # write value
            
