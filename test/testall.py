@@ -17,6 +17,7 @@ integ_tests = ('roottest', 'grouptest', 'linktest', 'datasettest', 'valuetest',
     'attributetest', 'datatypetest', 'shapetest', 'datasettypetest', 'spidertest')
 #
 # Run all h5serv tests
+# Run this script before running any integ tests
 #
 os.chdir('unit')
 for file_name in unit_tests:
