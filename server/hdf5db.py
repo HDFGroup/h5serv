@@ -1128,7 +1128,6 @@ class Hdf5db:
                            'H5S_SEL_HYPERSLABS': h5py.h5s.SEL_HYPERSLABS 
                           }
         region_ref = None
-        #path_prefix = "/__db__/{datasets}/"
                           
         if 'select_type' not in item:
             msg = "select_type not provided for region selection"
