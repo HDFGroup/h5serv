@@ -68,8 +68,8 @@ Fixed length strings have a specified length (supplied when the object is create
 is used for each data element.  Any values that are assigned that exceed that length 
 will be truncated. 
 
-To specify a fixed length string, create a JSON object with class, cset, strpad,
-and strsize keys (see definitions of these keys below).
+To specify a fixed length string, create a JSON object with class, charSet, strPad,
+and length keys (see definitions of these keys below).
 
 *Note:* Current only the ASCII character set is supported.
 
@@ -106,8 +106,8 @@ or there is a great deal of variability in the lengths of strings.
 *Note:* Typically there is a slight performance penalty in accessing variable length
 string elements of an array in the server.
 
-To specify a variable length string, create a JSON object with class, cset, strpad,
-and strsize keys (see definitions of these keys below) where the value of "length" is:
+To specify a variable length string, create a JSON object with class, charSet, strPad,
+and length keys (see definitions of these keys below) where the value of "length" is:
 ``H5T_VARIABLE``.
 
 *Note:* Current only the ASCII character set is supported.
@@ -407,12 +407,12 @@ The byte ordering.  One of:
 * ``H5T_ORDER_LE``: Little endian ordering (e.g. native ordering for x86 computers)
 * ``H5T_ORDER_BE``: Big endian ordering
 
-cset
-----
+charSet
+-------
 
 Character set for strings.  Currently only ``H5T_CSET_ASCII`` is supported.
 
-strpad
+strPad
 -------
 
 Defines how fixed length strings are padded.  One of:
@@ -421,7 +421,7 @@ Defines how fixed length strings are padded.  One of:
 * ``H5T_STR_NULLTERM``: String is null terminated
 * ``H5T_STR_SPACEPAD``: String is padded with spaces
 
-strsize
+length
 --------
 
 Defines the string length.  Either a positive integer or the string: ``H5T_VARIABLE``.
