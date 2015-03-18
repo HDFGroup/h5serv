@@ -1,6 +1,6 @@
 {
     "datasets": {
-        "2fd9e630-7b51-11e4-b2b8-3c15c2da029e": {
+        "b5d4c563-cd15-11e4-871e-3c15c2da029e": {
             "alias": [
                 "/dset"
             ], 
@@ -23,11 +23,11 @@
                     {
                         "name": "time", 
                         "type": {
+                            "charSet": "H5T_CSET_ASCII", 
                             "class": "H5T_STRING", 
-                            "cset": "H5T_CSET_ASCII", 
+                            "length": 6, 
                             "order": "H5T_ORDER_NONE", 
-                            "strpad": "H5T_STR_NULLPAD", 
-                            "strsize": 6
+                            "strPad": "H5T_STR_NULLPAD"
                         }
                     }, 
                     {
@@ -47,11 +47,11 @@
                     {
                         "name": "wind", 
                         "type": {
+                            "charSet": "H5T_CSET_ASCII", 
                             "class": "H5T_STRING", 
-                            "cset": "H5T_CSET_ASCII", 
+                            "length": 6, 
                             "order": "H5T_ORDER_NONE", 
-                            "strpad": "H5T_STR_NULLPAD", 
-                            "strsize": 6
+                            "strPad": "H5T_STR_NULLPAD"
                         }
                     }
                 ]
@@ -565,7 +565,7 @@
         }
     }, 
     "groups": {
-        "2fd89866-7b51-11e4-9d8e-3c15c2da029e": {
+        "b5d3c485-cd15-11e4-9be3-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
@@ -576,11 +576,11 @@
                         "class": "H5S_SCALAR"
                     }, 
                     "type": {
+                        "charSet": "H5T_CSET_ASCII", 
                         "class": "H5T_STRING", 
-                        "cset": "H5T_CSET_ASCII", 
+                        "length": "H5T_VARIABLE", 
                         "order": "H5T_ORDER_NONE", 
-                        "strpad": "H5T_STR_NULLTERM", 
-                        "strsize": "H5T_VARIABLE"
+                        "strPad": "H5T_STR_NULLTERM"
                     }, 
                     "value": "Seattle, WA Weather observations Sept 21-24, 2014. KSEA station.\nSource: NOAA"
                 }
@@ -589,11 +589,11 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "id": "2fd9e630-7b51-11e4-b2b8-3c15c2da029e", 
+                    "id": "b5d4c563-cd15-11e4-871e-3c15c2da029e", 
                     "title": "dset"
                 }
             ]
         }
     }, 
-    "root": "2fd89866-7b51-11e4-9d8e-3c15c2da029e"
+    "root": "b5d3c485-cd15-11e4-9be3-3c15c2da029e"
 }

@@ -89,9 +89,9 @@ JSON representation of a dataset using a fixed width string of 40 characters:
     }, 
     "type": {
         "class": "H5T_STRING", 
-        "cset": "H5T_CSET_ASCII", 
-        "strpad": "H5T_STR_NULLPAD", 
-        "strsize": 40
+        "charSet": "H5T_CSET_ASCII", 
+        "strPad": "H5T_STR_NULLPAD", 
+        "length": 40
         },
     "value": "Hello, World!"
     }
@@ -107,7 +107,7 @@ or there is a great deal of variability in the lengths of strings.
 string elements of an array in the server.
 
 To specify a variable length string, create a JSON object with class, cset, strpad,
-and strsize keys (see definitions of these keys below) where the value of "strsize" is:
+and strsize keys (see definitions of these keys below) where the value of "length" is:
 ``H5T_VARIABLE``.
 
 *Note:* Current only the ASCII character set is supported.
@@ -129,10 +129,10 @@ JSON representation of a attribute using a variable length string:
     }, 
     "type": {
         "class": "H5T_STRING", 
-        "cset": "H5T_CSET_ASCII", 
+        "charSet": "H5T_CSET_ASCII", 
         "order": "H5T_ORDER_NONE", 
-        "strpad": "H5T_STR_NULLTERM", 
-        "strsize": "H5T_VARIABLE"
+        "strPad": "H5T_STR_NULLTERM", 
+        "length": "H5T_VARIABLE"
     }, 
     "value": [
         "Hypermedia", 

@@ -184,10 +184,10 @@ class DatatypeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
         root_uuid = helper.getRootUUID(domain)
-        data_type = { 'cset':   'H5T_CSET_ASCII', 
+        data_type = { 'charSet':   'H5T_CSET_ASCII', 
                      'class':  'H5T_STRING', 
-                     'strpad': 'H5T_STR_NULLPAD', 
-                     'strsize': 'H5T_VARIABLE'}
+                     'strPad': 'H5T_STR_NULLPAD', 
+                     'length': 'H5T_VARIABLE'}
                      
         payload = {'type': data_type}
         req = self.endpoint + "/datatypes"

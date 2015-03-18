@@ -57,6 +57,7 @@ class Writeh5:
     # Create HDF5 dataset object and write data values
     #        
     def createDataset(self, uuid, body):
+        print "creating dataset: ", uuid
         datatype = body['type']
         if type(datatype) in (str, unicode) and datatype.startswith("datatypes/"):
             #committed datatype, just pass in the UUID part
@@ -96,8 +97,8 @@ class Writeh5:
                 self.db.setDatasetValuesByUuid(uuid, data) 
             
     def createAttribute(self, attr_json, col_name, uuid):
-    
         attr_name = attr_json["name"]
+        print "creating Attribute:", attr_name, " in uuid:", uuid
         datatype = attr_json["type"]
         if type(datatype) in (str, unicode) and datatype.startswith("datatypes/"):
             #committed datatype, just pass in the UUID part
@@ -129,6 +130,7 @@ class Writeh5:
     # Create HDF5 group object  (links and attributes will be added later)
     #        
     def createGroup(self, uuid, body):
+        print "creating group:", uuid
         if uuid != self.root_uuid:
             self.db.createGroup(obj_uuid=uuid)
                  

@@ -148,10 +148,10 @@ class AttributeTest(unittest.TestCase):
             self.assertEqual(field3['name'], 'wind')
             field3Type = field3['type']
             self.assertEqual(field3Type['class'], 'H5T_STRING')
-            self.assertEqual(field3Type['cset'], 'H5T_CSET_ASCII')
+            self.assertEqual(field3Type['charSet'], 'H5T_CSET_ASCII')
             self.assertEqual(field3Type['order'], 'H5T_ORDER_NONE')
-            self.assertEqual(field3Type['strsize'], 6)
-            self.assertEqual(field3Type['strpad'], 'H5T_STR_NULLPAD')
+            self.assertEqual(field3Type['length'], 6)
+            self.assertEqual(field3Type['strPad'], 'H5T_STR_NULLPAD')
             
     def testGetCommitted(self):
         domain = 'committed_type.' + config.get('domain')  
@@ -222,10 +222,10 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(shape['dims'][0], 4) 
         typeItem = rspJson['type']   
         self.assertEqual(typeItem['class'], 'H5T_STRING')
-        self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(typeItem['charSet'], 'H5T_CSET_ASCII')
         self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
-        self.assertEqual(typeItem['strsize'], 'H5T_VARIABLE')
-        self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLTERM')
+        self.assertEqual(typeItem['length'], 'H5T_VARIABLE')
+        self.assertEqual(typeItem['strPad'], 'H5T_STR_NULLTERM')
         self.assertTrue('value' in rspJson)
         value = rspJson['value']
         self.assertEqual(len(value), 4) 
@@ -251,10 +251,10 @@ class AttributeTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_STRING')
-        self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(typeItem['charSet'], 'H5T_CSET_ASCII')
         self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
-        self.assertEqual(typeItem['strsize'], 7)
-        self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLPAD')
+        self.assertEqual(typeItem['length'], 7)
+        self.assertEqual(typeItem['strPad'], 'H5T_STR_NULLPAD')
         self.assertTrue('value' in rspJson)
         value = rspJson['value']
         self.assertEqual(len(value), 4) 
@@ -447,10 +447,10 @@ class AttributeTest(unittest.TestCase):
         self.assertTrue('dims' not in shape)
         typeItem = rspJson['type']
         self.assertEqual(typeItem['class'], 'H5T_STRING')
-        self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(typeItem['charSet'], 'H5T_CSET_ASCII')
         self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
-        self.assertEqual(typeItem['strsize'], 'H5T_VARIABLE')
-        self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLTERM')
+        self.assertEqual(typeItem['length'], 'H5T_VARIABLE')
+        self.assertEqual(typeItem['strPad'], 'H5T_STR_NULLTERM')
         data = rspJson['value'] 
         self.assertEqual(data, "hello")   
 
@@ -584,10 +584,10 @@ class AttributeTest(unittest.TestCase):
         rootUUID = helper.getRootUUID(domain) 
         headers = {'host': domain}
         data = "Hello, I'm a fixed-width string!"
-        str_type = { 'cset':   'H5T_CSET_ASCII', 
+        str_type = { 'charSet':   'H5T_CSET_ASCII', 
                      'class':  'H5T_STRING', 
-                     'strpad': 'H5T_STR_NULLPAD', 
-                     'strsize': 40}
+                     'strPad': 'H5T_STR_NULLPAD', 
+                     'length': 40}
                       
         payload = {'type': str_type, 'shape': (1,), 'value': data}
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
@@ -602,10 +602,10 @@ class AttributeTest(unittest.TestCase):
         rootUUID = helper.getRootUUID(domain) 
         headers = {'host': domain}
         data = ["Hypermedia", "as", "the", "engine", "of", "state."]
-        str_type = { 'cset':   'H5T_CSET_ASCII', 
+        str_type = { 'charSet':   'H5T_CSET_ASCII', 
                      'class':  'H5T_STRING', 
-                     'strpad': 'H5T_STR_NULLPAD', 
-                     'strsize': 'H5T_VARIABLE'}
+                     'strPad': 'H5T_STR_NULLPAD', 
+                     'length': 'H5T_VARIABLE'}
                       
         payload = {'type': str_type, 'shape': (6,), 'value': data}
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name

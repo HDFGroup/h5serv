@@ -1,6 +1,6 @@
 {
     "datasets": {
-        "206b8614-cc7c-11e4-bd19-3c15c2da029e": {
+        "b61f3f70-cd15-11e4-a4b3-3c15c2da029e": {
             "alias": [
                 "/scale_x"
             ], 
@@ -11,11 +11,11 @@
                         "class": "H5S_SCALAR"
                     }, 
                     "type": {
+                        "charSet": "H5T_CSET_ASCII", 
                         "class": "H5T_STRING", 
-                        "cset": "H5T_CSET_ASCII", 
+                        "length": 16, 
                         "order": "H5T_ORDER_NONE", 
-                        "strpad": "H5T_STR_NULLPAD", 
-                        "strsize": 16
+                        "strPad": "H5T_STR_NULLPAD"
                     }, 
                     "value": "DIMENSION_SCALE"
                 }, 
@@ -25,11 +25,11 @@
                         "class": "H5S_SCALAR"
                     }, 
                     "type": {
+                        "charSet": "H5T_CSET_ASCII", 
                         "class": "H5T_STRING", 
-                        "cset": "H5T_CSET_ASCII", 
+                        "length": 26, 
                         "order": "H5T_ORDER_NONE", 
-                        "strpad": "H5T_STR_NULLPAD", 
-                        "strsize": 26
+                        "strPad": "H5T_STR_NULLPAD"
                     }, 
                     "value": "Simulation X (North) axis"
                 }, 
@@ -62,7 +62,7 @@
                     }, 
                     "value": [
                         [
-                            "datasets/206bbad9-cc7c-11e4-94df-3c15c2da029e", 
+                            "datasets/b61f6dee-cd15-11e4-8297-3c15c2da029e", 
                             0
                         ]
                     ]
@@ -91,7 +91,7 @@
                 90000.0
             ]
         }, 
-        "206b97d9-cc7c-11e4-8e0a-3c15c2da029e": {
+        "b61f5099-cd15-11e4-9e28-3c15c2da029e": {
             "alias": [
                 "/scale_y"
             ], 
@@ -102,11 +102,11 @@
                         "class": "H5S_SCALAR"
                     }, 
                     "type": {
+                        "charSet": "H5T_CSET_ASCII", 
                         "class": "H5T_STRING", 
-                        "cset": "H5T_CSET_ASCII", 
+                        "length": 16, 
                         "order": "H5T_ORDER_NONE", 
-                        "strpad": "H5T_STR_NULLPAD", 
-                        "strsize": 16
+                        "strPad": "H5T_STR_NULLPAD"
                     }, 
                     "value": "DIMENSION_SCALE"
                 }, 
@@ -116,11 +116,11 @@
                         "class": "H5S_SCALAR"
                     }, 
                     "type": {
+                        "charSet": "H5T_CSET_ASCII", 
                         "class": "H5T_STRING", 
-                        "cset": "H5T_CSET_ASCII", 
+                        "length": 25, 
                         "order": "H5T_ORDER_NONE", 
-                        "strpad": "H5T_STR_NULLPAD", 
-                        "strsize": 25
+                        "strPad": "H5T_STR_NULLPAD"
                     }, 
                     "value": "Simulation Y (East) axis"
                 }, 
@@ -153,7 +153,7 @@
                     }, 
                     "value": [
                         [
-                            "datasets/206bbad9-cc7c-11e4-94df-3c15c2da029e", 
+                            "datasets/b61f6dee-cd15-11e4-8297-3c15c2da029e", 
                             1
                         ]
                     ]
@@ -182,7 +182,7 @@
                 90000.0
             ]
         }, 
-        "206ba96e-cc7c-11e4-84cd-3c15c2da029e": {
+        "b61f5f7a-cd15-11e4-a8d8-3c15c2da029e": {
             "alias": [
                 "/scale_z"
             ], 
@@ -193,11 +193,11 @@
                         "class": "H5S_SCALAR"
                     }, 
                     "type": {
+                        "charSet": "H5T_CSET_ASCII", 
                         "class": "H5T_STRING", 
-                        "cset": "H5T_CSET_ASCII", 
+                        "length": 16, 
                         "order": "H5T_ORDER_NONE", 
-                        "strpad": "H5T_STR_NULLPAD", 
-                        "strsize": 16
+                        "strPad": "H5T_STR_NULLPAD"
                     }, 
                     "value": "DIMENSION_SCALE"
                 }, 
@@ -207,11 +207,11 @@
                         "class": "H5S_SCALAR"
                     }, 
                     "type": {
+                        "charSet": "H5T_CSET_ASCII", 
                         "class": "H5T_STRING", 
-                        "cset": "H5T_CSET_ASCII", 
+                        "length": 29, 
                         "order": "H5T_ORDER_NONE", 
-                        "strpad": "H5T_STR_NULLPAD", 
-                        "strsize": 29
+                        "strPad": "H5T_STR_NULLPAD"
                     }, 
                     "value": "Simulation Z (Vertical) axis"
                 }, 
@@ -244,7 +244,7 @@
                     }, 
                     "value": [
                         [
-                            "datasets/206bbad9-cc7c-11e4-94df-3c15c2da029e", 
+                            "datasets/b61f6dee-cd15-11e4-8297-3c15c2da029e", 
                             2
                         ]
                     ]
@@ -273,7 +273,7 @@
                 90000.0
             ]
         }, 
-        "206bbad9-cc7c-11e4-94df-3c15c2da029e": {
+        "b61f6dee-cd15-11e4-8297-3c15c2da029e": {
             "alias": [
                 "/temperatures"
             ], 
@@ -284,11 +284,11 @@
                         "class": "H5S_SCALAR"
                     }, 
                     "type": {
+                        "charSet": "H5T_CSET_ASCII", 
                         "class": "H5T_STRING", 
-                        "cset": "H5T_CSET_ASCII", 
+                        "length": "H5T_VARIABLE", 
                         "order": "H5T_ORDER_NONE", 
-                        "strpad": "H5T_STR_NULLTERM", 
-                        "strsize": "H5T_VARIABLE"
+                        "strPad": "H5T_STR_NULLTERM"
                     }, 
                     "value": "C"
                 }, 
@@ -309,13 +309,13 @@
                     }, 
                     "value": [
                         [
-                            "datasets/206b8614-cc7c-11e4-bd19-3c15c2da029e"
+                            "datasets/b61f3f70-cd15-11e4-a4b3-3c15c2da029e"
                         ], 
                         [
-                            "datasets/206b97d9-cc7c-11e4-8e0a-3c15c2da029e"
+                            "datasets/b61f5099-cd15-11e4-9e28-3c15c2da029e"
                         ], 
                         [
-                            "datasets/206ba96e-cc7c-11e4-84cd-3c15c2da029e"
+                            "datasets/b61f5f7a-cd15-11e4-a8d8-3c15c2da029e"
                         ]
                     ]
                 }
@@ -1557,7 +1557,7 @@
         }
     }, 
     "groups": {
-        "206a792b-cc7c-11e4-843f-3c15c2da029e": {
+        "b61e344c-cd15-11e4-b1cf-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
@@ -1565,29 +1565,29 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "id": "206b8614-cc7c-11e4-bd19-3c15c2da029e", 
+                    "id": "b61f3f70-cd15-11e4-a4b3-3c15c2da029e", 
                     "title": "scale_x"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "id": "206b97d9-cc7c-11e4-8e0a-3c15c2da029e", 
+                    "id": "b61f5099-cd15-11e4-9e28-3c15c2da029e", 
                     "title": "scale_y"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "id": "206ba96e-cc7c-11e4-84cd-3c15c2da029e", 
+                    "id": "b61f5f7a-cd15-11e4-a8d8-3c15c2da029e", 
                     "title": "scale_z"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "id": "206bbad9-cc7c-11e4-94df-3c15c2da029e", 
+                    "id": "b61f6dee-cd15-11e4-8297-3c15c2da029e", 
                     "title": "temperatures"
                 }
             ]
         }
     }, 
-    "root": "206a792b-cc7c-11e4-843f-3c15c2da029e"
+    "root": "b61e344c-cd15-11e4-b1cf-3c15c2da029e"
 }

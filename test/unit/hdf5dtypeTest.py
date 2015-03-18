@@ -57,30 +57,30 @@ class Hdf5dtypeTest(unittest.TestCase):
         self.failUnlessEqual(typeItem['class'], 'H5T_STRING')
         self.failUnlessEqual(typeItem['size'], 3)
         self.failUnlessEqual(typeItem['base_size'], 3)
-        self.failUnlessEqual(typeItem['strsize'], 3)
+        self.failUnlessEqual(typeItem['length'], 3)
         self.failUnlessEqual(typeItem['order'], 'H5T_ORDER_NONE')
-        self.failUnlessEqual(typeItem['strpad'], 'H5T_STR_NULLPAD')
-        self.failUnlessEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+        self.failUnlessEqual(typeItem['strPad'], 'H5T_STR_NULLPAD')
+        self.failUnlessEqual(typeItem['charSet'], 'H5T_CSET_ASCII')
         
     def testBaseVLenAsciiTypeItem(self):
         dt = special_dtype(vlen=str)
         typeItem = hdf5dtype.getTypeItem(dt)
         self.failUnlessEqual(typeItem['class'], 'H5T_STRING')
         self.failUnlessEqual(typeItem['base_size'], 8)
-        self.failUnlessEqual(typeItem['strsize'], 'H5T_VARIABLE')
+        self.failUnlessEqual(typeItem['length'], 'H5T_VARIABLE')
         self.failUnlessEqual(typeItem['order'], 'H5T_ORDER_NONE')
-        self.failUnlessEqual(typeItem['strpad'], 'H5T_STR_NULLTERM')
-        self.failUnlessEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+        self.failUnlessEqual(typeItem['strPad'], 'H5T_STR_NULLTERM')
+        self.failUnlessEqual(typeItem['charSet'], 'H5T_CSET_ASCII')
         
     def testBaseVLenUnicodeTypeItem(self):
         dt = special_dtype(vlen=unicode)
         typeItem = hdf5dtype.getTypeItem(dt)
         self.failUnlessEqual(typeItem['class'], 'H5T_STRING')
         self.failUnlessEqual(typeItem['base_size'], 8)
-        self.failUnlessEqual(typeItem['strsize'], 'H5T_VARIABLE')
+        self.failUnlessEqual(typeItem['length'], 'H5T_VARIABLE')
         self.failUnlessEqual(typeItem['order'], 'H5T_ORDER_NONE')
-        self.failUnlessEqual(typeItem['strpad'], 'H5T_STR_NULLTERM')
-        self.failUnlessEqual(typeItem['cset'], 'H5T_CSET_UTF8')
+        self.failUnlessEqual(typeItem['strPad'], 'H5T_STR_NULLTERM')
+        self.failUnlessEqual(typeItem['charSet'], 'H5T_CSET_UTF8')
         
     def testBaseEnumTypeItem(self):
         mapping = {'RED': 0, 'GREEN': 1, 'BLUE': 2}
@@ -180,18 +180,18 @@ class Hdf5dtypeTest(unittest.TestCase):
           
         
     def testCreateBaseStringType(self):
-        typeItem = { 'class': 'H5T_STRING', 'cset': 'H5T_CSET_ASCII', 'strsize': 6 }
+        typeItem = { 'class': 'H5T_STRING', 'charSet': 'H5T_CSET_ASCII', 'length': 6 }
         dt = hdf5dtype.createDataType(typeItem)
         self.assertEqual(dt.name, 'string48')
         self.assertEqual(dt.kind, 'S')
         
     def testCreateVLenStringType(self):
-        typeItem = { 'class': 'H5T_STRING', 'cset': 'H5T_CSET_ASCII', 'strsize': 'H5T_VARIABLE' }
+        typeItem = { 'class': 'H5T_STRING', 'charSet': 'H5T_CSET_ASCII', 'length': 'H5T_VARIABLE' }
         dt = hdf5dtype.createDataType(typeItem)
         self.assertEqual(dt.name, 'object')
         self.assertEqual(dt.kind, 'O')
         
-        typeItem = { 'class': 'H5T_STRING', 'cset': 'H5T_CSET_UTF8', 'strsize': 'H5T_VARIABLE' }
+        typeItem = { 'class': 'H5T_STRING', 'charSet': 'H5T_CSET_UTF8', 'length': 'H5T_VARIABLE' }
         dt = hdf5dtype.createDataType(typeItem)
         self.assertEqual(dt.name, 'object')
         self.assertEqual(dt.kind, 'O')

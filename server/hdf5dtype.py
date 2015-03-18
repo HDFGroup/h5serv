@@ -107,15 +107,15 @@ def getTypeElement(dt):
             type_info['base_size'] = 8  # machine pointer size
             if h5t_check == str:
                 type_info['class'] = 'H5T_STRING'
-                type_info['strsize'] = 'H5T_VARIABLE'
-                type_info['cset'] = 'H5T_CSET_ASCII'
-                type_info['strpad'] = 'H5T_STR_NULLTERM'
+                type_info['length'] = 'H5T_VARIABLE'
+                type_info['charSet'] = 'H5T_CSET_ASCII'
+                type_info['strPad'] = 'H5T_STR_NULLTERM'
                 type_info['order'] = 'H5T_ORDER_NONE'
             elif h5t_check == unicode:
                 type_info['class'] = 'H5T_STRING'
-                type_info['strsize'] = 'H5T_VARIABLE'
-                type_info['cset'] = 'H5T_CSET_UTF8'
-                type_info['strpad'] = 'H5T_STR_NULLTERM'
+                type_info['length'] = 'H5T_VARIABLE'
+                type_info['charSet'] = 'H5T_CSET_UTF8'
+                type_info['strPad'] = 'H5T_STR_NULLTERM'
                 type_info['order'] = 'H5T_ORDER_NONE'
             elif type(h5t_check) == np.dtype:
                 # vlen data
@@ -209,9 +209,9 @@ def getBaseType(dt):
     if dt.base.kind == 'S':
         # Fixed length string type
         type_info['class'] = 'H5T_STRING' 
-        type_info['cset'] = 'H5T_CSET_ASCII'
-        type_info['strsize'] = dt.base.itemsize
-        type_info['strpad'] = 'H5T_STR_NULLPAD'
+        type_info['charSet'] = 'H5T_CSET_ASCII'
+        type_info['length'] = dt.base.itemsize
+        type_info['strPad'] = 'H5T_STR_NULLPAD'
         type_info['order'] = 'H5T_ORDER_NONE'
     elif dt.base.kind == 'V':
             type_info['class'] = 'H5T_OPAQUE'
@@ -325,24 +325,24 @@ def createBaseDataType(typeItem):
         baseType = getNumpyTypename(typeItem['base'], typeClass='H5T_FLOAT')
         dtRet = np.dtype(shape + baseType)
     elif typeClass == 'H5T_STRING':
-        if 'strsize' not in typeItem:
-            raise KeyError("'strsize' not provided")
-        if 'cset' not in typeItem:
-            raise KeyError("'cset' not provided")          
+        if 'length' not in typeItem:
+            raise KeyError("'length' not provided")
+        if 'charSet' not in typeItem:
+            raise KeyError("'charSet' not provided")          
             
-        if typeItem['strsize'] == 'H5T_VARIABLE':
+        if typeItem['length'] == 'H5T_VARIABLE':
             if shape:
                 raise TypeError("ArrayType is not supported for variable len types")
-            if typeItem['cset'] == 'H5T_CSET_ASCII':
+            if typeItem['charSet'] == 'H5T_CSET_ASCII':
                 dtRet = special_dtype(vlen=str)
-            elif typeItem['cset'] == 'H5T_CSET_UTF8':
+            elif typeItem['charSet'] == 'H5T_CSET_UTF8':
                 dtRet = special_dtype(vlen=unicode)
             else:
-                raise TypeError("unexpected 'cset' value")
+                raise TypeError("unexpected 'charSet' value")
         else:
-            nStrSize = typeItem['strsize']
+            nStrSize = typeItem['length']
             if type(nStrSize) != int:
-                raise TypeError("expecting integer value for 'strsize'")
+                raise TypeError("expecting integer value for 'length'")
             dtRet = np.dtype(shape + 'S' + str(nStrSize))  # fixed size ascii string
     elif typeClass == 'H5T_VLEN':
         if shape:

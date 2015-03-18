@@ -74,10 +74,10 @@ class DatasetTypeTest(unittest.TestCase):
         self.assertTrue('type' in timeField)
         timeFieldType = timeField['type']
         self.assertEqual(timeFieldType['class'], 'H5T_STRING')
-        self.assertEqual(timeFieldType['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(timeFieldType['charSet'], 'H5T_CSET_ASCII')
         self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
-        self.assertEqual(timeFieldType['strsize'], 6)
-        self.assertEqual(timeFieldType['strpad'], 'H5T_STR_NULLPAD')
+        self.assertEqual(timeFieldType['length'], 6)
+        self.assertEqual(timeFieldType['strPad'], 'H5T_STR_NULLPAD')
     
         
 if __name__ == '__main__':

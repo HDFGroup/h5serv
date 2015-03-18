@@ -1,6 +1,6 @@
 {
     "groups": {
-        "3d9997a3-c3b6-11e4-a5f9-3c15c2da029e": {
+        "b6fd1b59-cd15-11e4-b75b-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
@@ -18,5 +18,5 @@
             ]
         }
     }, 
-    "root": "3d9997a3-c3b6-11e4-a5f9-3c15c2da029e"
+    "root": "b6fd1b59-cd15-11e4-b75b-3c15c2da029e"
 }

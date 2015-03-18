@@ -1,6 +1,6 @@
 {
     "datatypes": {
-        "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e": {
+        "b6ce0a70-cd15-11e4-b45e-3c15c2da029e": {
             "alias": [
                 "/dtype_compound"
             ], 
@@ -24,7 +24,7 @@
                 ]
             }
         }, 
-        "9eb9ddab-7bf7-11e4-927d-3c15c2da029e": {
+        "b6ce18a8-cd15-11e4-a4ec-3c15c2da029e": {
             "alias": [
                 "/dtype_simple"
             ], 
@@ -35,11 +35,11 @@
                         "class": "H5S_SCALAR"
                     }, 
                     "type": {
+                        "charSet": "H5T_CSET_ASCII", 
                         "class": "H5T_STRING", 
-                        "cset": "H5T_CSET_ASCII", 
+                        "length": "H5T_VARIABLE", 
                         "order": "H5T_ORDER_NONE", 
-                        "strpad": "H5T_STR_NULLTERM", 
-                        "strsize": "H5T_VARIABLE"
+                        "strPad": "H5T_STR_NULLTERM"
                     }, 
                     "value": "this is a committed datatype of float32"
                 }
@@ -51,7 +51,7 @@
         }
     }, 
     "groups": {
-        "9eb8d02e-7bf7-11e4-896e-3c15c2da029e": {
+        "b6ccfe6e-cd15-11e4-aa31-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
@@ -59,17 +59,17 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datatypes", 
-                    "id": "9eb9cf05-7bf7-11e4-8dda-3c15c2da029e", 
+                    "id": "b6ce0a70-cd15-11e4-b45e-3c15c2da029e", 
                     "title": "dtype_compound"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datatypes", 
-                    "id": "9eb9ddab-7bf7-11e4-927d-3c15c2da029e", 
+                    "id": "b6ce18a8-cd15-11e4-a4ec-3c15c2da029e", 
                     "title": "dtype_simple"
                 }
             ]
         }
     }, 
-    "root": "9eb8d02e-7bf7-11e4-896e-3c15c2da029e"
+    "root": "b6ccfe6e-cd15-11e4-aa31-3c15c2da029e"
 }

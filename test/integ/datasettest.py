@@ -219,10 +219,10 @@ class DatasetTest(unittest.TestCase):
         self.assertTrue('type' in timeField)
         timeFieldType = timeField['type']
         self.assertEqual(timeFieldType['class'], 'H5T_STRING')
-        self.assertEqual(timeFieldType['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(timeFieldType['charSet'], 'H5T_CSET_ASCII')
         self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
-        self.assertEqual(timeFieldType['strsize'], 6)
-        self.assertEqual(timeFieldType['strpad'], 'H5T_STR_NULLPAD')
+        self.assertEqual(timeFieldType['length'], 6)
+        self.assertEqual(timeFieldType['strPad'], 'H5T_STR_NULLPAD')
         tempField = fields[2]
         self.assertEqual(tempField['name'], 'temp')
         tempFieldType = tempField['type']
@@ -253,10 +253,10 @@ class DatasetTest(unittest.TestCase):
         self.assertTrue('type' in timeField)
         timeFieldType = timeField['type']
         self.assertEqual(timeFieldType['class'], 'H5T_STRING')
-        self.assertEqual(timeFieldType['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(timeFieldType['charSet'], 'H5T_CSET_ASCII')
         self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
-        self.assertEqual(timeFieldType['strsize'], 6)
-        self.assertEqual(timeFieldType['strpad'], 'H5T_STR_NULLPAD')
+        self.assertEqual(timeFieldType['length'], 6)
+        self.assertEqual(timeFieldType['strPad'], 'H5T_STR_NULLPAD')
         tempField = fields[2]
         self.assertEqual(tempField['name'], 'temp')
         tempFieldType = tempField['type']
@@ -311,11 +311,11 @@ class DatasetTest(unittest.TestCase):
         strFieldTypeBase = strFieldType['base']
         
         self.assertEqual(strFieldTypeBase['class'], 'H5T_STRING')
-        self.assertEqual(strFieldTypeBase['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(strFieldTypeBase['charSet'], 'H5T_CSET_ASCII')
         self.assertEqual(strFieldTypeBase['order'], 'H5T_ORDER_NONE')
-        self.assertEqual(strFieldTypeBase['strsize'], 32)
+        self.assertEqual(strFieldTypeBase['length'], 32)
         # todo - fix, cf https://github.com/HDFGroup/h5serv/issues/20
-        #self.assertEqual(strFieldTypeBase['strpad'], 'H5T_STR_SPACEPAD')
+        #self.assertEqual(strFieldTypeBase['strPad'], 'H5T_STR_SPACEPAD')
         
     def testGetCommitted(self):
         domain = 'committed_type.' + config.get('domain')  
@@ -379,10 +379,10 @@ class DatasetTest(unittest.TestCase):
         typeItem = rspJson['type']
         
         self.assertEqual(typeItem['class'], 'H5T_STRING')
-        self.assertEqual(typeItem['cset'], 'H5T_CSET_ASCII')
+        self.assertEqual(typeItem['charSet'], 'H5T_CSET_ASCII')
         self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
-        self.assertEqual(typeItem['strsize'], 7)
-        self.assertEqual(typeItem['strpad'], 'H5T_STR_NULLPAD')
+        self.assertEqual(typeItem['length'], 7)
+        self.assertEqual(typeItem['strPad'], 'H5T_STR_NULLPAD')
         
     def testGetEnum(self):
         domain = 'enum_dset.' + config.get('domain')  
@@ -537,10 +537,10 @@ class DatasetTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
-        str_type = { 'cset':   'H5T_CSET_ASCII', 
+        str_type = { 'charSet':   'H5T_CSET_ASCII', 
                      'class':  'H5T_STRING', 
-                     'strpad': 'H5T_STR_NULLPAD', 
-                     'strsize': 40}
+                     'strPad': 'H5T_STR_NULLPAD', 
+                     'length': 40}
         payload = {'type': str_type}
         req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
@@ -881,11 +881,11 @@ class DatasetTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         root_uuid = helper.getRootUUID(domain)
         
-        type_vstr = {"cset": "H5T_CSET_ASCII", 
+        type_vstr = {"charSet": "H5T_CSET_ASCII", 
             "order": "H5T_ORDER_NONE", 
             "class": "H5T_STRING", 
-            "strpad": "H5T_STR_NULLTERM", 
-            "strsize": "H5T_VARIABLE" } 
+            "strPad": "H5T_STR_NULLTERM", 
+            "length": "H5T_VARIABLE" } 
         payload = {'type': type_vstr, 'shape': 10,
              'link': {'id': root_uuid, 'name': 'linked_dset'} }
         req = self.endpoint + "/datasets"

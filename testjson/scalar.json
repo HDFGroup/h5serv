@@ -1,6 +1,6 @@
 {
     "datasets": {
-        "41e49e63-7b86-11e4-852f-3c15c2da029e": {
+        "b7f7e77d-cd15-11e4-a10f-3c15c2da029e": {
             "alias": [
                 "/0d"
             ], 
@@ -13,7 +13,23 @@
             }, 
             "value": 42
         }, 
-        "41e4b5a8-7b86-11e4-b6f6-3c15c2da029e": {
+        "b7f7ff00-cd15-11e4-8154-3c15c2da029e": {
+            "alias": [
+                "/0ds"
+            ], 
+            "shape": {
+                "class": "H5S_SCALAR"
+            }, 
+            "type": {
+                "charSet": "H5T_CSET_ASCII", 
+                "class": "H5T_STRING", 
+                "length": "H5T_VARIABLE", 
+                "order": "H5T_ORDER_NONE", 
+                "strPad": "H5T_STR_NULLTERM"
+            }, 
+            "value": "hello"
+        }, 
+        "b7f80eb5-cd15-11e4-91c7-3c15c2da029e": {
             "alias": [
                 "/1d"
             ], 
@@ -30,10 +46,31 @@
             "value": [
                 42
             ]
+        }, 
+        "b7f81d4f-cd15-11e4-9219-3c15c2da029e": {
+            "alias": [
+                "/1ds"
+            ], 
+            "shape": {
+                "class": "H5S_SIMPLE", 
+                "dims": [
+                    1
+                ]
+            }, 
+            "type": {
+                "charSet": "H5T_CSET_ASCII", 
+                "class": "H5T_STRING", 
+                "length": "H5T_VARIABLE", 
+                "order": "H5T_ORDER_NONE", 
+                "strPad": "H5T_STR_NULLTERM"
+            }, 
+            "value": [
+                "hello"
+            ]
         }
     }, 
     "groups": {
-        "41e373c0-7b86-11e4-a863-3c15c2da029e": {
+        "b7f6e11c-cd15-11e4-ae45-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
@@ -55,27 +92,42 @@
                         "class": "H5S_SCALAR"
                     }, 
                     "type": {
-                        "base": "H5T_STD_I64LE", 
-                        "class": "H5T_INTEGER"
+                        "charSet": "H5T_CSET_ASCII", 
+                        "class": "H5T_STRING", 
+                        "length": "H5T_VARIABLE", 
+                        "order": "H5T_ORDER_NONE", 
+                        "strPad": "H5T_STR_NULLTERM"
                     }, 
-                    "value": 42
+                    "value": "hello"
                 }
             ], 
             "links": [
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "id": "41e49e63-7b86-11e4-852f-3c15c2da029e", 
+                    "id": "b7f7e77d-cd15-11e4-a10f-3c15c2da029e", 
                     "title": "0d"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "id": "41e4b5a8-7b86-11e4-b6f6-3c15c2da029e", 
+                    "id": "b7f7ff00-cd15-11e4-8154-3c15c2da029e", 
+                    "title": "0ds"
+                }, 
+                {
+                    "class": "H5L_TYPE_HARD", 
+                    "collection": "datasets", 
+                    "id": "b7f80eb5-cd15-11e4-91c7-3c15c2da029e", 
                     "title": "1d"
+                }, 
+                {
+                    "class": "H5L_TYPE_HARD", 
+                    "collection": "datasets", 
+                    "id": "b7f81d4f-cd15-11e4-9219-3c15c2da029e", 
+                    "title": "1ds"
                 }
             ]
         }
     }, 
-    "root": "41e373c0-7b86-11e4-a863-3c15c2da029e"
+    "root": "b7f6e11c-cd15-11e4-ae45-3c15c2da029e"
 }

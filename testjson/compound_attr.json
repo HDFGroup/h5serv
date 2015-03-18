@@ -1,6 +1,6 @@
 {
     "groups": {
-        "aa915954-7b80-11e4-b989-3c15c2da029e": {
+        "b5ec0651-cd15-11e4-8786-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
@@ -40,11 +40,11 @@
                             {
                                 "name": "wind", 
                                 "type": {
+                                    "charSet": "H5T_CSET_ASCII", 
                                     "class": "H5T_STRING", 
-                                    "cset": "H5T_CSET_ASCII", 
+                                    "length": 6, 
                                     "order": "H5T_ORDER_NONE", 
-                                    "strpad": "H5T_STR_NULLPAD", 
-                                    "strsize": 6
+                                    "strPad": "H5T_STR_NULLPAD"
                                 }
                             }
                         ]
@@ -61,5 +61,5 @@
             ]
         }
     }, 
-    "root": "aa915954-7b80-11e4-b989-3c15c2da029e"
+    "root": "b5ec0651-cd15-11e4-8786-3c15c2da029e"
 }

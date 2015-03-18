@@ -1,6 +1,6 @@
 {
     "datasets": {
-        "a99a04b8-7bf7-11e4-b696-3c15c2da029e": {
+        "b9093ba1-cd15-11e4-bb21-3c15c2da029e": {
             "alias": [
                 "/DS1"
             ], 
@@ -11,11 +11,11 @@
                 ]
             }, 
             "type": {
+                "charSet": "H5T_CSET_ASCII", 
                 "class": "H5T_STRING", 
-                "cset": "H5T_CSET_ASCII", 
+                "length": "H5T_VARIABLE", 
                 "order": "H5T_ORDER_NONE", 
-                "strpad": "H5T_STR_NULLTERM", 
-                "strsize": "H5T_VARIABLE"
+                "strPad": "H5T_STR_NULLTERM"
             }, 
             "value": [
                 "Parting", 
@@ -26,7 +26,7 @@
         }
     }, 
     "groups": {
-        "a9991170-7bf7-11e4-ae8b-3c15c2da029e": {
+        "b908369e-cd15-11e4-aa70-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
@@ -34,11 +34,11 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "id": "a99a04b8-7bf7-11e4-b696-3c15c2da029e", 
+                    "id": "b9093ba1-cd15-11e4-bb21-3c15c2da029e", 
                     "title": "DS1"
                 }
             ]
         }
     }, 
-    "root": "a9991170-7bf7-11e4-ae8b-3c15c2da029e"
+    "root": "b908369e-cd15-11e4-aa70-3c15c2da029e"
 }

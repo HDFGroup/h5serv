@@ -1,6 +1,6 @@
 {
     "datasets": {
-        "25d6f985-7b51-11e4-a037-3c15c2da029e": {
+        "b5bc4f0a-cd15-11e4-be44-3c15c2da029e": {
             "alias": [
                 "/DS1"
             ], 
@@ -10,7 +10,7 @@
                     4
                 ]
             }, 
-            "type": "datatypes/25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
+            "type": "datatypes/b5bc5dba-cd15-11e4-8783-3c15c2da029e", 
             "value": [
                 [
                     12345678, 
@@ -40,7 +40,7 @@
         }
     }, 
     "datatypes": {
-        "25d7088f-7b51-11e4-ac9b-3c15c2da029e": {
+        "b5bc5dba-cd15-11e4-8783-3c15c2da029e": {
             "alias": [
                 "/Sensor_Type"
             ], 
@@ -57,11 +57,11 @@
                     {
                         "name": "Location", 
                         "type": {
+                            "charSet": "H5T_CSET_ASCII", 
                             "class": "H5T_STRING", 
-                            "cset": "H5T_CSET_ASCII", 
+                            "length": "H5T_VARIABLE", 
                             "order": "H5T_ORDER_NONE", 
-                            "strpad": "H5T_STR_NULLTERM", 
-                            "strsize": "H5T_VARIABLE"
+                            "strPad": "H5T_STR_NULLTERM"
                         }
                     }, 
                     {
@@ -83,7 +83,7 @@
         }
     }, 
     "groups": {
-        "25d607cc-7b51-11e4-9bc3-3c15c2da029e": {
+        "b5ba63a3-cd15-11e4-8425-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
@@ -93,7 +93,7 @@
                     "shape": {
                         "class": "H5S_SCALAR"
                     }, 
-                    "type": "datatypes/25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
+                    "type": "datatypes/b5bc5dba-cd15-11e4-8783-3c15c2da029e", 
                     "value": [
                         12345678, 
                         "SEA", 
@@ -106,17 +106,17 @@
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datasets", 
-                    "id": "25d6f985-7b51-11e4-a037-3c15c2da029e", 
+                    "id": "b5bc4f0a-cd15-11e4-be44-3c15c2da029e", 
                     "title": "DS1"
                 }, 
                 {
                     "class": "H5L_TYPE_HARD", 
                     "collection": "datatypes", 
-                    "id": "25d7088f-7b51-11e4-ac9b-3c15c2da029e", 
+                    "id": "b5bc5dba-cd15-11e4-8783-3c15c2da029e", 
                     "title": "Sensor_Type"
                 }
             ]
         }
     }, 
-    "root": "25d607cc-7b51-11e4-9bc3-3c15c2da029e"
+    "root": "b5ba63a3-cd15-11e4-8425-3c15c2da029e"
 }

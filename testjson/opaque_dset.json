@@ -1,18 +1,12 @@
-datasets/9c01a6ca-7be9-11e4-a1c9-3c15c2da029e
 {
-    "datasets": [
-        {
+    "datasets": {
+        "b779327d-cd15-11e4-afc3-3c15c2da029e": {
             "alias": [
                 "/DS1"
             ], 
-            "attributes": [], 
-            "id": "9c01a6ca-7be9-11e4-a1c9-3c15c2da029e", 
             "shape": {
                 "class": "H5S_SIMPLE", 
                 "dims": [
-                    4
-                ], 
-                "maxdims": [
                     4
                 ]
             }, 
@@ -22,22 +16,21 @@ datasets/9c01a6ca-7be9-11e4-a1c9-3c15c2da029e
             }, 
             "value": "????"
         }
-    ], 
-    "datatypes": [], 
-    "groups": [
-        {
+    }, 
+    "groups": {
+        "b77827ba-cd15-11e4-9080-3c15c2da029e": {
             "alias": [
                 "/"
             ], 
-            "attributes": [], 
-            "id": "9c00a20c-7be9-11e4-bbe8-3c15c2da029e", 
             "links": [
                 {
-                    "href": "datasets/9c01a6ca-7be9-11e4-a1c9-3c15c2da029e", 
+                    "class": "H5L_TYPE_HARD", 
+                    "collection": "datasets", 
+                    "id": "b779327d-cd15-11e4-afc3-3c15c2da029e", 
                     "title": "DS1"
                 }
             ]
         }
-    ], 
-    "root": "9c00a20c-7be9-11e4-bbe8-3c15c2da029e"
+    }, 
+    "root": "b77827ba-cd15-11e4-9080-3c15c2da029e"
 }
