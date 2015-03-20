@@ -466,6 +466,32 @@ class Hdf5db:
          return nullref_dset[0]
          
     """
+    getDimensionList_template - use dimscale api to setup type for dimenscale objects
+    
+    Note: this is an attempted work-around for h5py issue:
+       https://github.com/h5py/h5py/issues/553
+    """
+    def getDimensionListAttribute(self):
+        tmpGrp = None
+        if "{tmp}" not in self.dbGrp:
+            tmpGrp = self.dbGrp.create_group("{tmp}")
+        else:
+            tmpGrp = self.dbGrp["{tmp}"]
+        attr = None
+        if "dimscale_dset" not in tmpGrp:
+            dset = tmpGrp.create_dataset("dimscale_dset", (10,))
+            scale = tmpGrp.create_dataset("dimscale_scale", (10,))
+            dset.dims.create_scale(scale, "scale")
+            dset.dims[0].attach_scale(scale)
+            attr = dset.attrs["DIMENSION_LIST"]
+        else:
+            dset = tmpGrp["dimscale_dset"]
+            attr = dset.attrs["DIMENSION_LIST"]
+        return attr
+             
+        
+             
+    """
     getNullRegionReference - return a null region reference
     """
     def getNullRegionReference(self):
@@ -815,13 +841,24 @@ class Hdf5db:
         
     def createAttribute(self, col_name, obj_uuid, attr_name, shape, attr_type, value):
         self.log.info("createAttribute: [" + attr_name + "]")
+        #print "createAttribute, type:", attr_type
+        #print "createAttribute, shape:", shape
+        #print "obj_uuid:", obj_uuid
+        #attr_type_orig = None
+         
         self.initFile()
         if self.readonly:
             msg = "Unable to create attribute (updates are not allowed)"
             self.log.info(msg)
             raise IOError(errno.EPERM, msg)
         obj = self.getObjectByUuid(col_name, obj_uuid)
+        if not obj:
+            msg = "Object with uuid: " + obj_uuid + " not found"
+            self.log.info(msg)
+            raise IOError(errno.ENXIO, msg)
         is_committed_type = False 
+        
+        #print "dim scales:", obj.dims.keys()
         
         dt = None
         if type(attr_type) in (str, unicode) and len(attr_type) == UUID_LEN:
@@ -841,8 +878,9 @@ class Hdf5db:
             raise IOError(errno.EIO, msg)
             
         if shape == None:
-            # create null space dataset
-            # null space datasets not supported in h5py yet:
+            self.log.info("shape is null - will create null space attribute")
+            # create null space attribute
+            # null space datasets/attributes not supported in h5py yet:
             # See: https://github.com/h5py/h5py/issues/279
             # work around this by using low-level interface.
             # first create a temp scalar dataset so we can pull out the typeid
@@ -860,6 +898,9 @@ class Hdf5db:
             tid = tmpAttr.get_type()
             sid = sid = h5py.h5s.create(h5py.h5s.NULL)
             # now create the permanent attribute
+            if attr_name in obj.attrs:
+                self.log.info("deleting attribute: " + attr_name)
+                del obj.attrs[attr_name]
             attr_id = h5py.h5a.create(obj.id, attr_name, tid, sid)
             # delete the temp attribute
             del tmpGrp.attrs[attr_name]
@@ -871,15 +912,41 @@ class Hdf5db:
             if type(value) == tuple:
                 value = list(value) 
             if not is_committed_type:
-            	# apparently committed types can not be used as reference types
+                # apparently committed types can not be used as reference types
                 # todo - verify why that is
-		 
-            	h5t_check = h5py.check_dtype(ref=dt)
-            	if h5t_check in (h5py.Reference, h5py.RegionReference):
-                    # convert value to data refs
-                    value = self.listToRef(value)
-                   
-            obj.attrs.create(attr_name, value, dtype=dt)
+                
+                rank = len(shape)
+                # convert python list to numpy object
+                typeItem = hdf5dtype.getTypeItem(dt)
+                value = self.toRef(rank, typeItem, value)
+                    
+                if shape is not None and type(attr_type) == dict and attr_type['class'] == 'H5T_VLEN' and attr_name == 'DIMENSION_LIST':
+                    # work-around for VLEN of REFERENCE issue:
+                    #   https://github.com/HDFGroup/h5serv/issues/39 
+                    #print "value: ", value
+                    #print "obj name: ", obj.name
+                    
+                    for i in range(len(value)):
+                        hRef = value[i]
+                        if type(hRef) in (tuple, list):
+                            hRef = hRef[0]
+                        refObj = self.f[hRef]
+                        #print "hRef:", hRef
+                        #print "name:", refObj.name
+                        
+                        if "CLASS" in refObj.attrs:
+                            self.log.info("ref object has attribute has CLASS")
+                            #print "ref class name:", refObj.attrs["CLASS"]
+                            #del refObj.attrs["CLASS"]
+                        if "NAME" in refObj.attrs:
+                            self.log.info("ref object has attribute NAME")
+                            #print "ref name:", refObj.attrs["NAME"]
+                            #del refObj.attrs["NAME"]
+                        # use dimscale api to create dimension scales
+                        obj.dims.create_scale(refObj, "scale_" + str(i))
+                        obj.dims[i].attach_scale(refObj)
+                else:
+                    obj.attrs.create(attr_name, value, dtype=dt)
      
         now = time.time()
         self.setCreateTime(obj_uuid, objType="attribute", name=attr_name, timestamp=now)
@@ -956,7 +1023,85 @@ class Hdf5db:
             self.log.info(msg)
             raise IOError(errno.ENINVAL, msg)
         return out
+        
+    """
+      Return a numpy value based on json representation  
+    """
+    def getRefValue(self, typeItem, value):
+        #print "getRefValue:", value
+        out = None
+        typeClass = typeItem['class']
+        if typeClass == 'H5T_COMPOUND':
+            
+            if type(value) not in (list, tuple):
+                msg = "Unexpected type for compound value" 
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg)
+            
+            fields = typeItem['fields']
+            if len(fields) != len(value):
+                msg = "Number of elements in compound type does not match type"
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg) 
+            nFields = len(fields)
+            out = []
+            for i in range(nFields):
+                field = fields[i]
+                item_value = self.getRefValue(field['type'], value[i])
+                out.append(item_value)             
+        elif typeClass == 'H5T_VLEN':
+            if type(value) not in (list, tuple):
+                msg = "Unexpected type for vlen value" 
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg)
+
+            baseType = typeItem['base']
+            out = []
+            nElements = len(value)
+            for i in range(nElements):
+                item_value = self.getRefValue(baseType, value[i])
+                out.append(item_value)
+        elif typeClass == 'H5T_REFERENCE':
+            out = self.listToRef(value)
+        elif typeClass == 'H5T_OPAQUE':
+            out = "???"  # todo
+        elif typeClass == 'H5T_ARRAY':
+            out = "???"  # todo
+        elif typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING', 'H5T_ENUM'):
+            out = value  # just copy value
+        else:
+            msg = "Unexpected type class: " + typeClass 
+            self.log.info(msg)
+            raise IOError(errno.ENINVAL, msg)
+            
+        if type(out) == list:
+            out = tuple(out) # convert to tuple
+        return out
        
+        
+    """
+       Convert json list to h5py compatible values 
+    """
+    def toRef(self, rank, typeItem, data):
+        out = None
+        typeClass = typeItem['class']
+        if typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING'):
+            out = data   # just use as is
+            
+        elif rank == 0:
+            # scalar value
+            out = self.getRefValue(typeItem, data)
+        else:
+            out = []
+            for item in data:
+                if rank > 1:
+                    out_item = self.toRef(rank - 1, typeItem, item)
+                    out.append(out_item)
+                else:
+                    out_item = self.getRefValue(typeItem, item)
+                    out.append(out_item)
+
+        return out
         
     """
        Convert list to json serializable values. 
@@ -981,6 +1126,8 @@ class Hdf5db:
                     out.append(out_item)
 
         return out
+        
+        
     """
        Create ascii representation of vlen data object
     """    
@@ -1043,16 +1190,16 @@ class Hdf5db:
             obj_ref = None
             # object reference should be in the form: <collection_name>/<uuid>
             for prefix in ("datasets", "groups", "datatypes"):
-            	if data.startswith(prefix):
+                if data.startswith(prefix):
                     uuid_ref = data[len(prefix):]
                     if len(uuid_ref) == (UUID_LEN + 1) and uuid_ref.startswith('/'):
-                    	obj = self.getObjectByUuid(prefix, uuid_ref[1:])
+                        obj = self.getObjectByUuid(prefix, uuid_ref[1:])
                         if obj:
                             obj_ref = obj.ref
                         else:
                             msg = "Invalid object refence value: [" + uuid_ref + "] not found"
-                	    self.log.info(msg)
-                	    raise IOError(errno.ENXIO, msg)
+                            self.log.info(msg)
+                            raise IOError(errno.ENXIO, msg)
                     break
             if not obj_ref:
                 msg = "Invalid object refence value: [" + data + "]"
@@ -1064,7 +1211,7 @@ class Hdf5db:
         elif type(data) in (list, tuple):
             out = []
             for item in data:
-            	out.append(self.listToRef(item))  # recursive call
+                out.append(self.listToRef(item))  # recursive call
         elif type(data) == dict:
              # assume region ref
              out = self.createRegionReference(data)
@@ -1089,8 +1236,8 @@ class Hdf5db:
         if objid:
             item['id'] = self.getUUIDByAddress(h5py.h5o.get_info(objid).addr)
         else:
-        	log.info("region reference unable able to find item with objid: " + objid)
-        	return item
+                log.info("region reference unable able to find item with objid: " + objid)
+                return item
             
         sel = h5py.h5r.get_region(regionRef, objid)  
         select_type = sel.get_select_type()
@@ -1113,7 +1260,7 @@ class Hdf5db:
                     coord2 = point[1]
                     for i in range(len(coord2)):
                         coord2[i] = coord2[i] + 1
-            	    
+                    
         item['selection'] = pointlist    
         
         return item 
@@ -1140,10 +1287,10 @@ class Hdf5db:
             raise IOError(errno.EINVAL, msg)
         dset = None
         if select_type == 'H5S_SEL_NONE':
-        	if 'id' not in item:
-        		#	 select none on null dataset, return null ref
-        		out = self.getNullReference()
-        		return out  	
+                if 'id' not in item:
+                        #        select none on null dataset, return null ref
+                        out = self.getNullReference()
+                        return out      
         else: # select_type != 'H5S_SEL_NONE' 
             if 'id' not in item:
                 msg = "id not provided for region selection"
@@ -1176,60 +1323,60 @@ class Hdf5db:
         h5py.h5s.SpaceID.select_none(space_id)
                     
         if select_type == 'H4S_SEL_NONE':
-        	pass  # did select_none above 
+                pass  # did select_none above 
         elif select_type == 'H5S_SEL_ALL':
             h5py.h5s.SpaceID.select_all(space_id)
         elif select_type == 'H5S_SEL_POINTS':
             selection = item['selection']
             for point in selection:
-            	if len(point) != rank:
-            		msg = "point selection number of elements must mach rank of referenced dataset"
-            		self.log.info(msg)
-            		raise IOError(errno.EINVAL, msg)
+                if len(point) != rank:
+                        msg = "point selection number of elements must mach rank of referenced dataset"
+                        self.log.info(msg)
+                        raise IOError(errno.EINVAL, msg)
             h5py.h5s.SpaceID.select_elements(space_id, selection) 
         elif select_type == 'H5S_SEL_HYPERSLABS':
             selection = item['selection']
             
             for slab in selection:
-        	    # each item should be a two element array defining the hyperslab boundary
-        	    if len(slab) != 2:
-        	        msg = "selection value not valid (not a 2 element array)"
-        	        self.log.info(msg)
-        	        raise IOError(errno.EINVAL, msg)
-        	    start = slab[0]
-        	    if type(start) == list:
-        	        start = tuple(start)
-        	    if type(start) is not tuple or len(start) != rank:
-        	        msg = "selection value not valid, start element should have number " 
-        	        msg += "elements equal to rank of referenced dataset"
-        	        self.log.info(msg)
-        	        raise IOError(errno.EINVAL, msg)
-        	    stop = slab[1]
-        	    if type(stop) == list:
-        	        stop = tuple(stop)
-        	    if type(stop) is not tuple or len(stop) != rank:
-        	        msg = "selection value not valid, count element should have number " 
-        	        msg += "elements equal to rank of referenced dataset"
-        	        self.log.info(msg)
-        	        raise IOError(errno.EINVAL, msg)
-        	    count = []
-        	    for i in range(rank):
-        	    	if start[i] < 0:
-        	        	msg = "start value for hyperslab selection must be non-negative"
-        	        	self.log.info(msg)
-        	        	raise IOError(errno.EINVAL, msg)
-        	        if stop[i] <= start[i]:
-        	        	msg = "stop value must be greater than start value for hyperslab selection"
-        	        	self.log.info(msg)
-        	        	raise IOError(errno.EINVAL, msg)
-        	    	count.append(stop[i] - start[i])
-        	    count = tuple(count)
-        	    
-        	    h5py.h5s.SpaceID.select_hyperslab(space_id, start, count, op=h5py.h5s.SELECT_OR) 
-        	    
-        # now that we've selected the desired region in the space, return a region reference	
+                    # each item should be a two element array defining the hyperslab boundary
+                    if len(slab) != 2:
+                        msg = "selection value not valid (not a 2 element array)"
+                        self.log.info(msg)
+                        raise IOError(errno.EINVAL, msg)
+                    start = slab[0]
+                    if type(start) == list:
+                        start = tuple(start)
+                    if type(start) is not tuple or len(start) != rank:
+                        msg = "selection value not valid, start element should have number " 
+                        msg += "elements equal to rank of referenced dataset"
+                        self.log.info(msg)
+                        raise IOError(errno.EINVAL, msg)
+                    stop = slab[1]
+                    if type(stop) == list:
+                        stop = tuple(stop)
+                    if type(stop) is not tuple or len(stop) != rank:
+                        msg = "selection value not valid, count element should have number " 
+                        msg += "elements equal to rank of referenced dataset"
+                        self.log.info(msg)
+                        raise IOError(errno.EINVAL, msg)
+                    count = []
+                    for i in range(rank):
+                        if start[i] < 0:
+                                msg = "start value for hyperslab selection must be non-negative"
+                                self.log.info(msg)
+                                raise IOError(errno.EINVAL, msg)
+                        if stop[i] <= start[i]:
+                                msg = "stop value must be greater than start value for hyperslab selection"
+                                self.log.info(msg)
+                                raise IOError(errno.EINVAL, msg)
+                        count.append(stop[i] - start[i])
+                    count = tuple(count)
+                    
+                    h5py.h5s.SpaceID.select_hyperslab(space_id, start, count, op=h5py.h5s.SELECT_OR) 
+                    
+        # now that we've selected the desired region in the space, return a region reference    
         region_ref = h5py.h5r.create(self.f.id, dset.name, h5py.h5r.DATASET_REGION, space_id) 
-        	   
+                   
         return region_ref 
         
     """

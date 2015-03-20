@@ -66,8 +66,8 @@ def getTypeResponse(typeItem):
             elif k not in ('size', 'base_size'):
                 response[k] = typeItem[k]
     return response
-           
-        
+    
+            
 """
     Return type info.
           For primitive types, return string with typename
@@ -256,21 +256,22 @@ def getBaseType(dt):
 
 def getNumpyTypename(hdf5TypeName, typeClass=None):
     predefined_int_types = {
-          'H5T_STD_I8':   'i1', 
+          'H5T_STD_I8':  'i1', 
           'H5T_STD_U8':  'u1',
-          'H5T_STD_I16':  'i2', 
+          'H5T_STD_I16': 'i2', 
           'H5T_STD_U16': 'u2',
-          'H5T_STD_I32':  'i4', 
+          'H5T_STD_I32': 'i4', 
           'H5T_STD_U32': 'u4',
-          'H5T_STD_I64':  'i8',
+          'H5T_STD_I64': 'i8',
           'H5T_STD_U64': 'u8' 
     }
     predefined_float_types = {
           'H5T_IEEE_F32': 'f4',
           'H5T_IEEE_F64': 'f8'
     }
+    print "typename: ", hdf5TypeName
     if len(hdf5TypeName) < 3:
-        raise Exception("Type Error: invalid type")
+        raise Exception("Type Error: invalid typename")
     endian = '<'  # default endian
     key = hdf5TypeName
     if hdf5TypeName.endswith('LE'):
@@ -349,7 +350,8 @@ def createBaseDataType(typeItem):
             raise TypeError("ArrayType is not supported for variable len types")
         if 'base' not in typeItem:
             raise KeyError("'base' not provided") 
-        baseType = getNumpyTypename(typeItem['base'])
+        #baseType = getNumpyTypename(typeItem['base'])
+        baseType = createBaseDataType(typeItem['base'])
         dtRet = special_dtype(vlen=np.dtype(baseType))
     elif typeClass == 'H5T_OPAQUE':
         if shape:

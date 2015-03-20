@@ -509,8 +509,7 @@ class AttributeTest(unittest.TestCase):
        
         self.assertEqual(len(elem), 2)  # two fields of a compound type
         self.assertEqual(elem[0], 'datasets/' + dset_uuid) #  reference primary dataset
-        self.assertEqual(elem[1], 0)  # first dimension
-         
+        self.assertEqual(elem[1], 0)  # first dimension    
         
     def testPut(self):
         domain = 'tall_updated.' + config.get('domain') 
@@ -746,6 +745,46 @@ class AttributeTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         rspJson = json.loads(rsp.text)
         self.assertEqual(len(rspJson['hrefs']), 3)
+        
+    def testPutDimensionScale(self):
+        domain = 'dim_scale_updated.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'temperatures')
+         
+        scale_x_uuid = helper.getUUID(domain, root_uuid, 'scale_x') 
+        scale_y_uuid = helper.getUUID(domain, root_uuid, 'scale_y') 
+        scale_z_uuid = helper.getUUID(domain, root_uuid, 'scale_z') 
+        
+        headers = {'host': domain}
+        reftype = {'class': 'H5T_REFERENCE', 'base': 'H5T_STD_REF_OBJ' }
+        
+        attr_name = "DIMENSION_LIST"
+        vlen_type = {'class': 'H5T_VLEN', 'base': reftype }
+        value = []
+        for item_uuid in (scale_x_uuid, scale_y_uuid, scale_z_uuid):
+            obj_ref = 'datasets/' + item_uuid
+            vlen_item = (obj_ref,)
+            value.append(vlen_item)
+            
+         
+        payload = {'type': vlen_type, 'shape': 3, 'value': value}
+        req = self.endpoint + "/datasets/" + dset_uuid + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute
+        
+        # read the x dimenscale and verify it refernces the temperature dataset
+        attr_name = "REFERENCE_LIST"
+        
+        fields = ({'name': 'dataset', 'type': reftype}, 
+                    {'name': 'dimension', 'type': 'H5T_STD_I32LE'}) 
+        datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
+        
+        elem = ("datasets/" + dset_uuid, 2)
+        value = (elem,)  # one-element array 
+        payload = {'type': datatype, 'shape': 1, 'value': value}
+        req = self.endpoint + "/datasets/" + scale_z_uuid + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create attribute    
         
     def testPutInvalid(self):
         domain = 'tall_updated.' + config.get('domain') 

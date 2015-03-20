@@ -116,6 +116,8 @@ class Writeh5:
                     # convert int to array
                     dim1 = shape
                     dims = [dim1]
+            elif shape["class"] == 'H5S_SCALAR':
+                dims = ()  # empty tuple for scalar
         self.db.createAttribute(col_name, uuid, attr_name, dims, datatype, attr_value)
                     
             
@@ -232,7 +234,6 @@ def main():
     root_uuid = h5json["root"]
     
     filename = args.out_filename[0]
-    
 
     # create the file, will raise IOError if there's a problem
     Hdf5db.createHDF5File(filename)
@@ -246,8 +247,7 @@ def main():
     f = h5py.File(filename, 'a') 
     del f["__db__"]
     f.close()
-    
-        
+      
     print "done!"   
     
 
