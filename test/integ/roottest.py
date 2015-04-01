@@ -19,8 +19,18 @@ class RootTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(RootTest, self).__init__(*args, **kwargs)
         self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))
-        
-    def testGet(self):
+    
+    def testGetInfo(self):
+    
+        req = self.endpoint + "/info"
+        rsp = requests.get(req)
+        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('h5serv_version' in rspJson)
+        print rspJson
+            
+    def testGetDomain(self):
         domain = 'tall.' + config.get('domain')   
         req = self.endpoint + "/"
         headers = {'host': domain}

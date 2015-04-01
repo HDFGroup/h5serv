@@ -86,8 +86,15 @@ class Hdf5db:
         
         f = h5py.File(filePath, 'w')
         f.close()
-            
-           
+        
+        
+    @staticmethod
+    def getVersionInfo():
+        versionInfo = {}
+        versionInfo['h5py_version'] = h5py.version.api_version
+        versionInfo['hdf5_version'] = h5py.version.hdf5_version
+        return versionInfo
+                 
         
     def __init__(self, filePath, dbFilePath=None, readonly=False, app_logger=None, root_uuid=None):
         if app_logger:

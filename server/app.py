@@ -1955,8 +1955,7 @@ class TypeCollectionHandler(RequestHandler):
         
         item = None
         rootUUID = None
-
-        
+     
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
@@ -2031,22 +2030,10 @@ class RootHandler(RequestHandler):
         # will raise exception if not found
         filePath = getFilePath(self.request.host)
         verifyFile(filePath)
-        # print 'content-type:', self.request.headers['accept']
-        accept_type = ''
-        if 'accept' in self.request.headers:
-            accept= self.request.headers['accept']
-            # just extract the first type and not worry about q values for now...
-            accept_values = accept.split(',')
-            accept_types = accept_values[0].split(';')
-            accept_type = accept_types[0]
-            # print 'accept_type:', accept_type
-        if False and accept_type == 'text/html':  # disable for now
-            self.set_header('Content-Type', 'text/html') 
-            self.write("<html><body>Hello world!</body></html>")
-        else:
-            response = self.getRootResponse(filePath)
-            self.set_header('Content-Type', 'application/json') 
-            self.write(json_encode(response)) 
+        
+        response = self.getRootResponse(filePath)
+        self.set_header('Content-Type', 'application/json') 
+        self.write(json_encode(response)) 
         
     def put(self): 
         log = logging.getLogger("h5serv")
@@ -2099,6 +2086,46 @@ class RootHandler(RequestHandler):
             log.info("IOError deleting HDF5 file: " + str(ioe.errno) + " " + ioe.strerror)
             raise HTTPError(500, "Unexpected error: unable to delete collection") 
               
+class InfoHandler(RequestHandler):
+      
+    def get(self):
+        log = logging.getLogger("h5serv")
+        log.info('InfoHandler.get ' + self.request.host)
+        log.info('remote_ip: ' + self.request.remote_ip)
+        
+        greeting = "Welcome to h5serv!"
+        about = "h5serv is a webservice for HDF5 data"
+        doc_href = "http://h5serv.readthedocs.org"
+        h5serv_version = "0.1"
+        response = Hdf5db.getVersionInfo();
+        response['name'] = "h5serv"
+        response['greeting'] = greeting
+        response['about'] = about
+        response['documentation'] = doc_href
+        response['h5serv_version'] = h5serv_version
+         
+        accept_type = ''
+        if 'accept' in self.request.headers:
+            accept= self.request.headers['accept']
+            # just extract the first type and not worry about q values for now...
+            accept_values = accept.split(',')
+            accept_types = accept_values[0].split(';')
+            accept_type = accept_types[0]
+            # print 'accept_type:', accept_type
+        if accept_type == 'text/html':   
+            self.set_header('Content-Type', 'text/html') 
+            htmlText = "<html><body><h1>" + response['greeting'] + "</h1>"
+            htmlText += "<h2>" + response['about'] + "</h2>"
+            htmlText += "<h2>Documentation: <a href=" + response['documentation'] +  "> h5serv documentation </a></h2>"
+            htmlText += "<h2>server version: " + response['h5serv_version'] + "</h2>"
+            htmlText += "<h2>h5py version: " + response['h5py_version'] + "</h2>"
+            htmlText += "<h2>hdf5 version: " + response['hdf5_version'] + "</h2>"
+            htmlText += "</body></html>"
+            self.write(htmlText)
+        else:
+            self.set_header('Content-Type', 'application/json') 
+            self.write(json_encode(response)) 
+        
         
 def sig_handler(sig, frame):
     log = logging.getLogger("h5serv")
@@ -2163,6 +2190,7 @@ def make_app():
         url(r"/groups/.*", GroupHandler), 
         url(r"/groups\?.*", GroupCollectionHandler),
         url(r"/groups", GroupCollectionHandler),
+        url(r"/info", InfoHandler),
         url(r"/static/(.*)", tornado.web.StaticFileHandler, {'path', '../static/'}),
         url(r"/", RootHandler),
         url(r".*", DefaultHandler)
