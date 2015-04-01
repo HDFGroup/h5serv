@@ -28,7 +28,6 @@ class RootTest(unittest.TestCase):
         self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
         self.assertTrue('h5serv_version' in rspJson)
-        print rspJson
             
     def testGetDomain(self):
         domain = 'tall.' + config.get('domain')   
