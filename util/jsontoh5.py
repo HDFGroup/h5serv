@@ -238,7 +238,7 @@ def main():
     # create the file, will raise IOError if there's a problem
     Hdf5db.createHDF5File(filename)
     
-    with Hdf5db(filename, root_uuid=root_uuid) as db:
+    with Hdf5db(filename, root_uuid=root_uuid, update_timestamps=False) as db:
         h5writer = Writeh5(db, h5json)
         h5writer.writeFile() 
         

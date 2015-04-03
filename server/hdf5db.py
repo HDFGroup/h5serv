@@ -91,12 +91,12 @@ class Hdf5db:
     @staticmethod
     def getVersionInfo():
         versionInfo = {}
-        versionInfo['h5py_version'] = h5py.version.api_version
+        versionInfo['h5py_version'] = h5py.version.version
         versionInfo['hdf5_version'] = h5py.version.hdf5_version
         return versionInfo
                  
         
-    def __init__(self, filePath, dbFilePath=None, readonly=False, app_logger=None, root_uuid=None):
+    def __init__(self, filePath, dbFilePath=None, readonly=False, app_logger=None, root_uuid=None, update_timestamps=True):
         if app_logger:
             self.log = app_logger
         else:
@@ -110,7 +110,10 @@ class Hdf5db:
                 self.readonly = False
             else:
                 self.readonly = True
+        
         self.log.info("init -- filePath: " + filePath + " mode: " + mode)
+        
+        self.update_timestamps = update_timestamps
         
         self.f = h5py.File(filePath, mode)
         
@@ -188,6 +191,8 @@ class Hdf5db:
        Note - should only be called once per object
     """    
     def setCreateTime(self, uuid, objType="object", name=None, timestamp=None):
+        if not self.update_timestamps:
+            return
         ctime_grp = self.dbGrp["{ctime}"]
         ts_name = self.getTimeStampName(uuid, objType, name) 
         if timestamp == None:
@@ -215,7 +220,8 @@ class Hdf5db:
         elif useRoot:
             # return root timestamp
             root_uuid = self.dbGrp.attrs["rootUUID"] 
-            timestamp = ctime_grp.attrs[root_uuid]
+            if root_uuid in ctime_grp.attrs:
+                timestamp = ctime_grp.attrs[root_uuid]
         return timestamp
      
     """
@@ -230,6 +236,8 @@ class Hdf5db:
        
     """         
     def setModifiedTime(self, uuid, objType="object", name=None, timestamp=None):
+        if not self.update_timestamps:
+            return
         mtime_grp = self.dbGrp["{mtime}"]
         ts_name = self.getTimeStampName(uuid, objType, name) 
         if timestamp == None:
@@ -452,8 +460,9 @@ class Hdf5db:
         dset = self.getDatasetObjByUuid(obj_uuid)  # throws exception if not found
         item = { 'id': obj_uuid }
         item['type'] = hdf5dtype.getTypeItem(dset.dtype)
-        item['ctime'] = self.getCreateTime(obj_uuid)
-        item['mtime'] = self.getModifiedTime(obj_uuid)      
+        if self.update_timestamps:
+            item['ctime'] = self.getCreateTime(obj_uuid)
+            item['mtime'] = self.getModifiedTime(obj_uuid)      
         
         return item    
 
@@ -608,9 +617,9 @@ class Hdf5db:
             except RuntimeError:
                 # exception is thrown if fill value is not set
                 pass   # nop
-            
-        item['ctime'] = self.getCreateTime(obj_uuid)
-        item['mtime'] = self.getModifiedTime(obj_uuid)      
+        if self.update_timestamps:    
+            item['ctime'] = self.getCreateTime(obj_uuid)
+            item['mtime'] = self.getModifiedTime(obj_uuid)      
         
         return item
         
@@ -669,8 +678,9 @@ class Hdf5db:
         item = { 'id': obj_uuid }
         item['attributeCount'] = len(newType.attrs)
         #item['type'] = hdf5dtype.getTypeItem(datatype.dtype) 
-        item['ctime'] = self.getCreateTime(obj_uuid)
-        item['mtime'] = self.getModifiedTime(obj_uuid) 
+        if self.update_timestamps:
+            item['ctime'] = self.getCreateTime(obj_uuid)
+            item['mtime'] = self.getModifiedTime(obj_uuid) 
         return item
       
     """
@@ -720,8 +730,9 @@ class Hdf5db:
         item['alias'] = alias
         item['attributeCount'] = len(datatype.attrs)
         item['type'] = hdf5dtype.getTypeItem(datatype.dtype) 
-        item['ctime'] = self.getCreateTime(obj_uuid)
-        item['mtime'] = self.getModifiedTime(obj_uuid) 
+        if self.update_timestamps:
+            item['ctime'] = self.getCreateTime(obj_uuid)
+            item['mtime'] = self.getModifiedTime(obj_uuid) 
         
         return item
 
@@ -811,8 +822,9 @@ class Hdf5db:
                     continue  # keep going!
             item = self.getAttributeItemByObj(obj, name, False)
             # mix-in timestamps
-            item['ctime'] = self.getCreateTime(obj_uuid, objType="attribute", name=name)
-            item['mtime'] = self.getModifiedTime(obj_uuid, objType="attribute", name=name)
+            if self.update_timestamps:
+                item['ctime'] = self.getCreateTime(obj_uuid, objType="attribute", name=name)
+                item['mtime'] = self.getModifiedTime(obj_uuid, objType="attribute", name=name)
                            
             items.append(item)
             count += 1
@@ -841,8 +853,9 @@ class Hdf5db:
             self.log.info(msg)
             raise IOError(errno.ENXIO, msg)
         # mix-in timestamps
-        item['ctime'] = self.getCreateTime(obj_uuid, objType="attribute", name=name)
-        item['mtime'] = self.getModifiedTime(obj_uuid, objType="attribute", name=name)
+        if self.update_timestamps:
+            item['ctime'] = self.getCreateTime(obj_uuid, objType="attribute", name=name)
+            item['mtime'] = self.getModifiedTime(obj_uuid, objType="attribute", name=name)
             
         return item
         
@@ -864,8 +877,6 @@ class Hdf5db:
             self.log.info(msg)
             raise IOError(errno.ENXIO, msg)
         is_committed_type = False 
-        
-        #print "dim scales:", obj.dims.keys()
         
         dt = None
         if type(attr_type) in (str, unicode) and len(attr_type) == UUID_LEN:
@@ -1640,8 +1651,9 @@ class Hdf5db:
         self.setModifiedTime(obj_uuid, timestamp=now)
         
         item['id'] = obj_uuid
-        item['ctime'] = self.getCreateTime(obj_uuid)
-        item['mtime'] = self.getModifiedTime(obj_uuid)
+        if self.update_timestamps:
+            item['ctime'] = self.getCreateTime(obj_uuid)
+            item['mtime'] = self.getModifiedTime(obj_uuid)
         item['attributeCount'] = 0
         return item
         
@@ -1808,8 +1820,9 @@ class Hdf5db:
         item['alias'] = alias
         item['attributeCount'] = len(grp.attrs)
         item['linkCount'] = linkCount
-        item['ctime'] = self.getCreateTime(obj_uuid)
-        item['mtime'] = self.getModifiedTime(obj_uuid)
+        if self.update_timestamps:
+            item['ctime'] = self.getCreateTime(obj_uuid)
+            item['mtime'] = self.getModifiedTime(obj_uuid)
         
         return item
        
@@ -1880,8 +1893,9 @@ class Hdf5db:
         item = self.getLinkItemByObj(parent, link_name) 
         # add timestamps
         if item:
-            item['ctime'] = self.getCreateTime(grpUuid, objType="link", name=link_name)
-            item['mtime'] = self.getModifiedTime(grpUuid, objType="link", name=link_name)
+            if self.update_timestamps:
+                item['ctime'] = self.getCreateTime(grpUuid, objType="link", name=link_name)
+                item['mtime'] = self.getModifiedTime(grpUuid, objType="link", name=link_name)
         else:
             self.log.info("link not found")
             mtime = self.getModifiedTime(grpUuid, objType="link", name=link_name, useRoot=False)
