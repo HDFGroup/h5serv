@@ -85,20 +85,20 @@ def getBaseDataType(typeItem):
    
         
     elif typeClass == 'H5T_STRING':
-        if 'strsize' not in typeItem:
+        if 'length' not in typeItem:
             raise KeyError("'strsize' not provided")
-        if 'cset' not in typeItem:
-            raise KeyError("'cset' not provided")          
+        if 'charSet' not in typeItem:
+            raise KeyError("'charSet' not provided")          
             
-        if typeItem['strsize'] == 'H5T_VARIABLE':
+        if typeItem['length'] == 'H5T_VARIABLE':
             raise TypeError("Variable String types are not supported")
        
-        nStrSize = typeItem['strsize']
+        nStrSize = typeItem['length']
         if type(nStrSize) != int:
-            raise TypeError("expecting integer value for 'strsize'")
+            raise TypeError("expecting integer value for 'length'")
         return "S" + str(nStrSize)
         # return "CHARACTER(LEN=" + str(nStrSize) + ")"
-     elif typeClass == 'H5T_COMPOUND';
+    elif typeClass == 'H5T_COMPOUND':
         raise TypeError("COMPOUND data type is not supported")
             
     elif typeClass == 'H5T_VLEN':
