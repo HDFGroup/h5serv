@@ -211,6 +211,19 @@ def getObjectName(obj_json):
             name = alias
     return name
 
+#
+# convert a h5path to a legal fortran routine name
+#
+def h5pathToSubroutineName(h5path):
+  for_name = ''
+  for ch in h5path:
+      if ch.isalnum():
+          for_name += ch
+      else:
+          for_name += '_'
+  return for_name
+
+
 def doAttributesData(group_json):
     if "attributes" not in group_json:
         return
@@ -250,57 +263,150 @@ def getObjectVariableName(title):
                
     return var_name
     
-def doGroup(h5json, group_id, group_name, parent_var):
-    print "# group -- ", group_name
-    group_var = getObjectVariableName(group_name)
-    print "{0} = {1}.create_group('{2}')".format(group_var, parent_var, group_name)
+def doGroup(h5json, group_id, group_name, parent_id, h5path):
+    subroutine_name = h5pathToSubroutineName("CreateGroup" + h5path )
     groups = h5json["groups"]
     group_json = groups[group_id]
-    #print "group_json:", group_json
-    doAttributes(group_json, group_var)
-    doLinks(h5json, group_json, group_var)
+    newPath = h5path+group_name+"/"
+    print """
+    
+!
+! Create Group {0}
+!
+!
+SUBROUTINE {1}(group_name, parent_hid, i_res) 
+USE HDF5
+USE ISO_C_BINDING
+IMPLICIT NONE
+  character(len=*), intent(in) :: group_name
+  INTEGER(HID_T), intent(in) :: parent_hid
+  INTEGER, intent(out) :: i_res
+  INTEGER(HID_T) :: group_id
+    """.format(group_name, subroutine_name)
 
-def doDataset(h5json, dset_id, dset_name, parent_var):
-    print "# make dataset: ", dset_name
-    dset_var = getObjectVariableName(dset_name)
+    # declare attribute arrays
+    doAttributesData(group_json)
+
+    print """
+  print *, "creating group: ", {0} 
+  print *, "group path: ", {1}
+  CALL h5gcreate_f(parent_id, group_name, group_hid, i_res)
+    """.format(group_name, newPath)
+
+    doAttributesCreate(group_json, "group_hid")
+    doLinks(h5json, group_json, "group_hid", newPath)
+    
+    print "end SUBROUTINE"
+    print "!"
+    #
+    # add more subroutines for links of this group
+    #
+  
+    doDatasets(h5json, group_json, "group_id", newPath)
+    doGroups(h5json, group_json, "group_id", newPath)
+
+def doGroups(h5json, group_json, parent_id, h5path):
+    links = group_json["links"]
+    for link in links:
+        if link["class"] == "H5L_TYPE_HARD" and link["collection"] == "groups":
+            doGroup(h5json, link["id"], link["title"], parent_id, h5path + link['title']) 
+    	 
+   
+  
+def doDataset(h5json, dataset_id, dset_name, parent_id, h5path):
+    subroutine_name = h5pathToSubroutineName("CreateDataset" + h5path )
     datasets = h5json["datasets"]
-    dset_json = datasets[dset_id]
-    #dt = createDataType(dset_json["type"])
-    type_json = dset_json["type"]
-    dtLine = getBaseDataType(type_json)  # "dt = ..."
-    print dtLine
-    #dset_type_str = hdf5dtype.getNumpyTypename(type_json["base"])  # todo - read type info, convert to numpy type
-    dset_space_str = None
-    if "shape" in dset_json:
-        shape_json = dset_json["shape"]
-        if shape_json["class"] == "H5S_SIMPLE":
-            dset_space_str = "("
-            dims = shape_json["dims"]
-            rank = len(dims)
-            for i in range(rank):
-                dset_space_str += str(dims[i])
-                if i < rank-1 or rank == 1:
-                    dset_space_str += ","
-            dset_space_str += "), "
-    code_line = dset_var + " = " + parent_var + ".create_dataset('" + dset_var + "', "
-    if dset_space_str:
-        code_line += dset_space_str
-    code_line += "dtype=dt)"
-    print code_line
-    print "# initialize dataset values here"
-    doAttributes(dset_json, dset_var)    
+    dataset_json = datasets[dataset_id]
+    type_json = dataset_json["type"]
+    base_type = getBaseDataType(type_json)
+    fortran_type = getFortranType(base_type)
+
+    # get shape info
+    rank = 0
+    dset_shape = dataset_json["shape"]
+     
+    for_dims = None
+ 
+    if dset_shape["class"] in ("H5S_NULL", "H5S_SCALAR"):
+        print "! no declaration for null, scalar dataset"
+    elif dset_shape["class"] == "H5S_SIMPLE":
+        dims = dset_shape["dims"]
+    	rank = len(dims)
+         
+        # INTEGER(hsize_t),   DIMENSION(1:2) :: dims = (/dim0, dim1/)
+        for_dims = "INTEGER(hsize_t),   DIMENSION(1:" + str(rank) + ") :: dset_dims = (/"
+        for i in range(rank):
+            for_dims += str(dims[i])
+            if i < rank - 1:
+                for_dims += ", "
+        for_dims += "/)"
+
+    print """
+    
+!
+! Create Dataset {0}
+!
+!
+SUBROUTINE {1}(dataset_name, parent_hid, i_res) 
+USE HDF5
+USE ISO_C_BINDING
+IMPLICIT NONE
+  character(len=*), intent(in) :: dataset_name
+  INTEGER(HID_T), intent(in) :: parent_hid
+  INTEGER, intent(out) :: i_res
+  INTEGER(HID_T) :: space_id, dataset_id
+    """.format(dset_name, subroutine_name)
+
+    # declare attribute arrays
+    doAttributesData(dataset_json)
+    # declare daset dimensions
+    if for_dims:
+        print for_dims # dimension variable is "for_dims"
+    
+     
+    print """
+print *, "creating dataset: ", dataset_name 
+    """
+    
+    if rank > 0:
+        # need to create dataspace
+        print """"
+CALL h5screate_simple_f({0}, for_dims, space_id, i_res)
+        """.format(rank)
+    else:
+        print "space_id = 0"
+     
+    print """
+CALL h5dcreate_f(parent_hid, dataset_name, {0}, space_id, dataset_id, i_res)
+    """.format(base_type)
+        
+
+    doAttributesCreate(dataset_json, "dataset_hid")
+     
+    print "end SUBROUTINE"
+          
+def doDatasets(h5json, group_json, parent_id, h5path):
+    links = group_json["links"]
+    for link in links:
+        if link["class"] == "H5L_TYPE_HARD" and link["collection"] == "datasets":
+            doDataset(h5json, link["id"], link["title"], parent_id, h5path + link['title'])    
+
     
     
-def doLink(h5json, link_json, parent_var):
+def doLink(h5json, link_json, parent_id, h5path):
+   
     if link_json["class"] == "H5L_TYPE_EXTERNAL":
-        print "{0}['{1}'] = h5py.ExternalLink('{2}', '{3}')".format(parent_var, link_json["title"], link_json["file"], link_json["h5path"])
+        print "h5lcreate_external_f('{0}', {1}, {2}, '{3}', i_res)".format(link_json["title"], 
+		link_json["h5path"], parent_id, link_json["title"])  
     elif link_json["class"] == "H5L_TYPE_SOFT":
-        print "{0}['{1}'] = h5py.SoftLink('{2}')".format(parent_var, link_json["title"], link_json["h5path"])
+        print "h5lcreate_soft_f('{0}', {1}, '{2}', i_res)".format(link_json["h5path"], parent_id, link_json["title"])
     elif link_json["class"] == "H5L_TYPE_HARD":
         if link_json["collection"] == "groups":
-            doGroup(h5json, link_json["id"], link_json["title"], parent_var) 
+            subroutine_name = h5pathToSubroutineName("CreateGroup" + h5path + link_json['title'])
+            print "call {0}('{1}', {2}, i_res)".format(subroutine_name, link_json['title'], parent_id);
         elif link_json["collection"] == "datasets":   
-            doDataset(h5json, link_json["id"], link_json["title"], parent_var)       
+            subroutine_name = h5pathToSubroutineName("CreateDataset" + h5path  + link_json['title'])
+            print "call {0}('{1}', {2}, i_res)".format(subroutine_name, link_json['title'], parent_id);     
         elif link_json["collection"] == "datatypes":
             pass # todo
         else:
@@ -311,10 +417,10 @@ def doLink(h5json, link_json, parent_var):
         raise Exception("unexpected link type: " + link_json["class"]) 
     
     
-def doLinks(h5json, group_json, parent_var):
+def doLinks(h5json, group_json, parent_id, h5path):
     links = group_json["links"]
     for link in links:
-        doLink(h5json, link, parent_var)
+        doLink(h5json, link, parent_id, h5path)
 
 
 #------------------------------------------------------------------------------
@@ -424,10 +530,13 @@ endif
     """.format(filename)
     doAttributesCreate(root_json, "file_id")
 
+
+    # create root items
+    doLinks(h5json, root_json, "file_id", "/")
+
     print """
 !
-! Update the attributes - don't actually overwrite the default attributes,
-! just provide sample code to do so.
+!  
 !
 !  call write_attributes(file_id)
 !
@@ -448,6 +557,12 @@ print *, ' '
 print *, '{0}.f90 complete.'
 end program main
     """.format(filename)
+    #
+    # next add group and dataset subroutines after the main program
+    #
+    doDatasets(h5json, root_json, "file_id", "/")
+    doGroups(h5json, root_json, "file_id", "/")
+    
 
    
          
@@ -466,8 +581,6 @@ def main():
     if "root" not in h5json:
         raise Exception("no root key in input file")
 
-   
-    
 
     filename = args.out_filename[0]
     
@@ -479,7 +592,7 @@ def main():
     #doAttributes(root_json, file_variable)
     #doLinks(h5json, root_json, file_variable)
 
-    # create attribute routine
+    # generic create attribute routine
     print """
 !
 ! Create an Attribute
