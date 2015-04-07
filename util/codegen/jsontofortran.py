@@ -82,6 +82,7 @@ def getBaseDataType(typeItem):
         if 'base' not in typeItem:
             raise KeyError("'base' not provided")
         return typeItem['base'] 
+   
         
     elif typeClass == 'H5T_STRING':
         if 'strsize' not in typeItem:
@@ -97,6 +98,8 @@ def getBaseDataType(typeItem):
             raise TypeError("expecting integer value for 'strsize'")
         return "S" + str(nStrSize)
         # return "CHARACTER(LEN=" + str(nStrSize) + ")"
+     elif typeClass == 'H5T_COMPOUND';
+        raise TypeError("COMPOUND data type is not supported")
             
     elif typeClass == 'H5T_VLEN':
         raise TypeError("VLEN data type is not supported")   
