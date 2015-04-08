@@ -55,6 +55,7 @@ def getFortranType(hdf5TypeName):
         fortranType = predefined_float_types[key]
     
     if not fortranType:
+        log.error("type: " + hdf5TypeName + " is not valid");
         raise TypeError("Type Error: invalid type")
     return fortranType
     
@@ -72,6 +73,7 @@ def getBaseDataType(typeItem):
         return typeItem
         
     if type(typeItem) != dict:
+        log.error("bad type object: " + typeItem)
         raise TypeError("Type Error: invalid type")
               
     if 'class' not in typeItem:
