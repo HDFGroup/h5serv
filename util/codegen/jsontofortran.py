@@ -58,7 +58,59 @@ def getFortranType(hdf5TypeName):
         log.error("type: " + hdf5TypeName + " is not valid");
         raise TypeError("Type Error: invalid type")
     return fortranType
+     
+#------------------------------------------------------------------------------
+#
+#  Get native type identifier
+#
+#------------------------------------------------------------------------------     
+
+def getNativeDataType(baseType):
+    log.info("getNativeDataType")
+ 
+    if type(baseType) not in (str, unicode):
+        # should be one of the predefined types or 'Snn'
+        raise TypeError("Type Error: invalid type")
+      
+    predefined_int_types = {
+          'H5T_STD_I8':  'H5T_NATIVE_CHARACTER', 
+          'H5T_STD_U8':  '',  # unsigned int types not supported for fortran
+          'H5T_STD_I16': 'H5T_NATIVE_INTEGER', 
+          'H5T_STD_U16': '',
+          'H5T_STD_I32': 'H5T_NATIVE_INTEGER', 
+          'H5T_STD_U32': '',
+          'H5T_STD_I64': 'H5T_NATIVE_INTEGER',
+          'H5T_STD_U64': '' 
+    }
+    predefined_float_types = {
+          'H5T_IEEE_F32': 'H5T_NATIVE_REAL',
+          'H5T_IEEE_F64': 'H5T_NATIVE_DOUBLE'
+    }
+    if len(baseType) < 3:
+        raise Exception("Type Error: invalid type")
+     
+     
+    if baseType.endswith('LE'):
+        key = baseType[:-2]
+    elif baseType.endswith('BE'):
+        key = baseType[:-2]
+    else:
+        key = baseType
+     
+    nativeType = None   
+    if key in predefined_int_types:
+        nativeType = predefined_int_types[key]
+    if key in predefined_float_types:
+        nativeType = predefined_float_types[key]
     
+    if not nativeType:
+        log.error("type: " + hdf5TypeName + " is not valid");
+        raise TypeError("Type Error: invalid type")
+    return nativeType
+        
+      
+
+
 #------------------------------------------------------------------------------
 #
 #  Get HDF5 type identifier
@@ -133,6 +185,14 @@ def getBaseDataType(typeItem):
 def valueToListString(value):
    # fortran doesn't have a way to initialize multi-dimensional arrays, so
    # flaten array to 1d list
+   if type(value) in (int, float):
+       return str(value)
+   if type(value) in (str, unicode):
+       return "'" + value + "'"  # return quoted string
+
+   if type(value) not in (list, tuple):
+       raise TypeError("Unexpected type for value")
+
    text = ''
    nelements = len(value)
    line_len = 0
@@ -166,38 +226,58 @@ def doAttributeData(attr_json):
     attr_shape = attr_json["shape"]
     attr_type = attr_json["type"]
     base_type = getBaseDataType(attr_type)
-    fortran_type = getFortranType(base_type)
-    
-    
+    fortran_name = "attr_" + attr_name
+    fortran_type = None
+    h5_type = None
+    str_length_type = None
+    num_elements = 1
+    # check for string type
+    if base_type[0] == 'S':
+        # Fixed-size string 
+        # CHARACTER(LEN=10), TARGET :: attr1
+        fortran_type = "CHARACTER(LEN=" + base_type[1:] + ")"
+        h5_type = "INTEGER(HID_T)  :: " + fortran_name + "_type"
+        str_length_type = "INTEGER(SIZE_T) :: str_length"
+        
+    else:
+        fortran_type = getFortranType(base_type)
+     
     print "! attribute " + attr_name + " data declaration" 
-    if attr_shape["class"] in ("H5S_NULL", "H5S_SCALAR"):
-        print "! no decleration for null, scalar att"
-    elif attr_shape["class"] == "H5S_SIMPLE":
-        for_array_name = "attr_" + attr_name + "_array"
+    
+    if str_length_type:
+        print str_length_type
+    if h5_type:
+        print h5_type
+
+    if attr_shape["class"] == "H5S_NULL":
+        print "! no declaration for null attribute"
+    elif attr_shape["class"] == "H5S_SIMPLE":       
         dims = attr_shape["dims"]
     	rank = len(dims)
-        num_elements = 1
         for i in range(rank):
             num_elements *= dims[i]
         # attribute dims code example:
         # INTEGER(hsize_t),   DIMENSION(1:2) :: dims = (/dim0, dim1/)
-        for_dims = "   INTEGER(hsize_t),   DIMENSION(1:" + str(rank) + ") :: " + for_array_name + "_dims = (/"
+        for_dims = "   INTEGER(hsize_t),   DIMENSION(1:" + str(rank) + ") :: " + fortran_name + "_dims = (/"
         for i in range(rank):
             for_dims += str(dims[i])
             if i < rank - 1:
                 for_dims += ", "
         for_dims += "/)"
         print for_dims
+     
+
+    if attr_shape["class"] in ("H5S_SCALAR", "H5S_SIMPLE"):
+        # data declaration...
         # attribute data code example:
     	# INTEGER, DIMENSION(1:28), TARGET :: init_array = (/1,2,...,27,28/)
     	decl = indent + fortran_type + ", DIMENSION(1:" + str(num_elements) + "), "    
-        decl += "TARGET :: attr_" + attr_name + "_array = (/&\n"
+        decl += "TARGET :: attr_" + attr_name + "_data = (/&\n"
         decl += indent + valueToListString(attr_json["value"])
         decl += "/)"
         print decl
         
-    else:
-	raise TypeError("Invalid shape class")
+    
 
 #------------------------------------------------------------------------------
 #
@@ -210,21 +290,41 @@ def doAttributeCreate(attr_json, parent_id):
     attr_shape = attr_json["shape"]
     attr_type = attr_json["type"]
     base_type = getBaseDataType(attr_type)
+    native_type = None
+    h5_type = None
     
     print indent + "! attribute " + attr_name + " creation" 
-    if attr_shape["class"] in ("H5S_NULL", "H5S_SCALAR"):
-        print indent + "! no declaration for null, scalar att"
-    elif attr_shape["class"] == "H5S_SIMPLE":
-        for_array_name = "attr_" + attr_name + "_array"
-        dims = attr_shape["dims"]
+    rank = 0
+    fortran_name = "attr_" + attr_name
+    dim_array_name = "0"
     
-    	rank = len(dims)
-        print indent + "f_ptr = C_LOC(" + for_array_name + "(1))"
-        print indent + "call CreateAttribute('" + attr_name + "', " + parent_id + ", " + \
-		str(rank) + ", " + for_array_name + "_dims, " + base_type + ", f_ptr, i_res)"
-        
+    if base_type[0] == 'S':
+        # Fixed-size string - initialize a type
+        h5_type = fortran_name + "_type"
+        native_type = h5_type
+        str_length = int(base_type[1:])
+        print indent + "str_length = " + str(str_length) + "+1"
+        print indent + "CALL H5Tcopy_f(H5T_C_S1, " +  h5_type + ", i_res)"
+        print indent + "CALL H5Tset_size_f(" + h5_type + ", str_length, i_res)"
+      
     else:
-	raise TypeError("Invalid shape class")
+        h5_type = base_type
+        native_type = getNativeDataType(base_type)
+   
+    if attr_shape["class"] in ("H5S_SCALAR", "H5S_SIMPLE"):
+        print indent + "f_ptr = C_LOC(" + fortran_name + "_data(1))"
+          
+        rank = 0
+        if "dims" in attr_shape:
+            dim_array_name = fortran_name + "_dims"
+            dims = attr_shape["dims"]
+            rank = len(dims)
+    
+    print indent + "call CreateAttribute('" + attr_name + "', " + parent_id + ", " + \
+		str(rank) + ", " + dim_array_name + ", " + h5_type + ", " + \
+                native_type + ", f_ptr, i_res)"
+        
+     
     
 #------------------------------------------------------------------------------
 #
@@ -314,7 +414,7 @@ IMPLICIT NONE
   character(len=*), intent(in) :: group_name
   INTEGER(HID_T), intent(in) :: parent_hid
   INTEGER, intent(out) :: i_res
-  INTEGER(HID_T) :: group_hid
+  INTEGER(HID_T) :: group_hid, memtype_hid
     """.format(group_name, subroutine_name)
 
     # declare attribute arrays
@@ -345,10 +445,11 @@ IMPLICIT NONE
 #------------------------------------------------------------------------------
 def doGroups(h5json, group_json, parent_id, h5path):
     log.info("doGroups h5path: " + h5path)
-    links = group_json["links"]
-    for link in links:
-        if link["class"] == "H5L_TYPE_HARD" and link["collection"] == "groups":
-            doGroup(h5json, link["id"], link["title"], parent_id, h5path + link['title']) 
+    if "links" in group_json:
+        links = group_json["links"]
+        for link in links:
+            if link["class"] == "H5L_TYPE_HARD" and link["collection"] == "groups":
+                doGroup(h5json, link["id"], link["title"], parent_id, h5path + link['title']) 
     	 
 
 #------------------------------------------------------------------------------
@@ -398,7 +499,7 @@ IMPLICIT NONE
   character(len=*), intent(in) :: dataset_name
   INTEGER(HID_T), intent(in) :: parent_hid
   INTEGER, intent(out) :: i_res
-  INTEGER(HID_T) :: space_id, dataset_hid
+  INTEGER(HID_T) :: space_id, dataset_hid, memtype_hid 
   TYPE(C_PTR) :: f_ptr   ! c ptr for hdf5 lib calls
     """.format(dset_name, subroutine_name)
 
@@ -445,10 +546,11 @@ IMPLICIT NONE
 #------------------------------------------------------------------------------         
 def doDatasets(h5json, group_json, parent_id, h5path):
     log.info("doDatasets h5path: " + h5path)
-    links = group_json["links"]
-    for link in links:
-        if link["class"] == "H5L_TYPE_HARD" and link["collection"] == "datasets":
-            doDataset(h5json, link["id"], link["title"], parent_id, h5path + link['title'])    
+    if "links" in group_json:
+        links = group_json["links"]
+        for link in links:
+            if link["class"] == "H5L_TYPE_HARD" and link["collection"] == "datasets":
+                doDataset(h5json, link["id"], link["title"], parent_id, h5path + link['title'])    
 
     
 #------------------------------------------------------------------------------
@@ -487,9 +589,10 @@ def doLink(h5json, link_json, parent_id, h5path):
 #------------------------------------------------------------------------------    
 def doLinks(h5json, group_json, parent_id, h5path):
     log.info("doLinks h5path: " + h5path)
-    links = group_json["links"]
-    for link in links:
-        doLink(h5json, link, parent_id, h5path)
+    if "links" in group_json:
+        links = group_json["links"]
+        for link in links:
+            doLink(h5json, link, parent_id, h5path)
 
 
 #------------------------------------------------------------------------------
@@ -572,6 +675,7 @@ integer :: &
     i_res                    ! Result code
 character(len=255) :: arg    ! Input arguments
 integer(HID_T) :: file_id    ! ID of HDF5 file
+integer(HID_T) :: memtype_id ! memory type for attribute write
 TYPE(C_PTR) :: f_ptr         ! c ptr for hdf5 lib calls
 !
 ! Open the HDF5 library
@@ -680,7 +784,7 @@ def main():
 ! Create an Attribute
 !
 !
-SUBROUTINE CreateAttribute(attr_name, parent_id, rank, dims, h5_type, buf, i_res) 
+SUBROUTINE CreateAttribute(attr_name, parent_id, rank, dims, h5_type, mem_type, buf, i_res) 
 USE HDF5
 USE ISO_C_BINDING
 IMPLICIT NONE
@@ -689,6 +793,7 @@ IMPLICIT NONE
   integer, intent(in) :: rank
   integer(hsize_t), intent(in), dimension(*) :: dims
   integer, intent(in) :: h5_type
+  integer, intent(in) :: mem_type
   integer, intent(out) :: i_res
   TYPE(C_PTR), intent(in) :: buf
   INTEGER :: hdferr  
@@ -697,10 +802,13 @@ IMPLICIT NONE
   print *, "creat attribute ", attr_name
   print *, "parent id", parent_id
   print *, "rank", rank
-  print *, "dims: ", dims(1)
-  CALL H5Screate_simple_f(rank, dims, space, hdferr)
+  if (rank > 0) then
+     CALL H5Screate_simple_f(rank, dims, space, hdferr)
+  else
+     CALL H5Screate_f(H5S_SCALAR_F, space, hdferr)
+  end if
   CALL H5Acreate_f(parent_id, attr_name, h5_type, space, attr, hdferr)
-  CALL H5Awrite_f(attr, H5T_NATIVE_INTEGER, buf, hdferr)
+  CALL H5Awrite_f(attr, mem_type, buf, hdferr)
   CALL H5Aclose_f(attr, hdferr)
   CALL H5Sclose_f(space, hdferr)
   i_res = 0
