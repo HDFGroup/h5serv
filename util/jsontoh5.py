@@ -32,7 +32,6 @@ class Writeh5:
         self.db = db
         self.json = json
         self.root_uuid = None
-             
     
     #
     # Create a hard, soft, or external link
