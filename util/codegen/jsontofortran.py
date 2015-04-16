@@ -11,15 +11,20 @@
 ##############################################################################
 import json
 import argparse
-from sets import Set
+import logging
+import logging.handlers
 
-variable_names = Set()
+# logging global object
+log = None
+indent = "   " # three char indent for output source
 
-"""
-jsontoh5py - output Python code that generates HDF5 file based on given JSON input  
-"""
-
+#------------------------------------------------------------------------------
+#
+#  Get Fortran native type for given hdf5 type
+#
+#------------------------------------------------------------------------------
 def getFortranType(hdf5TypeName):
+    log.info("getFortranType")
     predefined_int_types = {
           'H5T_STD_I8':  'INTEGER(KIND=1)', 
           'H5T_STD_U8':  '',  # unsigned int types not supported for fortran
@@ -50,26 +55,83 @@ def getFortranType(hdf5TypeName):
         fortranType = predefined_float_types[key]
     
     if not fortranType:
+        log.error("type: " + hdf5TypeName + " is not valid");
         raise TypeError("Type Error: invalid type")
     return fortranType
-    
      
+#------------------------------------------------------------------------------
+#
+#  Get native type identifier
+#
+#------------------------------------------------------------------------------     
+
+def getNativeDataType(baseType):
+    log.info("getNativeDataType")
+ 
+    if type(baseType) not in (str, unicode):
+        # should be one of the predefined types or 'Snn'
+        raise TypeError("Type Error: invalid type")
+      
+    predefined_int_types = {
+          'H5T_STD_I8':  'H5T_NATIVE_CHARACTER', 
+          'H5T_STD_U8':  '',  # unsigned int types not supported for fortran
+          'H5T_STD_I16': 'H5T_NATIVE_INTEGER', 
+          'H5T_STD_U16': '',
+          'H5T_STD_I32': 'H5T_NATIVE_INTEGER', 
+          'H5T_STD_U32': '',
+          'H5T_STD_I64': 'H5T_NATIVE_INTEGER',
+          'H5T_STD_U64': '' 
+    }
+    predefined_float_types = {
+          'H5T_IEEE_F32': 'H5T_NATIVE_REAL',
+          'H5T_IEEE_F64': 'H5T_NATIVE_DOUBLE'
+    }
+    if len(baseType) < 3:
+        raise Exception("Type Error: invalid type")
+     
+     
+    if baseType.endswith('LE'):
+        key = baseType[:-2]
+    elif baseType.endswith('BE'):
+        key = baseType[:-2]
+    else:
+        key = baseType
+     
+    nativeType = None   
+    if key in predefined_int_types:
+        nativeType = predefined_int_types[key]
+    if key in predefined_float_types:
+        nativeType = predefined_float_types[key]
+    
+    if not nativeType:
+        log.error("type: " + hdf5TypeName + " is not valid");
+        raise TypeError("Type Error: invalid type")
+    return nativeType
+        
+      
+
+
+#------------------------------------------------------------------------------
+#
+#  Get HDF5 type identifier
+#
+#------------------------------------------------------------------------------     
 
 def getBaseDataType(typeItem):
+    log.info("getBaseDataType")
  
     if type(typeItem) == str or type(typeItem) == unicode:
         # should be one of the predefined types
-        return getFortranTypename(typeItem)
-        code += "np.dtype('" + dtName + "')"
-        return code
+        return typeItem
         
     if type(typeItem) != dict:
+        log.error("bad type object: " + typeItem)
         raise TypeError("Type Error: invalid type")
               
     if 'class' not in typeItem:
         raise KeyError("'class' not provided")
     typeClass = typeItem['class']
-    shape = ''
+    
     if 'shape' in typeItem:  
         raise TypeError("Array Types are not supported")        
         
@@ -85,22 +147,23 @@ def getBaseDataType(typeItem):
    
         
     elif typeClass == 'H5T_STRING':
-        if 'strsize' not in typeItem:
+        if 'length' not in typeItem:
             raise KeyError("'strsize' not provided")
-        if 'cset' not in typeItem:
-            raise KeyError("'cset' not provided")          
+        if 'charSet' not in typeItem:
+            raise KeyError("'charSet' not provided")          
             
-        if typeItem['strsize'] == 'H5T_VARIABLE':
+        if typeItem['length'] == 'H5T_VARIABLE':
             raise TypeError("Variable String types are not supported")
        
-        nStrSize = typeItem['strsize']
+        nStrSize = typeItem['length']
         if type(nStrSize) != int:
-            raise TypeError("expecting integer value for 'strsize'")
+            raise TypeError("expecting integer value for 'length'")
         return "S" + str(nStrSize)
         # return "CHARACTER(LEN=" + str(nStrSize) + ")"
-     elif typeClass == 'H5T_COMPOUND';
+    elif typeClass == 'H5T_COMPOUND':
         raise TypeError("COMPOUND data type is not supported")
-            
+    elif typeClass == 'H5T_ENUM':
+        raise TypeError("ENUM data type is not supported") 
     elif typeClass == 'H5T_VLEN':
         raise TypeError("VLEN data type is not supported")   
          
@@ -111,15 +174,25 @@ def getBaseDataType(typeItem):
     else:
         raise TypeError("Invalid type class")
            
-    return code  
+       
     
-def valueToString(attr_json):
-    value = attr_json["value"]
-    return json.dumps(value)
-
+ 
+#------------------------------------------------------------------------------
+#
+#  Flatten multi-dimensional list to a one-dim list
+#
+#------------------------------------------------------------------------------
 def valueToListString(value):
    # fortran doesn't have a way to initialize multi-dimensional arrays, so
    # flaten array to 1d list
+   if type(value) in (int, float):
+       return str(value)
+   if type(value) in (str, unicode):
+       return "'" + value + "'"  # return quoted string
+
+   if type(value) not in (list, tuple):
+       raise TypeError("Unexpected type for value")
+
    text = ''
    nelements = len(value)
    line_len = 0
@@ -137,72 +210,127 @@ def valueToListString(value):
            line_len += len(next)
            if line_len > 75:
                next += ' & \n'
+               line_len = 0
        text += next; 
        
    return text
-    
+
+#------------------------------------------------------------------------------
+#
+#  Generate code to create attribute data array decleration
+#
+#------------------------------------------------------------------------------    
 def doAttributeData(attr_json):  
     attr_name = attr_json["name"]
+    log.info("doAttributeData: " + attr_name)
     attr_shape = attr_json["shape"]
     attr_type = attr_json["type"]
     base_type = getBaseDataType(attr_type)
-    fortran_type = getFortranType(base_type)
-    
-    
+    fortran_name = "attr_" + attr_name
+    fortran_type = None
+    h5_type = None
+    str_length_type = None
+    num_elements = 1
+    # check for string type
+    if base_type[0] == 'S':
+        # Fixed-size string 
+        # CHARACTER(LEN=10), TARGET :: attr1
+        fortran_type = "CHARACTER(LEN=" + base_type[1:] + ")"
+        h5_type = "INTEGER(HID_T)  :: " + fortran_name + "_type"
+        str_length_type = "INTEGER(SIZE_T) :: str_length"
+        
+    else:
+        fortran_type = getFortranType(base_type)
+     
     print "! attribute " + attr_name + " data declaration" 
-    if attr_shape["class"] in ("H5S_NULL", "H5S_SCALAR"):
-        print "! no decleration for null, scalar att"
-    elif attr_shape["class"] == "H5S_SIMPLE":
-        for_array_name = "attr_" + attr_name + "_array"
+    
+    if str_length_type:
+        print str_length_type
+    if h5_type:
+        print h5_type
+
+    if attr_shape["class"] == "H5S_NULL":
+        print "! no declaration for null attribute"
+    elif attr_shape["class"] == "H5S_SIMPLE":       
         dims = attr_shape["dims"]
     	rank = len(dims)
-        num_elements = 1
         for i in range(rank):
             num_elements *= dims[i]
-
+        # attribute dims code example:
         # INTEGER(hsize_t),   DIMENSION(1:2) :: dims = (/dim0, dim1/)
-        for_dims = "INTEGER(hsize_t),   DIMENSION(1:" + str(rank) + ") :: " + for_array_name + "_dims = (/"
+        for_dims = "   INTEGER(hsize_t),   DIMENSION(1:" + str(rank) + ") :: " + fortran_name + "_dims = (/"
         for i in range(rank):
             for_dims += str(dims[i])
             if i < rank - 1:
                 for_dims += ", "
         for_dims += "/)"
         print for_dims
-    	# INTEGER, DIMENSION(1:28), TARGET :: init_array = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28/)
-    	decl = fortran_type + ", DIMENSION(1:" + str(num_elements) + "), "    
-        decl += "TARGET :: attr_" + attr_name + "_array = (/"
-        decl += valueToListString(attr_json["value"])
+     
+
+    if attr_shape["class"] in ("H5S_SCALAR", "H5S_SIMPLE"):
+        # data declaration...
+        # attribute data code example:
+    	# INTEGER, DIMENSION(1:28), TARGET :: init_array = (/1,2,...,27,28/)
+    	decl = indent + fortran_type + ", DIMENSION(1:" + str(num_elements) + "), "    
+        decl += "TARGET :: attr_" + attr_name + "_data = (/&\n"
+        decl += indent + valueToListString(attr_json["value"])
         decl += "/)"
         print decl
         
-    else:
-	raise typeError("Invalid shape class")
+    
 
+#------------------------------------------------------------------------------
+#
+#  Generate code to create attribute object
+#
+#------------------------------------------------------------------------------
 def doAttributeCreate(attr_json, parent_id):  
     attr_name = attr_json["name"]
+    log.info("doAttributeCreate: " + attr_name)
     attr_shape = attr_json["shape"]
     attr_type = attr_json["type"]
     base_type = getBaseDataType(attr_type)
-    fortran_type = getFortranType(base_type)
+    native_type = None
+    h5_type = None
     
-    print "! attribute " + attr_name + " creation" 
-    if attr_shape["class"] in ("H5S_NULL", "H5S_SCALAR"):
-        print "! no declaration for null, scalar att"
-    elif attr_shape["class"] == "H5S_SIMPLE":
-        for_array_name = "attr_" + attr_name + "_array"
-        dims = attr_shape["dims"]
+    print indent + "! attribute " + attr_name + " creation" 
+    rank = 0
+    fortran_name = "attr_" + attr_name
+    dim_array_name = "0"
     
-    	rank = len(dims)
-    	# INTEGER, DIMENSION(1:28), TARGET :: init_array = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28/)
-        # f_ptr = C_LOC(init_array(1))
-        # call MakeAttribute("myattr", dset, 2, dims, H5T_STD_I64BE, f_ptr, i_res)
-        print "f_ptr = C_LOC(" + for_array_name + "(1))"
-        print "call CreateAttribute('" + attr_name + "', " + parent_id + ", " + \
-		str(rank) + ", " + for_array_name + "_dims, " + base_type + ", f_ptr, i_res)"
-        
+    if base_type[0] == 'S':
+        # Fixed-size string - initialize a type
+        h5_type = fortran_name + "_type"
+        native_type = h5_type
+        str_length = int(base_type[1:])
+        print indent + "str_length = " + str(str_length) + "+1"
+        print indent + "CALL H5Tcopy_f(H5T_C_S1, " +  h5_type + ", i_res)"
+        print indent + "CALL H5Tset_size_f(" + h5_type + ", str_length, i_res)"
+      
     else:
-	raise typeError("Invalid shape class")
+        h5_type = base_type
+        native_type = getNativeDataType(base_type)
+   
+    if attr_shape["class"] in ("H5S_SCALAR", "H5S_SIMPLE"):
+        print indent + "f_ptr = C_LOC(" + fortran_name + "_data(1))"
+          
+        rank = 0
+        if "dims" in attr_shape:
+            dim_array_name = fortran_name + "_dims"
+            dims = attr_shape["dims"]
+            rank = len(dims)
     
+    print indent + "call CreateAttribute('" + attr_name + "', " + parent_id + ", " + \
+		str(rank) + ", " + dim_array_name + ", " + h5_type + ", " + \
+                native_type + ", f_ptr, i_res)"
+        
+     
+    
+#------------------------------------------------------------------------------
+#
+# Get alias name if present (otherwise return "???")
+#
+#------------------------------------------------------------------------------
 def getObjectName(obj_json):
     name = "???"
     if "alias" in obj_json:
@@ -214,29 +342,43 @@ def getObjectName(obj_json):
             name = alias
     return name
 
+#------------------------------------------------------------------------------
 #
 # convert a h5path to a legal fortran routine name
 #
+#------------------------------------------------------------------------------
 def h5pathToSubroutineName(h5path):
+  log.info("h5pathToSubroutineName: " + h5path)
   for_name = ''
   for ch in h5path:
       if ch.isalnum():
           for_name += ch
       else:
           for_name += '_'
+  log.info("returning: " + for_name)
   return for_name
 
-
+#------------------------------------------------------------------------------
+#
+# Generate attribute data declarations
+#
+#------------------------------------------------------------------------------
 def doAttributesData(group_json):
+    log.info("doAttributeData")
     if "attributes" not in group_json:
         return
     attrs_json = group_json["attributes"]
     
-    print "! creating attributes for '" + getObjectName(group_json) + "'"
     for attr_json in attrs_json:
         doAttributeData(attr_json)
 
+#------------------------------------------------------------------------------
+#
+# Process attributes in group
+#
+#------------------------------------------------------------------------------
 def doAttributesCreate(group_json, parent_id):
+    log.info("doAttributes - " + getObjectName(group_json))
     if "attributes" not in group_json:
         return
     attrs_json = group_json["attributes"]
@@ -245,32 +387,20 @@ def doAttributesCreate(group_json, parent_id):
     for attr_json in attrs_json:
         doAttributeCreate(attr_json, parent_id)
         
-def getObjectVariableName(title):
-    char_list = list(title.lower())
-    for i in range(len(char_list)):
-        ch = char_list[i]
-        if (ch >= 'a' and ch <= 'z') or (ch >= '0' and ch <= '9'):
-            pass  # ok char
-        else:
-            char_list[i] = '_'  # replace with underscore
-    var_name = "".join(char_list)
-    if char_list[0] >= '0' and char_list[0] <= '9':
-        var_name = 'v' + var_name   # pre-pend with a non-numeric
-    if var_name in variable_names:
-        for i in range(1, 99):
-           if (var_name + '_' + str(i)) not in variable_names:
-                var_name += '_' + str(i)
-                break
-        raise TypeError("Type Error: unable to create type for name: " + title)
-    variable_names.add(var_name)  # add to our list of variable names
-               
-    return var_name
-    
+
+#------------------------------------------------------------------------------
+#
+# Generate group 
+#
+#------------------------------------------------------------------------------    
 def doGroup(h5json, group_id, group_name, parent_id, h5path):
+    log.info("doGroup h5path: " + h5path)
     subroutine_name = h5pathToSubroutineName("CreateGroup" + h5path )
     groups = h5json["groups"]
     group_json = groups[group_id]
-    newPath = h5path+group_name+"/"
+    log.info("group name: " + group_name)
+    newPath = h5path+"/"
+    log.info("new path: " + newPath)
     print """
     
 !
@@ -284,16 +414,16 @@ IMPLICIT NONE
   character(len=*), intent(in) :: group_name
   INTEGER(HID_T), intent(in) :: parent_hid
   INTEGER, intent(out) :: i_res
-  INTEGER(HID_T) :: group_id
+  INTEGER(HID_T) :: group_hid, memtype_hid
     """.format(group_name, subroutine_name)
 
     # declare attribute arrays
     doAttributesData(group_json)
 
     print """
-  print *, "creating group: ", {0} 
-  print *, "group path: ", {1}
-  CALL h5gcreate_f(parent_id, group_name, group_hid, i_res)
+  print *, "creating group: {0}" 
+  print *, "group path: {1}"
+  CALL h5gcreate_f(parent_hid, group_name, group_hid, i_res)
     """.format(group_name, newPath)
 
     doAttributesCreate(group_json, "group_hid")
@@ -305,24 +435,36 @@ IMPLICIT NONE
     # add more subroutines for links of this group
     #
   
-    doDatasets(h5json, group_json, "group_id", newPath)
-    doGroups(h5json, group_json, "group_id", newPath)
+    doDatasets(h5json, group_json, "group_hid", newPath)
+    doGroups(h5json, group_json, "group_hid", newPath)
 
+#------------------------------------------------------------------------------
+#
+# Process Group links
+#
+#------------------------------------------------------------------------------
 def doGroups(h5json, group_json, parent_id, h5path):
-    links = group_json["links"]
-    for link in links:
-        if link["class"] == "H5L_TYPE_HARD" and link["collection"] == "groups":
-            doGroup(h5json, link["id"], link["title"], parent_id, h5path + link['title']) 
+    log.info("doGroups h5path: " + h5path)
+    if "links" in group_json:
+        links = group_json["links"]
+        for link in links:
+            if link["class"] == "H5L_TYPE_HARD" and link["collection"] == "groups":
+                doGroup(h5json, link["id"], link["title"], parent_id, h5path + link['title']) 
     	 
-   
+
+#------------------------------------------------------------------------------
+#
+# Generate dataset code
+#
+#------------------------------------------------------------------------------   
   
 def doDataset(h5json, dataset_id, dset_name, parent_id, h5path):
+    log.info("doDataset h5path: " + h5path)
     subroutine_name = h5pathToSubroutineName("CreateDataset" + h5path )
     datasets = h5json["datasets"]
     dataset_json = datasets[dataset_id]
     type_json = dataset_json["type"]
     base_type = getBaseDataType(type_json)
-    fortran_type = getFortranType(base_type)
 
     # get shape info
     rank = 0
@@ -357,73 +499,100 @@ IMPLICIT NONE
   character(len=*), intent(in) :: dataset_name
   INTEGER(HID_T), intent(in) :: parent_hid
   INTEGER, intent(out) :: i_res
-  INTEGER(HID_T) :: space_id, dataset_id
+  INTEGER(HID_T) :: space_id, dataset_hid, memtype_hid 
+  TYPE(C_PTR) :: f_ptr   ! c ptr for hdf5 lib calls
     """.format(dset_name, subroutine_name)
 
     # declare attribute arrays
     doAttributesData(dataset_json)
     # declare daset dimensions
     if for_dims:
-        print for_dims # dimension variable is "for_dims"
+        print """\
+  ! dataset dimensions
+  {0}  
+        """.format(for_dims)
     
      
-    print """
-print *, "creating dataset: ", dataset_name 
+    print """\
+  print *, "creating dataset: ", dataset_name 
     """
     
     if rank > 0:
         # need to create dataspace
-        print """"
-CALL h5screate_simple_f({0}, for_dims, space_id, i_res)
+        print """\
+  CALL h5screate_simple_f({0}, dset_dims, space_id, i_res)
         """.format(rank)
     else:
         print "space_id = 0"
      
-    print """
-CALL h5dcreate_f(parent_hid, dataset_name, {0}, space_id, dataset_id, i_res)
-    """.format(base_type)
+    print """\
+  CALL h5dcreate_f(parent_hid, dataset_name, {0}, space_id, dataset_hid, i_res)
+  """.format(base_type)
+
+    if rank > 0:
+        print indent + "CALL H5Sclose_f(space_id, i_res)"
         
 
     doAttributesCreate(dataset_json, "dataset_hid")
+
+    print indent + "CALL H5Dclose_f(dataset_hid, i_res)"
      
     print "end SUBROUTINE"
-          
+ 
+#------------------------------------------------------------------------------
+#
+# Generate dataset for each hard link to a dataset in a group
+#
+#------------------------------------------------------------------------------         
 def doDatasets(h5json, group_json, parent_id, h5path):
-    links = group_json["links"]
-    for link in links:
-        if link["class"] == "H5L_TYPE_HARD" and link["collection"] == "datasets":
-            doDataset(h5json, link["id"], link["title"], parent_id, h5path + link['title'])    
+    log.info("doDatasets h5path: " + h5path)
+    if "links" in group_json:
+        links = group_json["links"]
+        for link in links:
+            if link["class"] == "H5L_TYPE_HARD" and link["collection"] == "datasets":
+                doDataset(h5json, link["id"], link["title"], parent_id, h5path + link['title'])    
 
     
-    
+#------------------------------------------------------------------------------
+#
+# Process link items
+#
+#------------------------------------------------------------------------------    
 def doLink(h5json, link_json, parent_id, h5path):
+    log.info("doLink h5path: " + h5path)
    
     if link_json["class"] == "H5L_TYPE_EXTERNAL":
-        print "h5lcreate_external_f('{0}', {1}, {2}, '{3}', i_res)".format(link_json["title"], 
+        print "{0}call h5lcreate_external_f('{1}', '{2}', {3}, '{4}', i_res)".format(indent, link_json["title"], 
 		link_json["h5path"], parent_id, link_json["title"])  
     elif link_json["class"] == "H5L_TYPE_SOFT":
-        print "h5lcreate_soft_f('{0}', {1}, '{2}', i_res)".format(link_json["h5path"], parent_id, link_json["title"])
+        print "{0}call h5lcreate_soft_f('{1}', {2}, '{3}', i_res)".format(indent, link_json["h5path"], parent_id, link_json["title"])
     elif link_json["class"] == "H5L_TYPE_HARD":
         if link_json["collection"] == "groups":
             subroutine_name = h5pathToSubroutineName("CreateGroup" + h5path + link_json['title'])
-            print "call {0}('{1}', {2}, i_res)".format(subroutine_name, link_json['title'], parent_id);
+            print "{0}call {1}('{2}', {3}, i_res)".format(indent, subroutine_name, link_json['title'], parent_id);
         elif link_json["collection"] == "datasets":   
             subroutine_name = h5pathToSubroutineName("CreateDataset" + h5path  + link_json['title'])
-            print "call {0}('{1}', {2}, i_res)".format(subroutine_name, link_json['title'], parent_id);     
+            print "{0}call {1}('{2}', {3}, i_res)".format(indent, subroutine_name, link_json['title'], parent_id);     
         elif link_json["collection"] == "datatypes":
             pass # todo
         else:
             raise Exception("unexpected collection name: " + link_json["collection"])
     elif link_json["class"] == "H5L_TYPE_UDLINK":
-        print "# ignoring user defined link: '{0}'".format(link_json["title"])
+        print "{0}!ignoring user defined link: '{1}'".format(indent, link_json["title"])
     else:
         raise Exception("unexpected link type: " + link_json["class"]) 
     
-    
+#------------------------------------------------------------------------------
+#
+# Process group links
+#
+#------------------------------------------------------------------------------    
 def doLinks(h5json, group_json, parent_id, h5path):
-    links = group_json["links"]
-    for link in links:
-        doLink(h5json, link, parent_id, h5path)
+    log.info("doLinks h5path: " + h5path)
+    if "links" in group_json:
+        links = group_json["links"]
+        for link in links:
+            doLink(h5json, link, parent_id, h5path)
 
 
 #------------------------------------------------------------------------------
@@ -432,16 +601,14 @@ def doLinks(h5json, group_json, parent_id, h5path):
 #
 #------------------------------------------------------------------------------
 def fortran_main(h5json, filename): 
-    # diction of attribute arrays.
-    #  key: array_name
-    #  value: array definition
-    attr_arrays = {}
-
+    log.info("fortran_main")
+     
     # fortran create root attribute
     root_uuid = h5json["root"]
     group_json = h5json["groups"]
     root_json = group_json[root_uuid]
     
+    log.info("fortran_main")
 
     # fortran main header, file creation
     print """
@@ -508,6 +675,7 @@ integer :: &
     i_res                    ! Result code
 character(len=255) :: arg    ! Input arguments
 integer(HID_T) :: file_id    ! ID of HDF5 file
+integer(HID_T) :: memtype_id ! memory type for attribute write
 TYPE(C_PTR) :: f_ptr         ! c ptr for hdf5 lib calls
 !
 ! Open the HDF5 library
@@ -566,8 +734,11 @@ end program main
     doDatasets(h5json, root_json, "file_id", "/")
     doGroups(h5json, root_json, "file_id", "/")
     
-
-   
+#------------------------------------------------------------------------------
+#
+# Program entry point
+#
+#------------------------------------------------------------------------------
          
 def main():
     
@@ -575,9 +746,21 @@ def main():
     parser.add_argument('in_filename', nargs='+', help='JSon file to be converted to h5py')
     parser.add_argument('out_filename', nargs='+', help='name of HDF5 file to be created by generated code')
     args = parser.parse_args()
+
+    # create logger
+    global log
+    log = logging.getLogger("h5serv")
+    # log.setLevel(logging.WARN)
+    log.setLevel(logging.INFO)
+    # add log handler
+    handler = logging.FileHandler('./jsontofortran.log')
+    
+    # add handler to logger
+    log.addHandler(handler)
     
     text = open(args.in_filename[0]).read()
     
+    log.info("loading " + args.in_filename[0]);
     # parse the json file
     h5json = json.loads(text)
     
@@ -601,7 +784,7 @@ def main():
 ! Create an Attribute
 !
 !
-SUBROUTINE CreateAttribute(attr_name, parent_id, rank, dims, h5_type, buf, i_res) 
+SUBROUTINE CreateAttribute(attr_name, parent_id, rank, dims, h5_type, mem_type, buf, i_res) 
 USE HDF5
 USE ISO_C_BINDING
 IMPLICIT NONE
@@ -610,6 +793,7 @@ IMPLICIT NONE
   integer, intent(in) :: rank
   integer(hsize_t), intent(in), dimension(*) :: dims
   integer, intent(in) :: h5_type
+  integer, intent(in) :: mem_type
   integer, intent(out) :: i_res
   TYPE(C_PTR), intent(in) :: buf
   INTEGER :: hdferr  
@@ -618,10 +802,13 @@ IMPLICIT NONE
   print *, "creat attribute ", attr_name
   print *, "parent id", parent_id
   print *, "rank", rank
-  print *, "dims: ", dims(1)
-  CALL H5Screate_simple_f(rank, dims, space, hdferr)
+  if (rank > 0) then
+     CALL H5Screate_simple_f(rank, dims, space, hdferr)
+  else
+     CALL H5Screate_f(H5S_SCALAR_F, space, hdferr)
+  end if
   CALL H5Acreate_f(parent_id, attr_name, h5_type, space, attr, hdferr)
-  CALL H5Awrite_f(attr, H5T_NATIVE_INTEGER, buf, hdferr)
+  CALL H5Awrite_f(attr, mem_type, buf, hdferr)
   CALL H5Aclose_f(attr, hdferr)
   CALL H5Sclose_f(space, hdferr)
   i_res = 0
