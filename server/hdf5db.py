@@ -964,6 +964,8 @@ class Hdf5db:
                         obj.dims.create_scale(refObj, "scale_" + str(i))
                         obj.dims[i].attach_scale(refObj)
                 else:
+                    print "value: ", value
+                    print "type: ", attr_type
                     obj.attrs.create(attr_name, value, dtype=dt)
      
         now = time.time()
@@ -993,7 +995,25 @@ class Hdf5db:
     """
       Return a json-serializable representation of the numpy value 
     """
-    def getDataValue(self, typeItem, value):
+    def getDataValue(self, typeItem, value, dimension=0, dims=None):
+        if dimension > 0:
+            if type(dims) not in (list, tuple):
+                msg = "unexpected type for type array dimensions"
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg)
+            out = []
+            rank = len(dims)
+            if dimension > rank:
+                msg = "unexpected dimension for type array"
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg)
+            nElements = dims[rank - dimension]
+            for i in range(nElements):
+                item_value = self.getDataValue(typeItem, value[i], 
+                    dimension=(dimension-1), dims=dims)
+                out.append(item_value)
+            return out  # done for array case
+            
         out = None
         typeClass = typeItem['class']
         if isinstance(value, (np.ndarray, np.generic) ):
@@ -1033,7 +1053,15 @@ class Hdf5db:
         elif typeClass == 'H5T_OPAQUE':
             out = "???"  # todo
         elif typeClass == 'H5T_ARRAY':
-            out = "???"  # todo
+            type_dims = typeItem["dims"]
+            if type(type_dims) not in (list, tuple):
+                msg = "unexpected type for type array dimensions"
+                self.log.error(msg)
+                raise IOError(errno.EIO, msg)
+            rank = len(type_dims)
+            baseType = typeItem['base']
+            out = self.getDataValue(baseType, value, dimension=rank, dims=type_dims)
+            
         elif typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING', 'H5T_ENUM'):
             out = value  # just copy value
         else:

@@ -194,17 +194,13 @@ class AttributeTest(unittest.TestCase):
         typeBase = typeItem['base']
         self.assertEqual(typeBase['class'], 'H5T_INTEGER')
         self.assertEqual(typeBase['base'], 'H5T_STD_I64LE')
+        self.assertTrue('value' in rspJson)
          
-        # bug! - unable to read value from attribute with array type
-        # code is not returning 'value' key in this case
-        # h5py issue: https://github.com/h5py/h5py/issues/498 
-        if 'value' in rspJson and rspJson['value']:
-            # remove above if check once h5py 2.4 is released
-            self.assertTrue('value' in rspJson)
-            value = rspJson['value']
-            self.assertEqual(len(value), 4)
-            elem = value[0] # elem should be a 3x5 array 
-            self.assertEqual(elem[2], [0, -2, -4, -6, -8])
+        value = rspJson['value']
+        self.assertEqual(len(value), 4)   
+        elem = value[0] # elem should be a 3x5 array 
+        self.assertEqual(len(elem), 3)
+        self.assertEqual(elem[2], [0, -2, -4, -6, -8])
         
     def testGetVLenString(self):
         domain = 'vlen_string_attr.' + config.get('domain')  
@@ -747,15 +743,17 @@ class AttributeTest(unittest.TestCase):
         self.assertEqual(len(rspJson['hrefs']), 3)
         
     def testPutDimensionScale(self):
-        domain = 'dim_scale_updated.' + config.get('domain')  
+        domain = 'dim_scale_updated.' + config.get('domain')
         root_uuid = helper.getRootUUID(domain)
+        headers = {'host': domain}
+       
         dset_uuid = helper.getUUID(domain, root_uuid, 'temperatures')
-         
+        
         scale_x_uuid = helper.getUUID(domain, root_uuid, 'scale_x') 
         scale_y_uuid = helper.getUUID(domain, root_uuid, 'scale_y') 
         scale_z_uuid = helper.getUUID(domain, root_uuid, 'scale_z') 
         
-        headers = {'host': domain}
+        # attach a dimension_list attribute to temperatures dataset
         reftype = {'class': 'H5T_REFERENCE', 'base': 'H5T_STD_REF_OBJ' }
         
         attr_name = "DIMENSION_LIST"
@@ -772,19 +770,6 @@ class AttributeTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create attribute
         
-        # read the x dimenscale and verify it refernces the temperature dataset
-        attr_name = "REFERENCE_LIST"
-        
-        fields = ({'name': 'dataset', 'type': reftype}, 
-                    {'name': 'dimension', 'type': 'H5T_STD_I32LE'}) 
-        datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
-        
-        elem = ("datasets/" + dset_uuid, 2)
-        value = (elem,)  # one-element array 
-        payload = {'type': datatype, 'shape': 1, 'value': value}
-        req = self.endpoint + "/datasets/" + scale_z_uuid + "/attributes/" + attr_name
-        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  # create attribute    
         
     def testPutInvalid(self):
         domain = 'tall_updated.' + config.get('domain') 
