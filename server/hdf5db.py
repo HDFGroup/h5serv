@@ -964,8 +964,6 @@ class Hdf5db:
                         obj.dims.create_scale(refObj, "scale_" + str(i))
                         obj.dims[i].attach_scale(refObj)
                 else:
-                    print "value: ", value
-                    print "type: ", attr_type
                     obj.attrs.create(attr_name, value, dtype=dt)
      
         now = time.time()
