@@ -115,7 +115,7 @@ class Hdf5db:
         
         self.update_timestamps = update_timestamps
         
-        self.f = h5py.File(filePath, mode)
+        self.f = h5py.File(filePath, mode, libver='latest')
         
         self.root_uuid=root_uuid
         
@@ -1549,12 +1549,12 @@ class Hdf5db:
             dset[()] = data
         else:
             if type(slices) != tuple:
-                self.log.error("getDatasetValuesByUuid: bad type for dim parameter")
+                self.log.error("setDatasetValuesByUuid: bad type for dim parameter")
                 return False
             rank = len(dset.shape)
             
             if len(slices) != rank:
-                self.log.error("getDatasetValuesByUuid: number of dims in selection not same as rank")
+                self.log.error("setDatasetValuesByUuid: number of dims in selection not same as rank")
                 return False 
             else: 
                 if rank == 1:

@@ -15,8 +15,8 @@ A computer running a 64-bit version of Windows, Mac OS X, or Linux.
 You will also need the following Python packages:
 
 * Python 2.7
-* NumPy 1.6.1 or later
-* h5py 2.3.1 or later
+* NumPy 1.9.2 or later
+* h5py 2.5 or later
 * twisted 14.0 or later (if setting up DNS)
 * tornado 4.0.2 or later
 * requests 2.3 or later (for client tests)
