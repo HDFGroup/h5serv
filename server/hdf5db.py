@@ -12,31 +12,31 @@
 
 """
 This class is used to manage UUID lookup tables for primary HDF objects (Groups, Datasets,
- and Datatypes).  For HDF5 files that are read/write, this information is managed within 
- the file itself in the "__db__" group.  For read-only files, the data is managed in 
+ and Datatypes).  For HDF5 files that are read/write, this information is managed within
+ the file itself in the "__db__" group.  For read-only files, the data is managed in
  an external file (domain filename with ".db" extension).
- 
- "___db__"  ("root" for read-only case) 
-    description: Group object (member of root group). Only objects below this group are used 
+
+ "___db__"  ("root" for read-only case)
+    description: Group object (member of root group). Only objects below this group are used
             for UUID data
     members: "{groups}", "{datasets}", "{datatypes}", "{objects}", "{paths}"
     attrs: 'rootUUID': UUID of the root group
-    
-"{groups}"  
-    description: contains map of UUID->group objects  
+
+"{groups}"
+    description: contains map of UUID->group objects
     members: hard link to each anonymous group (i.e. groups which are not
         linked to by anywhere else).  Link name is the UUID
     attrs: group reference (or path for read-only files) to the group (for non-
         anonymous groups).
-    
-"{datasets}"  
-    description: contains map of UUID->dataset objects  
+
+"{datasets}"
+    description: contains map of UUID->dataset objects
     members: hard link to each anonymous dataset (i.e. datasets which are not
         linked to by anywhere else).  Link name is the UUID
     attrs: dataset reference (or path for read-only files) to the group (for non-
         anonymous datasets).
-    
-"{datatypes}"  
+
+"{datatypes}"
     description: contains map of UUID->datatyped objects
     members: hard link to each anonymous datatype (i.e. datatypes which are not
         linked to by anywhere else).  Link name is the UUID
@@ -47,10 +47,10 @@ This class is used to manage UUID lookup tables for primary HDF objects (Groups,
     description: contains map of file offset to UUID.
     members: none
     attrs: map of file offset to UUID
-        
-    
-    
- 
+
+
+
+
 """
 import errno
 import time
@@ -71,31 +71,31 @@ _db = { }
 
 UUID_LEN = 36  # length for uuid strings
 
-def visitObj(path, obj):   
+def visitObj(path, obj):
     hdf5db = _db[obj.file.filename]
     hdf5db.visit(path, obj)
-    
-    
+
+
 class Hdf5db:
-        
+
     @staticmethod
     def createHDF5File(filePath):
         # create an "empty" hdf5 file
         if op.isfile(filePath):
             raise IOError(errno.EEXIST, "Resource already exists")
-        
+
         f = h5py.File(filePath, 'w')
         f.close()
-        
-        
+
+
     @staticmethod
     def getVersionInfo():
         versionInfo = {}
         versionInfo['h5py_version'] = h5py.version.version
         versionInfo['hdf5_version'] = h5py.version.hdf5_version
         return versionInfo
-                 
-        
+
+
     def __init__(self, filePath, dbFilePath=None, readonly=False, app_logger=None, root_uuid=None, update_timestamps=True):
         if app_logger:
             self.log = app_logger
@@ -105,28 +105,28 @@ class Hdf5db:
         if readonly:
             self.readonly = True
         else:
-            if os.access(filePath, os.W_OK):         
+            if os.access(filePath, os.W_OK):
                 mode = 'r+'
                 self.readonly = False
             else:
                 self.readonly = True
-        
+
         self.log.info("init -- filePath: " + filePath + " mode: " + mode)
-        
+
         self.update_timestamps = update_timestamps
-        
+
         self.f = h5py.File(filePath, mode, libver='latest')
-        
+
         self.root_uuid=root_uuid
-        
-        if self.readonly:     
-            # for read-only files, add a dot in front of the name to be used as the 
-            # db file.  This won't collide with actual data files, since "." is not 
+
+        if self.readonly:
+            # for read-only files, add a dot in front of the name to be used as the
+            # db file.  This won't collide with actual data files, since "." is not
             # allowed as the first character in a domain name.
             if not dbFilePath:
                 dirname = op.dirname(self.f.filename)
                 basename = op.basename(self.f.filename)
-                if len(dirname) > 0: 
+                if len(dirname) > 0:
                     dbFilePath = dirname + '/.' + basename
                 else:
                     dbFilePath = '.' + basename
@@ -139,9 +139,9 @@ class Hdf5db:
             self.dbf = None # for read only
         # create a global reference to this class
         # so visitObj can call back
-        _db[filePath] = self 
-        
-    
+        _db[filePath] = self
+
+
     def __enter__(self):
         self.log.info('Hdf5db __enter')
         return self
@@ -155,8 +155,8 @@ class Hdf5db:
             self.dbf.flush()
             self.dbf.close()
         del _db[filename]
-        
-        
+
+
     def getTimeStampName(self, uuid, objType="object", name=None):
         ts_name = uuid
         if objType != "object":
@@ -171,92 +171,92 @@ class Hdf5db:
                 ts_name += "_link:["
                 ts_name += name
                 ts_name += "]"
-            else:   
+            else:
                 msg = "Bad objType passed to setCreateTime"
                 self.log.error(msg)
                 raise IOError(errno.EIO, msg)
         return ts_name
-        
-     
+
+
     """
       setCreateTime - sets the create time timestamp for the
             given object.
         uuid - id of object
         objtype - one of "object", "link", "attribute"
-        name - name (for attributes, links... ignored for objects)   
+        name - name (for attributes, links... ignored for objects)
         timestamp - time (otherwise current time will be used)
-       
-       returns - nothing 
-       
+
+       returns - nothing
+
        Note - should only be called once per object
-    """    
+    """
     def setCreateTime(self, uuid, objType="object", name=None, timestamp=None):
         if not self.update_timestamps:
             return
         ctime_grp = self.dbGrp["{ctime}"]
-        ts_name = self.getTimeStampName(uuid, objType, name) 
+        ts_name = self.getTimeStampName(uuid, objType, name)
         if timestamp == None:
             timestamp = time.time()
         if ts_name in ctime_grp.attrs:
             self.log.warn("modifying create time for object: " + ts_name)
         ctime_grp.attrs.create(ts_name, timestamp, dtype='int64')
-    
+
     """
       getCreateTime - gets the create time timestamp for the
             given object.
         uuid - id of object
         objtype - one of "object", "link", "attribute"
-        name - name (for attributes, links... ignored for objects) 
-        useRoot - if true, use the time value for root object as default  
-       
-       returns - create time for object, or create time for root if not set 
-    """    
+        name - name (for attributes, links... ignored for objects)
+        useRoot - if true, use the time value for root object as default
+
+       returns - create time for object, or create time for root if not set
+    """
     def getCreateTime(self, uuid, objType="object", name=None, useRoot=True):
         ctime_grp = self.dbGrp["{ctime}"]
-        ts_name = self.getTimeStampName(uuid, objType, name) 
+        ts_name = self.getTimeStampName(uuid, objType, name)
         timestamp = None
         if ts_name in ctime_grp.attrs:
             timestamp = ctime_grp.attrs[ts_name]
         elif useRoot:
             # return root timestamp
-            root_uuid = self.dbGrp.attrs["rootUUID"] 
+            root_uuid = self.dbGrp.attrs["rootUUID"]
             if root_uuid in ctime_grp.attrs:
                 timestamp = ctime_grp.attrs[root_uuid]
         return timestamp
-     
+
     """
       setModifiedTime - sets the modified time timestamp for the
             given object.
         uuid - id of object
         objtype - one of "object", "link", "attribute"
-        name - name (for attributes, links... ignored for objects)   
+        name - name (for attributes, links... ignored for objects)
         timestamp - time (otherwise current time will be used)
-       
-       returns - nothing 
-       
-    """         
+
+       returns - nothing
+
+    """
     def setModifiedTime(self, uuid, objType="object", name=None, timestamp=None):
         if not self.update_timestamps:
             return
         mtime_grp = self.dbGrp["{mtime}"]
-        ts_name = self.getTimeStampName(uuid, objType, name) 
+        ts_name = self.getTimeStampName(uuid, objType, name)
         if timestamp == None:
             timestamp = time.time()
         mtime_grp.attrs.create(ts_name, timestamp, dtype='int64')
-     
+
     """
       getModifiedTime - gets the modified time timestamp for the
             given object.
         uuid - id of object
         objtype - one of "object", "link", "attribute"
-        name - name (for attributes, links... ignored for objects) 
-        useRoot - if true, use the time value for root object as default   
-       
-       returns - create time for object, or create time for root if not set 
-    """     
+        name - name (for attributes, links... ignored for objects)
+        useRoot - if true, use the time value for root object as default
+
+       returns - create time for object, or create time for root if not set
+    """
     def getModifiedTime(self, uuid, objType="object", name=None, useRoot=True):
         mtime_grp = self.dbGrp["{mtime}"]
-        ts_name = self.getTimeStampName(uuid, objType, name) 
+        ts_name = self.getTimeStampName(uuid, objType, name)
         timestamp = None
         if ts_name in mtime_grp.attrs:
             timestamp = mtime_grp.attrs[ts_name]
@@ -267,10 +267,10 @@ class Hdf5db:
                 timestamp = ctime_grp.attrs[ts_name]
             elif useRoot:
                 # return root timestamp
-                root_uuid = self.dbGrp.attrs["rootUUID"] 
+                root_uuid = self.dbGrp.attrs["rootUUID"]
                 timestamp = mtime_grp.attrs[root_uuid]
         return timestamp
-        
+
     def initFile(self):
         # self.log.info("initFile")
         if self.readonly:
@@ -279,16 +279,16 @@ class Hdf5db:
                 # file already initialized
                 self.root_uuid = self.dbGrp.attrs["rootUUID"]
                 return
-            
+
         else:
             if "__db__" in self.f:
                 # file already initialized
                 self.dbGrp = self.f["__db__"]
                 self.root_uuid = self.dbGrp.attrs["rootUUID"]
-                return;  # already initialized 
+                return;  # already initialized
             self.dbGrp = self.f.create_group("__db__")
-           
-        self.log.info("initializing file") 
+
+        self.log.info("initializing file")
         if not self.root_uuid:
             self.root_uuid = str(uuid.uuid1())
         self.dbGrp.attrs["rootUUID"] = self.root_uuid
@@ -298,20 +298,20 @@ class Hdf5db:
         self.dbGrp.create_group("{addr}") # store object address
         self.dbGrp.create_group("{ctime}") # stores create timestamps
         self.dbGrp.create_group("{mtime}") # store modified timestamps
-        
+
         mtime = op.getmtime(self.f.filename)
         ctime = mtime
         self.setCreateTime(self.root_uuid, timestamp=ctime)
         self.setModifiedTime(self.root_uuid, timestamp=mtime)
-            
+
         self.f.visititems(visitObj)
-        
+
     def visit(self, path, obj):
         name = obj.__class__.__name__
         if len(path) >= 6 and path[:6] == '__db__':
             return  # don't include the db objects
         self.log.info('visit: ' + path +' name: ' + name)
-        col = None 
+        col = None
         if name == 'Group':
             col = self.dbGrp["{groups}"].attrs
         elif name == 'Dataset':
@@ -333,19 +333,19 @@ class Hdf5db:
             col[id] = obj.name
         addr = h5py.h5o.get_info(obj.id).addr
         # store reverse map as an attribute
-        addrGrp.attrs[str(addr)] = id       
-        
+        addrGrp.attrs[str(addr)] = id
+
     def getUUIDByAddress(self, addr):
         if "{addr}" not in self.dbGrp:
-            self.log.error("expected to find {addr} group") 
+            self.log.error("expected to find {addr} group")
             return None
         addrGrp = self.dbGrp["{addr}"]
         obj_uuid = None
         if str(addr) in addrGrp.attrs:
-            obj_uuid = addrGrp.attrs[str(addr)] 
+            obj_uuid = addrGrp.attrs[str(addr)]
         return obj_uuid
-    
-        
+
+
     """
      Get the number of links in a group to an object
     """
@@ -359,13 +359,13 @@ class Hdf5db:
                 # UDLink? Ignore for now
                 self.log.info("ignoring link (UDLink?): " + name)
                 continue
-                
+
             addr = h5py.h5o.get_info(child.id).addr
             if addr == objAddr:
                 numLinks = numLinks + 1
-            
-        return numLinks  
-            
+
+        return numLinks
+
     """
      Get the number of links to the given object
     """
@@ -392,9 +392,9 @@ class Hdf5db:
         root = self.getObjByPath("/")
         nLinks = self.getNumLinksToObjectInGroup(root, obj)
         numLinks += nLinks
-            
-        return numLinks   
-        
+
+        return numLinks
+
     def getUUIDByPath(self, path):
         self.initFile()
         self.log.info("getUUIDByPath: [" + path + "]")
@@ -405,19 +405,19 @@ class Hdf5db:
         if path == '/':
             # just return the root UUID
             return self.dbGrp.attrs["rootUUID"]
-            
+
         obj = self.f[path]  # will throw KeyError if object doesn't exist
         addr = h5py.h5o.get_info(obj.id).addr
         obj_uuid = self.getUUIDByAddress(addr)
         return obj_uuid
-                     
+
     def getObjByPath(self, path):
         if len(path) >= 6 and path[:6] == '__db__':
             return None # don't include the db objects
         obj = self.f[path]  # will throw KeyError if object doesn't exist
         return obj
-        
-    
+
+
     def getObjectByUuid(self, col_type, obj_uuid):
         #col_type should be either "datasets", "groups", or "datatypes"
         if col_type not in ("datasets", "groups", "datatypes"):
@@ -426,7 +426,7 @@ class Hdf5db:
             raise IOError(errno.EIO, msg)
         if col_type == "groups" and obj_uuid == self.dbGrp.attrs["rootUUID"]:
             return self.f['/']  # returns root group
-            
+
         obj = None  # Group, Dataset, or Datatype
         col_name = '{' + col_type + '}'
         # get the collection group for this collection type
@@ -434,37 +434,37 @@ class Hdf5db:
         if obj_uuid in col.attrs:
             ref = col.attrs[obj_uuid]
             obj = self.f[ref]  # this works for read-only as well
-        elif obj_uuid in col: 
+        elif obj_uuid in col:
             # anonymous object
             obj = col[obj_uuid]
-                
+
         return obj
-        
+
     def getDatasetObjByUuid(self, obj_uuid):
         self.initFile()
         self.log.info("getDatasetObjByUuid(" + obj_uuid + ")")
-        
+
         obj = self.getObjectByUuid("datasets", obj_uuid)
-                                 
+
         return obj
-        
+
     def getGroupObjByUuid(self, obj_uuid):
         self.initFile()
         self.log.info("getGroupObjByUuid(" + obj_uuid + ")")
-        
+
         obj = self.getObjectByUuid("groups", obj_uuid)
-         
+
         return obj
-    
+
     def getDatasetTypeItemByUuid(self, obj_uuid):
         dset = self.getDatasetObjByUuid(obj_uuid)  # throws exception if not found
         item = { 'id': obj_uuid }
         item['type'] = hdf5dtype.getTypeItem(dset.dtype)
         if self.update_timestamps:
             item['ctime'] = self.getCreateTime(obj_uuid)
-            item['mtime'] = self.getModifiedTime(obj_uuid)      
-        
-        return item    
+            item['mtime'] = self.getModifiedTime(obj_uuid)
+
+        return item
 
     """
     getNullReference - return a null object reference
@@ -480,10 +480,10 @@ class Hdf5db:
              tmpGrp.create_dataset('nullref', (1,), dtype=dt)
          nullref_dset = tmpGrp['nullref']
          return nullref_dset[0]
-         
+
     """
     getDimensionList_template - use dimscale api to setup type for dimenscale objects
-    
+
     Note: this is an attempted work-around for h5py issue:
        https://github.com/h5py/h5py/issues/553
     """
@@ -504,9 +504,9 @@ class Hdf5db:
             dset = tmpGrp["dimscale_dset"]
             attr = dset.attrs["DIMENSION_LIST"]
         return attr
-             
-        
-             
+
+
+
     """
     getNullRegionReference - return a null region reference
     """
@@ -521,7 +521,7 @@ class Hdf5db:
              tmpGrp.create_dataset('nullregref', (1,), dtype=dt)
          nullref_dset = tmpGrp['nullregref']
          return nullregref_dset[0]
-        
+
     def getShapeItemByDsetObj(self, obj):
         item = {}
         if len(obj.shape) == 0:
@@ -529,7 +529,7 @@ class Hdf5db:
             # we'll do this by seeing if an exception is raised when reading the dataset
             # h5py issue https://github.com/h5py/h5py/issues/279 will provide a better
             # way to determine null spaces
-            try: 
+            try:
                 val = obj[...]
                 if not val:
                     self.log.warning("no value returned for scalar dataset")
@@ -553,12 +553,12 @@ class Hdf5db:
             if include_maxdims:
                 item['maxdims'] = maxshape
         return item
-        
+
     def getShapeItemByAttrObj(self, obj):
         item = {}
         if obj.get_storage_size() == 0:
             # If storage size is 0, assume this is a null space obj
-            # See: h5py issue https://github.com/h5py/h5py/issues/279  
+            # See: h5py issue https://github.com/h5py/h5py/issues/279
             item['class'] = 'H5S_NULL'
         else:
             if obj.shape:
@@ -567,9 +567,9 @@ class Hdf5db:
             else:
                 item['class'] = 'H5S_SCALAR'
         return item
-        
+
     def getDatasetItemByUuid(self, obj_uuid):
-        dset = self.getDatasetObjByUuid(obj_uuid)  
+        dset = self.getDatasetObjByUuid(obj_uuid)
         if dset is None:
             if self.getModifiedTime(obj_uuid, useRoot=False):
                 msg = "Dataset with uuid: " + obj_uuid + " has been previously deleted"
@@ -579,17 +579,17 @@ class Hdf5db:
                 msg = "Dataset with uuid: " + obj_uuid + " was not found"
                 self.log.info(msg)
                 raise IOError(errno.ENXIO, msg)
-        
+
         #file in the item info for the dataset
         item = { 'id': obj_uuid }
-        
+
         alias = []
         if dset.name:
             alias.append(dset.name)   # just use the default h5py path for now
         item['alias'] = alias
-        
+
         item['attributeCount'] = len(dset.attrs)
-        
+
         # check if the dataset is using a committed type
         typeid = h5py.h5d.DatasetID.get_type(dset.id)
         typeItem = None
@@ -600,14 +600,14 @@ class Hdf5db:
             committedType = self.getCommittedTypeItemByUuid(type_uuid)
             typeItem = committedType['type']
             typeItem['uuid'] = type_uuid
-        else:  
+        else:
             typeItem = hdf5dtype.getTypeItem(dset.dtype)
-            
+
         item['type'] = typeItem
-            
+
         # get shape
         item['shape'] = self.getShapeItemByDsetObj(dset)
-         
+
         #todo - get fillvalue for committed type objects
         if typeItem and typeItem['class'] != 'H5T_VLEN' and typeItem['class'] != 'H5T_OPAQUE':
             try:
@@ -617,13 +617,13 @@ class Hdf5db:
             except RuntimeError:
                 # exception is thrown if fill value is not set
                 pass   # nop
-        if self.update_timestamps:    
+        if self.update_timestamps:
             item['ctime'] = self.getCreateTime(obj_uuid)
-            item['mtime'] = self.getModifiedTime(obj_uuid)      
-        
+            item['mtime'] = self.getModifiedTime(obj_uuid)
+
         return item
-        
-    """ 
+
+    """
     createTypeFromItem - create type given dictionary definition
     """
     def createTypeFromItem(self, typeItem):
@@ -637,17 +637,17 @@ class Hdf5db:
         except TypeError as te:
             msg = "Unable able to create type: " + te.message
             self.log.info(msg)
-            raise IOError(errno.EINVAL, msg)      
+            raise IOError(errno.EINVAL, msg)
         if dt is None:
             msg = "Unexpected error creating type"
             self.log.error(msg)
             raise IOError(errno, errno.EIO, msg)
         return dt
-        
+
     """
-    createCommittedType - creates new named datatype  
+    createCommittedType - creates new named datatype
     Returns item
-    """   
+    """
     def createCommittedType(self, datatype, obj_uuid=None):
         self.log.info("createCommittedType")
         self.initFile()
@@ -659,14 +659,14 @@ class Hdf5db:
         if not obj_uuid:
             obj_uuid = str(uuid.uuid1())
         dt = self.createTypeFromItem(datatype)
-        
+
         datatypes[obj_uuid] = np.dtype(dt)  # dt
-        
+
         if obj_uuid not in datatypes:
             msg = "Unexpected failure to create committed datatype"
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
-        newType = datatypes[obj_uuid] # this will be a h5py Datatype class 
+        newType = datatypes[obj_uuid] # this will be a h5py Datatype class
         # store reverse map as an attribute
         addr = h5py.h5o.get_info(newType.id).addr
         addrGrp = self.dbGrp["{addr}"]
@@ -677,16 +677,16 @@ class Hdf5db:
         self.setModifiedTime(obj_uuid, timestamp=now)
         item = { 'id': obj_uuid }
         item['attributeCount'] = len(newType.attrs)
-        #item['type'] = hdf5dtype.getTypeItem(datatype.dtype) 
+        #item['type'] = hdf5dtype.getTypeItem(datatype.dtype)
         if self.update_timestamps:
             item['ctime'] = self.getCreateTime(obj_uuid)
-            item['mtime'] = self.getModifiedTime(obj_uuid) 
+            item['mtime'] = self.getModifiedTime(obj_uuid)
         return item
-      
+
     """
-    getCommittedTypeObjByUuid - get obj from {datatypes} collection 
+    getCommittedTypeObjByUuid - get obj from {datatypes} collection
     Returns type obj
-    """   
+    """
     def getCommittedTypeObjByUuid(self, obj_uuid):
         self.log.info("getCommittedTypeObjByUuid(" + obj_uuid + ")")
         self.initFile()
@@ -701,18 +701,18 @@ class Hdf5db:
         else:
             msg = "Committed datatype: " + obj_uuid + " not found"
             self.log.info(msg)
-     
+
         return datatype
-        
+
     """
-    getCommittedTypeItemByUuid - get json from {datatypes} collection 
+    getCommittedTypeItemByUuid - get json from {datatypes} collection
     Returns type obj
-    """   
+    """
     def getCommittedTypeItemByUuid(self, obj_uuid):
         self.log.info("getCommittedTypeItemByUuid(" + obj_uuid + ")")
         self.initFile()
         datatype = self.getCommittedTypeObjByUuid(obj_uuid)
-        
+
         if datatype == None:
             if self.getModifiedTime(obj_uuid, useRoot=False):
                 msg = "Datatype with uuid: " + obj_uuid + " has been previously deleted"
@@ -722,37 +722,37 @@ class Hdf5db:
                 msg = "Datatype with uuid: " + obj_uuid + " was not found"
                 self.log.info(msg)
                 raise IOError(errno.ENXIO, msg)
-         
+
         item = { 'id': obj_uuid }
         alias = []
         if datatype.name:
             alias.append(datatype.name)   # just use the default h5py path for now
         item['alias'] = alias
         item['attributeCount'] = len(datatype.attrs)
-        item['type'] = hdf5dtype.getTypeItem(datatype.dtype) 
+        item['type'] = hdf5dtype.getTypeItem(datatype.dtype)
         if self.update_timestamps:
             item['ctime'] = self.getCreateTime(obj_uuid)
-            item['mtime'] = self.getModifiedTime(obj_uuid) 
-        
+            item['mtime'] = self.getModifiedTime(obj_uuid)
+
         return item
 
-   
+
     """
       Get attribute given an object and name
-      returns: JSON object 
-    """ 
+      returns: JSON object
+    """
     def getAttributeItemByObj(self, obj, name, includeData=True):
         if name not in obj.attrs:
             msg = "Attribute: [" + name + "] not found in object: " + obj.name
             self.log.info(msg)
             return None
-            
+
         # get the attribute!
         attrObj = h5py.h5a.open(obj.id, name)
         attr = None
-                   
+
         item = { 'name': name }
-         
+
         # check if the dataset is using a committed type
         typeid = attrObj.get_type()
         typeItem = None
@@ -763,15 +763,15 @@ class Hdf5db:
             committedType = self.getCommittedTypeItemByUuid(type_uuid)
             typeItem = committedType['type']
             typeItem['uuid'] = type_uuid
-        else:  
+        else:
             typeItem = hdf5dtype.getTypeItem(attrObj.dtype)
         item['type'] = typeItem
-        # todo - don't include data for OPAQUE until JSON serialization 
+        # todo - don't include data for OPAQUE until JSON serialization
         # issues are addressed
-        
+
         if type(typeItem) == dict and typeItem['class'] in ('H5T_OPAQUE'):
             includeData = False
-         
+
         shape_json = self.getShapeItemByAttrObj(attrObj)
         item['shape'] = shape_json
         if shape_json['class'] == 'H5S_NULL':
@@ -780,8 +780,8 @@ class Hdf5db:
             try:
                 attr = obj.attrs[name]  # returns a numpy array
             except TypeError:
-                self.log.warning("type error reading attribute") 
-        
+                self.log.warning("type error reading attribute")
+
         if includeData and attr is not None:
             if shape_json['class'] == 'H5S_SCALAR':
                 item['value'] = self.getDataValue(typeItem, attr)
@@ -793,21 +793,21 @@ class Hdf5db:
                 item['value'] = self.toList(rank, typeItem, attr)
         # timestamps will be added by getAttributeItem()
         return item
-            
+
     def getAttributeItems(self, col_type, obj_uuid, marker=None, limit=0):
         self.log.info("db.getAttributeItems(" + obj_uuid + ")")
         if marker:
             self.log.info("...marker: " + marker)
         if limit:
             self.log.info("...limit: " + str(limit))
-        
+
         self.initFile()
         obj = self.getObjectByUuid(col_type, obj_uuid)
         if obj == None:
             msg = "Object: " + obj_uuid + " could not be loaded"
             self.log.info(msg)
             raise IOError(errno.ENXIO, msg)
-            
+
         items = []
         gotMarker = True
         if marker != None:
@@ -825,15 +825,15 @@ class Hdf5db:
             if self.update_timestamps:
                 item['ctime'] = self.getCreateTime(obj_uuid, objType="attribute", name=name)
                 item['mtime'] = self.getModifiedTime(obj_uuid, objType="attribute", name=name)
-                           
+
             items.append(item)
             count += 1
             if limit > 0 and count == limit:
                 break  # return what we got
         return items
-            
+
     def getAttributeItem(self, col_type, obj_uuid, name):
-        self.log.info("getAttributeItemByUuid(" + col_type + ", " + obj_uuid + ", " + 
+        self.log.info("getAttributeItemByUuid(" + col_type + ", " + obj_uuid + ", " +
             name + ")")
         self.initFile()
         obj = self.getObjectByUuid(col_type, obj_uuid)
@@ -856,9 +856,9 @@ class Hdf5db:
         if self.update_timestamps:
             item['ctime'] = self.getCreateTime(obj_uuid, objType="attribute", name=name)
             item['mtime'] = self.getModifiedTime(obj_uuid, objType="attribute", name=name)
-            
+
         return item
-        
+
     def createAttribute(self, col_name, obj_uuid, attr_name, shape, attr_type, value):
         self.log.info("createAttribute: [" + attr_name + "]")
         #print "createAttribute, type:", attr_type
@@ -866,7 +866,7 @@ class Hdf5db:
         #print "obj_uuid:", obj_uuid
         #print "createAttribute, value:", value
         #attr_type_orig = None
-         
+
         self.initFile()
         if self.readonly:
             msg = "Unable to create attribute (updates are not allowed)"
@@ -877,8 +877,8 @@ class Hdf5db:
             msg = "Object with uuid: " + obj_uuid + " not found"
             self.log.info(msg)
             raise IOError(errno.ENXIO, msg)
-        is_committed_type = False 
-        
+        is_committed_type = False
+
         dt = None
         if type(attr_type) in (str, unicode) and len(attr_type) == UUID_LEN:
             # assume attr_type is a uuid of a named datatype
@@ -889,13 +889,13 @@ class Hdf5db:
                 self.log.info(msg)
                 raise IOError(errno.ENXIO, msg)
             dt = tgt  # can use the object as the dt parameter
-        else:    
+        else:
             dt = self.createTypeFromItem(attr_type)
         if dt is None:
             msg = "Unexpected error creating datatype for attribute"
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
-            
+
         if shape == None:
             self.log.info("shape is null - will create null space attribute")
             # create null space attribute
@@ -913,7 +913,7 @@ class Hdf5db:
             if not tmpAttr:
                 msg = "Unexpected error creating datatype for nullspace attribute"
                 self.log.error(msg)
-                raise IOError(errno.EIO, msg)                
+                raise IOError(errno.EIO, msg)
             tid = tmpAttr.get_type()
             sid = sid = h5py.h5s.create(h5py.h5s.NULL)
             # now create the permanent attribute
@@ -927,26 +927,26 @@ class Hdf5db:
                 msg = "Unexpected error creating nullspace attribute"
                 self.log.error(msg)
                 raise IOError(errno.EIO, msg)
-        else:  
+        else:
             if type(value) == tuple:
-                value = list(value) 
+                value = list(value)
             #print "value to list:", value
             if not is_committed_type:
                 # apparently committed types can not be used as reference types
                 # todo - verify why that is
-                
+
                 rank = len(shape)
                 # convert python list to numpy object
                 typeItem = hdf5dtype.getTypeItem(dt)
                 value = self.toRef(rank, typeItem, value)
-                 
-                    
+
+
                 if shape is not None and type(attr_type) == dict and attr_type['class'] == 'H5T_VLEN' and attr_name == 'DIMENSION_LIST':
                     # work-around for VLEN of REFERENCE issue:
-                    #   https://github.com/HDFGroup/h5serv/issues/39 
+                    #   https://github.com/HDFGroup/h5serv/issues/39
                     #print "value: ", value
                     #print "obj name: ", obj.name
-                    
+
                     for i in range(len(value)):
                         hRef = value[i]
                         if type(hRef) in (tuple, list):
@@ -954,7 +954,7 @@ class Hdf5db:
                         refObj = self.f[hRef]
                         #print "hRef:", hRef
                         #print "name:", refObj.name
-                        
+
                         if "CLASS" in refObj.attrs:
                             self.log.info("ref object has attribute has CLASS")
                             #print "ref class name:", refObj.attrs["CLASS"]
@@ -968,12 +968,12 @@ class Hdf5db:
                         obj.dims[i].attach_scale(refObj)
                 else:
                     obj.attrs.create(attr_name, value, dtype=dt)
-     
+
         now = time.time()
         self.setCreateTime(obj_uuid, objType="attribute", name=attr_name, timestamp=now)
         self.setModifiedTime(obj_uuid, objType="attribute", name=attr_name, timestamp=now)
         self.setModifiedTime(obj_uuid, timestamp=now)  # owner entity is modified
-        
+
     def deleteAttribute(self, col_name, obj_uuid, attr_name):
         self.initFile()
         if self.readonly:
@@ -981,20 +981,20 @@ class Hdf5db:
             self.log.info(msg)
             raise IOError(errno.EPERM, msg)
         obj = self.getObjectByUuid(col_name, obj_uuid)
-        
+
         if attr_name not in obj.attrs:
             msg = "Attribute with name: [" + attr_name + "] of object: " + obj_uuid + " not found"
             self.log.info(msg)
             raise IOError(errno.ENXIO, msg)
-        
+
         del obj.attrs[attr_name]
         now = time.time()
         self.setModifiedTime(obj_uuid, objType="attribute", name=attr_name, timestamp=now)
-        
+
         return True
 
     """
-      Return a json-serializable representation of the numpy value 
+      Return a json-serializable representation of the numpy value
     """
     def getDataValue(self, typeItem, value, dimension=0, dims=None):
         if dimension > 0:
@@ -1010,36 +1010,36 @@ class Hdf5db:
                 raise IOError(errno.EIO, msg)
             nElements = dims[rank - dimension]
             for i in range(nElements):
-                item_value = self.getDataValue(typeItem, value[i], 
+                item_value = self.getDataValue(typeItem, value[i],
                     dimension=(dimension-1), dims=dims)
                 out.append(item_value)
             return out  # done for array case
-            
+
         out = None
         typeClass = typeItem['class']
         if isinstance(value, (np.ndarray, np.generic) ):
             value = value.tolist()  # convert numpy object to list
         if typeClass == 'H5T_COMPOUND':
-            
+
             if type(value) not in (list, tuple):
-                msg = "Unexpected type for compound value" 
+                msg = "Unexpected type for compound value"
                 self.log.error(msg)
                 raise IOError(errno.EIO, msg)
-            
+
             fields = typeItem['fields']
             if len(fields) != len(value):
                 msg = "Number of elements in compound type does not match type"
                 self.log.error(msg)
-                raise IOError(errno.EIO, msg) 
+                raise IOError(errno.EIO, msg)
             nFields = len(fields)
             out = []
             for i in range(nFields):
                 field = fields[i]
                 item_value = self.getDataValue(field['type'], value[i])
-                out.append(item_value)             
+                out.append(item_value)
         elif typeClass == 'H5T_VLEN':
             if type(value) not in (list, tuple):
-                msg = "Unexpected type for vlen value" 
+                msg = "Unexpected type for vlen value"
                 self.log.error(msg)
                 raise IOError(errno.EIO, msg)
 
@@ -1062,43 +1062,45 @@ class Hdf5db:
             rank = len(type_dims)
             baseType = typeItem['base']
             out = self.getDataValue(baseType, value, dimension=rank, dims=type_dims)
-            
-        elif typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING', 'H5T_ENUM'):
+
+        elif typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_ENUM'):
             out = value  # just copy value
+        elif typeClass == 'H5T_STRING':
+            out = value.encode()  # turn value into a str object
         else:
-            msg = "Unexpected type class: " + typeClass 
+            msg = "Unexpected type class: " + typeClass
             self.log.info(msg)
             raise IOError(errno.ENINVAL, msg)
         return out
-        
+
     """
-      Return a numpy value based on json representation  
+      Return a numpy value based on json representation
     """
     def getRefValue(self, typeItem, value):
         #print "getRefValue:", value
         out = None
         typeClass = typeItem['class']
         if typeClass == 'H5T_COMPOUND':
-            
+
             if type(value) not in (list, tuple):
-                msg = "Unexpected type for compound value" 
+                msg = "Unexpected type for compound value"
                 self.log.error(msg)
                 raise IOError(errno.EIO, msg)
-            
+
             fields = typeItem['fields']
             if len(fields) != len(value):
                 msg = "Number of elements in compound type does not match type"
                 self.log.error(msg)
-                raise IOError(errno.EIO, msg) 
+                raise IOError(errno.EIO, msg)
             nFields = len(fields)
             out = []
             for i in range(nFields):
                 field = fields[i]
                 item_value = self.getRefValue(field['type'], value[i])
-                out.append(item_value)             
+                out.append(item_value)
         elif typeClass == 'H5T_VLEN':
             if type(value) not in (list, tuple):
-                msg = "Unexpected type for vlen value" 
+                msg = "Unexpected type for vlen value"
                 self.log.error(msg)
                 raise IOError(errno.EIO, msg)
 
@@ -1114,27 +1116,32 @@ class Hdf5db:
             out = "???"  # todo
         elif typeClass == 'H5T_ARRAY':
             out = value
-        elif typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING', 'H5T_ENUM'):
+        elif typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_ENUM'):
             out = value  # just copy value
+        elif typeClass == 'H5T_STRING':
+            if typeItem['charSet'] == 'H5T_CSET_UTF8':
+                out = value.encode('utf-8')
+            else:
+                out = value.encode()
         else:
-            msg = "Unexpected type class: " + typeClass 
+            msg = "Unexpected type class: " + typeClass
             self.log.info(msg)
             raise IOError(errno.ENINVAL, msg)
-            
+
         if type(out) == list:
             out = tuple(out) # convert to tuple
         return out
-       
-        
+
+
     """
-       Convert json list to h5py compatible values 
+       Convert json list to h5py compatible values
     """
     def toRef(self, rank, typeItem, data):
         out = None
         typeClass = typeItem['class']
-        if typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING'):
+        if typeClass in ('H5T_INTEGER', 'H5T_FLOAT'):
             out = data   # just use as is
-            
+
         elif rank == 0:
             # scalar value
             out = self.getRefValue(typeItem, data)
@@ -1149,16 +1156,16 @@ class Hdf5db:
                     out.append(out_item)
 
         return out
-        
+
     """
-       Convert list to json serializable values. 
+       Convert list to json serializable values.
     """
     def toList(self, rank, typeItem, data):
         out = None
         typeClass = typeItem['class']
         if typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING'):
             out = data.tolist()  # just use as is
-            
+
         elif rank == 0:
             # scalar value
             out = self.getDataValue(typeItem, data)
@@ -1173,11 +1180,11 @@ class Hdf5db:
                     out.append(out_item)
 
         return out
-        
-        
+
+
     """
        Create ascii representation of vlen data object
-    """    
+    """
     def vlenToList(self, data):
         # todo - verify that data is a numpy.ndarray
         out = None
@@ -1192,12 +1199,12 @@ class Hdf5db:
             # looks like this is not a numpy ndarray, just return the value
             out = data
         return out
-        
-        
-        
+
+
+
     """
        Create ascii representation of ref data object
-    """    
+    """
     def refToList(self, data):
         # todo - verify that data is a numpy.ndarray
         out = None
@@ -1226,8 +1233,8 @@ class Hdf5db:
         return out
 
     """
-       Convert ascii representation of data references to data ref 
-    """    
+       Convert ascii representation of data references to data ref
+    """
     def listToRef(self, data):
         out = None
         if not data:
@@ -1267,17 +1274,17 @@ class Hdf5db:
             self.log.info(msg)
             raise IOError(errno.EINVAL, msg)
         return out
-        
+
     """
       Get item description of region reference value
     """
     def getRegionReference(self, regionRef):
         selectionEnums = { h5py.h5s.SEL_NONE:       'H5S_SEL_NONE',
-                           h5py.h5s.SEL_ALL:        'H5S_SEL_ALL', 
+                           h5py.h5s.SEL_ALL:        'H5S_SEL_ALL',
                            h5py.h5s.SEL_POINTS:     'H5S_SEL_POINTS',
                            h5py.h5s.SEL_HYPERSLABS: 'H5S_SEL_HYPERSLABS'
                           }
-                         
+
         item = {}
         objid = h5py.h5r.dereference(regionRef, self.f.file.file.id)
         if objid:
@@ -1285,8 +1292,8 @@ class Hdf5db:
         else:
                 log.info("region reference unable able to find item with objid: " + objid)
                 return item
-            
-        sel = h5py.h5r.get_region(regionRef, objid)  
+
+        sel = h5py.h5r.get_region(regionRef, objid)
         select_type = sel.get_select_type()
         if select_type not in selectionEnums:
             msg = "Unexpected selection type: " + regionRef.typecode
@@ -1296,10 +1303,10 @@ class Hdf5db:
         pointlist = None
         if select_type == h5py.h5s.SEL_POINTS:
             # retrieve a numpy array of selection points
-            points = sel.get_select_elem_pointlist()   
-            pointlist = points.tolist()   
+            points = sel.get_select_elem_pointlist()
+            pointlist = points.tolist()
         elif select_type == h5py.h5s.SEL_HYPERSLABS:
-            points = sel.get_select_hyper_blocklist()        
+            points = sel.get_select_hyper_blocklist()
             if points is not None:
                 pointlist = points[...].tolist()
                 # bump up the second coordinate by one to match api spec
@@ -1307,22 +1314,22 @@ class Hdf5db:
                     coord2 = point[1]
                     for i in range(len(coord2)):
                         coord2[i] = coord2[i] + 1
-                    
-        item['selection'] = pointlist    
-        
-        return item 
-        
+
+        item['selection'] = pointlist
+
+        return item
+
     """
       Create region reference from item description of region reference value
     """
     def createRegionReference(self, item):
         selectionEnums = { 'H5S_SEL_NONE': h5py.h5s.SEL_NONE,
-                           'H5S_SEL_ALL': h5py.h5s.SEL_ALL, 
+                           'H5S_SEL_ALL': h5py.h5s.SEL_ALL,
                            'H5S_SEL_POINTS': h5py.h5s.SEL_POINTS,
-                           'H5S_SEL_HYPERSLABS': h5py.h5s.SEL_HYPERSLABS 
+                           'H5S_SEL_HYPERSLABS': h5py.h5s.SEL_HYPERSLABS
                           }
         region_ref = None
-                          
+
         if 'select_type' not in item:
             msg = "select_type not provided for region selection"
             self.log.info(msg)
@@ -1337,20 +1344,20 @@ class Hdf5db:
                 if 'id' not in item:
                         #        select none on null dataset, return null ref
                         out = self.getNullReference()
-                        return out      
-        else: # select_type != 'H5S_SEL_NONE' 
+                        return out
+        else: # select_type != 'H5S_SEL_NONE'
             if 'id' not in item:
                 msg = "id not provided for region selection"
                 self.log.info(msg)
                 raise IOError(errno.EINVAL, msg)
-                
-        # Otherwise need to provide uuid of dataset        
+
+        # Otherwise need to provide uuid of dataset
         uuid_ref = item['id']
         if len(uuid_ref) != UUID_LEN:
             msg = "uuid value: [" + uuid_ref + "] for region reference is not valid"
             self.log.info(msg)
             raise IOError(errno.EINVAL, msg)
-                
+
         obj = self.getObjectByUuid("datasets", uuid_ref)
         if obj:
             dset = obj
@@ -1358,19 +1365,19 @@ class Hdf5db:
             msg = "Invalid region refence value: [" + uuid_ref + "] not found"
             self.log.info(msg)
             raise IOError(errno.EINVAL, msg)
-            
+
         if select_type in ('H5S_SEL_POINTS', 'H5S_SEL_HYPERSLABS'):
             if 'selection' not in item:
                 msg = "selection key not provided for region selection"
                 self.log.info(msg)
                 raise IOError(errno.EINVAL, msg)
-                
+
         rank = len(dset.shape)
         space_id = h5py.h5d.DatasetID.get_space(dset.id)
         h5py.h5s.SpaceID.select_none(space_id)
-                    
+
         if select_type == 'H4S_SEL_NONE':
-                pass  # did select_none above 
+                pass  # did select_none above
         elif select_type == 'H5S_SEL_ALL':
             h5py.h5s.SpaceID.select_all(space_id)
         elif select_type == 'H5S_SEL_POINTS':
@@ -1380,10 +1387,10 @@ class Hdf5db:
                         msg = "point selection number of elements must mach rank of referenced dataset"
                         self.log.info(msg)
                         raise IOError(errno.EINVAL, msg)
-            h5py.h5s.SpaceID.select_elements(space_id, selection) 
+            h5py.h5s.SpaceID.select_elements(space_id, selection)
         elif select_type == 'H5S_SEL_HYPERSLABS':
             selection = item['selection']
-            
+
             for slab in selection:
                     # each item should be a two element array defining the hyperslab boundary
                     if len(slab) != 2:
@@ -1394,7 +1401,7 @@ class Hdf5db:
                     if type(start) == list:
                         start = tuple(start)
                     if type(start) is not tuple or len(start) != rank:
-                        msg = "selection value not valid, start element should have number " 
+                        msg = "selection value not valid, start element should have number "
                         msg += "elements equal to rank of referenced dataset"
                         self.log.info(msg)
                         raise IOError(errno.EINVAL, msg)
@@ -1402,7 +1409,7 @@ class Hdf5db:
                     if type(stop) == list:
                         stop = tuple(stop)
                     if type(stop) is not tuple or len(stop) != rank:
-                        msg = "selection value not valid, count element should have number " 
+                        msg = "selection value not valid, count element should have number "
                         msg += "elements equal to rank of referenced dataset"
                         self.log.info(msg)
                         raise IOError(errno.EINVAL, msg)
@@ -1418,14 +1425,14 @@ class Hdf5db:
                                 raise IOError(errno.EINVAL, msg)
                         count.append(stop[i] - start[i])
                     count = tuple(count)
-                    
-                    h5py.h5s.SpaceID.select_hyperslab(space_id, start, count, op=h5py.h5s.SELECT_OR) 
-                    
-        # now that we've selected the desired region in the space, return a region reference    
-        region_ref = h5py.h5r.create(self.f.id, dset.name, h5py.h5r.DATASET_REGION, space_id) 
-                   
-        return region_ref 
-        
+
+                    h5py.h5s.SpaceID.select_hyperslab(space_id, start, count, op=h5py.h5s.SELECT_OR)
+
+        # now that we've selected the desired region in the space, return a region reference
+        region_ref = h5py.h5r.create(self.f.id, dset.name, h5py.h5r.DATASET_REGION, space_id)
+
+        return region_ref
+
     """
       Convert a list to a tuple, recursively.
       Example. [[1,2],[3,4]] -> ((1,2),(3,4))
@@ -1440,7 +1447,7 @@ class Hdf5db:
     Get values from dataset identified by obj_uuid.
     If a slices list or tuple is provided, it should have the same
     number of elements as the rank of the dataset.
-    """    
+    """
     def getDatasetValuesByUuid(self, obj_uuid, slices=Ellipsis):
         dset = self.getDatasetObjByUuid(obj_uuid)
         if dset == None:
@@ -1456,19 +1463,19 @@ class Hdf5db:
                 # assume null dataspace, return none
                 return None
             if not val:
-                self.log.warning("no value returned from scalar dataset") 
-                         
+                self.log.warning("no value returned from scalar dataset")
+
         if type(slices) != list and type(slices) != tuple and slices is not Ellipsis:
             msg = "Unexpected error: getDatasetValuesByUuid: bad type for dim parameter"
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
-                
+
         if (type(slices) == list or type(slices) == tuple) and len(slices) != rank:
             msg = "Unexpected error: getDatasetValuesByUuid: number of dims in selection not same as rank"
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
-        
-        if dt.kind == 'O':    
+
+        if dt.kind == 'O':
             # numpy object type - could be a vlen string or generic vlen
             h5t_check = h5py.h5t.check_dtype(vlen=dt)
             if h5t_check == str or h5t_check == unicode:
@@ -1482,7 +1489,7 @@ class Hdf5db:
                 if h5t_check is not None:
                     # reference type
                     values = self.refToList(dset[slices])
-                else:     
+                else:
                     msg = "Unexpected error, object type unknown"
                     self.log.error(msg)
                     raise IOError(errno.EIO, msg)
@@ -1493,8 +1500,8 @@ class Hdf5db:
         else:
             # just use tolist to dump
             values = dset[slices].tolist()
-        return values 
-        
+        return values
+
     """
     Get values from dataset identified by obj_uuid using the given
     point selection.
@@ -1521,11 +1528,11 @@ class Hdf5db:
             self.log.info(msg)
             raise IOError(errno.EINVAL, msg)
         return values.tolist()
-                 
+
     """
     setDatasetValuesByUuid - update the given dataset values with supplied data
       and optionally a hyperslab selection (slices)
-    """    
+    """
     def setDatasetValuesByUuid(self, obj_uuid, data, slices=None):
         dset = self.getDatasetObjByUuid(obj_uuid)
         if dset == None:
@@ -1539,14 +1546,14 @@ class Hdf5db:
         if len(dset.dtype) > 1 and type(data) in (list, tuple):
             converted_data = []
             for i in range(len(data)):
-                converted_data.append(self.toTuple(data[i]))  
-            data = converted_data  
+                converted_data.append(self.toTuple(data[i]))
+            data = converted_data
         else:
             h5t_check = h5py.check_dtype(ref=dset.dtype)
             if h5t_check in (h5py.Reference, h5py.RegionReference):
                 # convert data to data refs
                 data = self.listToRef(data)
-        
+
         if slices == None:
             # write entire dataset
             dset[()] = data
@@ -1555,25 +1562,25 @@ class Hdf5db:
                 self.log.error("setDatasetValuesByUuid: bad type for dim parameter")
                 return False
             rank = len(dset.shape)
-            
+
             if len(slices) != rank:
                 self.log.error("setDatasetValuesByUuid: number of dims in selection not same as rank")
-                return False 
-            else: 
+                return False
+            else:
                 if rank == 1:
                     slice = slices[0]
                     dset[slice] = data
                 else:
-                    dset[slices] = data     
-        
+                    dset[slices] = data
+
         # update modified time
         self.setModifiedTime(obj_uuid)
         return True
-        
+
     """
     setDatasetValuesByPointSelection - Update the dataset values using the given
       data and point selection
-    """    
+    """
     def setDatasetValuesByPointSelection(self, obj_uuid, data, points):
         dset = self.getDatasetObjByUuid(obj_uuid)
         # need some special conversion for compound types --
@@ -1582,14 +1589,14 @@ class Hdf5db:
         if len(dset.dtype) > 1 and type(data) in (list, tuple):
             converted_data = []
             for i in range(len(data)):
-                converted_data.append(self.toTuple(data[i]))  
-            data = converted_data          
+                converted_data.append(self.toTuple(data[i]))
+            data = converted_data
         if dset == None:
             msg = "Dataset: " + obj_uuid + " not found"
             self.log.info(msg)
             raise IOError(errno.ENXIO, msg)
         rank = len(dset.shape)
-        
+
         try:
             i = 0
             for point in points:
@@ -1602,17 +1609,17 @@ class Hdf5db:
             # out of range error
             msg = "setDatasetValuesByPointSelection, out of range error"
             self.log.info(msg)
-            raise IOError(errno.EINVAL, msg)    
-        
+            raise IOError(errno.EINVAL, msg)
+
         # update modified time
         self.setModifiedTime(obj_uuid)
         return True
-    
+
     """
     createDataset - creates new dataset given shape and datatype
     Returns item
-    """   
-    def createDataset(self, datatype, datashape, max_shape=None, 
+    """
+    def createDataset(self, datatype, datashape, max_shape=None,
         fill_value=None, obj_uuid=None):
         self.initFile()
         if self.readonly:
@@ -1632,13 +1639,13 @@ class Hdf5db:
                 self.log.info(msg)
                 raise IOError(errno.ENXIO, msg)
             dt = tgt  # can use the object as the dt parameter
-        else:    
+        else:
              dt = self.createTypeFromItem(datatype)
         if dt is None:
             msg = 'Unexpected error, no type returned'
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
-            
+
         dataset_id = None
         if datashape == None:
             # create null space dataset
@@ -1656,15 +1663,15 @@ class Hdf5db:
             sid = sid = h5py.h5s.create(h5py.h5s.NULL)
             # now create the permanent dataset
             gid = datasets.id
-            dataset_id = h5py.h5d.create(gid, obj_uuid, tid, sid)   
+            dataset_id = h5py.h5d.create(gid, obj_uuid, tid, sid)
             # delete the temp dataset
-            del tmpGrp[obj_uuid]     
-        else:       
-            newDataset = datasets.create_dataset(obj_uuid, shape=datashape, dtype=dt, 
+            del tmpGrp[obj_uuid]
+        else:
+            newDataset = datasets.create_dataset(obj_uuid, shape=datashape, dtype=dt,
                 maxshape=max_shape, fillvalue=fill_value)
             if newDataset:
                 dataset_id = newDataset.id
-            
+
         if dataset_id == None:
             msg = 'Unexpected failure to create dataset'
             self.log.error(msg)
@@ -1673,19 +1680,19 @@ class Hdf5db:
         addr = h5py.h5o.get_info(dataset_id).addr
         addrGrp = self.dbGrp["{addr}"]
         addrGrp.attrs[str(addr)] = obj_uuid
-        
+
         # set timestamp
         now = time.time()
         self.setCreateTime(obj_uuid, timestamp=now)
         self.setModifiedTime(obj_uuid, timestamp=now)
-        
+
         item['id'] = obj_uuid
         if self.update_timestamps:
             item['ctime'] = self.getCreateTime(obj_uuid)
             item['mtime'] = self.getModifiedTime(obj_uuid)
         item['attributeCount'] = 0
         return item
-        
+
     """
     Resize existing Dataset
     """
@@ -1695,7 +1702,7 @@ class Hdf5db:
         if self.readonly:
             msg = "Unable to resize dataset (Updates are not allowed)"
             self.log.info(msg)
-            raise IOError(errno.EACESS, msg)  
+            raise IOError(errno.EACESS, msg)
         dset = self.getDatasetObjByUuid(obj_uuid)  # will throw exception if not found
         if len(shape) != len(dset.shape):
             msg = "Unable to resize dataset, shape has wrong number of dimensions"
@@ -1710,12 +1717,12 @@ class Hdf5db:
                 msg = "Unable to resize dataset, max extent exceeded"
                 self.log.info(msg)
                 raise IOError(errno.EINVAL, msg)
-        
+
         dset.resize(shape)  # resize
-        
+
         # update modified time
         self.setModifiedTime(obj_uuid)
-    
+
     """
     Check if link points to given target (as a HardLink)
     """
@@ -1735,11 +1742,11 @@ class Hdf5db:
                 return True
         else:
             self.log.warning("unexpected linkclass: " + linkClass)
-            return False    
-     
+            return False
+
     """
     Delete Dataset, Group or Datatype by UUID
-    """    
+    """
     def deleteObjectByUuid(self, objtype, obj_uuid):
         if objtype not in ('group', 'dataset', 'datatype'):
             msg = "unexpected objtype: " + objtype
@@ -1751,33 +1758,33 @@ class Hdf5db:
             msg = "Unable to delete object (Updates are not allowed)"
             self.log.info(msg)
             raise IOError(errno.EPERM, msg)
-            
+
         if obj_uuid == self.dbGrp.attrs["rootUUID"] and objtype == 'group':
             # can't delete root group
-            msg = "Unable to delete group (root group may not be deleted)" 
+            msg = "Unable to delete group (root group may not be deleted)"
             self.log.info(msg)
             raise IOError(errno.EPERM, msg)
-            
+
         dbCol = None
         tgt = None
         if objtype == 'dataset':
             tgt = self.getDatasetObjByUuid(obj_uuid)
-            dbCol = self.dbGrp["{datasets}"]  
+            dbCol = self.dbGrp["{datasets}"]
         elif objtype == 'group':
             tgt = self.getGroupObjByUuid(obj_uuid)
             dbCol = self.dbGrp["{groups}"]
         else:  # datatype
             tgt = self.getCommittedTypeObjByUuid(obj_uuid)
             dbCol = self.dbGrp["{datatypes}"]
-            
+
         if tgt == None:
             msg = "Unable to delete " + objtype + ", uuid: " + obj_uuid + " not found"
             self.log.error(msg)
             raise IOError(errno.ENXIO, msg)
-            
-        # unlink from root (if present)     
-        self.unlinkObject(self.f['/'], tgt) 
-         
+
+        # unlink from root (if present)
+        self.unlinkObject(self.f['/'], tgt)
+
         groups = self.dbGrp["{groups}"]
         # iterate through each group in the file and unlink tgt if it is linked
         # by the group.
@@ -1794,37 +1801,37 @@ class Hdf5db:
                     linkList.append({'group': grp, 'link': linkName})
         for item in linkList:
             self.unlinkObjectItem(item['group'], tgt, item['link'])
-                  
+
         addr = h5py.h5o.get_info(tgt.id).addr
-        addrGrp = self.dbGrp["{addr}"] 
+        addrGrp = self.dbGrp["{addr}"]
         del addrGrp.attrs[str(addr)]  # remove reverse map
         dbRemoved = False
-          
+
         # finally, remove the dataset from db
         if obj_uuid in dbCol:
             # should be here (now it is anonymous)
             del dbCol[obj_uuid]
             dbRemoved = True
-        
+
         if not dbRemoved:
             self.log.warning("did not find: " + obj_uuid + " in anonymous collection")
-                
+
             if obj_uuid in dbCol.attrs:
                 self.log.info("removing: " + obj_uuid + " from non-anonymous collection")
                 del dbCol.attrs[obj_uuid]
                 dbRemoved = True
-             
+
         if not dbRemoved:
             msg = "Unexpected Error, did not find reference to: " + obj_uuid
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
-        
+
         # note when the object was deleted
         self.setModifiedTime(obj_uuid)
-               
+
         return True
-          
-        
+
+
     def getGroupItemByUuid(self, obj_uuid):
         self.initFile()
         grp = self.getGroupObjByUuid(obj_uuid)
@@ -1837,11 +1844,11 @@ class Hdf5db:
                 msg = "Group with uuid: " + obj_uuid + " was not found"
                 self.log.info(msg)
                 raise IOError(errno.ENXIO, msg)
-        
-        linkCount = len(grp)    
+
+        linkCount = len(grp)
         if "__db__" in grp:
             linkCount -= 1  # don't include the db group
-        
+
         item = { 'id': obj_uuid }
         alias = []
         if grp.name:
@@ -1852,23 +1859,23 @@ class Hdf5db:
         if self.update_timestamps:
             item['ctime'] = self.getCreateTime(obj_uuid)
             item['mtime'] = self.getModifiedTime(obj_uuid)
-        
+
         return item
-       
+
     """
     getLinkItemByObj - return info about a link
         parent: reference to group
         linkName: name of link
         return: item dictionary with link attributes, or None if not found
-    """    
+    """
     def getLinkItemByObj(self, parent, link_name):
         if not link_name in parent:
             return None
-            
+
         if link_name == "__db__":
             return None  # don't provide link to db group
         #  "http://somefile/#h5path(somepath)")
-        item = { 'title': link_name } 
+        item = { 'title': link_name }
         # get the link object, one of HardLink, SoftLink, or ExternalLink
         try:
             linkObj = parent.get(link_name, None, False, True)
@@ -1893,7 +1900,7 @@ class Hdf5db:
             addr = h5py.h5o.get_info(obj.id).addr
             item['class'] = 'H5L_TYPE_HARD'
             item['id'] = self.getUUIDByAddress(addr)
-            class_name = obj.__class__.__name__ 
+            class_name = obj.__class__.__name__
             if class_name == 'Dataset':
                 item['href'] = 'datasets/' + item['id']
                 item['collection'] = 'datasets'
@@ -1905,21 +1912,21 @@ class Hdf5db:
                 item['collection'] = 'datatypes'
             else:
                 self.log.warning("unexpected object type: " + item['type'])
-        
+
         return item
-                 
-        
+
+
     def getLinkItemByUuid(self, grpUuid, link_name):
         self.log.info("db.getLinkItemByUuid(" + grpUuid + ", [" + link_name + "])")
-         
+
         self.initFile()
         parent = self.getGroupObjByUuid(grpUuid)
         if parent == None:
             msg = "Parent group: " + grpUuid + " of link not found"
             self.log.info(msg)
             raise IOError(errno.ENXIO, msg)
-         
-        item = self.getLinkItemByObj(parent, link_name) 
+
+        item = self.getLinkItemByObj(parent, link_name)
         # add timestamps
         if item:
             if self.update_timestamps:
@@ -1935,17 +1942,17 @@ class Hdf5db:
             else:
                 msg = "Link [" + link_name + "] of: " + grpUuid + " not found"
                 self.log.info(msg)
-                raise IOError(errno.ENXIO, msg)     
-                
+                raise IOError(errno.ENXIO, msg)
+
         return item
-        
+
     def getLinkItems(self, grpUuid, marker=None, limit=0):
         self.log.info("db.getLinkItems(" + grpUuid + ")")
         if marker:
             self.log.info("...marker: " + marker)
         if limit:
             self.log.info("...limit: " + str(limit))
-        
+
         self.initFile()
         parent = self.getGroupObjByUuid(grpUuid)
         if parent == None:
@@ -1968,34 +1975,34 @@ class Hdf5db:
                     continue  # keep going!
             item = self.getLinkItemByObj(parent, link_name)
             items.append(item)
-                
+
             count += 1
             if limit > 0 and count == limit:
                 break  # return what we got
         return items
-        
+
     def unlinkItem(self, grpUuid, link_name):
         if self.readonly:
             msg = "Unable to unlink item (Updates are not allowed)"
             self.log.info(msg)
-            raise IOError(errno.EPERM, msg) 
+            raise IOError(errno.EPERM, msg)
         grp = self.getGroupObjByUuid(grpUuid)
         if grp == None:
             msg = "Parent group: " + grpUuid + " not found, cannot remove link"
             self.log.info(msg)
-            raise IOError(errno.ENXIO, msg) 
-            
+            raise IOError(errno.ENXIO, msg)
+
         if link_name not in grp:
             msg = "Link: [" + link_name + "] of group: " + grpUuid + " not found, cannot remove link"
             self.log.info(msg)
-            raise IOError(errno.ENXIO, msg) 
-            
+            raise IOError(errno.ENXIO, msg)
+
         if link_name == "__db__":
             # don't allow db group to be unlinked!
             msg = "Unlinking of __db__ group not allowed"
             raise IOError(errno.EPERM, msg)
-            
-        obj = None   
+
+        obj = None
         try:
             linkObj = grp.get(link_name, None, False, True)
             linkClass = linkObj.__class__.__name__
@@ -2007,7 +2014,7 @@ class Hdf5db:
             msg = "Unable to unlink user defined link"
             self.log.info(msg)
             raise IOError(errno.EPERM, msg)
-        
+
         linkDeleted = False
         if obj != None:
             linkDeleted = self.unlinkObjectItem(grp, obj, link_name)
@@ -2015,13 +2022,13 @@ class Hdf5db:
             # SoftLink or External Link - we can just remove the key
             del grp[link_name]
             linkDeleted = True
-            
+
         if linkDeleted:
             # update timestamp
             self.setModifiedTime(grpUuid, objType="link", name=link_name)
-            
+
         return linkDeleted
-        
+
     def getCollection(self, col_type, marker=None, limit=None):
         self.log.info("db.getCollection(" + col_type + ")")
         #col_type should be either "datasets", "groups", or "datatypes"
@@ -2035,9 +2042,9 @@ class Hdf5db:
             col = self.dbGrp["{datasets}"]
         elif col_type == "groups":
             col = self.dbGrp["{groups}"]
-        else:  # col_type == "datatypes" 
-            col = self.dbGrp["{datatypes}"] 
-        
+        else:  # col_type == "datatypes"
+            col = self.dbGrp["{datatypes}"]
+
         uuids = []
         count = 0;
         # gather the non-anonymous ids first
@@ -2050,7 +2057,7 @@ class Hdf5db:
             count += 1
             if limit > 0 and count == limit:
                 break
-                
+
         if limit == 0 or count < limit:
             # grab any anonymous obj ids next
             for obj_uuid in col:
@@ -2061,17 +2068,17 @@ class Hdf5db:
                 uuids.append(obj_uuid)
                 count += 1
                 if limit > 0 and count == limit:
-                    break             
-                
+                    break
+
         return uuids
 
-    
+
     """
       Get the DB Collection names
     """
     def getDBCollections(self):
         return ("{groups}", "{datasets}", "{datatypes}")
-    
+
     """
         Return the db collection the uuid belongs to
     """
@@ -2082,15 +2089,15 @@ class Hdf5db:
             if obj_uuid in col or obj_uuid in col.attrs:
                 return col;
         return None
-         
-    
+
+
     def unlinkObjectItem(self, parentGrp, tgtObj, link_name):
         if self.readonly:
             msg = "Unexpected attempt to unlink object"
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
         if link_name not in parentGrp:
-            msg = "Unexpected: did not find link_name: [" + link_name + "]" 
+            msg = "Unexpected: did not find link_name: [" + link_name + "]"
             self.log.error(msg)
             raise IOError(errno.EIO, msg)
         try:
@@ -2106,44 +2113,44 @@ class Hdf5db:
         if linkClass == 'HardLink':
             obj = parentGrp[link_name]
             if tgtObj == None or obj == tgtObj:
-                
+
                 numlinks =  self.getNumLinksToObject(obj)
                 if numlinks == 1:
                     # last link to this object - convert to anonymous object
                     # by creating link under {datasets} or {groups} or {datatypes}
                     # also remove the attribute UUID key
-                    addr = h5py.h5o.get_info(obj.id).addr  
+                    addr = h5py.h5o.get_info(obj.id).addr
                     obj_uuid = self.getUUIDByAddress(addr)
                     self.log.info("converting: " + obj_uuid + " to anonymous obj")
                     dbCol = self.getDBCollection(obj_uuid)
                     del dbCol.attrs[obj_uuid]  # remove the object ref
-                    dbCol[obj_uuid] = obj      # add a hardlink        
+                    dbCol[obj_uuid] = obj      # add a hardlink
                 self.log.info("deleting link: [" + link_name + "] from: " + parentGrp.name)
-                del parentGrp[link_name]  
-                linkDeleted = True    
+                del parentGrp[link_name]
+                linkDeleted = True
         else:
-            self.log.info("unlinkObjectItem: link is not a hardlink, ignoring")           
+            self.log.info("unlinkObjectItem: link is not a hardlink, ignoring")
         return linkDeleted
-        
+
     def unlinkObject(self, parentGrp, tgtObj):
         for name in parentGrp:
-            self.unlinkObjectItem(parentGrp, tgtObj, name)             
+            self.unlinkObjectItem(parentGrp, tgtObj, name)
         return True
-        
-        
+
+
     def linkObject(self, parentUUID, childUUID, link_name):
         self.initFile()
         if self.readonly:
             msg = "Unable to create link (Updates are not allowed)"
             self.log.info(msg)
-            raise IOError(errno.EPERM, msg)  
-              
+            raise IOError(errno.EPERM, msg)
+
         parentObj = self.getGroupObjByUuid(parentUUID)
         if parentObj == None:
             msg = "Unable to create link, parent UUID: " + parentUUID + " not found"
             self.log.info(msg)
             raise IOError(errno.ENXIO, msg)
-            
+
         childObj = self.getDatasetObjByUuid(childUUID)
         if childObj == None:
             # maybe it's a group...
@@ -2160,26 +2167,26 @@ class Hdf5db:
             self.log.info("linkname already exists, deleting")
             self.unlinkObjectItem(parentObj, None, link_name)
         parentObj[link_name] = childObj
-        
+
         # convert this from an anonymous object to ref if needed
         dbCol = self.getDBCollection(childUUID)
         if childUUID in dbCol:
             # convert to a ref
             del dbCol[childUUID]  # remove hardlink
             dbCol.attrs[childUUID] = childObj.ref # create a ref
-        
+
         # set link timestamps
         now = time.time()
         self.setCreateTime(parentUUID, objType="link", name=link_name, timestamp=now)
         self.setModifiedTime(parentUUID, objType="link", name=link_name, timestamp=now)
         return True
-        
+
     def createSoftLink(self, parentUUID, linkPath, link_name):
         self.initFile()
         if self.readonly:
             msg = "Unable to create link (Updates are not allowed)"
             self.log.info(msg)
-            raise IOError(errno.EPERM, msg)  
+            raise IOError(errno.EPERM, msg)
         parentObj = self.getGroupObjByUuid(parentUUID)
         if parentObj == None:
             msg = "Unable to create link, parent UUID: " + parentUUID + " not found"
@@ -2190,19 +2197,19 @@ class Hdf5db:
             self.log.info("linkname already exists, deleting")
             del parentObj[link_name]  # delete old link
         parentObj[link_name] = h5py.SoftLink(linkPath)
-        
+
         now = time.time()
         self.setCreateTime(parentUUID, objType="link", name=link_name, timestamp=now)
         self.setModifiedTime(parentUUID, objType="link", name=link_name, timestamp=now)
-        
+
         return True
-        
+
     def createExternalLink(self, parentUUID, extPath, linkPath, link_name):
         self.initFile()
         if self.readonly:
             msg = "Unable to create link (Updates are not allowed)"
             self.log.info(msg)
-            raise IOError(errno.EPERM, msg)    
+            raise IOError(errno.EPERM, msg)
         parentObj = self.getGroupObjByUuid(parentUUID)
         if parentObj == None:
             msg = "Unable to create link, parent UUID: " + parentUUID + " not found"
@@ -2213,20 +2220,20 @@ class Hdf5db:
             self.log.info("linkname already exists, deleting")
             del parentObj[link_name]  # delete old link
         parentObj[link_name] = h5py.ExternalLink(extPath, linkPath)
-        
+
         now = time.time()
         self.setCreateTime(parentUUID, objType="link", name=link_name, timestamp=now)
         self.setModifiedTime(parentUUID, objType="link", name=link_name, timestamp=now)
-        
+
         return True
-        
-    
+
+
     def createGroup(self, obj_uuid=None):
         self.initFile()
         if self.readonly:
             msg = "Unable to create group (Updates are not allowed)"
             self.log.info(msg)
-            raise IOError(errno.EPERM, msg)    
+            raise IOError(errno.EPERM, msg)
         groups = self.dbGrp["{groups}"]
         if not obj_uuid:
             obj_uuid = str(uuid.uuid1())
@@ -2235,15 +2242,15 @@ class Hdf5db:
         addr = h5py.h5o.get_info(newGroup.id).addr
         addrGrp = self.dbGrp["{addr}"]
         addrGrp.attrs[str(addr)] = obj_uuid
-        
+
         #set timestamps
         now = time.time()
         self.setCreateTime(obj_uuid, timestamp=now)
         self.setModifiedTime(obj_uuid, timestamp=now)
-        
+
         return obj_uuid
-        
-    
+
+
     def getNumberOfGroups(self):
         self.initFile()
         count = 0
@@ -2251,10 +2258,10 @@ class Hdf5db:
         count += len(groups)        #anonymous groups
         count += len(groups.attrs)  #linked groups
         count += 1                  # add of for root group
-        
+
         return count
-           
-        
+
+
     def getNumberOfDatasets(self):
         self.initFile()
         count = 0
@@ -2262,7 +2269,7 @@ class Hdf5db:
         count += len(datasets)        #anonymous datasets
         count += len(datasets.attrs)  #linked datasets
         return count
-        
+
     def getNumberOfDatatypes(self):
         self.initFile()
         count = 0
