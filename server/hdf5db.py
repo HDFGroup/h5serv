@@ -1116,8 +1116,13 @@ class Hdf5db:
             out = "???"  # todo
         elif typeClass == 'H5T_ARRAY':
             out = value
-        elif typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING', 'H5T_ENUM'):
+        elif typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_ENUM'):
             out = value  # just copy value
+        elif typeClass == 'H5T_STRING':
+            if typeItem['charSet'] == 'H5T_CSET_UTF8':
+                out = value.encode('utf-8')
+            else:
+                out = value.encode()
         else:
             msg = "Unexpected type class: " + typeClass
             self.log.info(msg)
