@@ -864,6 +864,7 @@ class Hdf5db:
         #print "createAttribute, type:", attr_type
         #print "createAttribute, shape:", shape
         #print "obj_uuid:", obj_uuid
+        #print "createAttribute, value:", value
         #attr_type_orig = None
          
         self.initFile()
@@ -929,6 +930,7 @@ class Hdf5db:
         else:  
             if type(value) == tuple:
                 value = list(value) 
+            #print "value to list:", value
             if not is_committed_type:
                 # apparently committed types can not be used as reference types
                 # todo - verify why that is
@@ -937,6 +939,7 @@ class Hdf5db:
                 # convert python list to numpy object
                 typeItem = hdf5dtype.getTypeItem(dt)
                 value = self.toRef(rank, typeItem, value)
+                 
                     
                 if shape is not None and type(attr_type) == dict and attr_type['class'] == 'H5T_VLEN' and attr_name == 'DIMENSION_LIST':
                     # work-around for VLEN of REFERENCE issue:
@@ -1110,7 +1113,7 @@ class Hdf5db:
         elif typeClass == 'H5T_OPAQUE':
             out = "???"  # todo
         elif typeClass == 'H5T_ARRAY':
-            out = "???"  # todo
+            out = value
         elif typeClass in ('H5T_INTEGER', 'H5T_FLOAT', 'H5T_STRING', 'H5T_ENUM'):
             out = value  # just copy value
         else:

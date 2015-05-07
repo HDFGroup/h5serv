@@ -269,7 +269,7 @@ def getNumpyTypename(hdf5TypeName, typeClass=None):
           'H5T_IEEE_F32': 'f4',
           'H5T_IEEE_F64': 'f8'
     }
-    print "typename: ", hdf5TypeName
+    
     if len(hdf5TypeName) < 3:
         raise Exception("Type Error: invalid typename")
     endian = '<'  # default endian
@@ -290,6 +290,7 @@ def getNumpyTypename(hdf5TypeName, typeClass=None):
     
     
 def createBaseDataType(typeItem):
+
     dtRet = None
     if type(typeItem) == str or type(typeItem) == unicode:
         # should be one of the predefined types
@@ -304,27 +305,28 @@ def createBaseDataType(typeItem):
     if 'class' not in typeItem:
         raise KeyError("'class' not provided")
     typeClass = typeItem['class']
-    shape = ''
-    if 'shape' in typeItem:  
+    
+    dims = ''
+    if 'dims' in typeItem:  
         dims = None      
-        if type(typeItem['shape']) == int:
-            dims = (typeItem['shape'])  # make into a tuple
-        elif type(typeItem['shape']) not in (list, tuple):
-            raise TypeError("expected list or integer for shape")
+        if type(typeItem['dims']) == int:
+            dims = (typeItem['dims'])  # make into a tuple
+        elif type(typeItem['dims']) not in (list, tuple):
+            raise TypeError("expected list or integer for dims")
         else:
-            dims = typeItem['shape']
-        shape = str(tuple(dims))
+            dims = typeItem['dims']
+        dims = str(tuple(dims))
         
     if typeClass == 'H5T_INTEGER':
         if 'base' not in typeItem:
             raise KeyError("'base' not provided")      
         baseType = getNumpyTypename(typeItem['base'], typeClass='H5T_INTEGER')
-        dtRet = np.dtype(shape + baseType)
+        dtRet = np.dtype(dims + baseType)
     elif typeClass == 'H5T_FLOAT':
         if 'base' not in typeItem:
             raise KeyError("'base' not provided")
         baseType = getNumpyTypename(typeItem['base'], typeClass='H5T_FLOAT')
-        dtRet = np.dtype(shape + baseType)
+        dtRet = np.dtype(dims + baseType)
     elif typeClass == 'H5T_STRING':
         if 'length' not in typeItem:
             raise KeyError("'length' not provided")
@@ -332,7 +334,7 @@ def createBaseDataType(typeItem):
             raise KeyError("'charSet' not provided")          
             
         if typeItem['length'] == 'H5T_VARIABLE':
-            if shape:
+            if dims:
                 raise TypeError("ArrayType is not supported for variable len types")
             if typeItem['charSet'] == 'H5T_CSET_ASCII':
                 dtRet = special_dtype(vlen=str)
@@ -344,9 +346,9 @@ def createBaseDataType(typeItem):
             nStrSize = typeItem['length']
             if type(nStrSize) != int:
                 raise TypeError("expecting integer value for 'length'")
-            dtRet = np.dtype(shape + 'S' + str(nStrSize))  # fixed size ascii string
+            dtRet = np.dtype(dims + 'S' + str(nStrSize))  # fixed size ascii string
     elif typeClass == 'H5T_VLEN':
-        if shape:
+        if dims:
             raise TypeError("ArrayType is not supported for variable len types")
         if 'base' not in typeItem:
             raise KeyError("'base' not provided") 
@@ -354,7 +356,7 @@ def createBaseDataType(typeItem):
         baseType = createBaseDataType(typeItem['base'])
         dtRet = special_dtype(vlen=np.dtype(baseType))
     elif typeClass == 'H5T_OPAQUE':
-        if shape:
+        if dims:
             raise TypeError("Opaque Type is not supported for variable len types")
         if 'size' not in typeItem:
             raise KeyError("'size' not provided")
@@ -363,15 +365,19 @@ def createBaseDataType(typeItem):
             raise TypeError("'size' must be non-negative")
         dtRet = np.dtype('V' + str(nSize))
     elif typeClass == 'H5T_ARRAY':
-        if not shape:
-            raise KeyError("'shape' must be provided for array types")
+        if not dims:
+            raise KeyError("'dims' must be provided for array types")
         if 'base' not in typeItem:
             raise KeyError("'base' not provided") 
+        
+        # baseType = createDataType(typeItem['base'])
         baseType = getNumpyTypename(typeItem['base'])
-        if type(baseType) not in  (str, unicode):
+          
+        #baseType = getNumpyTypename(typeItem['base'])
+        if type(baseType) not in (str, unicode):
             raise TypeError("Array type is only supported for predefined base types")
         # should be one of the predefined types
-        dtRet = np.dtype(shape+baseType)
+        dtRet = np.dtype(dims+baseType)
         return dtRet  # return predefined type    
     elif typeClass == 'H5T_REFERENCE':
         if 'base' not in typeItem:
@@ -391,6 +397,7 @@ def createBaseDataType(typeItem):
     
 def createDataType(typeItem):
     dtRet = None
+     
     if type(typeItem) == str or type(typeItem) == unicode:
         # should be one of the predefined types
         dtName = getNumpyTypename(typeItem)
@@ -404,6 +411,7 @@ def createDataType(typeItem):
     if 'class' not in typeItem:
         raise KeyError("'class' not provided")
     typeClass = typeItem['class']
+    
     if typeClass == 'H5T_COMPOUND':
         if 'fields' not in typeItem:
             raise KeyError("'fields' not provided for compound type")
@@ -414,6 +422,7 @@ def createDataType(typeItem):
             raise KeyError("no 'field' elements provided")
         subtypes = []
         for field in fields:
+             
             if type(field) != dict:
                 raise TypeError("Expected dictionary type for field")
             if 'name' not in field:

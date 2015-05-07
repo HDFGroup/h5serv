@@ -229,6 +229,37 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(tempFieldType['class'], 'H5T_INTEGER')
         self.assertEqual(tempFieldType['base'], 'H5T_STD_I64LE')
         
+    def testGetCompoundArray(self):
+        for domain_name in ('compound_array_dset', ):
+            domain = domain_name + '.' + config.get('domain') 
+            root_uuid = helper.getRootUUID(domain)
+            dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+            req = helper.getEndpoint() + "/datasets/" + dset_uuid
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            shape = rspJson['shape']
+            self.assertEqual(shape['class'], 'H5S_SIMPLE')
+            self.assertEqual(len(shape['dims']), 10)
+            typeItem = rspJson['type']
+            self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
+            self.assertEqual(len(typeItem['fields']), 2)
+            fields = typeItem['fields']
+            field0 = fields[0]
+            self.assertEqual(field0['name'], 'temp')
+            field0Type = field0['type']
+            self.assertEqual(field0Type['class'], 'H5T_FLOAT')
+            self.assertEqual(field0Type['base'], 'H5T_IEEE_F64LE')
+            field1 = fields[1]
+            self.assertEqual(field1['name'], '2x2')
+            field1Type = field1['type']
+            self.assertEqual(field1Type['class'], 'H5T_ARRAY')
+            self.assertEqual(field1Type['dims'], [2, 2])
+            baseType = field1Type['base']
+            self.assertEqual(baseType['class'], 'H5T_FLOAT')
+            self.assertEqual(baseType['base'], 'H5T_IEEE_F32LE')
+        
     def testGetCompoundCommitted(self):
         domain = 'compound_committed.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)
@@ -710,6 +741,37 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
         
+    def testPostCompoundArray(self):
+        domain = 'compound_array.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        root_uuid = helper.getRootUUID(domain)
+        
+        fields = ({'name': 'temp', 'type': 'H5T_STD_I32LE'}, 
+                    {'name': '2x2', 'type': { 'class': 'H5T_ARRAY', 'dims': [2,2],
+                    'base': 'H5T_IEEE_F32LE'} }) 
+        datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
+        
+         
+        payload = {'type': datatype, 'shape': 2 }
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link the new dataset 
+        name = "dset"
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
     def testPostCommittedType(self):
         domain = 'committedtype.datasettest.' + config.get('domain')
         req = self.endpoint + "/"
@@ -784,7 +846,7 @@ class DatasetTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
-        datatype = {'class': 'H5T_ARRAY', 'base': 'H5T_STD_I64LE', 'shape': (3, 5) }
+        datatype = {'class': 'H5T_ARRAY', 'base': 'H5T_STD_I64LE', 'dims': (3, 5) }
         
         payload = {'type': datatype, 'shape': 10}
         req = self.endpoint + "/datasets"

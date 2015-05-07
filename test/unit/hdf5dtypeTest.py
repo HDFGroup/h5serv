@@ -233,7 +233,7 @@ class Hdf5dtypeTest(unittest.TestCase):
     def testCreateArrayType(self):
         typeItem = {'class': 'H5T_ARRAY', 
                     'base': 'H5T_STD_I64LE', 
-                    'shape': (3, 5) }   
+                    'dims': (3, 5) }   
         dt = hdf5dtype.createDataType(typeItem)
         self.assertEqual(dt.name, 'void960')
         self.assertEqual(dt.kind, 'V')
@@ -241,7 +241,7 @@ class Hdf5dtypeTest(unittest.TestCase):
     def testCreateArrayIntegerType(self):
         typeItem = {'class': 'H5T_INTEGER', 
                     'base': 'H5T_STD_I64LE', 
-                    'shape': (3, 5) }   
+                    'dims': (3, 5) }   
         dt = hdf5dtype.createDataType(typeItem)
         self.assertEqual(dt.name, 'void960')
         self.assertEqual(dt.kind, 'V')
