@@ -1391,16 +1391,16 @@ class AttributeHandler(RequestHandler):
                 
         # convert list values to tuples (otherwise h5py is not happy)
         data = None
-        print "dims:", dims
+         
         if dims != None:
             if "value" not in body:
                 msg = "Bad Request: value not specified"
                 log.info(msg)
                 raise HTTPError(400, reason=msg)  # missing value
             value = body["value"]
-            print "attribute value:", value
+             
             data = self.convertToTuple(value)
-            print "after conversion:", data
+             
                    
         try:
             with Hdf5db(filePath, app_logger=log) as db:
