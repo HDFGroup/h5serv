@@ -153,6 +153,38 @@ class AttributeTest(unittest.TestCase):
             self.assertEqual(field3Type['length'], 6)
             self.assertEqual(field3Type['strPad'], 'H5T_STR_NULLPAD')
             
+    def testGetCompoundArray(self):
+        for domain_name in ('compound_array_attr', ):
+            domain = domain_name + '.' + config.get('domain') 
+            root_uuid = helper.getRootUUID(domain)
+            dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+            req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/attributes/A1"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertEqual(rspJson['name'], 'A1')
+            shape = rspJson['shape']
+            self.assertEqual(shape['class'], 'H5S_SCALAR')
+            typeItem = rspJson['type']
+            self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
+            self.assertEqual(len(typeItem['fields']), 2)
+            fields = typeItem['fields']
+            field0 = fields[0]
+            self.assertEqual(field0['name'], 'temp')
+            field0Type = field0['type']
+            self.assertEqual(field0Type['class'], 'H5T_FLOAT')
+            self.assertEqual(field0Type['base'], 'H5T_IEEE_F64LE')
+            field1 = fields[1]
+            self.assertEqual(field1['name'], '2x2')
+            field1Type = field1['type']
+            self.assertEqual(field1Type['class'], 'H5T_ARRAY')
+            self.assertEqual(field1Type['dims'], [2, 2])
+            baseType = field1Type['base']
+            self.assertEqual(baseType['class'], 'H5T_FLOAT')
+            self.assertEqual(baseType['base'], 'H5T_IEEE_F32LE')
+             
+            
     def testGetCommitted(self):
         domain = 'committed_type.' + config.get('domain')  
         root_uuid = helper.getRootUUID(domain)

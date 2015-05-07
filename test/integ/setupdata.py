@@ -38,6 +38,7 @@ testfiles = {
     'null_space_dset.h5': ('.'),
     'compound.h5': ('.',),
     'compound_attr.h5': ('.',),
+    'compound_array_attr.h5': ('.',),
     'compound_committed.h5': ('.',),
     'arraytype.h5': ('.',),
     'array_attr.h5': ('.',),
