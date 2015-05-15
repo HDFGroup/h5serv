@@ -25,7 +25,7 @@ If you are not familiar with installing Python packages, the easiest route is to
 use a package manager such as Anaconda (as described below).
 
 If you have a git client installed on your system, you can directly download the h5serv 
-source from GitHub: ``git clone https://github.com/HDFGroup/h5serv.git``.  
+source from GitHub: ``git clone --recursive https://github.com/HDFGroup/h5serv.git``.  
 Otherwise, you can download a zip file of the source from GitHub (as described below).
 
 
@@ -53,7 +53,7 @@ In a browser go to: https://github.com/HDFGroup/h5serv and click the "Download Z
 button (right side of page).  Save the file as "h5serv.zip" to your Downloads directory.
 
 Alternatively, if you have git installed, you can run: 
-``git clone https://github.com/HDFGroup/h5serv.git`` to download the h5serv source tree. 
+``git clone --recursive https://github.com/HDFGroup/h5serv.git`` to download the h5serv source tree. 
 
 If you downloaded the ZIP file, in Windows Explorer, right-click on the file and select 
 "Extract All...".  You can choose any folder as the destination.
@@ -90,7 +90,7 @@ Answer 'y' to the prompt, and the packages will be fetched.
 
 In the same shell, run: ``source activate h5serv``
 
-Run: ``git clone https://github.com/HDFGroup/h5serv.git`` to download the h5serv source
+Run: ``git clone --recursvie https://github.com/HDFGroup/h5serv.git`` to download the h5serv source
 tree.  Alternatively, in a browser go to: https://github.com/HDFGroup/h5serv and click 
 the "Download ZIP" button (right side of page).  Download the zip file and extract to
 the destination directory of your choice.  
