@@ -59,7 +59,7 @@ is not returned for H5S_NULL or H5S_SCALAR dataspaces.
 
 maxdims: An integer array whose length is equal to the number of dimensions of the 
 dataspace.  The value of each element gives the maximum size of each dimension. A value
-of 0 indicates that the dimension hass *unlimited* extent.  maxdims is not returned for
+of 0 indicates that the dimension has *unlimited* extent.  maxdims is not returned for
 H5S_SIMPLE dataspaces which are not extensible or for H5S_NULL or H5S_SCALAR dataspaces.
 
 fillvalue: A value of compatible with the dataset's type, which gives the *fill* value
