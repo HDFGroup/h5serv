@@ -15,7 +15,7 @@ import json
 import numpy as np
 import h5py
 
-sys.path.append('../server')
+sys.path.append('../hdf5-json/lib')
 from hdf5db import Hdf5db
 import hdf5dtype 
 

@@ -17,10 +17,12 @@ import os
 import os.path as op
 import json
 import tornado.httpserver
+import sys
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, url_escape, url_unescape
 import config
+sys.path.append('../hdf5-json/lib')
 from hdf5db import Hdf5db
 import hdf5dtype
 from timeUtil import unixTimeToUTC
