@@ -678,40 +678,45 @@ class DatasetTest(unittest.TestCase):
         
         root_uuid = helper.getRootUUID(domain)
         
+        # todo - add 8-bit types to list:
+        #  'H5T_STD_I8',   'H5T_STD_U8'
+        # See https://github.com/HDFGroup/h5serv/issues/51
         
-        datatypes = ( 'H5T_STD_I8LE',   'H5T_STD_U8LE',  
-                      'H5T_STD_I16LE',  'H5T_STD_U16LE',    
-                      'H5T_STD_I32LE',  'H5T_STD_U32LE',   
-                      'H5T_STD_I64LE',  'H5T_STD_I64LE',  
-                      'H5T_IEEE_F32LE', 'H5T_IEEE_F64LE' )
+        datatypes = ( 'H5T_STD_I16',  'H5T_STD_U16',    
+                      'H5T_STD_I32',  'H5T_STD_U32',   
+                      'H5T_STD_I64',  'H5T_STD_I64',  
+                      'H5T_IEEE_F32', 'H5T_IEEE_F64' )
+                      
+        endianess = ('LE', 'BE')
         
-        for datatype in datatypes:  
-            payload = {'type': datatype, 'shape': 10}
-            req = self.endpoint + "/datasets"
-            rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-            self.failUnlessEqual(rsp.status_code, 201)  # create dataset
-            rspJson = json.loads(rsp.text)
-            dset_uuid = rspJson['id']
-            self.assertTrue(helper.validateId(dset_uuid))
+        for datatype in datatypes:
+            for endian in endianess:  
+                payload = {'type': datatype+endian, 'shape': 10}
+                req = self.endpoint + "/datasets"
+                rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+                self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+                rspJson = json.loads(rsp.text)
+                dset_uuid = rspJson['id']
+                self.assertTrue(helper.validateId(dset_uuid))
          
-            # link new dataset using the type name
-            name = datatype
-            req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
-            payload = {"id": dset_uuid}
-            headers = {'host': domain}
-            rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-            self.failUnlessEqual(rsp.status_code, 201)
+                # link new dataset using the type name
+                name = datatype + endian
+                req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+                payload = {"id": dset_uuid}
+                headers = {'host': domain}
+                rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+                self.failUnlessEqual(rsp.status_code, 201)
             
-            # Do a GET on the datasets we just created
-            req = helper.getEndpoint() + "/datasets/" + dset_uuid
-            rsp = requests.get(req, headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)
-            rspJson = json.loads(rsp.text)
-            # verify the type
-            self.assertTrue('type' in rspJson)
-            type = rspJson['type']
-            self.assertTrue(type['class'] in ('H5T_FLOAT', 'H5T_INTEGER'))
-            self.assertEqual(type['base'], datatype)      
+                # Do a GET on the datasets we just created
+                req = helper.getEndpoint() + "/datasets/" + dset_uuid
+                rsp = requests.get(req, headers=headers)
+                self.failUnlessEqual(rsp.status_code, 200)
+                rspJson = json.loads(rsp.text)
+                # verify the type
+                self.assertTrue('type' in rspJson)
+                type = rspJson['type']
+                self.assertTrue(type['class'] in ('H5T_FLOAT', 'H5T_INTEGER'))
+                self.assertEqual(type['base'], datatype+endian)      
                      
     def testPostCompoundType(self):
         domain = 'compound.datasettest.' + config.get('domain')
