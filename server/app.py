@@ -1013,11 +1013,30 @@ class ValueHandler(RequestHandler):
                 msg += "anonymous datasets"
                 log.info(msg)
                 raise HTTPError(400, reason=msg)
+            
+            print "shape:", item_shape
+            dims = item_shape['dims']
+            start = 0
+            stop = dims[0]
+            step = 1
+            limit = self.get_query_argument("Limit", default=None)
+            if limit:
+                try:
+                    limit = int(limit)  # convert to int
+                except ValueError as e:
+                    msg = "Query error, invalid Limit: " + e.message
+                    log.info(msg)
+                    raise HTTPError(400, msg)
+            print "slices:", slices
+            if slices:
+                start=slices[0].start
+                stop =slices[0].stop
+                step =slices[0].step
             try:
                 with Querydb(filePath, app_logger=log) as db:
                     path = item['alias'][0]
                     print "querydb path", path
-                    rsp = db.doQuery(path, query_selection)
+                    rsp = db.doQuery(path, query_selection, start=start, stop=stop, step=step, limit=limit)
                     values = rsp['values']
                     response['index'] = rsp['indexes']
             except NameError as e:

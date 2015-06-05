@@ -472,7 +472,7 @@ class ValueTest(unittest.TestCase):
         root_uuid = helper.getRootUUID(domain)
         dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
         req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
-        req += "?query=date %3D%3D 23"  # values where date field = 23
+        req += "?query=date == 23"  # values where date field = 23
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
@@ -488,7 +488,92 @@ class ValueTest(unittest.TestCase):
         item = value[0]
         self.assertEqual(len(item), 5)
         self.assertEqual(item[0], 23)
-        print rsp.text
+       
+    
+    def testQueries(self):
+        queries = { "date == 23": 24,
+                    "wind == 'W 5'": 3,
+                    "temp > 61": 53,
+                    "(date >=22) & (date <= 24)": 62,
+                    "(wind == 'E 7') | (wind == 'S 7')": 7 }
+        domain = 'compound.' + config.get('domain') 
+        headers = {'host': domain} 
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        for key in queries.keys():
+            query = req + "?query=" + key
+            rsp = requests.get(query, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertTrue('hrefs' in rspJson)
+            self.assertTrue('index' in rspJson)
+            index = rspJson['index']
+            self.assertTrue(len(index), queries[key])
+            self.assertTrue('value' in rspJson)
+            value = rspJson['value']
+            self.assertTrue(len(value), queries[key])
+            
+    def testQuerySelection(self):
+        domain = 'compound.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        req += "?query=date == 23"  # values where date field = 23
+        req += "&select=[10:20]"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('hrefs' in rspJson)
+        self.assertTrue('index' in rspJson)
+        index = rspJson['index']
+        self.assertEqual(len(index), 6)
+        self.assertEqual(index[0], 14)
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 6)
+        item = value[0]
+        self.assertEqual(len(item), 5)
+        self.assertEqual(item[0], 23)
+        
+    def testQueryBatch(self):
+        domain = 'compound.' + config.get('domain')  
+        headers = {'host': domain}
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"  
+        start = 0
+        stop = 72
+        count = 0
+        count = req_count=0
+        limit = 10
+        req += "?query=date == 23"     # values where date field = 23
+        req += "&Limit=" + str(limit)  # return no more than 10 results at a time
+        for i in range(10):
+            sreq = req+"&select=[" + str(start) + ":" + str(stop) + "]" 
+            print "req:", sreq  
+            rsp = requests.get(sreq, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            req_count += 1
+            rspJson = json.loads(rsp.text)
+            self.assertTrue('hrefs' in rspJson)
+            self.assertTrue('index' in rspJson)
+            index = rspJson['index']
+            print "index:", index
+            self.assertTrue(len(index) <= limit)
+            self.assertTrue('value' in rspJson)
+            value = rspJson['value']
+            self.assertEqual(len(value), len(index))
+            count += len(index)
+            if len(index) < limit:
+                break  # no more results
+            
+            start = index[-1] + 1  # start at next index
+        self.assertEqual(count, 24)
+        self.assertEqual(req_count, 3)
+            
+         
         
     def testBadQuery(self):
         domain = 'compound.' + config.get('domain')  

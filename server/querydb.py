@@ -61,22 +61,27 @@ class Querydb:
         self.f.flush()
         self.f.close()
         
-    def doQuery(self, path, query):
+    def doQuery(self, path, query, start=0, stop=-1, step=1, limit=None):
         print "querydb getValues - path:", path, "query:", query
+        print "limit:", limit, type(limit)
         dset = self.f.root._f_get_child(path)
         print "colnames", dset.colnames
-        start_index = 0
-        end_index = dset.nrows
         values = []
         indexes = []
-        for row in dset.where(query, start=start_index, stop=end_index):
+        count = 0
+        if stop == -1:
+            stop = dset.nrows
+        for row in dset.where(query, start=start, stop=stop, step=step):
             item = []
             for field in dset.colnames:
-                print "getting field", field
                 item.append(row[field])
-                print "adding: ", row[field]
             values.append(item)
             indexes.append(row.nrow)
+            count += 1
+            print "count:", count
+            if limit and (count == limit):
+                print "break!"
+                break  # no more rows for this btch
         rsp = {}
         rsp["indexes"] = indexes
         rsp["values"] = values
