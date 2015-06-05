@@ -279,6 +279,7 @@ class ValueTest(unittest.TestCase):
         self.failUnlessEqual(len(first), 5)
         self.failUnlessEqual(first[0], 24) 
         self.failUnlessEqual(first[1], "13:53")  
+       
         
     def testGetCommitted(self):
         domain = 'committed_type.' + config.get('domain')  
@@ -460,8 +461,52 @@ class ValueTest(unittest.TestCase):
         self.assertEqual(hyperslabs[2][1], [3, 3])
         self.assertEqual(hyperslabs[3][0], [2, 11])
         self.assertEqual(hyperslabs[3][1], [3, 14])
+        
+        
+    #
+    # Query tests
+    #
+    
+    def testQuery(self):
+        domain = 'compound.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        req += "?query=date %3D%3D 23"  # values where date field = 23
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('hrefs' in rspJson)
+        self.assertTrue('index' in rspJson)
+        index = rspJson['index']
+        self.assertEqual(len(index), 24)
+        self.assertEqual(index[0], 14)
+        self.assertTrue('value' in rspJson)
+        value = rspJson['value']
+        self.assertEqual(len(value), 24)
+        item = value[0]
+        self.assertEqual(len(item), 5)
+        self.assertEqual(item[0], 23)
+        print rsp.text
+        
+    def testBadQuery(self):
+        domain = 'compound.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        req += "?query=foobar"  
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 400)
+         
+          
          
         
+    #
+    # Post tests
+    #
+    
     def testPost(self):    
         for domain_name in ('tall','tall_ro'):
             domain = domain_name + '.' + config.get('domain') 

@@ -22,9 +22,11 @@ from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, url_escape, url_unescape
 import config
+from querydb import Querydb
 sys.path.append('../hdf5-json/lib')
 from hdf5db import Hdf5db
 import hdf5dtype
+
 from timeUtil import unixTimeToUTC
 from fileUtil import getFilePath, getDomain, makeDirs, verifyFile
 from httpErrorUtil import errNoToHttpStatus
@@ -947,32 +949,42 @@ class ValueHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
+        item_shape = None
+        rank = None
+        item_type = None
         values = None
+        slices = []
+        query_selection = self.get_query_argument("query", default=None)
+        if query_selection:
+            print "query:" + query_selection
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 item = db.getDatasetItemByUuid(reqUuid)
-                itemType = item['type']
+                item_type = item['type']
                 
-                if itemType['class'] == 'H5T_OPAQUE':
+                if item_type['class'] == 'H5T_OPAQUE':
                     #todo - support for returning OPAQUE data...
                     msg = "Not Implemented: GET OPAQUE data not supported"
                     log.info(msg)
                     raise HTTPError(501, reason=msg)  # Not implemented
-                shape = item['shape']
-                if shape['class'] == 'H5S_NULL':
+                item_shape = item['shape']
+                if item_shape['class'] == 'H5S_NULL':
                     pass   # don't return a value
-                elif shape['class'] == 'H5S_SCALAR':
+                elif item_shape['class'] == 'H5S_SCALAR':
+                    if query_selection:
+                        msg = "Bad Request: query selection not valid with scalar dataset"
+                        log.info(msg)
+                        raise HTTPError(400, reason=msg) 
                     values = db.getDatasetValuesByUuid(reqUuid, Ellipsis)
-                elif shape['class'] == 'H5S_SIMPLE':
-                    dims = shape['dims']
+                elif item_shape['class'] == 'H5S_SIMPLE':
+                    dims = item_shape['dims']
                     rank = len(dims)
-                    slices = []
                     for dim in range(rank):
                         slice = self.getSliceQueryParam(dim, dims[dim])
                         slices.append(slice)
-         
-                    values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
+                    if not query_selection:
+                        values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
                 else:
                     msg = "Internal Server Error: unexpected shape class: " + shape['class']
                     log.error(msg)
@@ -983,6 +995,37 @@ class ValueHandler(RequestHandler):
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror) 
+            
+        if query_selection:
+            print "get query selection"
+            print "item:", item
+            if item_type['class'] != 'H5T_COMPOUND':
+                msg = "Bad Request: query selection is only supported for compound types"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+            if rank != 1:
+                msg = "Bad Request: query selection is only supported for "
+                msg += "one dimensional datasets"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+            if 'alias' not in item or len(item['alias']) == 0:
+                msg = "Bad Request: query selection is not valid for "
+                msg += "anonymous datasets"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+            try:
+                with Querydb(filePath, app_logger=log) as db:
+                    path = item['alias'][0]
+                    print "querydb path", path
+                    rsp = db.doQuery(path, query_selection)
+                    values = rsp['values']
+                    response['index'] = rsp['indexes']
+            except NameError as e:
+                msg = "Query error: " + e.message
+                log.info(msg)
+                raise HTTPError(400, msg)
+            
+            
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
