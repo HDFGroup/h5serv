@@ -65,7 +65,7 @@ class Querydb:
         print "querydb getValues - path:", path, "query:", query
         print "limit:", limit, type(limit)
         dset = self.f.root._f_get_child(path)
-        print "colnames", dset.colnames
+        #print "colnames", dset.colnames
         values = []
         indexes = []
         count = 0
@@ -78,10 +78,10 @@ class Querydb:
             values.append(item)
             indexes.append(row.nrow)
             count += 1
-            print "count:", count
+            #print "count:", count
             if limit and (count == limit):
-                print "break!"
-                break  # no more rows for this btch
+                #print "break!"
+                break  # no more rows for this batch
         rsp = {}
         rsp["indexes"] = indexes
         rsp["values"] = values
