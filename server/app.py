@@ -1011,7 +1011,6 @@ class ValueHandler(RequestHandler):
         reqUuid = self.getRequestId()
         domain = self.getDomain()
         filePath = getFilePath(domain) 
-        print "filePath:", filePath
         verifyFile(filePath)
         
         response = { }
@@ -1025,7 +1024,7 @@ class ValueHandler(RequestHandler):
         slices = []
         query_selection = self.get_query_argument("query", default=None)
         if query_selection:
-            print "query:" + query_selection
+            log.info("query: " + query_selection)
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
@@ -1066,8 +1065,6 @@ class ValueHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror) 
             
         if query_selection:
-            print "get query selection"
-            print "item:", item
             if item_type['class'] != 'H5T_COMPOUND':
                 msg = "Bad Request: query selection is only supported for compound types"
                 log.info(msg)
@@ -1083,7 +1080,6 @@ class ValueHandler(RequestHandler):
                 log.info(msg)
                 raise HTTPError(400, reason=msg)
             
-            print "shape:", item_shape
             dims = item_shape['dims']
             start = 0
             stop = dims[0]
@@ -1096,7 +1092,6 @@ class ValueHandler(RequestHandler):
                     msg = "Query error, invalid Limit: " + e.message
                     log.info(msg)
                     raise HTTPError(400, msg)
-            print "slices:", slices
             if slices:
                 start=slices[0].start
                 stop =slices[0].stop
@@ -1104,16 +1099,13 @@ class ValueHandler(RequestHandler):
             try:
                 with Querydb(filePath, app_logger=log) as db:
                     path = item['alias'][0]
-                    print "querydb path", path
                     rsp = db.doQuery(path, query_selection, start=start, stop=stop, step=step, limit=limit)
                     values = rsp['values']
                     response['index'] = rsp['indexes']
             except NameError as e:
                 msg = "Query error: " + e.message
                 log.info(msg)
-                raise HTTPError(400, msg)
-            
-            
+                raise HTTPError(400, msg)       
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
@@ -1496,8 +1488,6 @@ class AttributeHandler(RequestHandler):
             msg = "JSON Parser Error: " + e.message
             log.info(msg)
             raise HTTPError(400, reason=msg )
-            
-        print "create attribute body:", body
             
         if "type" not in body:
             log.info("Type not supplied")
@@ -2223,7 +2213,7 @@ class RootHandler(RequestHandler):
         # will raise exception if not found
         domain = self.getDomain()
         filePath = getFilePath(domain)
-        print "filepath:", filePath
+        log.info("filepath: " + filePath)
         verifyFile(filePath)
         
         response = self.getRootResponse(filePath)

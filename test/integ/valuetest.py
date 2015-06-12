@@ -488,14 +488,20 @@ class ValueTest(unittest.TestCase):
         item = value[0]
         self.assertEqual(len(item), 5)
         self.assertEqual(item[0], 23)
-       
+        
+    
     
     def testQueries(self):
+        # use '%26' rather than '&' since otherwise it will be 
+        # interpreted as a http query param seperator
         queries = { "date == 23": 24,
                     "wind == 'W 5'": 3,
                     "temp > 61": 53,
-                    "(date >=22) & (date <= 24)": 62,
+                    "(date >=22) %26 (date <= 24)": 62,
+                    "(date == 21) %26 (temp > 70)": 10,
                     "(wind == 'E 7') | (wind == 'S 7')": 7 }
+       
+        queries = {    "(date == 21) %26 (temp >= 72)": 4 }
         domain = 'compound.' + config.get('domain') 
         headers = {'host': domain} 
         root_uuid = helper.getRootUUID(domain)
@@ -512,7 +518,7 @@ class ValueTest(unittest.TestCase):
             self.assertTrue(len(index), queries[key])
             self.assertTrue('value' in rspJson)
             value = rspJson['value']
-            self.assertTrue(len(value), queries[key])
+            self.assertEqual(len(value), queries[key])
             
     def testQuerySelection(self):
         domain = 'compound.' + config.get('domain')  
@@ -550,9 +556,8 @@ class ValueTest(unittest.TestCase):
         limit = 10
         req += "?query=date == 23"     # values where date field = 23
         req += "&Limit=" + str(limit)  # return no more than 10 results at a time
-        for i in range(10):
+        for i in range(50):
             sreq = req+"&select=[" + str(start) + ":" + str(stop) + "]" 
-            print "req:", sreq  
             rsp = requests.get(sreq, headers=headers)
             self.failUnlessEqual(rsp.status_code, 200)
             req_count += 1
@@ -560,7 +565,6 @@ class ValueTest(unittest.TestCase):
             self.assertTrue('hrefs' in rspJson)
             self.assertTrue('index' in rspJson)
             index = rspJson['index']
-            print "index:", index
             self.assertTrue(len(index) <= limit)
             self.assertTrue('value' in rspJson)
             value = rspJson['value']
@@ -568,7 +572,6 @@ class ValueTest(unittest.TestCase):
             count += len(index)
             if len(index) < limit:
                 break  # no more results
-            
             start = index[-1] + 1  # start at next index
         self.assertEqual(count, 24)
         self.assertEqual(req_count, 3)
