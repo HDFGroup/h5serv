@@ -32,7 +32,7 @@ data elements, a point selection (series of element coordinates) can be passed t
  
 Reading data from a dataset
 ---------------------------
-To read either the entire dataset or a hyperslab selection, use the :doc:`GET_Value`
+To read either the entire dataset, hyperslab selection, or 'where' query, use the :doc:`GET_Value`
 operation.  To read a point selection, use the :doc:`POST_Value` operation  (POST is 
 used in this case rather than GET since the point selection values may be to 
 large to include in the URI.) 

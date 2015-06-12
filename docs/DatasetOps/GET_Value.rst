@@ -40,9 +40,9 @@ For each tuple:
 
 query
 ^^^^^
-Optionally the request can provide a query value to select items from a dataset based on an 
+Optionally the request can provide a query value to select items from a dataset based on a 
 condition expression.  E.g. The condition: "(temp > 32.0) & (dir == 'N')" would return elements 
-of the dataset where the 'temp' field was greater than 32.0 and the 'dir' field was equa to 'N'.
+of the dataset where the 'temp' field was greater than 32.0 and the 'dir' field was equal to 'N'.
 
 Note: the query value needs to be url-encoded.
 
