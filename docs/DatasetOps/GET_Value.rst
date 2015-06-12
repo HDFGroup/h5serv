@@ -38,6 +38,29 @@ For each tuple:
 * stop must be greater than or equal to start and less than the dimension extent
 * step is optional and if provided must be greater than 0.  If not provided, the step value for that dimension is assumed to be 1.
 
+query
+^^^^^
+Optionally the request can provide a query value to select items from a dataset based on an 
+condition expression.  E.g. The condition: "(temp > 32.0) & (dir == 'N')" would return elements 
+of the dataset where the 'temp' field was greater than 32.0 and the 'dir' field was equa to 'N'.
+
+Note: the query value needs to be url-encoded.
+
+Note: the query parameter can be used in conjunction with the select parameter to restrict the return set to
+the provided selection.
+
+Note: the query parameter can be used in conjunction with the Limit parameter to limit the 
+number of matches returned.
+
+Note: Currently the query parameter can only be used with compound type datasets that are
+one-dimensional.
+
+Limit
+^^^^^
+If provided, a positive integer value specifying the maximum number of links to return.
+Only has an effect if used in conjunction with the query parameter.
+
+
 Request Headers
 ---------------
 This implementation of the operation uses only the request headers that are common
@@ -61,6 +84,11 @@ value
 ^^^^^
 A json array (integer or string for scalar datasets) giving the values of the requested 
 dataset region.
+
+index
+^^^^^
+A list of indexes for each element that met the query condition (only provided when 
+the query request parameter is used).
 
 hrefs
 ^^^^^
@@ -165,7 +193,94 @@ Sample Response - Selection
         {"href": "http://tall.test.hdfgroup.org/", "rel": "home"}
       ]
     }
-       
+    
+    
+Sample Request - Query
+--------------------------
+
+Get elements from dataset where the 'date' field is equal to 20 and the 'temp' field is greater or equal to 70.
+
+.. code-block:: http
+
+    GET /datasets/b2c82938-0e2e-11e5-9092-3c15c2da029e/value?query=(date%20==%2021)%20%26%20(temp%20%3E=%2072) HTTP/1.1
+    host: compound.test.hdfgroup.org
+    Accept-Encoding: gzip, deflate
+    Accept: */*
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    
+Sample Response - Query
+-------------------------
+
+.. code-block:: http
+
+    HTTP/1.1 200 OK
+    Date: Thu, 11 Jun 2015 21:05:06 GMT
+    Content-Length: 805
+    Etag: "927b5ed89616896d3dce7df8bdddac058321076a"
+    Content-Type: application/json
+    Server: TornadoServer/4.1    
+    
+.. code-block:: json
+   
+    {
+    "index": [68, 69, 70, 71], 
+    "value": [
+       [21, "17:53", 74, 29.87, "S 9"], 
+       [21, "16:53", 75, 29.87, "SW 10"], 
+       [21, "15:53", 79, 29.87, "S 12"], 
+       [21, "14:53", 78, 29.87, "SW 9"]
+      ]
+    },
+    "hrefs": [
+        {"href": "http://compound.test.hdfgroup.org/datasets/b2c82938-0e2e-11e5-9092-3c15c2da029e/value", "rel": "self"}, 
+        {"href": "http://compound.test.hdfgroup.org/groups/b2c7f935-0e2e-11e5-96ae-3c15c2da029e", "rel": "root"}, 
+        {"href": "http://compound.test.hdfgroup.org/datasets/b2c82938-0e2e-11e5-9092-3c15c2da029e", "rel": "owner"}, 
+        {"href": "http://compound.test.hdfgroup.org/", "rel": "home"}
+    ]
+    
+Sample Request - Query Batch
+-----------------------------
+
+Get elements where the 'date' field is equal to 23 and the index is between 24 and 72.  Limit the number of results to 5.  
+
+.. code-block:: http
+
+    GET /datasets/b2c82938-0e2e-11e5-9092-3c15c2da029e/value?query=date%20==%2023&Limit=5&select=[24:72] HTTP/1.1
+    host: compound.test.hdfgroup.org
+    Accept-Encoding: gzip, deflate
+    Accept: */*
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    
+Sample Response - Query Batch
+-----------------------------
+
+.. code-block:: http
+
+    HTTP/1.1 200 OK
+    Date: Thu, 11 Jun 2015 21:15:28 GMT
+    Content-Length: 610
+    Etag: "927b5ed89616896d3dce7df8bdddac058321076a"
+    Content-Type: application/json
+    Server: TornadoServer/4.1    
+    
+.. code-block:: json
+   
+    {
+    "index": [24, 25, 26, 27, 28], 
+    "value": [
+        [23, "13:53", 65, 29.83, "W 5"], 
+        [23, "12:53", 66, 29.84, "W 5"], 
+        [23, "11:53", 64, 29.84, "E 6"], 
+        [23, "10:53", 61, 29.86, "SE 5"], 
+        [23, "9:53", 62, 29.86, "S 6"]
+       ],
+    "hrefs": [
+        {"href": "http://compound.test.hdfgroup.org/datasets/b2c82938-0e2e-11e5-9092-3c15c2da029e/value", "rel": "self"}, 
+        {"href": "http://compound.test.hdfgroup.org/groups/b2c7f935-0e2e-11e5-96ae-3c15c2da029e", "rel": "root"}, 
+        {"href": "http://compound.test.hdfgroup.org/datasets/b2c82938-0e2e-11e5-9092-3c15c2da029e", "rel": "owner"}, 
+        {"href": "http://compound.test.hdfgroup.org/", "rel": "home"}
+    ]
+        
 Related Resources
 =================
 

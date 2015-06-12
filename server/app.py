@@ -22,9 +22,11 @@ from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, url_escape, url_unescape
 import config
+from querydb import Querydb
 sys.path.append('../hdf5-json/lib')
 from hdf5db import Hdf5db
 import hdf5dtype
+
 from timeUtil import unixTimeToUTC
 from fileUtil import getFilePath, getDomain, makeDirs, verifyFile
 from httpErrorUtil import errNoToHttpStatus
@@ -60,6 +62,17 @@ class DefaultHandler(RequestHandler):
         raise HTTPError(400, reason="No route matches") 
         
 class LinkCollectionHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
+        
+        
     def getRequestId(self, uri):
         log = logging.getLogger("h5serv")
         # helper method
@@ -89,8 +102,8 @@ class LinkCollectionHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip)      
         
         reqUuid = self.getRequestId(self.request.uri)
-        domain = self.request.host
-        filePath = getFilePath(domain) 
+        domain = self.getDomain()
+        filePath = getFilePath(domain)
         
         # Get optional query parameters
         limit = self.get_query_argument("Limit", 0)
@@ -138,6 +151,16 @@ class LinkCollectionHandler(RequestHandler):
     
         
 class LinkHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
+        
     def getRequestId(self, uri):
         log = logging.getLogger("h5serv")
         # helper method
@@ -190,7 +213,7 @@ class LinkHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip)     
         
         reqUuid = self.getRequestId(self.request.uri)
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         linkName = self.getName(self.request.uri)
         
@@ -292,7 +315,7 @@ class LinkHandler(RequestHandler):
             log.info(msg)
             raise HTTPError(400, reasoln=msg)                      
         
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         
         response = { }
@@ -336,7 +359,7 @@ class LinkHandler(RequestHandler):
         
         log.info( " delete link  name[: " + linkName + "] parentUuid: " + reqUuid)
            
-        domain = self.request.host
+        domain = self.getDomain()
         response = { }
         rootUUID = None
         filePath = getFilePath(domain)
@@ -361,6 +384,15 @@ class LinkHandler(RequestHandler):
         self.write(json_encode(response))
                 
 class TypeHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
     
     # or 'Snn' for fixed string or 'vlen_bytes' for variable 
     def getRequestId(self):
@@ -386,7 +418,7 @@ class TypeHandler(RequestHandler):
         log.info('TypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
         reqUuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
@@ -427,7 +459,7 @@ class TypeHandler(RequestHandler):
         log.info('TypeHandler.delete ' + self.request.host)   
         log.info('remote_ip: ' + self.request.remote_ip)
         uuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         response = { }
@@ -454,6 +486,16 @@ class TypeHandler(RequestHandler):
         self.write(json_encode(response))
                 
 class DatatypeHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
+        
     def getRequestId(self):
         log = logging.getLogger("h5serv")
         # request is in the form /datasets/<id>/type, return <id>
@@ -485,7 +527,7 @@ class DatatypeHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
@@ -515,6 +557,16 @@ class DatatypeHandler(RequestHandler):
         self.write(json_encode(response))
                 
 class ShapeHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
+        
     def getRequestId(self):
         log = logging.getLogger("h5serv")
         # request is in the form /datasets/<id>/shape, return <id>
@@ -546,7 +598,7 @@ class ShapeHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
@@ -585,7 +637,7 @@ class ShapeHandler(RequestHandler):
         log.info('ShapeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
         reqUuid = self.getRequestId()       
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
@@ -649,6 +701,15 @@ class ShapeHandler(RequestHandler):
         self.write(json_encode(response)) 
                 
 class DatasetHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
    
     def getRequestId(self):
         log = logging.getLogger("h5serv")
@@ -674,7 +735,7 @@ class DatasetHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
@@ -718,7 +779,7 @@ class DatasetHandler(RequestHandler):
         log.info('DatasetHandler.delete host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
         uuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
@@ -747,7 +808,16 @@ class DatasetHandler(RequestHandler):
             
                 
 class ValueHandler(RequestHandler):
-     
+    """
+    Helper method - return domain based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
+      
     
     """
     Helper method - return slice for dim based on query params
@@ -939,7 +1009,7 @@ class ValueHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
@@ -947,32 +1017,42 @@ class ValueHandler(RequestHandler):
         hrefs = []
         rootUUID = None
         item = None
+        item_shape = None
+        rank = None
+        item_type = None
         values = None
+        slices = []
+        query_selection = self.get_query_argument("query", default=None)
+        if query_selection:
+            log.info("query: " + query_selection)
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 item = db.getDatasetItemByUuid(reqUuid)
-                itemType = item['type']
+                item_type = item['type']
                 
-                if itemType['class'] == 'H5T_OPAQUE':
+                if item_type['class'] == 'H5T_OPAQUE':
                     #todo - support for returning OPAQUE data...
                     msg = "Not Implemented: GET OPAQUE data not supported"
                     log.info(msg)
                     raise HTTPError(501, reason=msg)  # Not implemented
-                shape = item['shape']
-                if shape['class'] == 'H5S_NULL':
+                item_shape = item['shape']
+                if item_shape['class'] == 'H5S_NULL':
                     pass   # don't return a value
-                elif shape['class'] == 'H5S_SCALAR':
+                elif item_shape['class'] == 'H5S_SCALAR':
+                    if query_selection:
+                        msg = "Bad Request: query selection not valid with scalar dataset"
+                        log.info(msg)
+                        raise HTTPError(400, reason=msg) 
                     values = db.getDatasetValuesByUuid(reqUuid, Ellipsis)
-                elif shape['class'] == 'H5S_SIMPLE':
-                    dims = shape['dims']
+                elif item_shape['class'] == 'H5S_SIMPLE':
+                    dims = item_shape['dims']
                     rank = len(dims)
-                    slices = []
                     for dim in range(rank):
                         slice = self.getSliceQueryParam(dim, dims[dim])
                         slices.append(slice)
-         
-                    values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
+                    if not query_selection:
+                        values = db.getDatasetValuesByUuid(reqUuid, tuple(slices)) 
                 else:
                     msg = "Internal Server Error: unexpected shape class: " + shape['class']
                     log.error(msg)
@@ -983,6 +1063,49 @@ class ValueHandler(RequestHandler):
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror) 
+            
+        if query_selection:
+            if item_type['class'] != 'H5T_COMPOUND':
+                msg = "Bad Request: query selection is only supported for compound types"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+            if rank != 1:
+                msg = "Bad Request: query selection is only supported for "
+                msg += "one dimensional datasets"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+            if 'alias' not in item or len(item['alias']) == 0:
+                msg = "Bad Request: query selection is not valid for "
+                msg += "anonymous datasets"
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+            
+            dims = item_shape['dims']
+            start = 0
+            stop = dims[0]
+            step = 1
+            limit = self.get_query_argument("Limit", default=None)
+            if limit:
+                try:
+                    limit = int(limit)  # convert to int
+                except ValueError as e:
+                    msg = "Query error, invalid Limit: " + e.message
+                    log.info(msg)
+                    raise HTTPError(400, msg)
+            if slices:
+                start=slices[0].start
+                stop =slices[0].stop
+                step =slices[0].step
+            try:
+                with Querydb(filePath, app_logger=log) as db:
+                    path = item['alias'][0]
+                    rsp = db.doQuery(path, query_selection, start=start, stop=stop, step=step, limit=limit)
+                    values = rsp['values']
+                    response['index'] = rsp['indexes']
+            except NameError as e:
+                msg = "Query error: " + e.message
+                log.info(msg)
+                raise HTTPError(400, msg)       
                          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
@@ -1008,7 +1131,7 @@ class ValueHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
@@ -1088,7 +1211,7 @@ class ValueHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         points = None
@@ -1156,6 +1279,15 @@ class ValueHandler(RequestHandler):
         log.info("value post succeeded")   
            
 class AttributeHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
 
     # convert embedded list (list of lists) to tuples
     def convertToTuple(self, data):
@@ -1246,7 +1378,7 @@ class AttributeHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip)
         
         reqUuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         col_name = self.getRequestCollectionName()
         attr_name = self.getRequestName()
         filePath = getFilePath(domain) 
@@ -1338,7 +1470,7 @@ class AttributeHandler(RequestHandler):
         log.info('AttributeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
         
-        domain = self.request.host
+        domain = self.getDomain()
         col_name = self.getRequestCollectionName()
         reqUuid = self.getRequestId()
         attr_name = self.getRequestName()
@@ -1356,8 +1488,6 @@ class AttributeHandler(RequestHandler):
             msg = "JSON Parser Error: " + e.message
             log.info(msg)
             raise HTTPError(400, reason=msg )
-            
-        print "create attribute body:", body
             
         if "type" not in body:
             log.info("Type not supplied")
@@ -1438,7 +1568,7 @@ class AttributeHandler(RequestHandler):
         log.info('AttributeHandler.delete ' + self.request.host)   
         log.info('remote_ip: ' + self.request.remote_ip)
         obj_uuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         col_name = self.getRequestCollectionName()
         attr_name = self.getRequestName()
         if attr_name == None:
@@ -1480,6 +1610,16 @@ class AttributeHandler(RequestHandler):
                 
          
 class GroupHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
+        
     def getRequestId(self):
         log = logging.getLogger("h5serv")
         uri = self.request.uri
@@ -1502,7 +1642,7 @@ class GroupHandler(RequestHandler):
         log.info('GroupHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
         reqUuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
@@ -1543,7 +1683,7 @@ class GroupHandler(RequestHandler):
         log.info('GroupHandler.delete ' + self.request.host)   
         log.info('remote_ip: ' + self.request.remote_ip)
         uuid = self.getRequestId()
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
@@ -1572,12 +1712,21 @@ class GroupHandler(RequestHandler):
     
                 
 class GroupCollectionHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
             
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('GroupCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         rootUUID = None
@@ -1648,7 +1797,7 @@ class GroupCollectionHandler(RequestHandler):
             link_name = link_options["name"]
             log.info("add link to: " + parent_group_uuid + " with name: " + link_name)
                
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
               
@@ -1692,12 +1841,21 @@ class GroupCollectionHandler(RequestHandler):
         
         
 class DatasetCollectionHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
             
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('DatasetCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
@@ -1747,7 +1905,7 @@ class DatasetCollectionHandler(RequestHandler):
             log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
                
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         dims = None
@@ -1873,12 +2031,21 @@ class DatasetCollectionHandler(RequestHandler):
         self.set_status(201)  # resource created
         
 class TypeCollectionHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
             
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('TypeCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
         
@@ -1928,7 +2095,7 @@ class TypeCollectionHandler(RequestHandler):
             log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
                
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
@@ -1997,11 +2164,20 @@ class TypeCollectionHandler(RequestHandler):
           
         
 class RootHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
 
     def getRootResponse(self, filePath):
         log = logging.getLogger("h5serv")
         # used by GET / and PUT /
-        domain = self.request.host
+        domain = self.getDomain()
         filePath = getFilePath(domain)
         
         try:
@@ -2035,7 +2211,9 @@ class RootHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip)
         # get file path for the domain
         # will raise exception if not found
-        filePath = getFilePath(self.request.host)
+        domain = self.getDomain()
+        filePath = getFilePath(domain)
+        log.info("filepath: " + filePath)
         verifyFile(filePath)
         
         response = self.getRootResponse(filePath)
@@ -2046,7 +2224,8 @@ class RootHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('RootHandler.put ' + self.request.host)  
         log.info('remote_ip: ' + self.request.remote_ip)
-        filePath = getFilePath(self.request.host)
+        domain = self.getDomain()
+        filePath = getFilePath(domain)
         log.info("put filePath: " + filePath)
         if op.isfile(filePath):
             msg = "Conflict: resource exists"
@@ -2072,7 +2251,8 @@ class RootHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('RootHandler.delete ' + self.request.host)  
         log.info('remote_ip: ' + self.request.remote_ip) 
-        filePath = getFilePath(self.request.host)
+        domain = self.getDomain()
+        filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
         if not op.isfile(filePath):
