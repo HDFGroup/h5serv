@@ -177,6 +177,7 @@ class LinkHandler(RequestHandler):
         if npos <= 0:
             log.info("bad uri")
             raise HTTPError(400)  
+        
         id = uri[:npos]
          
         log.info('got id: [' + id + ']')
@@ -408,7 +409,10 @@ class TypeHandler(RequestHandler):
             msg = "Bad Request: id is not specified"
             log.info(msg)
             raise HTTPError(400, reason=msg)
-        id = uri[(npos+1):]
+        rpos = uri.rfind('?')
+        if rpos < 0:
+            rpos = len(uri)
+        id = uri[(npos+1):rpos]
         log.info('got id: [' + id + ']')
     
         return id
@@ -1636,7 +1640,10 @@ class GroupHandler(RequestHandler):
             msg = "Bad Request: id could not be found in URI"
             log.info(msg)
             raise HTTPError(400, message=msg)
-        id = uri[(npos+1):]
+        rpos = uri.rfind('?')
+        if rpos < 0:
+            rpos = len(uri)
+        id = uri[(npos+1):rpos]
         log.info('got id: [' + id + ']')
     
         return id
