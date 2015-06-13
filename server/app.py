@@ -715,16 +715,20 @@ class DatasetHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         # request is in the form /datasets/<id>, return <id>
         uri = self.request.uri
-        npos = uri.rfind('/')
-        if npos < 0:
+        start = uri.rfind('/')
+        if start < 0:
             msg = "Internal Server Error: unexpected routing"
             log.error(msg)
             raise HTTPError(500, reason=msg)  # should not get routed to TypeHandler in this case
-        if npos == len(uri) - 1:
+        if start == len(uri) - 1:
             msg = "Bad Request: id not specified"
             log.info(msg)
             raise HTTPError(400, reason=msg)
-        id = uri[(npos+1):]
+        end = uri.rfind('?')
+        if end < 0:
+            end = len(uri)
+            
+        id = uri[(start+1):end]
         log.info('got id: [' + id + ']')
     
         return id
@@ -1953,16 +1957,16 @@ class DatasetCollectionHandler(RequestHandler):
             
         datatype = body["type"]
         
-        maxshape = None
-        if "maxshape" in body:
-            maxshape = body["maxshape"]
-            if type(maxshape) == int:
-                dim1 = maxshape
-                maxshape = [dim1]
-            elif type(maxshape) == list or type(maxshape) == tuple: 
+        maxdims = None
+        if "maxdims" in body:
+            maxdims = body["maxdims"]
+            if type(maxdims) == int:
+                dim1 = maxdims
+                maxdims = [dim1]
+            elif type(maxdims) == list or type(maxdims) == tuple: 
                 pass # can use as is
             else:
-                msg="Bad Request: maxshape is invalid"
+                msg="Bad Request: maxdims is invalid"
                 log.info(msg)
                 raise HTTPError(400, reason=msg)     
            
@@ -1978,31 +1982,31 @@ class DatasetCollectionHandler(RequestHandler):
                     log.info("msg")
                     raise HTTPError(400, reason=msg) 
             
-        if maxshape:
+        if maxdims:
             if dims == None:
-                # can't use maxshape with null_space dataset
-                msg="Bad Request: maxshape not valid for H5S_NULL dataspace"
+                # can't use maxdims with null_space dataset
+                msg="Bad Request: maxdims not valid for H5S_NULL dataspace"
                 log.info(msg)
                 raise HTTPError(400, reason=msg) 
                 
-            if len(maxshape) != len(dims):
-                msg="Bad Request: maxshape array length must equal shape array length"
+            if len(maxdims) != len(dims):
+                msg="Bad Request: maxdims array length must equal shape array length"
                 log.info(msg)
                 raise HTTPError(400, reason=msg)
             for i in range(len(dims)):
-                maxextent = maxshape[i]
+                maxextent = maxdims[i]
                 if maxextent != 0 and maxextent < dims[i]:
-                    msg="Bad Request: Maxshape extent can't be smaller than shape extent"
+                    msg="Bad Request: maxdims extent can't be smaller than shape extent"
                     log.info(msg)
                     raise HTTPError(400, reason=msg)
                 if maxextent == 0:
-                    maxshape[i] = None  # this indicates unlimited
+                    maxdims[i] = None  # this indicates unlimited
         
         item = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
-                item = db.createDataset(datatype, dims, maxshape)
+                item = db.createDataset(datatype, dims, maxdims)
                 if group_uuid:
                     # link the new dataset
                     db.linkObject(group_uuid, item['id'], link_name)

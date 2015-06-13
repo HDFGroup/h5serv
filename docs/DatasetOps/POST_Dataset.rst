@@ -232,7 +232,7 @@ Sample Request - Resizable Dataset
     {
     "type": "H5T_IEEE_F32LE",
     "shape": 10,
-    "maxshape": 0
+    "maxdims": 0
     }
     
 Sample Response - Resizable Dataset

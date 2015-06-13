@@ -878,7 +878,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
-        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'maxshape': 20}
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'maxdims': 20}
         req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
@@ -896,7 +896,7 @@ class DatasetTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201)
         
         # create a datataset with unlimited dimension
-        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'maxshape': 0}
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'maxdims': 0}
         req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset

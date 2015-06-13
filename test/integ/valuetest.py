@@ -631,7 +631,9 @@ class ValueTest(unittest.TestCase):
             data = rspJson['value'] 
             self.assertEqual(len(data), len(points))
             self.assertEqual(9, data[3]) 
-        
+    #
+    # Put tests
+    #    
         
     def testPut(self):
         # create domain

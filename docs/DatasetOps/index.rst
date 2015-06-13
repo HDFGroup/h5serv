@@ -40,10 +40,14 @@ large to include in the URI.)
 Resizable datasets
 ------------------
 If one or more of the dimensions of a dataset may need to be extended after creation,
-provide a *maxdims* key to the shape during creation.  If the value of the maxdims
+provide a *maxdims* key to the shape during creation (see :doc:`POST_dataset`).  If the value of the maxdims
 dimension is 0, that dimension is *unlimited* and may be extended as much as desired.
 If an upper limit is known, use that value in maxdims which will allow that dimension
 to be extended up to the given value.
+To resize the dataset, use :doc:`PUT_DataShape.rst` operation with the desired shape value(s) for
+the new dimensions.
+
+Note: dimensions can only be increased, not decreased.
 
 Deleting datasets
 -----------------
