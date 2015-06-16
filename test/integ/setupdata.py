@@ -48,6 +48,7 @@ testfiles = {
     'bitfield_dset.h5': ('.',),
     'dim_scale.h5': ('.',),
     'dim_scale_data.h5': ('.', 'dim_scale_updated.h5'),
+    'dset_creationprop.h5': ('.',),
     'enum_attr.h5': ('.',),
     'enum_dset.h5': ('.',),
     'fixed_string_attr.h5': ('.',),

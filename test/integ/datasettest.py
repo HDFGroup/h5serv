@@ -538,6 +538,34 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(typeItem['class'], 'H5T_REFERENCE')
         self.assertEqual(typeItem['base'], 'H5T_STD_REF_DSETREG')
         
+    def testGetFillValueProp(self):
+        domain = 'fillvalue.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid  
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('creationProperties' in rspJson)
+        creationProps = rspJson['creationProperties']
+        self.assertTrue('fillValue' in creationProps)   
+        self.assertEqual(creationProps['fillValue'], 42)
+        
+    def testGetCreationProps(self):
+        domain = 'dset_creationprop.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid  
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('creationProperties' in rspJson)
+        creationProps = rspJson['creationProperties']
+        print creationProps
+        
+        
     def testPost(self):
         domain = 'newdset.datasettest.' + config.get('domain')
         req = self.endpoint + "/"
@@ -879,6 +907,7 @@ class DatasetTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
         payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'maxdims': 20}
+        payload['creationProperties'] = {'fillValue': 3.12 }
         req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)  # create dataset
@@ -961,6 +990,61 @@ class DatasetTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         dset_uuid = rspJson['id']
         self.assertTrue(helper.validateId(dset_uuid))
+        
+    def testPostCreationProps(self):
+        domain = 'newdset_creationprops.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        creation_props = { 'allocTime': 'H5D_ALLOC_TIME_INCR',
+                           'fillTime': 'H5D_FILL_TIME_NEVER',
+                           'layout': 'H5D_COMPACT' }
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'creationProperties': creation_props }
+                                                           
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'dset1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dset1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
+    def testPostFilter(self):
+        domain = 'newdset_gzip.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        filters = [ { 'id': 1, 'level': 5 }, ]  # deflate filter (gzip)
+        creation_props = { 'filters': filters }  
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'creationProperties': creation_props }
+                                                           
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'dset1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dset1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
          
        
     def testDelete(self):
