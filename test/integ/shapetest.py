@@ -90,24 +90,7 @@ class ShapeTest(unittest.TestCase):
         self.assertEqual(shape['dims'][1], 10)  
         self.assertTrue('maxdims' in shape)  # is re-sizeable
         self.assertEqual(shape['maxdims'][1], 0)
-        
-    def testGetFill(self):
-        domain = 'fillvalue.' + config.get('domain')  
-        root_uuid = helper.getRootUUID(domain)
-        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
-        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/shape"
-        headers = {'host': domain}
-        rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        rspJson = json.loads(rsp.text)
-        self.assertTrue('shape' in rspJson)
-        shape = rspJson['shape']
-        self.assertEqual(shape['class'], 'H5S_SIMPLE')
-        self.assertEqual(len(shape['dims']), 2)
-        self.assertEqual(shape['dims'][0], 10)  
-        self.assertTrue('maxdims' not in shape)  # not re-sizeable
-        self.assertEqual(shape['fillvalue'], 42)
-        
+            
        
     def testPutResizable(self):
         domain = 'resized.' + config.get('domain')

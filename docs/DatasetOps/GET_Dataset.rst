@@ -56,6 +56,12 @@ shape
 A JSON object representing the shape of the dataset.  See :doc:`GET_DatasetShape` for
 details of the shape representation.
 
+creationProperties
+^^^^^^^^^^^^^^^^^^
+A JSON object that describes chunk layout, filters, fill value, and other aspects of the dataset.
+See: http://hdf5-json.readthedocs.org/en/latest/bnf/dataset.html#grammar-token-dcpl for a complete 
+description of fields that can be used.
+
 attributeCount
 ^^^^^^^^^^^^^^
 The number of attributes belonging to the dataset.
@@ -116,6 +122,13 @@ Sample Response
     "type": {
         "base": "H5T_IEEE_F32BE", 
         "class": "H5T_FLOAT"
+    },
+    "creationProperties": {
+        "allocTime": "H5D_ALLOC_TIME_LATE",
+        "fillTime": "H5D_FILL_TIME_IFSET",
+        "layout": {
+            "class": "H5D_CONTIGUOUS"
+        }
     },
     "attributeCount": 0,  
     "created": "2015-01-23T06:12:18Z", 

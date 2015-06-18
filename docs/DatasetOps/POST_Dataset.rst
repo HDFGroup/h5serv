@@ -52,6 +52,14 @@ An integer array describing the maximum extent of each dimension (or 0 for unlim
 dimensions).  If maxdims is not provided that resulting dataset will be non-extensible.
 Not valid to include if ``H5S_NULL`` is specified for the shape.
 
+creationProperties
+^^^^^^^^^^^^^^^^^^
+A JSON object that can specify chunk layout, filters, fill value, and other aspects of the dataset.
+See: http://hdf5-json.readthedocs.org/en/latest/bnf/dataset.html#grammar-token-dcpl for a complete 
+description of fields that can be used.
+
+If creationProperties is not provided, default values will be used
+
 link["id"]
 ^^^^^^^^^^
 The UUID of the group the new group should be linked to.  If the UUID is not valid,
@@ -307,6 +315,86 @@ Sample Response - Committed Type
         {"href": "http://committedtype.datasettest.test.hdfgroup.org/datasets/ace8cdca-a792-11e4-ad88-3c15c2da029e/value", "rel": "value"}
       ]
     }
+    
+Sample Request - SZIP Compression with chunking
+-----------------------------------------------
+
+.. code-block:: http
+
+    POST /datasets HTTP/1.1
+    Content-Length: 67
+    User-Agent: python-requests/2.3.0 CPython/2.7.8 Darwin/14.0.0
+    host: szip.datasettest.test.hdfgroup.org
+    Accept: */*
+    Accept-Encoding: gzip, deflate
+    
+.. code-block:: json
+
+    {
+    "creationProperties": {
+        "filters": [
+            {
+                "bitsPerPixel": 8,
+                "coding": "H5_SZIP_EC_OPTION_MASK",
+                "id": 4,
+                "pixelsPerBlock": 32,
+                "pixelsPerScanline": 100
+            }
+        ],
+        "layout": {
+            "class": "H5D_CHUNKED",
+            "dims": [
+                100,
+                100
+            ]
+        }
+    },
+    "shape": [
+        1000,
+        1000
+    ],
+    "type": "H5T_IEEE_F32LE"
+   }
+   
+Sample Response - SZIP Compression with chunking
+------------------------------------------------
+
+.. code-block:: http
+
+    HTTP/1.1 201 Created
+    Date: Thu, 18 Jun 2015 08:41:53 GMT
+    Content-Length: 975
+    Content-Type: application/json
+    Server: TornadoServer/3.2.2
+    
+.. code-block:: json
+
+{
+    "id": "ad283c05-158c-11e5-bd67-3c15c2da029e",
+    "attributeCount": 0,
+    "created": "2015-06-18T07:36:04Z",
+    "lastModified": "2015-06-18T07:36:04Z",
+    "hrefs": [
+        {
+            "href": "http://newdset_szip.datasettest.test.hdfgroup.org/datasets/ad283c05-158c-11e5-bd67-3c15c2da029e",
+            "rel": "self"
+        },
+        {
+            "href": "http://newdset_szip.datasettest.test.hdfgroup.org/groups/ad2746d4-158c-11e5-a083-3c15c2da029e",
+            "rel": "root"
+        },
+        {
+            "href": "http://newdset_szip.datasettest.test.hdfgroup.org/datasets/ad283c05-158c-11e5-bd67-3c15c2da029e/attributes",
+            "rel": "attributes"
+        },
+        {
+            "href": "http://newdset_szip.datasettest.test.hdfgroup.org/datasets/ad283c05-158c-11e5-bd67-3c15c2da029e/value",
+            "rel": "value"
+        }
+    ]
+}
+
+
     
 Related Resources
 =================
