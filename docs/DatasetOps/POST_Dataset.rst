@@ -369,7 +369,7 @@ Sample Response - SZIP Compression with chunking
     
 .. code-block:: json
 
-{
+    {
     "id": "ad283c05-158c-11e5-bd67-3c15c2da029e",
     "attributeCount": 0,
     "created": "2015-06-18T07:36:04Z",
@@ -392,7 +392,7 @@ Sample Response - SZIP Compression with chunking
             "rel": "value"
         }
     ]
-}
+    }
 
 
     
