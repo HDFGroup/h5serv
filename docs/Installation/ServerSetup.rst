@@ -17,8 +17,9 @@ You will also need the following Python packages:
 * Python 2.7
 * NumPy 1.9.2 or later
 * h5py 2.5 or later
-* twisted 14.0 or later (if setting up DNS)
+* PyTables 3.1.1 or later
 * tornado 4.0.2 or later
+* twisted 14.0 or later (if setting up DNS)
 * requests 2.3 or later (for client tests)
 
 If you are not familiar with installing Python packages, the easiest route is to 
