@@ -626,8 +626,6 @@ class ShapeHandler(RequestHandler):
         hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid })
         hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})   
         shape = item['shape']
-        if 'fillvalue' in item:
-            shape['fillvalue'] = item['fillvalue']
         response['shape'] = shape
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
@@ -771,15 +769,19 @@ class DatasetHandler(RequestHandler):
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
         response['shape'] = item['shape']
-        if 'fillvalue' in item:
-            response['fillvalue'] = item['fillvalue']
+         
+        if 'creationProperties' in item:
+            response['creationProperties'] = item['creationProperties']
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['attributeCount'] = item['attributeCount']
         response['hrefs'] = hrefs
         
         self.set_header('Content-Type', 'application/json')
-        self.write(json_encode(response))
+        
+        json_rsp = json_encode(response)
+        
+        self.write(json_rsp)
         
         
     def delete(self): 
@@ -2009,11 +2011,14 @@ class DatasetCollectionHandler(RequestHandler):
                 if maxextent == 0:
                     maxdims[i] = None  # this indicates unlimited
         
+        creationProps = None
+        if "creationProperties" in body:
+            creationProps = body["creationProperties"]
         item = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
-                item = db.createDataset(datatype, dims, maxdims)
+                item = db.createDataset(datatype, dims, maxdims, creation_props=creationProps)
                 if group_uuid:
                     # link the new dataset
                     db.linkObject(group_uuid, item['id'], link_name)
@@ -2285,7 +2290,7 @@ class RootHandler(RequestHandler):
             raise HTTPError(500, "Unexpected error: unable to delete collection") 
               
 class InfoHandler(RequestHandler):
-      
+     
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('InfoHandler.get ' + self.request.host)

@@ -3,8 +3,8 @@ Datasets
 ######################
 
 Datasets are objects that a composed of a homogenous collection of data elements.   Each
-dataset has a *type* that specifies the structure of the individual elements: float, string,
-compound, etc.), and a *shape* that specifies that layout of the data elements (scalar, 
+dataset has a *type* that specifies the structure of the individual elements (float, string,
+compound, etc.), and a *shape* that specifies the layout of the data elements (scalar, 
 one-dimensional, multi-dimensional).  In addition meta-data can be attached to a dataset
 in the form of attributes.  See: :doc:`../AttrOps/index`.
 
@@ -13,12 +13,13 @@ Creating Datasets
 
 Use the :doc:`POST_Dataset` operation to create new datasets.  As part of the POST
 request, JSON descriptions for the type and shape of the dataset are included with the
-request.  
+request.  Optionally, creation properties can be used to specify the chunk layout (how
+the data elements are stored in the server) and compression filter (e.g. GZIP, LZF, SZIP).
 
 Getting information about a dataset
 -----------------------------------
 Use the :doc:`GET_Dataset` operation to retrieve information about a datasets type,
-shape, and number of attributes.  To list all the datasets within a domain use 
+shape, creation properties, and number of attributes.  To list all the datasets within a domain use 
 :doc:`GET_Datasets`.  To list the datasets linked to a particular group use 
 :doc:`../GroupOps/GET_Links` and look at links with a "collection" key of "datsets".
 
@@ -32,8 +33,14 @@ data elements, a point selection (series of element coordinates) can be passed t
  
 Reading data from a dataset
 ---------------------------
-To read either the entire dataset, hyperslab selection, or 'where' query, use the :doc:`GET_Value`
-operation.  To read a point selection, use the :doc:`POST_Value` operation  (POST is 
+To read either the entire dataset, or a specified selection, use the :doc:`GET_Value`
+operation.  Without any request parameters, the GET operation retuns all data values.  
+To read a specific hyperslab, use the select parameter to start and end indexes of the hyperslab
+(the selection can also include a step value to include a regular subset of the hyperslab).
+Finally, for one-dimensional datasets with compound types, a *where* parameter can be used to 
+select elements meeting a specified condition. 
+
+To read a specific list of elements (by index values), use the :doc:`POST_Value` operation  (POST is 
 used in this case rather than GET since the point selection values may be to 
 large to include in the URI.) 
 

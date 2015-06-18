@@ -1,3 +1,5 @@
 [submodule "hdf5-json"]
 	path = hdf5-json
 	url = https://github.com/HDFGroup/hdf5-json.git
+[submodules "hdf5-json"]
+	branch = stable
