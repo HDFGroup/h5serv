@@ -31,6 +31,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
+      
         self.assertTrue('type' in rspJson)
         type = rspJson['type']
         self.assertEqual(type['class'], 'H5T_FLOAT')
@@ -553,17 +554,171 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(creationProps['fillValue'], 42)
         
     def testGetCreationProps(self):
-        domain = 'dset_creationprop.' + config.get('domain')  
+        
+        domain = 'dset_gzip.' + config.get('domain')  
+        headers = {'host': domain}
         root_uuid = helper.getRootUUID(domain)
+        
+        # dset1
         dset_uuid = helper.getUUID(domain, root_uuid, 'dset1') 
         req = helper.getEndpoint() + "/datasets/" + dset_uuid  
-        headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('creationProperties' in rspJson)
         creationProps = rspJson['creationProperties']
-        print creationProps
+        self.assertTrue('fillTime' in creationProps)
+        self.assertEqual(creationProps['fillTime'], 'H5D_FILL_TIME_ALLOC')
+        self.assertTrue('layout' in creationProps)
+        layout = creationProps['layout']
+        self.assertEqual(layout['class'], 'H5D_CHUNKED')
+        self.assertEqual(layout['dims'], [100, 100])
+        self.assertTrue('allocTime' in creationProps)
+        self.assertEqual(creationProps['allocTime'], 'H5D_ALLOC_TIME_INCR')
+        self.assertTrue('filters' in creationProps)
+        filters = creationProps['filters']
+        self.assertEqual(len(filters), 1)
+        deflate_filter = filters[0]
+        self.assertTrue('id' in deflate_filter)
+        self.assertEqual(deflate_filter['id'], 1)
+        self.assertTrue('class' in deflate_filter)
+        self.assertEqual(deflate_filter['class'], 'H5Z_FILTER_DEFLATE')
+        self.assertTrue('level' in deflate_filter)
+        self.assertEqual(deflate_filter['level'], 9)
+        self.assertTrue('name' in deflate_filter)
+        self.assertEqual(deflate_filter['name'], 'deflate')
+        
+        # dset2
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset2') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid  
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('creationProperties' in rspJson)
+        creationProps = rspJson['creationProperties']
+        self.assertTrue('fillTime' in creationProps)
+        self.assertEqual(creationProps['fillTime'], 'H5D_FILL_TIME_ALLOC')
+        self.assertTrue('layout' in creationProps)
+        layout = creationProps['layout']
+        self.assertEqual(layout['class'], 'H5D_CHUNKED')
+        self.assertEqual(layout['dims'], [100, 100])
+        self.assertTrue('allocTime' in creationProps)
+        self.assertEqual(creationProps['allocTime'], 'H5D_ALLOC_TIME_INCR')
+        self.assertTrue('filters' in creationProps)
+        
+        filters = creationProps['filters']
+        self.assertEqual(len(filters), 2)
+        
+        shuffle_filter = filters[0]
+        self.assertTrue('id' in shuffle_filter)
+        self.assertEqual(shuffle_filter['id'], 2)
+        self.assertTrue('class' in shuffle_filter)
+        self.assertEqual(shuffle_filter['class'], 'H5Z_FILTER_SHUFFLE')
+        self.assertTrue('name' in shuffle_filter)
+        self.assertEqual(shuffle_filter['name'], 'shuffle')
+        
+        deflate_filter = filters[1]
+        self.assertTrue('id' in deflate_filter)
+        self.assertEqual(deflate_filter['id'], 1)
+        self.assertTrue('class' in deflate_filter)
+        self.assertEqual(deflate_filter['class'], 'H5Z_FILTER_DEFLATE')
+        self.assertTrue('level' in deflate_filter)
+        self.assertEqual(deflate_filter['level'], 9)
+        self.assertTrue('name' in deflate_filter)
+        self.assertEqual(deflate_filter['name'], 'deflate')
+        
+        # dset3
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset3') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid  
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('creationProperties' in rspJson)
+        creationProps = rspJson['creationProperties']
+        self.assertTrue('fillTime' in creationProps)
+        self.assertEqual(creationProps['fillTime'], 'H5D_FILL_TIME_ALLOC')
+        self.assertTrue('layout' in creationProps)
+        layout = creationProps['layout']
+        self.assertEqual(layout['class'], 'H5D_CHUNKED')
+        self.assertEqual(layout['dims'], [100, 100])
+        self.assertTrue('allocTime' in creationProps)
+        self.assertEqual(creationProps['allocTime'], 'H5D_ALLOC_TIME_INCR')
+        self.assertTrue('filters' in creationProps)
+        
+        filters = creationProps['filters']
+        self.assertEqual(len(filters), 3)
+        
+        fletcher_filter = filters[0]
+        self.assertTrue('id' in fletcher_filter)
+        self.assertEqual(fletcher_filter['id'], 3)
+        self.assertTrue('class' in fletcher_filter)
+        self.assertEqual(fletcher_filter['class'], 'H5Z_FILTER_FLETCHER32')
+        self.assertTrue('name' in fletcher_filter)
+        self.assertEqual(fletcher_filter['name'], 'fletcher32')
+        
+        shuffle_filter = filters[1]
+        self.assertTrue('id' in shuffle_filter)
+        self.assertEqual(shuffle_filter['id'], 2)
+        self.assertTrue('class' in shuffle_filter)
+        self.assertEqual(shuffle_filter['class'], 'H5Z_FILTER_SHUFFLE')
+        self.assertTrue('name' in shuffle_filter)
+        self.assertEqual(shuffle_filter['name'], 'shuffle')
+        
+        deflate_filter = filters[2]
+        self.assertTrue('id' in deflate_filter)
+        self.assertEqual(deflate_filter['id'], 1)
+        self.assertTrue('class' in deflate_filter)
+        self.assertEqual(deflate_filter['class'], 'H5Z_FILTER_DEFLATE')
+        self.assertTrue('level' in deflate_filter)
+        self.assertEqual(deflate_filter['level'], 9)
+        self.assertTrue('name' in deflate_filter)
+        self.assertEqual(deflate_filter['name'], 'deflate')
+        
+    def testGetFilters(self):
+        #
+        # map of filter properties we expect to get
+        #
+        filter_props = {"h5ex_d_checksum": [{'id': 3},], 
+            "h5ex_d_gzip":  [{'id': 1, 'level': 9},], 
+            "h5ex_d_nbit":  [{'id': 5},],
+            "h5ex_d_shuffle":  [{'id': 2}, {'id': 1, 'level': 9}], 
+            "h5ex_d_sofloat":  [{'id': 6},], 
+            "h5ex_d_soint":  [{'id': 6, 'scaleType': 'H5Z_SO_INT'},],
+            "h5ex_d_szip":  [{'id': 4, 'bitsPerPixel': 169, 'coding': 8, 'pixelsPerBlock': 32},], 
+            "h5ex_d_unlimgzip":  [{'id': 1, 'level': 9},] }
+            
+            
+        for domain_val in filter_props.keys():
+            domain = domain_val + '.' + config.get('domain')  
+            #print "domain", domain_val
+            headers = {'host': domain}
+            root_uuid = helper.getRootUUID(domain)
+        
+            dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+            req = helper.getEndpoint() + "/datasets/" + dset_uuid  
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertTrue('creationProperties' in rspJson)
+            creationProps = rspJson['creationProperties']
+            self.assertTrue('filters' in creationProps)
+            filters = creationProps['filters']
+            num_filters = len(filters)
+            ref_vals = filter_props[domain_val]
+            # check we got the expected number of filters
+            self.assertTrue(num_filters, len(ref_vals))
+            
+            for i in range(num_filters):
+                #print "filter:", i
+                filter_prop = filters[i]
+                #print "filter_prop", filter_prop
+                ref_val = ref_vals[i]
+                # check filter property values are correct
+                for k in ref_val.keys():
+                    #print "checking key:", k
+                    self.assertTrue(k in filter_prop)
+                    self.assertEqual(filter_prop[k], ref_val[k])
+             
         
         
     def testPost(self):
@@ -589,6 +744,18 @@ class DatasetTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
+        
+        # verify we can read the dataset back
+        req = self.endpoint + "/datasets/" + dset_uuid
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SIMPLE')
+        # verify type class is float
+        rsp_type = rspJson['type']
+        self.assertEqual(rsp_type['class'], 'H5T_FLOAT')
         
     def testPostScalar(self):
         domain = 'newscalar.datasettest.' + config.get('domain')
@@ -625,8 +792,8 @@ class DatasetTest(unittest.TestCase):
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SCALAR')
         # verify type class is string
-        type = rspJson['type']
-        self.assertEqual(type['class'], 'H5T_STRING')
+        rsp_type = rspJson['type']
+        self.assertEqual(rsp_type['class'], 'H5T_STRING')
         
     def testPostNullSpace(self):
         domain = 'newnullspace.datasettest.' + config.get('domain')
@@ -691,6 +858,7 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
+        
         shape = rspJson['shape']
         self.assertEqual(shape['class'], 'H5S_SIMPLE')
         self.assertEqual(len(shape['dims']), 1)
@@ -1000,8 +1168,8 @@ class DatasetTest(unittest.TestCase):
         
         creation_props = { 'allocTime': 'H5D_ALLOC_TIME_INCR',
                            'fillTime': 'H5D_FILL_TIME_NEVER',
-                           'layout': 'H5D_COMPACT' }
-        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'creationProperties': creation_props }
+                           'layout': {'class': 'H5D_CHUNKED', 'dims': [10, 10] }}
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': (100, 100), 'creationProperties': creation_props }
                                                            
         req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
@@ -1019,16 +1187,52 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
         
-    def testPostFilter(self):
+        # read back the dataset and verify the creation props are returned
+        req = self.endpoint + "/datasets/" + dset_uuid
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('creationProperties' in rspJson)
+        creationProps = rspJson['creationProperties']
+        
+        self.assertTrue('allocTime' in creationProps)
+        self.assertEqual(creationProps['allocTime'], 'H5D_ALLOC_TIME_INCR')
+        self.assertTrue('fillTime' in creationProps)
+        self.assertEqual(creationProps['fillTime'], 'H5D_FILL_TIME_NEVER')
+        self.assertTrue('layout' in creationProps)
+        layout = creationProps['layout']
+        self.assertTrue('class' in layout)
+        self.assertEqual(layout['class'], 'H5D_CHUNKED')
+        self.assertTrue('dims' in layout)
+        self.assertEqual(layout['dims'], [10, 10])
+        self.assertEqual(len(creationProps.keys()), 3)  # just return what we set
+    
+    def testInvalidCreationProps(self):
+        domain = 'newdset_badcreationprops.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        creation_props = { 'layout': {'class': 'H5D_CHUNKED', 'dims': [200, 200] }}
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': (100, 100), 'creationProperties': creation_props }
+                                                           
+        req = self.endpoint + "/datasets"
+        # should fail because the chunk dimension is larger than the dataset dimensions
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 400)  # bad request
+                 
+        
+    def testPostDeflateFilter(self):
         domain = 'newdset_gzip.datasettest.' + config.get('domain')
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 201) # creates domain
         
-        filters = [ { 'id': 1, 'level': 5 }, ]  # deflate filter (gzip)
-        creation_props = { 'filters': filters }  
-        payload = {'type': 'H5T_IEEE_F32LE', 'shape': 10, 'creationProperties': creation_props }
+        filters = [ { 'id': 1, 'level': 9 }, ]  # deflate filter (gzip)
+        creation_props = { 'layout': {'class': 'H5D_CHUNKED', 'dims': [100, 100] }, 'filters': filters }  
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': (1000, 1000), 'creationProperties': creation_props }
                                                            
         req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
@@ -1045,7 +1249,145 @@ class DatasetTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 201)
+        
+        # read back the dataset and verify the creation props are returned
+        req = self.endpoint + "/datasets/" + dset_uuid
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('creationProperties' in rspJson)
+        creationProps = rspJson['creationProperties']
+        
+        self.assertTrue('filters' in creationProps)
+        filters = creationProps['filters']
+        self.assertEqual(len(filters), 1)
+        filter_prop = filters[0]
+        self.assertTrue('id' in filter_prop)
+        self.assertEqual(filter_prop['id'], 1)
+        self.assertTrue('class' in filter_prop)
+        self.assertEqual(filter_prop['class'], 'H5Z_FILTER_DEFLATE')
+        self.assertTrue('level' in filter_prop)
+        self.assertEqual(filter_prop['level'], 9)
+        self.assertTrue('layout' in creationProps)
+        # should see chunks returned, even though it was specified in creation
+        layout = creationProps['layout']
+        self.assertTrue('class' in layout)
+        self.assertEqual(layout['class'], 'H5D_CHUNKED')
+        self.assertTrue('dims' in layout)
          
+        
+    def testPostLZFFilter(self):
+        domain = 'newdset_lzf.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        filters = [ { 'id': 32000}, ]  # LZF filter 
+        creation_props = { 'filters': filters }  
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': (1000, 1000), 'creationProperties': creation_props }
+                                                           
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'dset1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dset1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
+        # read back the dataset and verify the creation props are returned
+        req = self.endpoint + "/datasets/" + dset_uuid
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('creationProperties' in rspJson)
+        creationProps = rspJson['creationProperties']
+        
+        
+        self.assertTrue('filters' in creationProps)
+        filters = creationProps['filters']
+        self.assertEqual(len(filters), 1)
+        filter_prop = filters[0]
+        self.assertTrue('id' in filter_prop)
+        self.assertEqual(filter_prop['id'], 32000)
+        self.assertTrue('class' in filter_prop)
+        self.assertEqual(filter_prop['class'], 'H5Z_FILTER_LZF')
+        self.assertTrue('level' not in filter_prop)
+        
+        self.assertTrue('layout' in creationProps)
+        # should see chunks returned, even though it was specified in creation
+        layout = creationProps['layout']
+        self.assertTrue('class' in layout)
+        self.assertEqual(layout['class'], 'H5D_CHUNKED')
+        self.assertTrue('dims' in layout)
+        
+    def testPostSZIPFilter(self):
+        domain = 'newdset_szip.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        
+        filters = [ { 'id': 4, 'bitsPerPixel': 8, 'coding': 'H5_SZIP_EC_OPTION_MASK',
+            'pixelsPerBlock': 32, 'pixelsPerScanline': 100}, ]  # SZIP filter 
+        creation_props = { 'layout': {'class': 'H5D_CHUNKED', 'dims': (100, 100) }, 'filters': filters }  
+        payload = {'type': 'H5T_IEEE_F32LE', 'shape': (1000, 1000), 'creationProperties': creation_props }
+                                                              
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+         
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link new dataset as 'dset1'
+        root_uuid = helper.getRootUUID(domain)
+        name = 'dset1'
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
+        # read back the dataset and verify the creation props are returned
+        req = self.endpoint + "/datasets/" + dset_uuid
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('creationProperties' in rspJson)
+        creationProps = rspJson['creationProperties']
+        
+        
+        self.assertTrue('filters' in creationProps)
+        filters = creationProps['filters']
+        self.assertEqual(len(filters), 1)
+        filter_prop = filters[0]
+        self.assertTrue('id' in filter_prop)
+        self.assertEqual(filter_prop['id'], 4)
+        self.assertTrue('class' in filter_prop)
+        self.assertEqual(filter_prop['class'], 'H5Z_FILTER_SZIP')
+        self.assertTrue('level' not in filter_prop)
+        self.assertTrue('bitsPerPixel' in filter_prop)
+        self.assertEqual(filter_prop['bitsPerPixel'], 8)
+        self.assertTrue('coding' in filter_prop)
+        self.assertEqual(filter_prop['coding'], 'H5_SZIP_EC_OPTION_MASK')
+        
+        self.assertTrue('layout' in creationProps)
+        # should see chunks returned, even though it was specified in creation
+        layout = creationProps['layout']
+        self.assertTrue('class' in layout)
+        self.assertEqual(layout['class'], 'H5D_CHUNKED')
+        self.assertTrue('dims' in layout)
+              
        
     def testDelete(self):
         domain = 'tall_dset112_deleted.' + config.get('domain')  

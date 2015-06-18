@@ -758,8 +758,6 @@ class DatasetHandler(RequestHandler):
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror) 
             
-        print 'dset:', item
-            
         # got everything we need, put together the response
         href = self.request.protocol + '://' + domain + '/'
         hrefs.append({'rel': 'self',       'href': href + 'datasets/' + reqUuid})
@@ -780,7 +778,10 @@ class DatasetHandler(RequestHandler):
         response['hrefs'] = hrefs
         
         self.set_header('Content-Type', 'application/json')
-        self.write(json_encode(response))
+        
+        json_rsp = json_encode(response)
+        
+        self.write(json_rsp)
         
         
     def delete(self): 
