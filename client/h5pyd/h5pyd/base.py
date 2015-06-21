@@ -16,6 +16,8 @@ import posixpath
 import warnings
 import os
 import sys
+import json
+import requests
 from collections import (
     Mapping, MutableMapping, MappingView, KeysView, ValuesView, ItemsView
 )
@@ -245,6 +247,82 @@ class HLObject(CommonStateObject):
         return "todo"
         #from . import attrs
         #return attrs.AttributeManager(self)
+        
+        
+    def GET(self, req):
+        if self.id.endpoint is None:
+            raise IOError("object not initialized")
+        if self.id.domain is None:
+            raise IOError("no domain defined")
+         
+        # try to do a GET from the domain
+        req = self.id.endpoint + req
+            
+        headers = {'host': self.id.domain}
+        print "GET: ", req
+        rsp = requests.get(req, headers=headers)
+        
+        if rsp.status_code != 200:
+             raise IOError(rsp.reason)
+        #print "rsp text", rsp.text    
+        rsp_json = json.loads(rsp.text)
+                
+        return rsp_json
+        
+    def PUT(self, req, body=None):
+        if self.id.endpoint is None:
+            raise IOError("object not initialized")
+        if self.id.domain is None:
+            raise IOError("no domain defined")
+         
+        # try to do a PUT to the domain
+        req = endpoint + req
+        
+        data = json.dumps(body)
+            
+        headers = {'host': self.id.domain}
+        rsp = requests.put(req, data=data, headers=headers)
+        if rsp.status_code != 201:
+            raise IOError(rsp.reason)
+        rsp_json = json.loads(rsp.text)
+                
+        return rsp_json
+        
+        
+    def POST(self, req, body=None):
+        if self.id.endpoint is None:
+            raise IOError("object not initialized")
+        if self.id.domain is None:
+            raise IOError("no domain defined")
+         
+        # try to do a POST to the domain
+        req = self.id.endpoint + req
+        
+        data = json.dumps(body)
+            
+        headers = {'host': self.id.domain}
+        rsp = requests.post(req, data=data, headers=headers)
+        if rsp.status_code not in (200, 201):
+            raise IOError(rsp.reason)
+        rsp_json = json.loads(rsp.text)
+        return rsp
+        
+    def DELETE(self, req):
+        if self.id.endpoint is None:
+            raise IOError("object not initialized")
+        if self.id.domain is None:
+            raise IOError("no domain defined")
+         
+        # try to do a DELETE of the resource
+        req = self.id.endpoint + req
+        
+        headers = {'host': self.id.domain}
+        rsp = requests.delete(req, headers=headers)
+        if rsp.status_code != 200:
+            raise IOError(rsp.reason)
+        rsp_json = json.loads(rsp.text)
+        return rsp
+        
 
     def __init__(self, oid):
         """ Setup this object, given its low-level identifier """

@@ -22,7 +22,8 @@ import six
 import requests
 import json
 
-#from base import HLObject
+from . import objectid
+from .objectid import ObjectID
 from . import base
 from .base import HLObject
 from .base import phil
@@ -83,12 +84,7 @@ class File(Group):
     @property
     def filename(self):
         """File name on disk"""
-        return self._domain
-        
-    @property
-    def endpoint(self):
-        """service endpoint"""
-        return self._endpoint
+        return self.id.domain
         
 
     @property
@@ -103,7 +99,7 @@ class File(Group):
     @property
     def fid(self):
         """File ID (backwards compatibility) """
-        return self._id
+        return self.id.domain
 
     @property
     def libver(self):
@@ -117,63 +113,7 @@ class File(Group):
         """ User block size (in bytes) """
         
         return 0
-        
-    def get(self, req):
-        if self._endpoint is None:
-            raise IOError("object not initialized")
-        if self._domain is None:
-            raise IOError("no domain defined")
-         
-        # try to do a GET from the domain
-        req = self._endpoint + req
-            
-        headers = {'host': self._domain}
-        rsp = requests.get(req, headers=headers)
-        return rsp
-        
-    def put(self, req, body=None):
-        if self._endpoint is None:
-            raise IOError("object not initialized")
-        if self._domain is None:
-            raise IOError("no domain defined")
-         
-        # try to do a PUT to the domain
-        req = endpoint + req
-        
-        data = json.dumps(body)
-            
-        headers = {'host': self._domain}
-        rsp = requests.put(req, data=data, headers=headers)
-        return rsp
-        
-    def post(self, req, body=None):
-        if self._endpoint is None:
-            raise IOError("object not initialized")
-        if self._domain is None:
-            raise IOError("no domain defined")
-         
-        # try to do a POST to the domain
-        req = endpoint + req
-        
-        data = json.dumps(body)
-            
-        headers = {'host': self._domain}
-        rsp = requests.post(req, data=data, headers=headers)
-        return rsp
-        
-    def delete(self, req):
-        if self._endpoint is None:
-            raise IOError("object not initialized")
-        if self._domain is None:
-            raise IOError("no domain defined")
-         
-        # try to do a DELETE from the domain
-        req = endpoint + req
-        
-        headers = {'host': self._domain}
-        rsp = requests.delete(req, headers=headers)
-        return rsp
-        
+       
         
 
     def __init__(self, domain_name, mode=None, endpoint=None, **kwds):
@@ -200,6 +140,7 @@ class File(Group):
         """
         
         self._endpoint = None
+        print "File init"
          
         with phil:
             """
@@ -266,13 +207,12 @@ class File(Group):
             if 'lastModified' not in root_json:
                 raise IOError("Unexpected error")
                 
-            self._domain = domain_name 
-            self._name = '/'
-            self._id = root_json['root']   
+            self._id = ObjectID(None, root_json['root'], domain=domain_name, endpoint=endpoint)
+                
+            self._name = '/' 
             self._mode = mode
             self._created = root_json['created']
-            self._modified = root_json['lastModified']   
-            self._endpoint = endpoint     
+            self._modified = root_json['lastModified']       
                     
             Group.__init__(self, self._id)
 

@@ -21,6 +21,8 @@ import collections
 
 from . import base
 from .base import HLObject, MutableMappingHDF5, phil, with_phil
+from . import objectid
+from .objectid import ObjectID
 #from . import dataset
 #from . import datatype
 
@@ -32,18 +34,17 @@ class Group(HLObject, MutableMappingHDF5):
 
     def __init__(self, bind):
         print "group init, bind:", bind
-        print "domain: ", self._domain
-        rsp = self.get("/groups/" + bind)
-        print rsp.text
+         
+        
         
         """ Create a new Group object by binding to a low-level GroupID.
         """
-        """
+        
         with phil:
-            if not isinstance(bind, h5g.GroupID):
+            if not isinstance(bind, ObjectID):
                 raise ValueError("%s is not a GroupID" % bind)
             HLObject.__init__(self, bind)
-        """
+      
 
     def create_group(self, name):
         """ Create and return a new subgroup.
@@ -177,15 +178,37 @@ class Group(HLObject, MutableMappingHDF5):
 
     def __getitem__(self, name):
         """ Open an object in the file """
-        pass
+        
         """
+        #todo - get reference
         if isinstance(name, h5r.Reference):
             oid = h5r.dereference(name, self.id)
             if oid is None:
                 raise ValueError("Invalid HDF5 object reference")
         else:
             oid = h5o.open(self.id, self._e(name), lapl=self._lapl)
-
+        """
+           
+        req = "/groups/" + self.id.uuid + "/links/" + name
+        rsp_json = self.GET(req)
+        if "link" not in rsp_json:
+            raise IOError("Unexpected Error")
+        link_json = rsp_json['link']
+        print "link_json", link_json
+        if link_json['class'] == 'H5L_TYPE_HARD':
+            if link_json['collection'] == 'groups':
+                group_uuid = link_json['id']
+                req = "/groups/" + group_uuid
+                group_json = self.GET(req)
+                group_obj = Group(ObjectID(self, group_uuid))
+                if self._name:
+                    if self._name[-1] == '/':
+                        group_obj._name = self._name + name
+                    else:
+                        group_obj._name = self._name + '/' + name
+                return group_obj
+                
+        """
         otype = h5i.get_type(oid)
         if otype == h5i.GROUP:
             return Group(oid)
