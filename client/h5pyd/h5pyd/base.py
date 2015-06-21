@@ -1,11 +1,14 @@
-# This file is part of h5py, a Python interface to the HDF5 library.
-#
-# http://www.h5py.org
-#
-# Copyright 2008-2013 Andrew Collette and contributors
-#
-# License:  Standard 3-clause BSD; see "license.txt" for full license terms
-#           and contributor agreement.
+##############################################################################
+# Copyright by The HDF Group.                                                #
+# All rights reserved.                                                       #
+#                                                                            #
+# This file is part of H5Serv (HDF5 REST Server) Service, Libraries and      #
+# Utilities.  The full HDF5 REST Server copyright notice, including          #
+# terms governing use, modification, and redistribution, is contained in     #
+# the file COPYING, which can be found at the root of the source code        #
+# distribution tree.  If you do not have access to this file, you may        #
+# request a copy from help@hdfgroup.org.                                     #
+##############################################################################
 
 from __future__ import absolute_import
 
