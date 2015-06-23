@@ -207,7 +207,21 @@ class File(Group):
             if 'lastModified' not in root_json:
                 raise IOError("Unexpected error")
                 
-            self._id = GroupID(None, root_json['root'], domain=domain_name, endpoint=endpoint)
+            print "root_json:", root_json
+            root_uuid = root_json['root']
+            
+            # get the group json for the root group
+            req = endpoint + "/groups/" + root_uuid
+            
+            rsp = requests.get(req, headers=headers)
+            
+            #print "req:", req
+            
+            if rsp.status_code != 200:
+                raise IOError("Unexpected Error")
+            group_json = json.loads(rsp.text)
+                
+            self._id = GroupID(None, group_json, domain=domain_name, endpoint=endpoint)
                 
             self._name = '/' 
             self._mode = mode

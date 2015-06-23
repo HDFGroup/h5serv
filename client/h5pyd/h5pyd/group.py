@@ -26,10 +26,6 @@ from .objectid import ObjectID, TypeID, GroupID, DatasetID
 from .dataset import Dataset
 from .datatype import Datatype
 
-sys.path.append('../../../hdf5-json/lib')
-#from hdf5db import Hdf5db
-import hdf5dtype
-
 
 class Group(HLObject, MutableMappingHDF5):
 
@@ -38,8 +34,7 @@ class Group(HLObject, MutableMappingHDF5):
 
     def __init__(self, bind):
         print "group init, bind:", bind
-         
-        
+             
         
         """ Create a new Group object by binding to a low-level GroupID.
         """
@@ -199,7 +194,7 @@ class Group(HLObject, MutableMappingHDF5):
         if "link" not in rsp_json:
             raise IOError("Unexpected Error")
         link_json = rsp_json['link']
-        print "link_json", link_json
+        #print "link_json", link_json
         if link_json['class'] == 'H5L_TYPE_HARD':
             print "hard link, collection:", link_json['collection']
             link_obj = None
@@ -208,22 +203,18 @@ class Group(HLObject, MutableMappingHDF5):
                 req = "/groups/" + group_uuid
                 # do a GET to validate the object is still there
                 group_json = self.GET(req)
-                link_obj = Group(GroupID(self, group_uuid))
+                link_obj = Group(GroupID(self, group_json))
             elif link_json['collection'] == 'datatypes':
                 datatype_uuid = link_json['id']
                 req = "/datatypes/" + datatype_uuid
                 datatype_json = self.GET(req)
-                type_item = datatype_json['type']
-                dtype = hdf5dtype.createDataType(type_item)
-                link_obj = Datatype(TypeID(self, datatype_uuid, dtype=dtype))
+                
+                link_obj = Datatype(TypeID(self, datatype_json))
             elif link_json['collection'] == 'datasets':
                 dataset_uuid = link_json['id']
                 req = "/datasets/" + dataset_uuid
                 dataset_json = self.GET(req)
-                type_item = dataset_json['type']
-                dtype = hdf5dtype.createDataType(type_item)
-                shape = dataset_json['shape']
-                link_obj = Dataset(DatasetID(self, dataset_uuid, dtype=dtype, shape=shape ))
+                link_obj = Dataset(DatasetID(self, dataset_json))
                 
                 
             else:

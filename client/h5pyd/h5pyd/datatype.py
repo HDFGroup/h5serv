@@ -41,7 +41,7 @@ class Datatype(HLObject):
     @with_phil
     def dtype(self):
         """Numpy dtype equivalent for this datatype"""
-        return self.id.dtype
+        return self._dtype
 
     @with_phil
     def __init__(self, bind):
@@ -54,8 +54,8 @@ class Datatype(HLObject):
                 raise ValueError("%s is not a TypeID" % bind)
             HLObject.__init__(self, bind)
             
-        
-        
+            self._dtype = hdf5dtype.createDataType(self.id.type_json)
+             
         # do a get on the group uuid
         # may throw an error (say if the datatype was just deleted)
         """

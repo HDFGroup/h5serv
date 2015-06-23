@@ -13,20 +13,15 @@ import sys
 sys.path.append('..')
 import h5pyd
 
-f = h5pyd.File("tall.test.hdfgroup.org", "r", endpoint="http://127.0.0.1:5000")
+f = h5pyd.File("committed_type.test.hdfgroup.org", "r", endpoint="http://127.0.0.1:5000")
 
 print "filename,", f.filename
 print "name:", f.name
 print "uuid:", f.id.uuid
 print "id:", f.id.id
 
-g2 = f['g2']
+type_obj = f['Sensor_Type']
 
-print "g2 uuid:", g2.id.uuid
-print "g2 name:", g2.name
-
-dset21 = g2['dset2.1']
-print "dset21 uuid:", dset21.id.uuid
-print "dset21 name:", dset21.name
-print "dset21 dims:", dset21.shape
-print "dset21 type:", dset21.dtype
+print "type obj uuid:", type_obj.id.uuid
+print "type obj name:", type_obj.name
+print "dtype:", type_obj.dtype

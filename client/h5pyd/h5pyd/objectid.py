@@ -58,11 +58,26 @@ class ObjectID:
         """parent obj - none for anonymous obj"""
         return self._parent
         
+    @property
+    def obj_json(self):
+        """json representation of the object"""
+        return self._obj_json
+        
 
-    def __init__(self, parent, uuid, domain=None, endpoint=None, **kwds):
+    def __init__(self, parent, item, domain=None, endpoint=None, **kwds):
         """Create a new objectId.
         """
+        #print "object init:", item
+        if type(item) is not dict:
+            raise IOError("Unexpected Error")
+            
+        if "id" not in item:
+            raise IOError("Unexpected Error")
+            
+        self._uuid = item['id']
         
+        self._obj_json = item
+            
         self._endpoint = None
          
         with phil:
@@ -73,50 +88,53 @@ class ObjectID:
             else:
                 self._domain = domain
                 self.endpoint = endpoint
-            self._uuid = uuid
+            
             
 class TypeID(ObjectID):
     
     @property
-    def dtype(self):
-        return self._dtype
+    def type_json(self):
+        return self.obj_json['type']
         
-    def __init__(self, parent, uuid, domain=None, endpoint=None, dtype=None, **kwds):
+    def __init__(self, parent, item, domain=None, endpoint=None, **kwds):
         """Create a new TypeID.
         """
          
         with phil:
-            self._dtype = dtype
-            ObjectID.__init__(self, parent, uuid, domain=domain, endpoint=endpoint)
+            ObjectID.__init__(self, parent, item, domain=domain, endpoint=endpoint)
             
-        self._dtype = dtype
 
 class DatasetID(ObjectID):
     
     @property
-    def dtype(self):
-        return self._dtype
+    def type_json(self):
+        return self._obj_json['type']
         
     @property
-    def shape(shape):
-        return self._shape
+    def shape_json(self):
+        return self._obj_json['shape']
         
-    def __init__(self, parent, uuid, domain=None, endpoint=None, dtype=None, shape=None, **kwds):
+    @property
+    def dcpl_json(self):
+        dcpl = None
+        if 'creationProperties' in self.obj_json:
+            dcpl = self._obj_json['creationProperties']
+        return dcpl
+        
+    def __init__(self, parent, item, domain=None, endpoint=None, **kwds):
         """Create a new DatasetID.
         """
          
         with phil:
-            self._dtype = dtype
-            self._shape = shape
-            ObjectID.__init__(self, parent, uuid, domain=domain, endpoint=endpoint)
+            ObjectID.__init__(self, parent, item, domain=domain, endpoint=endpoint)
                         
 class GroupID(ObjectID):
     
         
-    def __init__(self, parent, uuid, domain=None, endpoint=None, **kwds):
+    def __init__(self, parent, item, domain=None, endpoint=None, **kwds):
         """Create a new GroupID.
         """
          
         with phil:
-            ObjectID.__init__(self, parent, uuid, domain=domain, endpoint=endpoint)
+            ObjectID.__init__(self, parent, item, domain=domain, endpoint=endpoint)
              

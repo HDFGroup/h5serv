@@ -28,6 +28,10 @@ from .objectid import ObjectID, TypeID, DatasetID
 #from . import selections2 as sel2
 from .datatype import Datatype
 
+sys.path.append('../../../hdf5-json/lib')
+#from hdf5db import Hdf5db
+import hdf5dtype
+
 #_LEGACY_GZIP_COMPRESSION_VALS = frozenset(range(10))
 
 def readtime_dtype(basetype, names):
@@ -174,7 +178,10 @@ class Dataset(HLObject):
     @property
     def shape(self):
         """Numpy-style shape tuple giving dataset dimensions"""
-        return self.id.shape
+        if self.id.shape_json['class'] in ('H5S_NULL', 'H5S_SCALAR'):
+            return ()  # return empty 
+        return self.id.shape_json['dims']
+        
     @shape.setter
     def shape(self, shape):
         self.resize(shape)
@@ -187,7 +194,7 @@ class Dataset(HLObject):
     @property
     def dtype(self):
         """Numpy dtype representing the datatype"""
-        return self.id.dtype
+        return self._dtype
 
     @property
     def value(self):
@@ -267,6 +274,8 @@ class Dataset(HLObject):
         self._dcpl = None  #self.id.get_create_plist()
         self._filters = [] # filters.get_filters(self._dcpl)
         self._local = None #local()
+        # make a numpy dtype out of the type json
+        self._dtype = hdf5dtype.createDataType(self.id.type_json)
         # self._local.astype = None #todo
 
     def resize(self, size, axis=None):
