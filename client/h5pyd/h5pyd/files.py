@@ -23,7 +23,7 @@ import requests
 import json
 
 from . import objectid
-from .objectid import ObjectID
+from .objectid import ObjectID, GroupID
 from . import base
 from .base import HLObject
 from .base import phil
@@ -207,7 +207,7 @@ class File(Group):
             if 'lastModified' not in root_json:
                 raise IOError("Unexpected error")
                 
-            self._id = ObjectID(None, root_json['root'], domain=domain_name, endpoint=endpoint)
+            self._id = GroupID(None, root_json['root'], domain=domain_name, endpoint=endpoint)
                 
             self._name = '/' 
             self._mode = mode

@@ -20,7 +20,11 @@ print "name:", f.name
 print "uuid:", f.id.uuid
 print "id:", f.id.id
 
-g1 = f['g1']
+g2 = f['g2']
 
-print "g1 uuid:", g1.id.uuid
-print "g1 name:", g1.name
+print "g2 uuid:", g2.id.uuid
+print "g2 name:", g2.name
+
+dset21 = g2['dset2.1']
+print "dset21 uuid:", dset21.id.uuid
+print "dset21 name:", dset21.name

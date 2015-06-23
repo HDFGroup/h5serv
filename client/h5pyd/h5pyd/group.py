@@ -15,16 +15,20 @@ from __future__ import absolute_import
 import posixpath as pp
 
 import six
-
+import sys
 import numpy
 import collections
 
 from . import base
 from .base import HLObject, MutableMappingHDF5, phil, with_phil
 from . import objectid
-from .objectid import ObjectID
-#from . import dataset
-#from . import datatype
+from .objectid import ObjectID, TypeID, GroupID, DatasetID
+from .dataset import Dataset
+from .datatype import Datatype
+
+sys.path.append('../../../hdf5-json/lib')
+#from hdf5db import Hdf5db
+import hdf5dtype
 
 
 class Group(HLObject, MutableMappingHDF5):
@@ -41,10 +45,11 @@ class Group(HLObject, MutableMappingHDF5):
         """
         
         with phil:
-            if not isinstance(bind, ObjectID):
+            if not isinstance(bind, GroupID):
                 raise ValueError("%s is not a GroupID" % bind)
             HLObject.__init__(self, bind)
-      
+            
+         
 
     def create_group(self, name):
         """ Create and return a new subgroup.
@@ -196,17 +201,41 @@ class Group(HLObject, MutableMappingHDF5):
         link_json = rsp_json['link']
         print "link_json", link_json
         if link_json['class'] == 'H5L_TYPE_HARD':
+            print "hard link, collection:", link_json['collection']
+            link_obj = None
             if link_json['collection'] == 'groups':
                 group_uuid = link_json['id']
                 req = "/groups/" + group_uuid
+                # do a GET to validate the object is still there
                 group_json = self.GET(req)
-                group_obj = Group(ObjectID(self, group_uuid))
-                if self._name:
-                    if self._name[-1] == '/':
-                        group_obj._name = self._name + name
-                    else:
-                        group_obj._name = self._name + '/' + name
-                return group_obj
+                link_obj = Group(GroupID(self, group_uuid))
+            elif link_json['collection'] == 'datatypes':
+                datatype_uuid = link_json['id']
+                req = "/datatypes/" + datatype_uuid
+                datatype_json = self.GET(req)
+                type_item = datatype_json['type']
+                dtype = hdf5dtype.createDataType(type_item)
+                link_obj = Datatype(TypeID(self, datatype_uuid, dtype=dtype))
+            elif link_json['collection'] == 'datasets':
+                dataset_uuid = link_json['id']
+                req = "/datasets/" + dataset_uuid
+                dataset_json = self.GET(req)
+                type_item = dataset_json['type']
+                dtype = hdf5dtype.createDataType(type_item)
+                shape = dataset_json['shape']
+                link_obj = Dataset(DatasetID(self, dataset_uuid, dtype=dtype, shape=shape ))
+                
+                
+            else:
+                raise IOError("Unexpected Error - collection type: " + link_json['collection'])
+                 
+            if self._name:
+                if self._name[-1] == '/':
+                    link_obj._name = self._name + name
+                else:
+                    link_obj._name = self._name + '/' + name
+                return link_obj
+             
                 
         """
         otype = h5i.get_type(oid)

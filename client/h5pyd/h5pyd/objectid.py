@@ -75,3 +75,48 @@ class ObjectID:
                 self.endpoint = endpoint
             self._uuid = uuid
             
+class TypeID(ObjectID):
+    
+    @property
+    def dtype(self):
+        return self._dtype
+        
+    def __init__(self, parent, uuid, domain=None, endpoint=None, dtype=None, **kwds):
+        """Create a new TypeID.
+        """
+         
+        with phil:
+            self._dtype = dtype
+            ObjectID.__init__(self, parent, uuid, domain=domain, endpoint=endpoint)
+            
+        self._dtype = dtype
+
+class DatasetID(ObjectID):
+    
+    @property
+    def dtype(self):
+        return self._dtype
+        
+    @property
+    def shape(shape):
+        return self._shape
+        
+    def __init__(self, parent, uuid, domain=None, endpoint=None, dtype=None, shape=None, **kwds):
+        """Create a new DatasetID.
+        """
+         
+        with phil:
+            self._dtype = dtype
+            self._shape = shape
+            ObjectID.__init__(self, parent, uuid, domain=domain, endpoint=endpoint)
+                        
+class GroupID(ObjectID):
+    
+        
+    def __init__(self, parent, uuid, domain=None, endpoint=None, **kwds):
+        """Create a new GroupID.
+        """
+         
+        with phil:
+            ObjectID.__init__(self, parent, uuid, domain=domain, endpoint=endpoint)
+             

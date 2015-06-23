@@ -158,7 +158,6 @@ Sample Response - Resizable
         "class": "H5S_SIMPLE",
         "dims": [10, 10], 
         "maxdims": [10, 0],
-        "fillvalue": 0
     }, 
     "created": "2015-01-28T04:40:23Z",
     "lastModified": "2015-01-28T04:40:23Z", 
