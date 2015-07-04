@@ -94,7 +94,7 @@ class File(Group):
     @property
     def mode(self):
         """ Python mode used to open file """
-        return self._mode
+        return self.id._mode
 
     @property
     def fid(self):
@@ -140,7 +140,7 @@ class File(Group):
         """
         
         self._endpoint = None
-        print "File init"
+         
          
         with phil:
             """
@@ -171,11 +171,11 @@ class File(Group):
                 
             # try to do a GET from the domain
             req = endpoint + "/"
-            print "domain name:", domain_name
+            
             headers = {'host': domain_name}
             rsp = requests.get(req, headers=headers)
             
-            print "req:", req
+             
             
             if rsp.status_code == 200:
                 root_json = json.loads(rsp.text)
@@ -207,7 +207,7 @@ class File(Group):
             if 'lastModified' not in root_json:
                 raise IOError("Unexpected error")
                 
-            print "root_json:", root_json
+            #print "root_json:", root_json
             root_uuid = root_json['root']
             
             # get the group json for the root group
@@ -221,10 +221,10 @@ class File(Group):
                 raise IOError("Unexpected Error")
             group_json = json.loads(rsp.text)
                 
-            self._id = GroupID(None, group_json, domain=domain_name, endpoint=endpoint)
+            self._id = GroupID(None, group_json, domain=domain_name, 
+                endpoint=endpoint, mode=mode)
                 
             self._name = '/' 
-            self._mode = mode
             self._created = root_json['created']
             self._modified = root_json['lastModified']       
                     

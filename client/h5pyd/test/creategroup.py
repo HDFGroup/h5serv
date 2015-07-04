@@ -13,34 +13,29 @@ import sys
 sys.path.append('..')
 import h5pyd
 
-f = h5pyd.File("tall.test.hdfgroup.org", "r", endpoint="http://127.0.0.1:5000")
+f = h5pyd.File("creategroup.client_test.hdfgroup.org", "w", endpoint="http://127.0.0.1:5000")
 
 print "filename,", f.filename
 print "name:", f.name
 print "uuid:", f.id.uuid
 print "id:", f.id.id
 
-g2 = f['g2']
+g1 = f.create_group('g1')
+
+
+
+print "g1 uuid:", g1.id.uuid
+print "g1 name:", g1.name
+
+g2 = f.create_group('g2')
 
 print "g2 uuid:", g2.id.uuid
 print "g2 name:", g2.name
-print "g2 num elements:", len(g2)
-print "g2: iter.."
-for x in g2:
-    print x
-   
-print "xyz in g2", ('xyz' in g2)
-print "dset2.1 in g2", ('dset2.1' in g2)
 
-dset21 = g2['dset2.1']
-print "dset21 uuid:", dset21.id.uuid
-print "dset21 name:", dset21.name
-print "dset21 dims:", dset21.shape
-print "dset21 type:", dset21.dtype
+g2['hlink'] = g1
 
-dset111 = f['/g1/g1.1/dset1.1.1']
-print "dset111 uuid:", dset111.id.uuid
-print "dset111 name:", dset111.name
-print "dset111 dims:", dset111.shape
-print "dset111 type:", dset111.dtype
-
+g21 = g2.create_group('g2.1')
+print "g2 count:", len(g2)
+print "delete g2.1..."
+del g2['g2.1']
+print "g2 count:", len(g2)

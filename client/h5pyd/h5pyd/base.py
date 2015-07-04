@@ -18,6 +18,8 @@ import os
 import sys
 import json
 import requests
+import logging
+import logging.handlers
 from collections import (
     Mapping, MutableMapping, MappingView, KeysView, ValuesView, ItemsView
 )
@@ -259,13 +261,14 @@ class HLObject(CommonStateObject):
         req = self.id.endpoint + req
             
         headers = {'host': self.id.domain}
-        print "GET: ", req
+        self.log.info("GET: " + req)
         rsp = requests.get(req, headers=headers)
-        
+        self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
         if rsp.status_code != 200:
              raise IOError(rsp.reason)
         #print "rsp text", rsp.text    
         rsp_json = json.loads(rsp.text)
+         
                 
         return rsp_json
         
@@ -276,20 +279,24 @@ class HLObject(CommonStateObject):
             raise IOError("no domain defined")
          
         # try to do a PUT to the domain
-        req = endpoint + req
+        req = self.id.endpoint + req
         
         data = json.dumps(body)
             
         headers = {'host': self.id.domain}
+        self.log.info("PUT: " + req)
         rsp = requests.put(req, data=data, headers=headers)
+        self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
         if rsp.status_code != 201:
             raise IOError(rsp.reason)
+        
         rsp_json = json.loads(rsp.text)
                 
         return rsp_json
         
         
     def POST(self, req, body=None):
+        print "req:", req
         if self.id.endpoint is None:
             raise IOError("object not initialized")
         if self.id.domain is None:
@@ -301,9 +308,12 @@ class HLObject(CommonStateObject):
         data = json.dumps(body)
             
         headers = {'host': self.id.domain}
+        self.log.info("PST: " + req)
         rsp = requests.post(req, data=data, headers=headers)
+        self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
         if rsp.status_code not in (200, 201):
             raise IOError(rsp.reason)
+        
         rsp_json = json.loads(rsp.text)
         return rsp
         
@@ -317,7 +327,9 @@ class HLObject(CommonStateObject):
         req = self.id.endpoint + req
         
         headers = {'host': self.id.domain}
+        self.log.info("DEL: " + req)
         rsp = requests.delete(req, headers=headers)
+        self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
         if rsp.status_code != 200:
             raise IOError(rsp.reason)
         rsp_json = json.loads(rsp.text)
@@ -327,6 +339,14 @@ class HLObject(CommonStateObject):
     def __init__(self, oid):
         """ Setup this object, given its low-level identifier """
         self._id = oid
+        self.log = logging.getLogger("h5pyd")
+        if not self.log.handlers:
+            # setup logging
+            print "logging setup"
+            self.log.setLevel(logging.INFO)
+            fh = logging.FileHandler("h5pyd.log")
+            self.log.addHandler(fh)
+            
 
     def __hash__(self):
         return hash(self.id)

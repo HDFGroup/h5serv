@@ -40,6 +40,8 @@ from . import version
 
 __version__ = version.version
 
+ 
+
 __doc__ = \
 """
     This is the h5py package, a Python interface to the HDF5

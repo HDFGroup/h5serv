@@ -59,12 +59,17 @@ class ObjectID:
         return self._parent
         
     @property
+    def mode(self):
+        """mode domain was opened in"""
+        return self._mode
+        
+    @property
     def obj_json(self):
         """json representation of the object"""
         return self._obj_json
         
 
-    def __init__(self, parent, item, domain=None, endpoint=None, **kwds):
+    def __init__(self, parent, item, domain=None, endpoint=None, mode='r', **kwds):
         """Create a new objectId.
         """
         #print "object init:", item
@@ -84,10 +89,12 @@ class ObjectID:
             if parent is not None:
                 self._domain = parent.id.domain 
                 self._endpoint = parent.id.endpoint
+                self._mode = parent.id.mode
                 #self._parent = parent
             else:
                 self._domain = domain
-                self.endpoint = endpoint
+                self._endpoint = endpoint
+                self._mode = mode
             
             
 class TypeID(ObjectID):
