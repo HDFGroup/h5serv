@@ -24,7 +24,9 @@ from . import base
 from .base import HLObject, MutableMappingHDF5, phil, with_phil
 from . import objectid
 from .objectid import ObjectID, TypeID, GroupID, DatasetID
+from . import dataset
 from .dataset import Dataset
+from . import datatype
 from .datatype import Datatype
 
 
@@ -58,7 +60,7 @@ class Group(HLObject, MutableMappingHDF5):
                } }
         rsp = self.POST('/groups', body=body)
       
-        group_json = json.loads(rsp.text)
+        group_json = rsp #json.loads(rsp.text)
         groupId = GroupID(self, group_json)
         
         subGroup = Group(groupId)
@@ -121,16 +123,21 @@ class Group(HLObject, MutableMappingHDF5):
         track_times
             (T/F) Enable dataset creation timestamps.
         """
-        pass
-        """
+        
         with phil:
             dsid = dataset.make_new_dset(self, shape, dtype, data, **kwds)
             dset = dataset.Dataset(dsid)
+            
             if name is not None:
+                print 'fname:', self._name
+                if self._name:
+                    if self._name[-1] == '/':
+                        dset._name = self._name + name
+                    else:
+                        dset._name = self._name + '/' + name
                 self[name] = dset
             return dset
-        """
-        return "todo"
+        
 
     def require_dataset(self, name, shape, dtype, exact=False, **kwds):
         """ Open a dataset, creating it if it doesn't exist.
@@ -145,14 +152,13 @@ class Group(HLObject, MutableMappingHDF5):
         Raises TypeError if an incompatible object already exists, or if the
         shape or dtype don't match according to the above rules.
         """
-        pass
-        """
+       
         with phil:
             if not name in self:
                 return self.create_dataset(name, *(shape, dtype), **kwds)
 
             dset = self[name]
-            if not isinstance(dset, dataset.Dataset):
+            if not isinstance(dset, Dataset):
                 raise TypeError("Incompatible object (%s) already exists" % dset.__class__.__name__)
 
             if not shape == dset.shape:
@@ -165,8 +171,7 @@ class Group(HLObject, MutableMappingHDF5):
                 raise TypeError("Datatypes cannot be safely cast (existing %s vs new %s)" % (dset.dtype, dtype))
 
             return dset
-        """
-        return "todo"
+        
         
     def require_group(self, name):
         """ Return a group, creating it if it doesn't exist.
@@ -225,9 +230,7 @@ class Group(HLObject, MutableMappingHDF5):
                 tgt_name = name
             
         path = name.split('/')         
-                
                       
-        
         for name in path:
             if not name: 
                 continue

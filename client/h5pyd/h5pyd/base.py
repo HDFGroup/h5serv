@@ -296,7 +296,6 @@ class HLObject(CommonStateObject):
         
         
     def POST(self, req, body=None):
-        print "req:", req
         if self.id.endpoint is None:
             raise IOError("object not initialized")
         if self.id.domain is None:
@@ -315,7 +314,7 @@ class HLObject(CommonStateObject):
             raise IOError(rsp.reason)
         
         rsp_json = json.loads(rsp.text)
-        return rsp
+        return rsp_json
         
     def DELETE(self, req):
         if self.id.endpoint is None:

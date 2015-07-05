@@ -24,7 +24,7 @@ import numpy
 from .base import HLObject
 from .objectid import ObjectID, TypeID, DatasetID
 #from . import filters
-#from . import selections as sel
+from . import selections as sel
 #from . import selections2 as sel2
 from .datatype import Datatype
 
@@ -32,7 +32,7 @@ sys.path.append('../../../hdf5-json/lib')
 #from hdf5db import Hdf5db
 import hdf5dtype
 
-#_LEGACY_GZIP_COMPRESSION_VALS = frozenset(range(10))
+_LEGACY_GZIP_COMPRESSION_VALS = frozenset(range(10))
 
 def readtime_dtype(basetype, names):
     """ Make a NumPy dtype appropriate for reading """
@@ -60,8 +60,7 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
     Only creates anonymous datasets.
     """
 
-    pass
-    """
+     
     # Convert data to a C-contiguous ndarray
     if data is not None:
         from . import base
@@ -96,7 +95,8 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
             dtype = data.dtype
         else:
             dtype = numpy.dtype(dtype)
-        tid = h5t.py_create(dtype, logical=1)
+        type_json = hdf5dtype.getTypeItem(dtype)
+        #tid = h5t.py_create(dtype, logical=1)
 
     # Legacy
     if any((compression, shuffle, fletcher32, maxshape,scaleoffset)) and chunks is False:
@@ -115,31 +115,48 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
         compression_opts = compression
         compression = 'gzip'
 
-    dcpl = filters.generate_dcpl(shape, dtype, chunks, compression, compression_opts,
-                  shuffle, fletcher32, maxshape, scaleoffset)
-
+    # todo
+    #dcpl = filters.generate_dcpl(shape, dtype, chunks, compression, compression_opts,
+    #              shuffle, fletcher32, maxshape, scaleoffset)
+    dcpl = None
     if fillvalue is not None:
         fillvalue = numpy.array(fillvalue)
-        dcpl.set_fill_value(fillvalue)
+        #todo
+        #dcpl.set_fill_value(fillvalue)
      
-     
+    """ 
     if track_times in (True, False):
         dcpl.set_obj_track_times(track_times)
     elif track_times is not None:
         raise TypeError("track_times must be either True or False")
-     
+    """ 
     if maxshape is not None:
         maxshape = tuple(m if m is not None else h5s.UNLIMITED for m in maxshape)
-    sid = h5s.create_simple(shape, maxshape)
+    #sid = h5s.create_simple(shape, maxshape)
 
-
+    
     #dset_id = h5d.create(parent.id, None, tid, sid, dcpl=dcpl)
+    req = "/datasets"
+    shape_json = {'class': 'H5S_SIMPLE'}
+    shape_json['dims'] = shape
+    if maxshape is not None:
+        shape_sjon['maxdims'] = maxshape
+    body = {'type': type_json, 'shape': shape}
+    if maxshape:
+        body['maxshape'] = maxshape
+    rsp = parent.POST(req, body=body)
+    body['id'] = rsp['id']
+    body['shape'] = shape_json
+    dset_id = DatasetID(parent, body)
 
     if data is not None:
-        dset_id.write(h5s.ALL, h5s.ALL, data)
+        pass
+        # todo
+        #dset_id.write(h5s.ALL, h5s.ALL, data)
 
     return dset_id
-    """
+   
+    
 
 class AstypeContext(object):
     def __init__(self, dset, dtype):
@@ -178,9 +195,21 @@ class Dataset(HLObject):
     @property
     def shape(self):
         """Numpy-style shape tuple giving dataset dimensions"""
-        if self.id.shape_json['class'] in ('H5S_NULL', 'H5S_SCALAR'):
+        shape_json = self.id.shape_json
+        if shape_json['class'] in ('H5S_NULL', 'H5S_SCALAR'):
             return ()  # return empty 
-        return self.id.shape_json['dims']
+        
+        if 'maxdims' not in shape_json:
+            # not resizable, just return dims
+            dims = shape_json['dims']
+        else:
+            # resizable, retrieve current shape        
+            req = '/datasets/' + self.id.uuid + '/shape'
+            rsp = self.GET(req)
+            shape_json = rsp['shape']
+            dims = shape_json['dims']
+         
+        return dims
         
     @shape.setter
     def shape(self, shape):
@@ -251,9 +280,17 @@ class Dataset(HLObject):
     def maxshape(self):
         """Shape up to which this dataset can be resized.  Axes with value
         None have no resize limit. """
-        space = self.id.get_space()
-        dims = space.get_simple_extent_dims(True)
-        return tuple(x if x != h5s.UNLIMITED else None for x in dims)
+        
+        shape_json = self.id.shape_json
+        if 'maxdims' not in shape_json:
+            # not resizable, just return dims
+            dims = shape_json['dims']
+        else:
+            dims = shape_json['maxdims']
+            
+        return tuple(x if x != 0 else None for x in dims)
+        #dims = space.get_simple_extent_dims(True)
+        #return tuple(x if x != h5s.UNLIMITED else None for x in dims)
 
     @property
     def fillvalue(self):
@@ -276,6 +313,7 @@ class Dataset(HLObject):
         self._local = None #local()
         # make a numpy dtype out of the type json
         self._dtype = hdf5dtype.createDataType(self.id.type_json)
+        self._shape = self.id.shape_json['dims']
         # self._local.astype = None #todo
 
     def resize(self, size, axis=None):
@@ -355,6 +393,7 @@ class Dataset(HLObject):
 
         * Boolean "mask" array indexing
         """
+         
         args = args if isinstance(args, tuple) else (args,)
 
         # Sort field indices from the rest of the args.
@@ -384,11 +423,14 @@ class Dataset(HLObject):
         else:
             # This is necessary because in the case of array types, NumPy
             # discards the array information at the top level.
-            new_dtype = readtime_dtype(self.id.dtype, names)
-        mtype = h5t.py_create(new_dtype)
+            new_dtype = readtime_dtype(self.dtype, names)
+        # todo - will need the following once we have binary transfers
+        # mtype = h5t.py_create(new_dtype)
+        mtype = new_dtype
 
         # === Special-case region references ====
-
+        """
+        TODO
         if len(args) == 1 and isinstance(args[0], h5r.RegionReference):
 
             obj = h5r.dereference(args[0], self.id)
@@ -406,6 +448,7 @@ class Dataset(HLObject):
             sid_out.select_all()
             self.id.read(sid_out, sid, out, mtype)
             return out
+        """
 
         # === Check for zero-sized datasets =====
 
@@ -430,8 +473,12 @@ class Dataset(HLObject):
 
         # === Everything else ===================
 
-        # Perform the dataspace selection.
+        # Perform the dataspace selection
+        #print "args:", args
         selection = sel.select(self.shape, args, dsid=self.id)
+        #print "start:", selection.start
+        #print "count:", selection.count
+        rank = len(selection.start)
 
         if selection.nselect == 0:
             return numpy.ndarray(selection.mshape, dtype=new_dtype)
@@ -440,7 +487,7 @@ class Dataset(HLObject):
         # np.void rows in case of multi-field dtype. (issue 135)
         single_element = selection.mshape == ()
         mshape = (1,) if single_element else selection.mshape
-        arr = numpy.ndarray(mshape, new_dtype, order='C')
+        #arr = numpy.ndarray(mshape, new_dtype, order='C')
 
         # HDF5 has a bug where if the memory shape has a different rank
         # than the dataset, the read is very slow
@@ -448,7 +495,24 @@ class Dataset(HLObject):
             # pad with ones
             mshape = (1,)*(len(self.shape)-len(mshape)) + mshape
 
-        # Perfom the actual read
+        # Perfom the actual 
+        req = "/datasets/" + self.id.uuid + "/value"
+        if rank > 0:
+            req += "?select=["
+            for i in range(rank):
+                start = selection.start[i]
+                stop = start + selection.count[i]
+                dim_sel = str(start) + ':' + str(stop)
+                if selection.step[i] != 1:
+                    dim_sel += ':' + str(selection.step[i])
+                if i != rank-1:
+                    dim_sel += ','
+                req += dim_sel
+            req += ']'
+        rsp = self.GET(req)
+        #print "value:", rsp['value']
+        #print "new_dtype:", new_dtype
+        arr = numpy.array(rsp['value'], dtype=new_dtype)
         """
         #todo
         mspace = h5s.create_simple(mshape)
