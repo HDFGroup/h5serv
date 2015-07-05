@@ -287,12 +287,12 @@ class HLObject(CommonStateObject):
         self.log.info("PUT: " + req)
         rsp = requests.put(req, data=data, headers=headers)
         self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
-        if rsp.status_code != 201:
+        if rsp.status_code not in (200, 201):
             raise IOError(rsp.reason)
         
-        rsp_json = json.loads(rsp.text)
-                
-        return rsp_json
+        if rsp.text:
+            rsp_json = json.loads(rsp.text)    
+            return rsp_json
         
         
     def POST(self, req, body=None):
@@ -341,7 +341,6 @@ class HLObject(CommonStateObject):
         self.log = logging.getLogger("h5pyd")
         if not self.log.handlers:
             # setup logging
-            print "logging setup"
             self.log.setLevel(logging.INFO)
             fh = logging.FileHandler("h5pyd.log")
             self.log.addHandler(fh)

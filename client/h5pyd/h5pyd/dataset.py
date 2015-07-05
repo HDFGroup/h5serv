@@ -19,6 +19,7 @@ import six
 from six.moves import xrange
 
 import numpy
+from h5py.h5t import check_dtype
 
 #from . import base
 from .base import HLObject
@@ -497,18 +498,9 @@ class Dataset(HLObject):
 
         # Perfom the actual 
         req = "/datasets/" + self.id.uuid + "/value"
-        if rank > 0:
-            req += "?select=["
-            for i in range(rank):
-                start = selection.start[i]
-                stop = start + selection.count[i]
-                dim_sel = str(start) + ':' + str(stop)
-                if selection.step[i] != 1:
-                    dim_sel += ':' + str(selection.step[i])
-                if i != rank-1:
-                    dim_sel += ','
-                req += dim_sel
-            req += ']'
+        sel_query = selection.getQueryParam()
+        if sel_query:
+            req += "?" + sel_query
         rsp = self.GET(req)
         #print "value:", rsp['value']
         #print "new_dtype:", new_dtype
@@ -537,6 +529,7 @@ class Dataset(HLObject):
         (slices and integers).  For advanced indexing, the shapes must
         match.
         """
+        
         args = args if isinstance(args, tuple) else (args,)
 
         # Sort field indices from the slicing
@@ -547,9 +540,8 @@ class Dataset(HLObject):
 
         # Generally we try to avoid converting the arrays on the Python
         # side.  However, for compound literals this is unavoidable.
-        """
-        #todo
-        vlen = h5t.check_dtype(vlen=self.dtype)
+       
+        vlen = check_dtype(vlen=self.dtype)
         if vlen is not None and vlen not in (bytes, six.text_type):
             try:
                 val = numpy.asarray(val, dtype=vlen)
@@ -652,10 +644,27 @@ class Dataset(HLObject):
             mshape_pad = (1,)*(len(self.shape)-len(mshape)) + mshape
         else:
             mshape_pad = mshape
+        req = "/datasets/" + self.id.uuid + "/value"
+        
+        body = {}
+        if selection.start:
+            body['start'] = list(selection.start)
+            stop = list(selection.start)
+            for i in range(len(stop)):
+                stop[i] += selection.count[i]
+            body['stop'] = stop
+            if selection.step:
+                body['step'] = list(selection.step)
+        
+            
+        body['value'] = val.tolist()
+        self.PUT(req, body=body)
+        """
         mspace = h5s.create_simple(mshape_pad, (h5s.UNLIMITED,)*len(mshape_pad))
         for fspace in selection.broadcast(mshape):
             self.id.write(mspace, fspace, val, mtype)
         """
+        
 
     def read_direct(self, dest, source_sel=None, dest_sel=None):
         """ Read data directly from HDF5 into an existing NumPy array.

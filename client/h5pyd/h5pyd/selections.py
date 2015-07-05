@@ -317,6 +317,23 @@ class SimpleSelection(Selection):
         else:
             raise IOError("Unsupported select type")
         return npoints
+        
+    def getQueryParam(self):
+        param = ''
+        rank = len(self.shape)
+        if rank > 0:
+            param += "select=["
+            for i in range(rank):
+                start = self.start[i]
+                stop = start + self.count[i]
+                dim_sel = str(start) + ':' + str(stop)
+                if self.step[i] != 1:
+                    dim_sel += ':' + str(self.step[i])
+                if i != rank-1:
+                    dim_sel += ','
+                param += dim_sel
+            param += ']'
+        return param
 
 
     def broadcast(self, target_shape):
