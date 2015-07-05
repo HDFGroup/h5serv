@@ -53,6 +53,26 @@ def with_phil(func):
 
     functools.update_wrapper(wrapper, func, ('__name__', '__doc__'))
     return wrapper
+    
+    
+def guess_dtype(data):
+    """ Attempt to guess an appropriate dtype for the object, returning None
+    if nothing is appropriate (or if it should be left up the the array
+    constructor to figure out)
+    """
+    """
+    #todo
+    with phil:
+        if isinstance(data, h5r.RegionReference):
+            return h5t.special_dtype(ref=h5r.RegionReference)
+        if isinstance(data, h5r.Reference):
+            return h5t.special_dtype(ref=h5r.Reference)
+        if type(data) == bytes:
+            return h5t.special_dtype(vlen=bytes)
+        if type(data) == six.text_type:
+           return h5t.special_dtype(vlen=six.text_type)
+    """
+    return None
  
 
 
@@ -246,9 +266,8 @@ class HLObject(CommonStateObject):
     @property
     def attrs(self):
         """ Attributes attached to this object """
-        return "todo"
-        #from . import attrs
-        #return attrs.AttributeManager(self)
+        from . import attrs
+        return attrs.AttributeManager(self)
         
         
     def GET(self, req):

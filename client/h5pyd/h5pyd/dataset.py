@@ -496,7 +496,7 @@ class Dataset(HLObject):
             # pad with ones
             mshape = (1,)*(len(self.shape)-len(mshape)) + mshape
 
-        # Perfom the actual 
+        # Perfom the actual read
         req = "/datasets/" + self.id.uuid + "/value"
         sel_query = selection.getQueryParam()
         if sel_query:
