@@ -22,8 +22,6 @@ print "id:", f.id.id
 
 g1 = f.create_group('g1')
 
-
-
 print "g1 uuid:", g1.id.uuid
 print "g1 name:", g1.name
 

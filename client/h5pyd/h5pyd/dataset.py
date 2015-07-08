@@ -504,7 +504,26 @@ class Dataset(HLObject):
         rsp = self.GET(req)
         #print "value:", rsp['value']
         #print "new_dtype:", new_dtype
-        arr = numpy.array(rsp['value'], dtype=new_dtype)
+        
+        # need some special conversion for compound types --
+        # each element must be a tuple, but the JSON decoder
+        # gives us a list instead.
+        data = rsp['value']
+        if len(mtype) > 1 and type(data) in (list, tuple):
+            converted_data = []
+            for i in range(len(data)):
+                converted_data.append(self.toTuple(data[i]))
+            data = converted_data
+            
+        arr = numpy.empty(mshape, dtype=mtype)
+        arr[...] = data
+        
+        """    
+        if self.id.type_json['class'] == 'H5T_COMPOUND':
+            arr = numpy.empty(mshape, dtype=new_dtype)
+        else:
+            arr = numpy.array(rsp['value'], dtype=new_dtype)
+        """
         """
         #todo
         mspace = h5s.create_simple(mshape)
@@ -768,4 +787,14 @@ class Dataset(HLObject):
        """
        pass # todo
             
+            
+    """
+      Convert a list to a tuple, recursively.
+      Example. [[1,2],[3,4]] -> ((1,2),(3,4))
+    """
+    def toTuple(self, data):
+        if type(data) in (list, tuple):
+            return tuple(self.toTuple(x) for x in data)
+        else:
+            return data
 
