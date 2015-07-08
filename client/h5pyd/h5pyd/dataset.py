@@ -30,7 +30,7 @@ from . import selections as sel
 from .datatype import Datatype
 
 sys.path.append('../../../hdf5-json/lib')
-#from hdf5db import Hdf5db
+from hdf5db import Hdf5db
 import hdf5dtype
 
 _LEGACY_GZIP_COMPRESSION_VALS = frozenset(range(10))
@@ -538,6 +538,103 @@ class Dataset(HLObject):
             arr = numpy.asscalar(arr)
         if single_element:
             arr = arr[0]
+        return arr
+        
+    def read_where(self, condition, condvars=None, field=None, start=None, stop=None, step=None):
+        """Read rows from compound type dataset using pytable-style condition
+        """
+        names = ()  # todo
+        def readtime_dtype(basetype, names):
+            """ Make a NumPy dtype appropriate for reading """
+
+            if len(names) == 0:  # Not compound, or we want all fields
+                return basetype
+
+            if basetype.names is None:  # Names provided, but not compound
+                raise ValueError("Field names only allowed for compound types")
+
+            for name in names:  # Check all names are legal
+                if not name in basetype.names:
+                    raise ValueError("Field %s does not appear in this type." % name)
+
+            return numpy.dtype([(name, basetype.fields[name][0]) for name in names])
+
+        new_dtype = getattr(self._local, 'astype', None)
+        if new_dtype is not None:
+            new_dtype = readtime_dtype(new_dtype, names)
+        else:
+            # This is necessary because in the case of array types, NumPy
+            # discards the array information at the top level.
+            new_dtype = readtime_dtype(self.dtype, names)
+        # todo - will need the following once we have binary transfers
+        # mtype = h5t.py_create(new_dtype)
+        if len(new_dtype) < 2:
+            raise ValueError("Where method can only be used with compound datatypes")
+        mtype = new_dtype
+
+        # === Check for zero-sized datasets =====
+
+        if numpy.product(self.shape) == 0 or self.shape == ():
+            raise TypeError("Scalar datasets can not be used with where method")
+        if len(self.shape) > 1:
+            raise TypeError("Multi-dimensional datasets can not be used with where method")
+             
+
+        # === Everything else ===================
+
+        # Perform the dataspace selection
+        #print "args:", args
+        if start or stop:
+            if not start:
+                start = 0
+            if not stop:
+                stop = self.shape[0] 
+        else:
+            start = 0
+            stop = self.shape[0]
+         
+        selection_arg = slice(start, stop) 
+        selection = sel.select(self.shape, selection_arg, dsid=self.id)
+        #print "start:", selection.start
+        #print "count:", selection.count
+        rank = len(selection.start)
+
+        if selection.nselect == 0:
+            return numpy.ndarray(selection.mshape, dtype=new_dtype)
+
+         
+        # Perfom the actual read
+        req = "/datasets/" + self.id.uuid + "/value"
+        req += "?query=" + condition
+        start_stop = selection.getQueryParam()
+        if start_stop:
+            req += "&" + start_stop
+        
+        rsp = self.GET(req)
+        #print "value:", rsp['value']
+        #print "new_dtype:", new_dtype
+        
+        # need some special conversion for compound types --
+        # each element must be a tuple, but the JSON decoder
+        # gives us a list instead.
+        data = rsp['value']
+        
+        mshape = (len(data),)
+        if len(mtype) > 1 and type(data) in (list, tuple):
+            converted_data = []
+            for i in range(len(data)):
+                converted_data.append(self.toTuple(data[i]))
+            data = converted_data
+         
+        arr = numpy.empty(mshape, dtype=mtype)
+        arr[...] = data
+
+        # Patch up the output for NumPy
+        if len(names) == 1:
+            arr = arr[names[0]]     # Single-field recarray convention
+        if arr.shape == ():
+            arr = numpy.asscalar(arr)
+         
         return arr
 
 
