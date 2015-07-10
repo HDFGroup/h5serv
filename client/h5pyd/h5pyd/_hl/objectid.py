@@ -25,7 +25,7 @@ import json
 #from base import HLObject
 from . import base
 from .base import phil
-from . import version
+from .. import version
 
 
  

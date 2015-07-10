@@ -402,7 +402,7 @@ class FancySelection(Selection):
         self._mshape = self.shape
 
     def __getitem__(self, args):
-        print "args:", args
+        #print "args:", args
 
         if not isinstance(args, tuple):
             args = (args,)

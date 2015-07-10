@@ -28,9 +28,8 @@ from .dataset import readtime_dtype
 from .datatype import Datatype
 from .objectid import GroupID, DatasetID, TypeID
 
-sys.path.append('../../../hdf5-json/lib')
 #from hdf5db import Hdf5db
-import hdf5dtype
+from .. import hdf5dtype
 
 class AttributeManager(base.MutableMappingHDF5, base.CommonStateObject):
 
@@ -86,7 +85,10 @@ class AttributeManager(base.MutableMappingHDF5, base.CommonStateObject):
         dtype = hdf5dtype.createDataType(type_json)
         
         #shape = attr.shape
-        shape = shape_json['dims']
+        if 'dims' in shape_json:
+            shape = shape_json['dims']
+        else:
+            shape = ()
         
         # Do this first, as we'll be fiddling with the dtype for top-level
         # array types

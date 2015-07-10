@@ -21,8 +21,14 @@ from __future__ import absolute_import
 #h5z._register_lzf()
 
 #from .highlevel import *
-from . import files
-from .files import File
+
+from . import version
+from ._hl.files import File
+from ._hl.group import Group, SoftLink, ExternalLink, HardLink
+from ._hl.dataset import Dataset
+from ._hl.datatype import Datatype
+from ._hl.attrs import AttributeManager
+
 
 #from .h5 import get_config
 #from .h5r import Reference, RegionReference
@@ -34,7 +40,6 @@ from .files import File
 #from .h5t import py_new_enum as new_enum
 #from .h5t import py_get_enum as get_enum
 
-from . import version
 
 #from .tests import run_tests
 

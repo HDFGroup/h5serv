@@ -129,7 +129,7 @@ class Group(HLObject, MutableMappingHDF5):
             dset = dataset.Dataset(dsid)
             
             if name is not None:
-                print 'fname:', self._name
+                #print 'fname:', self._name
                 if self._name:
                     if self._name[-1] == '/':
                         dset._name = self._name + name

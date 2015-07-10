@@ -29,7 +29,7 @@ from .base import HLObject
 from .base import phil
 from . import group
 from .group import Group
-from . import version
+from .. import version
 
 
 

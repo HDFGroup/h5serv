@@ -19,9 +19,8 @@ import sys
 #from ..h5t import TypeID
 from .base import HLObject, phil, with_phil
 
-sys.path.append('../../../hdf5-json/lib')
 #from hdf5db import Hdf5db
-import hdf5dtype
+from .. import hdf5dtype
 
 from .objectid import ObjectID, TypeID
 

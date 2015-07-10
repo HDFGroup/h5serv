@@ -29,9 +29,8 @@ from . import selections as sel
 #from . import selections2 as sel2
 from .datatype import Datatype
 
-sys.path.append('../../../hdf5-json/lib')
-from hdf5db import Hdf5db
-import hdf5dtype
+from ..hdf5db import Hdf5db
+from .. import hdf5dtype
 
 _LEGACY_GZIP_COMPRESSION_VALS = frozenset(range(10))
 
