@@ -91,7 +91,7 @@ Answer 'y' to the prompt, and the packages will be fetched.
 
 In the same shell, run: ``source activate h5serv``
 
-Run: ``git clone --recursvie https://github.com/HDFGroup/h5serv.git`` to download the h5serv source
+Run: ``git clone --recursive https://github.com/HDFGroup/h5serv.git`` to download the h5serv source
 tree.  Alternatively, in a browser go to: https://github.com/HDFGroup/h5serv and click 
 the "Download ZIP" button (right side of page).  Download the zip file and extract to
 the destination directory of your choice.  
