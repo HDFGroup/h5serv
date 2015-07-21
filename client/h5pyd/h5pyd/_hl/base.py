@@ -364,7 +364,7 @@ class HLObject(CommonStateObject):
             fh = logging.FileHandler("h5pyd.log")
             self.log.addHandler(fh)
             
-
+    
     def __hash__(self):
         return hash(self.id)
 

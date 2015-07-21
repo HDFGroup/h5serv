@@ -29,7 +29,7 @@ from . import selections as sel
 #from . import selections2 as sel2
 from .datatype import Datatype
 
-from ..hdf5db import Hdf5db
+#from ..hdf5db import Hdf5db
 from .. import hdf5dtype
 
 _LEGACY_GZIP_COMPRESSION_VALS = frozenset(range(10))

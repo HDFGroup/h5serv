@@ -84,7 +84,7 @@ class ObjectID:
         self._obj_json = item
             
         self._endpoint = None
-         
+          
         with phil:
             if parent is not None:
                 self._domain = parent.id.domain 
@@ -95,6 +95,13 @@ class ObjectID:
                 self._domain = domain
                 self._endpoint = endpoint
                 self._mode = mode
+                
+    def close(self):
+        """Remove handles to id.
+        """
+        self._uuid = 0
+        self._obj_json = None
+        self._endpoint = None
             
             
 class TypeID(ObjectID):
@@ -138,10 +145,10 @@ class DatasetID(ObjectID):
 class GroupID(ObjectID):
     
         
-    def __init__(self, parent, item, domain=None, endpoint=None, **kwds):
+    def __init__(self, parent, item, domain=None, endpoint=None, mode=None, **kwds):
         """Create a new GroupID.
         """
          
         with phil:
-            ObjectID.__init__(self, parent, item, domain=domain, endpoint=endpoint)
+            ObjectID.__init__(self, parent, item, domain=domain, mode=mode, endpoint=endpoint)
              

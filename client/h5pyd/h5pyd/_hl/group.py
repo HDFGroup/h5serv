@@ -55,6 +55,13 @@ class Group(HLObject, MutableMappingHDF5):
         Name may be absolute or relative.  Fails if the target name already
         exists.
         """
+        if self.id.mode == 'r':
+            raise ValueError("Unable to create group (No write intent on file)")
+            
+        if self.__contains__(name):
+            raise ValueError("Unable to create link (Name alredy exists)")
+            
+            
         body = {'link': { 'id': self.id.uuid, 
                           'name': name 
                } }
@@ -124,6 +131,9 @@ class Group(HLObject, MutableMappingHDF5):
             (T/F) Enable dataset creation timestamps.
         """
         
+        if self.id.mode == 'r':
+            raise ValueError("Unable to create dataset (No write intent on file)")
+        
         with phil:
             dsid = dataset.make_new_dset(self, shape, dtype, data, **kwds)
             dset = dataset.Dataset(dsid)
@@ -152,7 +162,7 @@ class Group(HLObject, MutableMappingHDF5):
         Raises TypeError if an incompatible object already exists, or if the
         shape or dtype don't match according to the above rules.
         """
-       
+            
         with phil:
             if not name in self:
                 return self.create_dataset(name, *(shape, dtype), **kwds)
@@ -213,13 +223,13 @@ class Group(HLObject, MutableMappingHDF5):
         if name[0] == '/':
             tgt_name = name # assign as name of returned obj
             #abs path, start with root
-            if self.name != '/':
-                # get root_uuid
-                rsp = self.GET('/')
-                root_uuid = rsp['root']
-                req = "/groups/" + root_uuid
-                root_json = self.GET(req)
-                parent = Group(GroupID(self, root_json))
+            # get root_uuid
+            rsp = self.GET('/')
+            root_uuid = rsp['root']
+            req = "/groups/" + root_uuid
+            root_json = self.GET(req)
+            parent = Group(GroupID(self, root_json))
+            tgt = parent
         else:
             if self.name:
                 if self.name[-1] == '/':
@@ -239,7 +249,12 @@ class Group(HLObject, MutableMappingHDF5):
                 raise IOError("Invalid path")    
                  
             req = "/groups/" + parent.id.uuid + "/links/" + name
-            rsp_json = self.GET(req)
+            
+            try:
+                rsp_json = self.GET(req)
+            except IOError as ioe:
+                raise KeyError("Unable to open object (Component not found)")
+                
             if "link" not in rsp_json:
                 raise IOError("Unexpected Error")
             link_json = rsp_json['link']
@@ -323,7 +338,7 @@ class Group(HLObject, MutableMappingHDF5):
                 return default
 
             elif getclass and not getlink:
-                obj = self.__getitem__[name]
+                obj = self.__getitem__(name)
                 if obj is None:
                     return None
                 if obj.id.__class__ is GroupID:
@@ -443,15 +458,13 @@ class Group(HLObject, MutableMappingHDF5):
 
     def __contains__(self, name):
         """ Test if a member name exists """
-        req = "/groups/" + self.id.uuid + "/links/" + name
-        contains = True
+        found = False
         try:
-            rsp_json = self.GET(req)
-        except IOError as ioe:
-            contains = False
-            
-        return contains
-        #return self._e(name) in self.id
+            self.__getitem__(name)
+            found = True
+        except KeyError as ke:
+            pass  # not found
+        return found
 
     def copy(self, source, dest, name=None,
              shallow=False, expand_soft=False, expand_external=False,

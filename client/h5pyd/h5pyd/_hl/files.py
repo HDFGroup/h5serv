@@ -173,9 +173,7 @@ class File(Group):
             req = endpoint + "/"
             
             headers = {'host': domain_name}
-            rsp = requests.get(req, headers=headers)
-            
-             
+            rsp = requests.get(req, headers=headers)           
             
             if rsp.status_code == 200:
                 root_json = json.loads(rsp.text)
@@ -207,6 +205,9 @@ class File(Group):
             if 'lastModified' not in root_json:
                 raise IOError("Unexpected error")
                 
+            if mode in ('w', 'w-', 'x', 'a'):
+                mode = 'r+'
+                
             #print "root_json:", root_json
             root_uuid = root_json['root']
             
@@ -220,7 +221,7 @@ class File(Group):
             if rsp.status_code != 200:
                 raise IOError("Unexpected Error")
             group_json = json.loads(rsp.text)
-                
+            
             self._id = GroupID(None, group_json, domain=domain_name, 
                 endpoint=endpoint, mode=mode)
                 
@@ -231,10 +232,12 @@ class File(Group):
             Group.__init__(self, self._id)
 
     def close(self):
-        pass
+        """ Clears reference to remote resource.
+        """
+        self._id.close()
 
     def flush(self):
-        """ Tell the HDF5 library to flush its buffers.
+        """ For h5py compatibility, doesn't currently do anything in h5pyd.
         """
         pass
 

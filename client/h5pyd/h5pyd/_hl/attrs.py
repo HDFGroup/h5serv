@@ -64,6 +64,7 @@ class AttributeManager(base.MutableMappingHDF5, base.CommonStateObject):
         elif isinstance(parent.id, DatasetID):
             self._req_prefix = "/datasets/" + parent.id.uuid + "/attributes/"
         else:
+            print "unknown id"
             self._req_prefix = "<unknown>"
             
 
@@ -324,6 +325,6 @@ class AttributeManager(base.MutableMappingHDF5, base.CommonStateObject):
 
     @with_phil
     def __repr__(self):
-        if not self._id:
+        if not self._parent.id.id:
             return "<Attributes of closed HDF5 object>"
-        return "<Attributes of HDF5 object at %s>" % id(self._id)
+        return "<Attributes of HDF5 object at %s>" % id(self._parent.id)

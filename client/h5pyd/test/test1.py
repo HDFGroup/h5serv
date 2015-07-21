@@ -12,7 +12,8 @@
 import sys
 import h5pyd
 
-f = h5pyd.File("tall.test.hdfgroup.org", "r", endpoint="http://127.0.0.1:5000")
+print "version:", h5pyd.version.version
+f = h5pyd.File("tall.test.hdfgroup.org", "r")
 
 print "filename,", f.filename
 print "name:", f.name
