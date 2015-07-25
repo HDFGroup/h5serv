@@ -13,7 +13,7 @@ Syntax
 ------
 .. code-block:: http
 
-    PUT /datasets/<id> HTTP/1.1
+    PUT /datasets/<id>/value HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
