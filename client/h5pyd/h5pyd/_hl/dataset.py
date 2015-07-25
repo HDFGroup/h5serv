@@ -150,10 +150,11 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
     dset_id = DatasetID(parent, body)
 
     if data is not None:
-        pass
-        # todo
-        #dset_id.write(h5s.ALL, h5s.ALL, data)
-
+        req = "/datasets/" + dset_id.uuid + "/value"
+        body = {}
+        body['value'] = data.tolist()
+        parent.PUT(req, body=body)
+        
     return dset_id
    
     
