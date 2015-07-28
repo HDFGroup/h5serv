@@ -52,5 +52,8 @@ print "attr keys:", dset111.attrs.keys()
 
 for attr in dset111.attrs:
     print 'name:', attr
+    
+np_arr = dset21[1:7:3]
+print np_arr
       
     

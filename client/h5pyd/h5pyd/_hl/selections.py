@@ -277,6 +277,8 @@ class SimpleSelection(Selection):
 
         if not isinstance(args, tuple):
             args = (args,)
+            
+        #print "__getitem__", args
   
         if self.shape == ():
             if len(args) > 0 and args[0] not in (Ellipsis, ()):
@@ -285,7 +287,7 @@ class SimpleSelection(Selection):
             return self
 
         start, count, step, scalar = _handle_simple(self.shape,args)
-        #print start, count, step, scalar
+        #print "__getitem__", start, count, step, scalar
          
         #self._id.select_hyperslab(start, count, step)
 
@@ -309,11 +311,12 @@ class SimpleSelection(Selection):
             for nextent in dims:
                 npoints *= nextent
         elif self._select_type == 'SEL_HYPERSLABS':
+            #print "sel hyperslabs, count:", self.count, "step:", self.step
             dims = self._shape
             npoints = 1
             rank = len(dims)
             for i in range(rank):
-                npoints *= self.count[i] / self.step[i]       
+                npoints *= self.count[i]       
         else:
             raise IOError("Unsupported select type")
         return npoints
@@ -325,7 +328,7 @@ class SimpleSelection(Selection):
             param += "select=["
             for i in range(rank):
                 start = self.start[i]
-                stop = start + self.count[i]
+                stop = start + (self.count[i] * self.step[i])
                 dim_sel = str(start) + ':' + str(stop)
                 if self.step[i] != 1:
                     dim_sel += ':' + str(self.step[i])
@@ -510,6 +513,7 @@ def _handle_simple(shape, args):
 
     for arg, length in zip(args, shape):
         if isinstance(arg, slice):
+            #print "translate slice"
             x,y,z = _translate_slice(arg, length)
             s = False
         else:
@@ -543,6 +547,7 @@ def _translate_slice(exp, length):
         (start, count, step)
         for use with the hyperslab selection routines
     """
+    #print "_translate_slice:", exp, "length:", length
     start, stop, step = exp.indices(length)
         # Now if step > 0, then start and stop are in [0, length]; 
         # if step < 0, they are in [-1, length - 1] (Python 2.6b2 and later; 

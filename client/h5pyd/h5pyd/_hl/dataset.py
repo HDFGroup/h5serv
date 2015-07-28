@@ -394,7 +394,7 @@ class Dataset(HLObject):
 
         * Boolean "mask" array indexing
         """
-         
+        #print "getitem" 
         args = args if isinstance(args, tuple) else (args,)
 
         # Sort field indices from the rest of the args.
@@ -479,9 +479,11 @@ class Dataset(HLObject):
         selection = sel.select(self.shape, args, dsid=self.id)
         #print "start:", selection.start
         #print "count:", selection.count
+        #print "setp:", selection.step
         rank = len(selection.start)
 
         if selection.nselect == 0:
+            #print "nselect is 0"
             return numpy.ndarray(selection.mshape, dtype=new_dtype)
 
         # Up-converting to (1,) so that numpy.ndarray correctly creates
@@ -497,6 +499,7 @@ class Dataset(HLObject):
             mshape = (1,)*(len(self.shape)-len(mshape)) + mshape
 
         # Perfom the actual read
+        #print "do select"
         req = "/datasets/" + self.id.uuid + "/value"
         sel_query = selection.getQueryParam()
         if sel_query:

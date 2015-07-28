@@ -360,7 +360,7 @@ class HLObject(CommonStateObject):
         self.log = logging.getLogger("h5pyd")
         if not self.log.handlers:
             # setup logging
-            self.log.setLevel(logging.ERROR)
+            self.log.setLevel(logging.INFO)
             fh = logging.FileHandler("h5pyd.log")
             self.log.addHandler(fh)
             
