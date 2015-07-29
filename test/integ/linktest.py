@@ -295,7 +295,7 @@ class LinkTest(unittest.TestCase):
         rootId = helper.getRootUUID(domain)   
         name = 'softlink'
         req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
-        payload = {"h5path": "/somewhere"}
+        payload = {"h5path": "somewhere"}
         headers = {'host': domain}
         # verify softlink does not exist
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)

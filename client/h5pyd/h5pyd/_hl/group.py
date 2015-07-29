@@ -412,6 +412,7 @@ class Group(HLObject, MutableMappingHDF5):
             #              lcpl=lcpl, lapl=self._lapl)
 
         elif isinstance(obj, ExternalLink):
+            print "extlink -- path: ", obj.path, "filename:", obj.filename
             body = {'h5path': obj.path,
                     'h5domain': obj.filename }
             req = "/groups/" + self.id.uuid + "/links/" + name

@@ -294,7 +294,7 @@ class LinkHandler(RequestHandler):
         h5path = None
         h5domain = None
         filename = None   # fake filename
-        
+         
         if "id" in body:
             childUuid = body["id"]
             if childUuid == None or len(childUuid) == 0:
@@ -304,7 +304,7 @@ class LinkHandler(RequestHandler):
         elif "h5path" in body:
             # todo
             h5path = body["h5path"]
-            if h5path == None or len(h5path) == 0 or not h5path.startswith('/'):
+            if h5path == None or len(h5path) == 0:              
                 raise HTTPError(400)
              
             # if h5domain is present, this will be an external link     

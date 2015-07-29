@@ -74,9 +74,15 @@ class TestGroup(TestCase):
         self.assertEqual(len(g1), 1)
         self.assertEqual(len(g1_1), 0)
         
-        # create a link
+        # create a hardlink
         r['g1.1'] = g1_1
         self.assertEqual(len(r), 4)
+        
+        # create a softlink
+        r['mysoftlink'] = h5py.SoftLink('/g1/g1.1')
+        
+        # create a external hardlink
+        r['myexternallink'] = h5py.ExternalLink("somefile", "somepath")
         
         #todo - test visit
         
