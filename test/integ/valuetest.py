@@ -724,6 +724,7 @@ class ValueTest(unittest.TestCase):
         # write part 1
         payload = { 'start': 0, 'stop': 5, 'value': data_part1 }
         headers = {'host': domain}
+     
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         # write part 2
@@ -802,6 +803,12 @@ class ValueTest(unittest.TestCase):
         
         value = ((55, 32.34), (59, 29.34)) 
         payload = {'value': value}
+        req = self.endpoint + "/datasets/" + dset1UUID + "/value"
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)  # write value
+        
+        # selection write
+        payload = { 'start': 0, 'stop': 1, 'value': (11.1, 12.2) }
         req = self.endpoint + "/datasets/" + dset1UUID + "/value"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)  # write value

@@ -15,7 +15,7 @@ import numpy as np
 import h5pyd
 
 f = h5pyd.File("createdataset.client_test.hdfgroup.org", "w", endpoint="http://127.0.0.1:5000")
-"""
+
 print "filename,", f.filename
 print "name:", f.name
 print "uuid:", f.id.uuid
@@ -38,7 +38,6 @@ print "write selection..."
 dset[2:5] = [20,30,40]
 print "values:", dset[...]
 
-"""
 data = np.arange(13).astype('f')
 print "input data:", data[...]
 dset = f.create_dataset('x', data=data)  

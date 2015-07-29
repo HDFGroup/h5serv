@@ -739,6 +739,8 @@ class Dataset(HLObject):
         # Use mtype derived from array (let DatasetID.write figure it out)
         else:
             mshape = val.shape
+            print "val:", val
+            print "mshape:", mshape
             mtype = None
 
         # Perform the dataspace selection
@@ -777,6 +779,7 @@ class Dataset(HLObject):
         
             
         body['value'] = val.tolist()
+        print "body:", str(body)
         self.PUT(req, body=body)
         """
         mspace = h5s.create_simple(mshape_pad, (h5s.UNLIMITED,)*len(mshape_pad))
