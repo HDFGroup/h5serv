@@ -327,7 +327,7 @@ class LinkHandler(RequestHandler):
             with Hdf5db(filePath, app_logger=log) as db:
                 if childUuid:
                     db.linkObject(reqUuid, childUuid, linkName)
-                elif filename:
+                elif h5domain:
                     db.createExternalLink(reqUuid, h5domain, h5path, linkName)
                 elif h5path:
                     db.createSoftLink(reqUuid, h5path, linkName)

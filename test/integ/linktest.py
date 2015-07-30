@@ -330,8 +330,15 @@ class LinkTest(unittest.TestCase):
         # verify link is created
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
-
-        
+        # verify that it is an external link
+        rspJson = json.loads(rsp.text)   
+        target = rspJson['link']
+              
+        self.failUnlessEqual(target['class'], 'H5L_TYPE_EXTERNAL')
+        self.failUnlessEqual(target['h5domain'], target_domain)
+        self.failUnlessEqual(target['h5path'], target_path)
+            
+          
     def testPutExternalMissingPath(self):
         logging.info("LinkTest.testPutExternalMissingPath")
         fakeId = "14bfeeb8-68b1-11e4-a69a-3c15c2da029e"
