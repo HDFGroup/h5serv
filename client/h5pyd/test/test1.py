@@ -12,6 +12,14 @@
 import sys
 import h5pyd
 
+def visit_item(name):
+    print "visit:", name
+    return None
+    
+def visit_item_obj(name, obj):
+    print "visit:", name, obj.id.id
+    return None
+    
 print "version:", h5pyd.version.version
 f = h5pyd.File("tall.test.hdfgroup.org", "r")
 
@@ -55,5 +63,10 @@ for attr in dset111.attrs:
     
 np_arr = dset21[1:7:3]
 print np_arr
+
+print "visit..."
+f.visit(visit_item)
+print "visititems..."
+f.visit(visit_item_obj)
       
     

@@ -583,7 +583,7 @@ class Group(HLObject, MutableMappingHDF5):
         >>> list_of_names = []
         >>> f.visit(list_of_names.append)
         """
-        pass
+        self.visititems(func)
         """
         with phil:
             def proxy(name):
@@ -615,7 +615,33 @@ class Group(HLObject, MutableMappingHDF5):
         >>> f = File('foo.hdf5')
         >>> f.visititems(func)
         """
-        pass
+        visited = collections.OrderedDict()
+        visited[self.id.uuid] = True
+        tovisit = collections.OrderedDict()
+        tovisit[self.id.uuid] = self
+        
+        nargs = func.func_code.co_argcount
+         
+        while len(tovisit) > 0:
+            (parent_uuid, parent) = tovisit.popitem(last=True)
+            if parent.name != '/':
+                if nargs == 1:
+                    func(parent.name)
+                else:
+                    func(parent.name, parent)
+            visited[self.id.uuid] = True
+            if parent.id.__class__ is GroupID:
+                req = "/groups/" + parent.id.uuid + "/links"
+                rsp_json = self.GET(req)
+                links = rsp_json['links']
+                for link in links:
+                    if link['class'] != 'H5L_TYPE_HARD':
+                        continue  # ignore soft/external links
+                    if link['id'] in visited:
+                        continue  # already been there    
+                    obj = parent.__getitem__(link['title'])
+                    tovisit[obj.id.uuid] = obj
+            
         """
         with phil:
             def proxy(name):
