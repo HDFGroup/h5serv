@@ -96,9 +96,19 @@ class ObjectID:
                 self._endpoint = endpoint
                 self._mode = mode
                 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self._uuid == other._uuid
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+                
     def close(self):
         """Remove handles to id.
         """
+        self._old_uuid = self._uuid  # for debugging
         self._uuid = 0
         self._obj_json = None
         self._endpoint = None

@@ -72,7 +72,7 @@ class TestGroup(TestCase):
         g1_1 = r.create_group("g1/g1.1")
         self.assertEqual(len(r), 3)
         self.assertEqual(len(g1), 1)
-        self.assertEqual(len(g1_1), 0)
+        self.assertEqual(len(g1_1), 0)    
         
         # create a hardlink
         r['g1.1'] = g1_1
@@ -80,12 +80,41 @@ class TestGroup(TestCase):
         
         # create a softlink
         r['mysoftlink'] = h5py.SoftLink('/g1/g1.1')
+        self.assertEqual(len(r), 5)
+        #print r.get_link_json("/mysoftlink")
+        slink = r['mysoftlink']
+        self.assertEqual(slink.id, g1_1.id)
+        
         
         # create a external hardlink
         r['myexternallink'] = h5py.ExternalLink("somefile", "somepath")
         
-        #todo - test visit
+        # test getclass
+        g1_class = r.get('g1', getclass=True)
+        self.assertEqual(g1_class, h5py.Group)
+        linkee_class = r.get('mysoftlink', getclass=True)
+        self.assertEqual(linkee_class, h5py.Group)
+        link_class = r.get('mysoftlink', getclass=True, getlink=True)
+        self.assertEqual(link_class, h5py.SoftLink)
+        softlink = r.get('mysoftlink', getlink=True)
+        self.assertEqual(softlink.path, '/g1/g1.1')
         
+        try:
+            linkee_class = r.get('myexternallink', getclass=True)
+            self.assertTrue(False)
+        except IOError:
+            pass # expected - not implemented
+        
+        link_class = r.get('myexternallink', getclass=True, getlink=True)
+        self.assertEqual(link_class, h5py.ExternalLink)
+        external_link = r.get('myexternallink', getlink=True)
+        self.assertEqual(external_link.path, 'somepath')
+        
+        del r['mysoftlink']
+        self.assertEqual(len(r), 5)
+        
+        del r['myexternallink']
+        self.assertEqual(len(r), 4)
         
         f.close()
         self.assertEqual(f.id.id, 0)

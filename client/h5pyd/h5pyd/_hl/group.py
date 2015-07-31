@@ -199,45 +199,19 @@ class Group(HLObject, MutableMappingHDF5):
             return grp
             
    
-        
-
-    def __getitem__(self, name):
-        """ Open an object in the file """
-        
-        """
-        #todo - get reference
-        if isinstance(name, h5r.Reference):
-            oid = h5r.dereference(name, self.id)
-            if oid is None:
-                raise ValueError("Invalid HDF5 object reference")
-        else:
-            oid = h5o.open(self.id, self._e(name), lapl=self._lapl)
-        """
-        
+    def get_link_json(self, name):
+        """ Return parent_uuid and json description of link for given path """
          
-        parent = self
-        tgt = None
-        
-        tgt_name = None
+        parent_uuid = self.id.uuid
+        tgt_json = None        
         
         if name[0] == '/':
-            tgt_name = name # assign as name of returned obj
             #abs path, start with root
             # get root_uuid
             rsp = self.GET('/')
-            root_uuid = rsp['root']
-            req = "/groups/" + root_uuid
-            root_json = self.GET(req)
-            parent = Group(GroupID(self, root_json))
-            tgt = parent
-        else:
-            if self.name:
-                if self.name[-1] == '/':
-                    tgt_name = self.name + name
-                else:
-                    tgt_name = self.name + '/' + name
-            else:
-                tgt_name = name
+            parent_uuid = rsp['root']
+            # make a fake tgt_json to represent 'link' to root group
+            tgt_json = {'collection': "groups", 'class': "H5L_TYPE_HARD", 'id': parent_uuid }
             
         path = name.split('/')         
                       
@@ -245,10 +219,10 @@ class Group(HLObject, MutableMappingHDF5):
             if not name: 
                 continue
             
-            if not isinstance(parent, Group):
-                raise IOError("Invalid path")    
+            if not parent_uuid:   
+                raise KeyError("Unable to open object (Component not found)")
                  
-            req = "/groups/" + parent.id.uuid + "/links/" + name
+            req = "/groups/" + parent_uuid + "/links/" + name
             
             try:
                 rsp_json = self.GET(req)
@@ -257,50 +231,74 @@ class Group(HLObject, MutableMappingHDF5):
                 
             if "link" not in rsp_json:
                 raise IOError("Unexpected Error")
-            link_json = rsp_json['link']
+            tgt_json = rsp_json['link']
+            
             #print "link_json", link_json
-            if link_json['class'] == 'H5L_TYPE_HARD':
+            if tgt_json['class'] == 'H5L_TYPE_HARD':
                 #print "hard link, collection:", link_json['collection']
-                link_obj = None
-                if link_json['collection'] == 'groups':
-                    group_uuid = link_json['id']
-                    req = "/groups/" + group_uuid
-                    # do a GET to validate the object is still there
-                    group_json = self.GET(req)
-                    parent = Group(GroupID(self, group_json))
-                    tgt = parent
-                elif link_json['collection'] == 'datatypes':
-                    datatype_uuid = link_json['id']
-                    req = "/datatypes/" + datatype_uuid
-                    datatype_json = self.GET(req)
-                
-                    parent = Datatype(TypeID(self, datatype_json))
-                    tgt = parent
-                elif link_json['collection'] == 'datasets':
-                    dataset_uuid = link_json['id']
-                    req = "/datasets/" + dataset_uuid
-                    dataset_json = self.GET(req)
-                    parent = Dataset(DatasetID(self, dataset_json)) 
-                    tgt = parent        
+                if tgt_json['collection'] == 'groups':
+                    parent_uuid = tgt_json['id']    
                 else:
-                    raise IOError("Unexpected Error - collection type: " + link_json['collection'])
-                 
+                    parent_uuid = None              
         
-        if tgt:
-            tgt._name = tgt_name
-        return tgt     
-                
-        """
-        otype = h5i.get_type(oid)
-        if otype == h5i.GROUP:
-            return Group(oid)
-        elif otype == h5i.DATASET:
-            return dataset.Dataset(oid)
-        elif otype == h5i.DATATYPE:
-            return datatype.Datatype(oid)
+        return parent_uuid, tgt_json    
+
+    def __getitem__(self, name):
+        """ Open an object in the file """
+         
+        def getObjByUuid(collection_type, uuid):
+            """ Utility method to get an obj based on collection type and uuid """
+            if collection_type == 'groups':
+                req = "/groups/" + uuid
+                group_json = self.GET(req)
+                tgt = Group(GroupID(self, group_json))       
+            elif link_json['collection'] == 'datatypes':
+                req = "/datatypes/" + uuid
+                datatype_json = self.GET(req)
+                tgt = Datatype(TypeID(self, datatype_json))               
+            elif link_json['collection'] == 'datasets':
+                req = "/datasets/" + uuid
+                dataset_json = self.GET(req)
+                tgt = Dataset(DatasetID(self, dataset_json))       
+            else:
+                raise IOError("Unexpected Error - collection type: " + link_json['collection'])
+            return tgt
+        
+        tgt = None
+        parent_uuid, link_json = self.get_link_json(name)
+        link_class = link_json['class']
+        
+        if link_class == 'H5L_TYPE_HARD':
+            #print "hard link, collection:", link_json['collection']
+            tgt = getObjByUuid(link_json['collection'], link_json['id'])
+        elif link_class == 'H5L_TYPE_SOFT':
+            h5path = link_json['h5path']
+            soft_parent_uuid, soft_json = self.get_link_json(h5path)
+            tgt = getObjByUuid(soft_json['collection'], soft_json['id'])
+
+        elif link_class == 'H5L_TYPE_EXTERNAL':
+            # try to get a handle to the file
+            raise IOError("Not implemented")           
+            
+        elif link_class == 'H5L_TYPE_USER_DEFINED':
+            raise IOError("Unable to fetch user-defined link")
         else:
-            raise TypeError("Unknown object type")
-        """
+            raise IOEror("Unexpected error, invalid link class:" + link_json['class'])
+            
+        # assign name
+        if name[0] == '/':
+            tgt._name = name
+        else:
+            if self.name:
+                if self.name[-1] == '/':
+                    tgt._name = self.name + name
+                else:
+                    tgt._name = self.name + '/' + name
+            else:
+                tgt._name = name
+        return tgt
+                 
+                   
 
     def get(self, name, default=None, getclass=False, getlink=False):
         """ Retrieve an item or other information.
@@ -352,21 +350,20 @@ class Group(HLObject, MutableMappingHDF5):
                  
 
             elif getlink:
-                typecode = self.id.links.get_info(self._e(name)).type
-
-                if typecode == h5l.TYPE_SOFT:
+                parent_uuid, link_json = self.get_link_json(name)
+                typecode = link_json['class']
+                 
+                if typecode == 'H5L_TYPE_SOFT':
                     if getclass:
                         return SoftLink
-                    linkbytes = self.id.links.get_val(self._e(name))
-                    return SoftLink(self._d(linkbytes))
-                elif typecode == h5l.TYPE_EXTERNAL:
+                    
+                    return SoftLink(link_json['h5path'])
+                elif typecode == 'H5L_TYPE_EXTERNAL':
                     if getclass:
                         return ExternalLink
-                    filebytes, linkbytes = self.id.links.get_val(self._e(name))
-                    # TODO: I think this is wrong,
-                    # we should use filesystem decoding on the filename
-                    return ExternalLink(self._d(filebytes), self._d(linkbytes))
-                elif typecode == h5l.TYPE_HARD:
+                    
+                    return ExternalLink(link_json['h5domain'], link_json['h5path'])
+                elif typecode == 'H5L_TYPE_HARD':
                     return HardLink if getclass else HardLink()
                 else:
                     raise TypeError("Unknown link type")
@@ -412,9 +409,9 @@ class Group(HLObject, MutableMappingHDF5):
             #              lcpl=lcpl, lapl=self._lapl)
 
         elif isinstance(obj, ExternalLink):
-            print "extlink -- path: ", obj.path, "filename:", obj.filename
             body = {'h5path': obj.path,
                     'h5domain': obj.filename }
+            print "create external", obj.filename
             req = "/groups/" + self.id.uuid + "/links/" + name
             self.PUT(req, body=body)
             #self.id.links.create_external(name, self._e(obj.filename),
@@ -461,7 +458,7 @@ class Group(HLObject, MutableMappingHDF5):
         """ Test if a member name exists """
         found = False
         try:
-            self.__getitem__(name)
+            self.get_link_json(name)
             found = True
         except KeyError as ke:
             pass  # not found
