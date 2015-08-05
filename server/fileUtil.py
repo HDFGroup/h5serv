@@ -24,6 +24,22 @@ import config
 def getFileModCreateTimes(filePath):
     (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(filePath)
     return (mtime, ctime)
+    
+def isIPAddress(s):
+    """Return True if the string looks like an IP address:
+        n.n.n.n where n is between 0 and 255 """
+    parts = s.split('.')
+    if len(parts) != 4:
+        return False
+    for part in parts:
+        try:
+            n = int(part)
+            if n < 0 or n > 255:
+                return False
+        except ValueError:
+            return False
+    return True
+        
 
 def getFilePath(host_value):
     # logging.info('getFilePath[' + host_value + ']')
@@ -36,10 +52,17 @@ def getFilePath(host_value):
     
     topdomain = config.get('domain')
     
+    #check to see if this is an ip address 
+    if isIPAddress(host):
+        host = topdomain  # use topdomain
+    
+    if host.lower() == topdomain:
+        return None  # not an exception, return .toc 
      
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
         raise HTTPError(403, message='top-level domain is not valid')
         
+      
     if host[-(len(topdomain) + 1)] != '.':
         # there needs to be a dot separator
         raise HTTPError(400, message='domain name is not valid')
@@ -47,6 +70,7 @@ def getFilePath(host_value):
     host = host[:-(len(topdomain)+1)]   # strip off top domain part
     
     if len(host) == 0 or host[0] == '.':
+        print "invalid domain"
         # needs a least one character (which can't be '.')
         raise HTTPError(400, message='domain name is not valid')
         

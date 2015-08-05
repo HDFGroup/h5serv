@@ -48,6 +48,13 @@ class RootTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         helper.validateId(rspJson["root"])
         
+    def testGetToc(self):  
+        req = self.endpoint + "/"
+        rsp = requests.get(req)
+        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
+        rspJson = json.loads(rsp.text)
+        
     def testGetNotFound(self):
         domain = 'doesnotexist.' + config.get('domain')    
         req = self.endpoint + "/"
@@ -68,11 +75,7 @@ class RootTest(unittest.TestCase):
         # get top-level domain. e.g.: 'test.hdf.io' -> 'hdf.io'
         npos = domain.find('.')
         topdomain = domain[npos+1:] 
-        req = self.endpoint + "/"
-        headers = {'host': topdomain}
-        rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # 403 == Forbidden
-        
+         
         domain = 'two.dots..are.bad.' + config.get('domain')   
         req = self.endpoint + "/"
         headers = {'host': domain}
