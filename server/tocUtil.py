@@ -25,7 +25,6 @@ import fileUtil
 def getTocFilePath():
     datapath = config.get('datapath')
     toc_file_path = op.join(datapath, config.get('toc_name'))
-    print "toc_file_path", toc_file_path
     if not op.exists(toc_file_path):
         createTocFile(datapath)
     return toc_file_path

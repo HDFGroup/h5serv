@@ -15,6 +15,7 @@ from tornado.web import HTTPError
 
 from h5py import is_hdf5
 import config
+from tocUtil import getTocFilePath
 
 """
  File util helper functions
@@ -55,9 +56,11 @@ def getFilePath(host_value):
     #check to see if this is an ip address 
     if isIPAddress(host):
         host = topdomain  # use topdomain
-    
+       
     if host.lower() == topdomain:
-        return None  # not an exception, return .toc 
+        # if host is the same as topdomain, return toc path
+        filePath = getTocFilePath()
+        return filePath   
      
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
         raise HTTPError(403, message='top-level domain is not valid')
@@ -70,7 +73,6 @@ def getFilePath(host_value):
     host = host[:-(len(topdomain)+1)]   # strip off top domain part
     
     if len(host) == 0 or host[0] == '.':
-        print "invalid domain"
         # needs a least one character (which can't be '.')
         raise HTTPError(400, message='domain name is not valid')
         

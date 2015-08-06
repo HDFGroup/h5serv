@@ -29,7 +29,6 @@ import hdf5dtype
 
 from timeUtil import unixTimeToUTC
 from fileUtil import getFilePath, getDomain, makeDirs, verifyFile
-from tocUtil import getTocFilePath
 from httpErrorUtil import errNoToHttpStatus
 
     
@@ -2224,17 +2223,8 @@ class RootHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('RootHandler.get ' + self.request.host)
         log.info('remote_ip: ' + self.request.remote_ip)
-        
-        # get file path for the domain
-        # will raise exception if not found
         domain = self.getDomain()
         filePath = getFilePath(domain)
-        if filePath == None:
-            filePath = getTocFilePath()
-            if not filePath:
-                msg = "Unexpected error, Unable to create toc file"
-                log.error(msg)
-                raise HTTPError(500, msg)
         log.info("filepath: " + filePath)
         verifyFile(filePath)
         

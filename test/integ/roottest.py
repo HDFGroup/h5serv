@@ -49,11 +49,38 @@ class RootTest(unittest.TestCase):
         helper.validateId(rspJson["root"])
         
     def testGetToc(self):  
+        domain = config.get('domain')  
+        if domain.startswith('test.'):
+            domain = domain[5:]
         req = self.endpoint + "/"
-        rsp = requests.get(req)
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
+        root_uuid = rspJson['root']
+        req = self.endpoint + "/groups/" + root_uuid 
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        req = self.endpoint + "/groups/" + root_uuid + "/links/test" 
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("link" in rspJson)
+        link = rspJson['link']
+        group_uuid = link['id']
+        req = self.endpoint + "/groups/" + group_uuid + "/links/tall" 
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("link" in rspJson)
+        link = rspJson['link']
+        self.assertEqual(link['class'], 'H5L_TYPE_EXTERNAL')
+        self.assertEqual(link['title'], 'tall')
+        self.assertEqual(link['h5path'], '/')
+        self.assertEqual(link['h5domain'], 'tall.test.' + domain)
+        
+        
         
     def testGetNotFound(self):
         domain = 'doesnotexist.' + config.get('domain')    
