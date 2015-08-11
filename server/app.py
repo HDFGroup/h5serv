@@ -2233,9 +2233,7 @@ class RootHandler(RequestHandler):
             raise HTTPError(500)
         filePath = filePath[len(dataPath):]
         tocFile = getTocFilePath()
-        print "domain", domain
-        print "filePath", filePath
-        
+         
         try:
             with Hdf5db(tocFile, app_logger=log) as db:             
                 group_uuid = db.getUUIDByPath('/')
