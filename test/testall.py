@@ -12,7 +12,7 @@
 
 import os
 
-unit_tests = ('timeUtilTest', 'fileUtilTest', 'hdf5dtypeTest', 'hdf5dbTest')
+unit_tests = ('timeUtilTest', 'fileUtilTest')
 integ_tests = ('roottest', 'grouptest', 'linktest', 'datasettest', 'valuetest',
     'attributetest', 'datatypetest', 'shapetest', 'datasettypetest', 'spidertest')
 #

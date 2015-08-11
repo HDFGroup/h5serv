@@ -15,6 +15,7 @@ import logging
 import logging.handlers
 import os
 import os.path as op
+import errno
 import json
 import tornado.httpserver
 import sys
@@ -29,6 +30,7 @@ import hdf5dtype
 
 from timeUtil import unixTimeToUTC
 from fileUtil import getFilePath, getDomain, makeDirs, verifyFile
+from tocUtil import isTocFilePath, getTocFilePath
 from httpErrorUtil import errNoToHttpStatus
 
     
@@ -63,7 +65,7 @@ class DefaultHandler(RequestHandler):
         
 class LinkCollectionHandler(RequestHandler):
     """
-    Helper method - return domain ath based on either query param
+    Helper method - return domain based on either query param
     or host header
     """  
     def getDomain(self):
@@ -318,6 +320,10 @@ class LinkHandler(RequestHandler):
         
         domain = self.getDomain()
         filePath = getFilePath(domain) 
+        if isTocFilePath(filePath):
+            msg = "Forbidden: links can not be directly created in TOC domain"
+            log.info(msg)
+            raise HTTPError(403, reason=msg)
         
         response = { }
         
@@ -365,6 +371,10 @@ class LinkHandler(RequestHandler):
         rootUUID = None
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
+        if isTocFilePath(filePath):
+            msg = "Forbidden: links can not be directly modified in TOC domain"
+            log.info(msg)
+            raise HTTPError(403, reason=msg)
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 db.unlinkItem(reqUuid, linkName)
@@ -2189,6 +2199,105 @@ class RootHandler(RequestHandler):
         if not domain:
             domain = self.request.host
         return domain
+    
+    """
+    Helper method - get group uuid of hardlink, or None if no link
+    """
+    def getSubgroupId(self, db, group_uuid, link_name):
+        subgroup_uuid = None
+        try:    
+            item = db.getLinkItemByUuid(group_uuid, link_name)
+            if item['class'] != 'H5L_TYPE_HARD':
+                return None
+            if item['collection'] != 'groups':
+                return None
+            subgroup_uuid = item['id']                 
+        except IOError as e:
+            # link_name doesn't exist, return None
+            pass
+                
+                
+        return subgroup_uuid
+             
+    """
+    Helper method - update TOC when a domain is created
+    """    
+    def addTocEntry(self, domain, filePath):
+        log = logging.getLogger("h5serv")
+        hdf5_ext = config.get('hdf5_ext')
+        dataPath = config.get('datapath')
+        log.info("addTocEntry - domain: " + domain + " filePath: " + filePath)
+        verifyFile(filePath)   # create TOC file if it does not exist already
+        if not filePath.startswith(dataPath):
+            log.error("unexpected filepath: " + filePath)
+            raise HTTPError(500)
+        filePath = filePath[len(dataPath):]
+        tocFile = getTocFilePath()
+        print "domain", domain
+        print "filePath", filePath
+        
+        try:
+            with Hdf5db(tocFile, app_logger=log) as db:             
+                group_uuid = db.getUUIDByPath('/')
+                pathNames = filePath.split('/')
+                for linkName in pathNames:
+                    print "linkName:", linkName
+                    if linkName.endswith(hdf5_ext):
+                        linkName = linkName[:-(len(hdf5_ext))]
+                        db.createExternalLink(group_uuid, domain, '/', linkName)
+                    else:
+                        subgroup_uuid = self.getSubgroupId(db, group_uuid, linkName)
+                        if subgroup_uuid is None:
+                            # create subgroup and link to parent group
+                            subgroup_uuid = db.createGroup()        
+                            # link the new group
+                            db.linkObject(group_uuid, subgroup_uuid, linkName)
+                        group_uuid = subgroup_uuid 
+                                              
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise e
+            
+    """
+    Helper method - update TOC when a domain is deleted
+    """    
+    def removeTocEntry(self, domain, filePath):
+        log = logging.getLogger("h5serv")
+        hdf5_ext = config.get('hdf5_ext')
+        dataPath = config.get('datapath')
+        
+        if not filePath.startswith(dataPath):
+            log.error("unexpected filepath: " + filePath)
+            raise HTTPError(500)
+        filePath = filePath[len(dataPath):]
+        tocFile = getTocFilePath()
+        log.info("removeTocEntry - domain: " + domain + " filePath: " + filePath)
+       
+        
+        try:
+            with Hdf5db(tocFile, app_logger=log) as db:             
+                group_uuid = db.getUUIDByPath('/')
+                pathNames = filePath.split('/')
+                for linkName in pathNames:
+                    if linkName.endswith(hdf5_ext):
+                        linkName = linkName[:-(len(hdf5_ext))]
+                        log.info("unklink " + group_uuid + ", " + linkName)
+                        db.unlinkItem(group_uuid, linkName)
+                    else:
+                        subgroup_uuid = self.getSubgroupId(db, group_uuid, linkName)
+                        if subgroup_uuid is None:
+                            msg = "Didn't find expected subgroup: " + group_uuid
+                            log.error(msg)
+                            raise HTTPError(500, reason=msg)
+                        group_uuid = subgroup_uuid 
+                                              
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise e
+                    
+                
 
     def getRootResponse(self, filePath):
         log = logging.getLogger("h5serv")
@@ -2243,6 +2352,10 @@ class RootHandler(RequestHandler):
             msg = "Conflict: resource exists"
             log.info(msg)    
             raise HTTPError(409, reason=msg)  # Conflict - is this the correct code?
+        if isTocFilePath(filePath):
+            msg = "Forbidden: invalid resource"
+            log.info(msg)
+            raise HTTPError(403, reason=msg)  # Forbidden - TOC file
         # create directories as needed
         makeDirs(op.dirname(filePath))
         log.info("creating file: [" + filePath + "]")
@@ -2255,6 +2368,8 @@ class RootHandler(RequestHandler):
             
         response = self.getRootResponse(filePath)
         
+        self.addTocEntry(domain, filePath)
+          
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
         self.set_status(201)  # resource created
@@ -2265,6 +2380,7 @@ class RootHandler(RequestHandler):
         log.info('remote_ip: ' + self.request.remote_ip) 
         domain = self.getDomain()
         filePath = getFilePath(domain)
+        log.info("delete filePath: " + filePath)
         verifyFile(filePath, True)
         
         if not op.isfile(filePath):
@@ -2278,12 +2394,26 @@ class RootHandler(RequestHandler):
             msg = "Forbidden: Resource is read-only"
             log.info(msg)
             raise HTTPError(403, reason=msg) # Forbidden
+            
+        if isTocFilePath(filePath):
+            msg = "Forbidden: Resource is read-only"
+            log.info(msg)
+            raise HTTPError(403, reason=msg)  # Forbidden - TOC file
+        
+        try:
+            self.removeTocEntry(domain, filePath)
+        except IOError as ioe:
+            # This exception may happen if the file has been imported directly
+            # after toc creation
+            log.warn("IOError removing toc entry")
         
         try:    
             os.remove(filePath)  
         except IOError as ioe:
             log.info("IOError deleting HDF5 file: " + str(ioe.errno) + " " + ioe.strerror)
             raise HTTPError(500, "Unexpected error: unable to delete collection") 
+            
+        
               
 class InfoHandler(RequestHandler):
      
