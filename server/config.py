@@ -24,7 +24,7 @@ cfg = {
     'ssl_port': 5050,
     'ssl_cert': '',  # add relative path to cert for SSL
     'ssl_key':  '',  # add relative path to cert key for SSL
-    'ssl_cert_pwd': 'tampopo'
+    'ssl_cert_pwd': ''
 }
    
 def get(x):     
