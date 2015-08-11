@@ -2552,8 +2552,11 @@ def main():
     msg = "Starting event loop on port: " + str(port)
     
     ssl_cert = config.get('ssl_cert')
+    print "ssl_cert:", ssl_cert
     ssl_key = config.get('ssl_key')
+    print "ssl_key:", ssl_key
     ssl_port = config.get('ssl_port')
+    print "ssl_port:", ssl_port
      
     if ssl_cert and op.isfile(ssl_cert) and ssl_key and op.isfile(ssl_key) and ssl_port:
         ssl_cert_pwd = config.get('ssl_cert_pwd')
