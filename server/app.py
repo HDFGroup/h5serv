@@ -19,6 +19,7 @@ import errno
 import json
 import tornado.httpserver
 import sys
+import ssl
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, url_escape, url_unescape
@@ -2548,10 +2549,26 @@ def main():
     app = make_app()
     server = tornado.httpserver.HTTPServer(app)
     server.listen(port)
+    msg = "Starting event loop on port: " + str(port)
+    
+    ssl_cert = config.get('ssl_cert')
+    ssl_key = config.get('ssl_key')
+    ssl_port = config.get('ssl_port')
+     
+    if ssl_cert and op.isfile(ssl_cert) and ssl_key and op.isfile(ssl_key) and ssl_port:
+        ssl_cert_pwd = config.get('ssl_cert_pwd')
+        ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        ssl_ctx.load_cert_chain(ssl_cert, keyfile=ssl_key, password=ssl_cert_pwd)
+        ssl_server = tornado.httpserver.HTTPServer(app, ssl_options=ssl_ctx)
+        ssl_server.listen(ssl_port)
+        msg += " and port: " + str(ssl_port) + " (SSL)"
+        
     signal.signal(signal.SIGTERM, sig_handler)
     signal.signal(signal.SIGINT, sig_handler)
     log.info("INITIALIZING...")
-    print "Starting event loop on port: ", port
+    log.info(msg)
+    print msg
+ 
     IOLoop.current().start()
 
 main()

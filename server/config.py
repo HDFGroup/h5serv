@@ -16,12 +16,15 @@ cfg = {
     'port':   5000,
     'debug':  True,
     'datapath': '../data/',
-    #'domain': 'hdf.io',
     'domain':  'hdfgroup.org',
     'hdf5_ext': '.h5',
     'toc_name': '.toc.h5',
     'local_ip': '127.0.0.1',  # used by lcoal_dns.py
-    'default_dns': '8.8.8.8'  # used by local_dns.py
+    'default_dns': '8.8.8.8',  # used by local_dns.py
+    'ssl_port': 5050,
+    'ssl_cert': '',  # add relative path to cert for SSL
+    'ssl_key':  '',  # add relative path to cert key for SSL
+    'ssl_cert_pwd': 'tampopo'
 }
    
 def get(x):     
