@@ -20,6 +20,7 @@ import json
 import tornado.httpserver
 import sys
 import ssl
+import base64
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, url_escape, url_unescape
@@ -33,6 +34,7 @@ from timeUtil import unixTimeToUTC
 from fileUtil import getFilePath, getDomain, makeDirs, verifyFile
 from tocUtil import isTocFilePath, getTocFilePath
 from httpErrorUtil import errNoToHttpStatus
+from passwordUtil import isPasswordValid
 
     
 class DefaultHandler(RequestHandler):
@@ -2200,6 +2202,24 @@ class RootHandler(RequestHandler):
         if not domain:
             domain = self.request.host
         return domain
+        
+    """
+    Get current user
+    """
+    def getCurrentUser(self):
+        user = None
+        pswd = None
+        scheme, _, token = auth_header = self.request.headers.get('Authorization', '').partition(' ')
+        if scheme.lower() == 'basic':
+            print "auth_header:", auth_header
+            user, _, pswd= base64.decodestring(token).partition(':')
+            print "user:", user
+            print "pwd:", pswd
+        if isPasswordValid(user, pswd):
+            return user
+        else: 
+            return None
+        
     
     """
     Helper method - get group uuid of hardlink, or None if no link
@@ -2332,6 +2352,11 @@ class RootHandler(RequestHandler):
         log.info('RootHandler.get ' + self.request.host)
         log.info('remote_ip: ' + self.request.remote_ip)
         domain = self.getDomain()
+        user = self.getCurrentUser()
+        if not user:
+            self.set_status(401)
+            self.set_header('WWW-Authenticate', 'basic realm="h5serv"')
+            return
         filePath = getFilePath(domain)
         log.info("filepath: " + filePath)
         verifyFile(filePath)
@@ -2344,6 +2369,7 @@ class RootHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('RootHandler.put ' + self.request.host)  
         log.info('remote_ip: ' + self.request.remote_ip)
+        
         domain = self.getDomain()
         filePath = getFilePath(domain)
         log.info("put filePath: " + filePath)
