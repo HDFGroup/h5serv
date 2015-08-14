@@ -301,15 +301,17 @@ class LinkHandler(RequestHandler):
         elif item['class'] == 'H5L_TYPE_EXTERNAL':
             if item['h5domain'].endswith(config.get('domain')):
                 target = self.request.protocol + '://'
-                if hostQuery:
+                targetHostQuery = ''
+                if hostQuery or isTocFilePath(filePath):
                     target += self.request.host
+                    targetHostQuery = '?host=' + item['h5domain']
                 else:
                     target += item['h5domain']
                 if item['h5path'] == '/':
                     target += '/'
                 else:
                     target += '/#h5path(' + item['h5path'] + ')'
-                target += hostQuery 
+                target += targetHostQuery 
         
         if target:
             hrefs.append({'rel': 'target', 'href': target})
