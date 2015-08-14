@@ -815,6 +815,53 @@ class DatasetHandler(RequestHandler):
     
         return id
         
+    """
+    Helper method - return query options for a "reasonable" size data preview selection.
+    Return None if the dataset is small enough that a preview is not needed.
+    """
+    def getPreviewQuery(self, shape_item):
+        if shape_item['class'] != 'H5S_SIMPLE':
+            return None
+        dims = shape_item['dims']
+        rank = len(dims)
+        if rank == 0:
+            return None 
+        
+        count = 1
+        for i in range(rank):
+            count *= dims[i]
+            
+        if count <= 100:
+            return None  
+            
+        select = "?select=["
+         
+        ncols = dims[rank-1]
+        if rank > 1:
+            nrows = dims[rank-2]
+        else:
+            nrows = 1 
+        
+        # use some rough heuristics to define the selection
+        if ncols > 100:
+            ncols = 100
+        if nrows > 100:
+            nrows = 100
+        if nrows*ncols > 1000:
+            nrows /= 10
+                       
+        for i in range(rank):
+            if i == rank-1:
+                select += "0:" + str(ncols)
+            elif i == rank-2:
+                select += "0:" + str(nrows) + ","
+            else:
+                select += "0:1,"
+        select += "]"
+        return select
+                
+         
+        
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('DatasetHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
@@ -837,16 +884,23 @@ class DatasetHandler(RequestHandler):
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror) 
-            
+        
+          
         # got everything we need, put together the response
         href = self.request.protocol + '://' + self.request.host + '/'
         hostQuery = ''
         if self.get_query_argument("host", default=None):
             hostQuery = "?host=" + self.get_query_argument("host")
+        previewQuery = self.getPreviewQuery(item['shape'])  
+        if hostQuery and previewQuery:
+            previewQuery += "&host=" + self.get_query_argument("host")
+             
         hrefs.append({'rel': 'self',       'href': href + 'datasets/' + reqUuid + hostQuery})
         hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
         hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes' + hostQuery}) 
         hrefs.append({'rel': 'data', 'href': href + 'datasets/' + reqUuid + '/value' + hostQuery}) 
+        if previewQuery:
+            hrefs.append({'rel': 'preview', 'href': href + 'datasets/' + reqUuid + '/value' + previewQuery}) 
         hrefs.append({'rel': 'home', 'href': href + hostQuery})       
         response['id'] = reqUuid
         typeItem = item['type']
@@ -1206,15 +1260,30 @@ class ValueHandler(RequestHandler):
         # got everything we need, put together the response
         href = self.request.protocol + '://' + self.request.host + '/'
         hostQuery = ''
-        if self.get_query_argument("host", default=None):
+        if self.get_query_argument("host", default=''):
             hostQuery = "?host=" + self.get_query_argument("host")
+        selfQuery = ''
+        if self.get_query_argument("select", default=''):
+            selfQuery = '?select=' + self.get_query_argument("select")
+        if self.get_query_argument("query", default=''):
+            if selfQuery:
+                selfQuery += '&'
+            else:
+                selfQuery += '?'
+            selfQuery += 'query=' + self.get_query_argument("select", default='')
+        if self.get_query_argument("host", default=''):
+            if selfQuery:
+                selfQuery += '&'
+            else:
+                selfQuery += '?'
+            selfQuery += 'host=' + self.get_query_argument("host", default='')
         
         if values is not None:
             response['value'] = values
         else:
             response['value'] = None
         
-        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value' + hostQuery})
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value' + selfQuery})
         hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID + hostQuery}) 
         hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid + hostQuery}) 
         hrefs.append({'rel': 'home',  'href': href + hostQuery })   
