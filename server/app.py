@@ -136,18 +136,47 @@ class LinkCollectionHandler(RequestHandler):
         # got everything we need, put together the response
         links = []
         hrefs = []
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'groups/' + reqUuid + '/links' + hostQuery})
         for item in items:
-            for key in ('mtime', 'ctime', 'type', 'href'):
-                if key in item:
-                    del item[key]
-            links.append(item)
+            link_item = {}
+            link_item['class'] = item['class']
+            link_item['title'] = item['title']
+            link_item['href'] = item['href'] = href + 'groups/' + reqUuid + '/links/' + item['title'] + hostQuery 
+            if item['class'] == 'H5L_TYPE_HARD':
+                link_item['id'] = item['id']
+                link_item['collection'] = item['collection']
+                link_item['target'] = href + item['collection'] + '/' + item['id'] + hostQuery
+            elif item['class'] == 'H5L_TYPE_SOFT':
+                link_item['h5path'] = item['h5path']
+            elif item['class'] == 'H5L_TYPE_EXTERNAL':
+                link_item['h5path'] = item['h5path']
+                link_item['h5domain'] = item['file']
+                if link_item['h5domain'].endswith(config.get('domain')):
+                    target = self.request.protocol + '://'
+                    targetHostQuery = ''
+                    if hostQuery or isTocFilePath(filePath):
+                        target += self.request.host
+                        targetHostQuery = '?host=' + link_item['h5domain']
+                    else:
+                        target += link_item['h5domain']
+                    if item['h5path'] == '/':
+                        target += '/'
+                    else:
+                        target += '/#h5path(' + link_item['h5path'] + ')'
+                    target += targetHostQuery 
+                    link_item['target'] = target
+               
+            links.append(link_item)
              
         response['links'] = links
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'groups/' + reqUuid + '/links'})
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
-        hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
+        
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery }) 
+        hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid + hostQuery})  
         response['hrefs'] = hrefs      
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
@@ -209,6 +238,10 @@ class LinkHandler(RequestHandler):
             msg = "Bad Request: invalid linkname, '/' not allowed"
             log.info(msg)
             raise HTTPError(400, reason=msg)
+        npos = linkName.rfind('?')
+        if npos >= 0:
+            # trim off the query params
+            linkName = linkName[:npos]
         return linkName
         
     def get(self):
@@ -233,11 +266,6 @@ class LinkHandler(RequestHandler):
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror)
-                         
-        # got everything we need, put together the response
-        targethref = ''
-        if 'href' in item:
-            targethref = item['href']
             
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['created'] = unixTimeToUTC(item['ctime'])
@@ -255,19 +283,37 @@ class LinkHandler(RequestHandler):
         
          
         hrefs = []     
-        href = self.request.protocol + '://' + domain + '/'
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
         hrefs.append({'rel': 'self',       'href': href + 'groups/' + reqUuid + 
-            '/links/' + url_escape(linkName)})
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
-        hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
+            '/links/' + url_escape(linkName) + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery }) 
+        hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid + hostQuery})  
         
-        if targethref:
-            if item['class'] == 'H5L_TYPE_HARD' or item['class'] == 'H5L_TYPE_SOFT':
-                hrefs.append({'rel': 'target', 'href': href + targethref})
-            elif item['class'] == 'H5L_TYPE_EXTERNAL':
-                link_href = self.request.protocol + '://' +  getDomain(item['h5domain'])
-                hrefs.append({'rel': 'target', 'href': link_href + targethref})
+        target = None
+        if item['class'] == 'H5L_TYPE_HARD':
+            target = href + item['collection'] + '/' + item['id'] + hostQuery
+        elif item['class'] == 'H5L_TYPE_SOFT':
+            target = href + '/#h5path(' + item['h5path'] + ')' + hostQuery
+        elif item['class'] == 'H5L_TYPE_EXTERNAL':
+            if item['h5domain'].endswith(config.get('domain')):
+                target = self.request.protocol + '://'
+                if hostQuery:
+                    target += self.request.host
+                else:
+                    target += item['h5domain']
+                if item['h5path'] == '/':
+                    target += '/'
+                else:
+                    target += '/#h5path(' + item['h5path'] + ')'
+                target += hostQuery 
+        
+        if target:
+            hrefs.append({'rel': 'target', 'href': target})
+
         response['hrefs'] = hrefs      
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
@@ -345,12 +391,15 @@ class LinkHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror)   
             
         hrefs = []     
-        href = self.request.protocol + '://' + domain + '/'
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
         hrefs.append({'rel': 'self',       'href': href + 'groups/' + reqUuid + 
-            '/links/' + url_escape(linkName)})
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
-        hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
+            '/links/' + url_escape(linkName) + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery}) 
+        hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid + hostQuery})  
         response['hrefs'] = hrefs
         
         self.set_header('Content-Type', 'application/json')
@@ -386,10 +435,13 @@ class LinkHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror) 
             
         hrefs = []     
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
-        hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid})  
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery}) 
+        hrefs.append({'rel': 'owner', 'href': href + 'groups/' + reqUuid + hostQuery})  
         
         response['hrefs'] = hrefs      
         self.set_header('Content-Type', 'application/json')
@@ -451,11 +503,14 @@ class TypeHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + reqUuid})
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + reqUuid + '/attributes'}) 
-        hrefs.append({'rel': 'home',       'href': href })        
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + reqUuid + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + reqUuid + '/attributes' + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery})        
         response['id'] = reqUuid
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
@@ -490,10 +545,13 @@ class TypeHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror) 
             
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',  'href': href + 'datatypes'})
-        hrefs.append({'rel': 'home',  'href': href})
-        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',  'href': href + 'datatypes' + hostQuery})
+        hrefs.append({'rel': 'home',  'href': href + hostQuery})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID + hostQuery})
        
         response['hrefs'] = hrefs
         
@@ -560,10 +618,13 @@ class DatatypeHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/type'})
-        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid })
-        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/type' + hostQuery})
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid + hostQuery})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID + hostQuery})
         response['type'] = item['type']
        
         response['hrefs'] = hrefs
@@ -632,10 +693,13 @@ class ShapeHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid})
-        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid })
-        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})   
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + hostQuery})
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid + hostQuery})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID + hostQuery})   
         shape = item['shape']
         response['shape'] = shape
         response['created'] = unixTimeToUTC(item['ctime'])
@@ -703,10 +767,13 @@ class ShapeHandler(RequestHandler):
                 
         log.info("resize OK")   
         # put together the response
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid})
-        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid })
-        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID})    
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + hostQuery})
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid + hostQuery})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID + hostQuery})    
         response['hrefs'] = hrefs
         
         self.set_status(201)  # resource created    
@@ -770,12 +837,15 @@ class DatasetHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror) 
             
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datasets/' + reqUuid})
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes'}) 
-        hrefs.append({'rel': 'data', 'href': href + 'datasets/' + reqUuid + '/value'}) 
-        hrefs.append({'rel': 'home', 'href': href })       
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'datasets/' + reqUuid + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + reqUuid + '/attributes' + hostQuery}) 
+        hrefs.append({'rel': 'data', 'href': href + 'datasets/' + reqUuid + '/value' + hostQuery}) 
+        hrefs.append({'rel': 'home', 'href': href + hostQuery})       
         response['id'] = reqUuid
         typeItem = item['type']
         response['type'] = hdf5dtype.getTypeResponse(typeItem)
@@ -818,10 +888,13 @@ class DatasetHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror)     
                         
         # write the response
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datasets' })
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'datasets' + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery}) 
         response['hrefs'] = hrefs
          
         self.set_header('Content-Type', 'application/json')
@@ -1129,17 +1202,20 @@ class ValueHandler(RequestHandler):
                 raise HTTPError(400, msg)       
                          
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/'
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
         
         if values is not None:
             response['value'] = values
         else:
             response['value'] = None
         
-        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value'})
-        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid }) 
-        hrefs.append({'rel': 'home',  'href': href })   
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value' + hostQuery})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid + hostQuery}) 
+        hrefs.append({'rel': 'home',  'href': href + hostQuery })   
         response['hrefs'] = hrefs
         
         self.set_header('Content-Type', 'application/json')
@@ -1213,13 +1289,16 @@ class ValueHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/'
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
         response['value'] = values
         
-        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value'})
-        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid }) 
-        hrefs.append({'rel': 'home',  'href': href })   
+        hrefs.append({'rel': 'self',  'href': href + 'datasets/' + reqUuid + '/value' + hostQuery})
+        hrefs.append({'rel': 'root',  'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'owner', 'href': href + 'datasets/' + reqUuid + hostQuery }) 
+        hrefs.append({'rel': 'home',  'href': href + hostQuery})   
         #response['hrefs'] = hrefs
         
         self.set_header('Content-Type', 'application/json')
@@ -1301,7 +1380,7 @@ class ValueHandler(RequestHandler):
            
 class AttributeHandler(RequestHandler):
     """
-    Helper method - return domain ath based on either query param
+    Helper method - return domain based on either query param
     or host header
     """  
     def getDomain(self):
@@ -1365,8 +1444,12 @@ class AttributeHandler(RequestHandler):
         if uri[0:1] == '/':
             uri = uri[1:]
             if len(uri) > 0:
+                # strip off any query param
+                npos = uri.rfind('?')
+                if npos > 0:
+                    uri = uri[:npos]
                 name = url_unescape(uri)  # todo: handle possible query string?
-                log.info('got name: [' + name + ']') 
+                log.info('got name: [' + name + ']')     
     
         return name
         
@@ -1436,7 +1519,10 @@ class AttributeHandler(RequestHandler):
                          
         
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/' 
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
         root_href = href + 'groups/' + rootUUID
         owner_href = href + col_name + '/' + reqUuid 
         self_href = owner_href + '/attributes'
@@ -1458,13 +1544,16 @@ class AttributeHandler(RequestHandler):
                 responseItem['value'] = item['value']
             else:
                 responseItem['value'] = None
+            if attr_name is None:
+                # add an href to the attribute
+                responseItem['href'] = self_href + '/' + url_escape(item['name']) + hostQuery
             
             responseItems.append(responseItem)
             
-        hrefs.append({'rel': 'self',       'href': self_href})
-        hrefs.append({'rel': 'owner',      'href': owner_href })
-        hrefs.append({'rel': 'root',       'href': root_href }) 
-        hrefs.append({'rel': 'home',       'href': href }) 
+        hrefs.append({'rel': 'self',       'href': self_href + hostQuery})
+        hrefs.append({'rel': 'owner',      'href': owner_href + hostQuery})
+        hrefs.append({'rel': 'root',       'href': root_href + hostQuery }) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery}) 
         
             
         if attr_name == None:
@@ -1567,17 +1656,20 @@ class AttributeHandler(RequestHandler):
         response = { }
       
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/' 
-        root_href = href + 'groups/' + rootUUID
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        root_href = href + 'groups/' + rootUUID 
         owner_href = href + col_name + '/' + reqUuid 
         self_href = owner_href + '/attributes'
         if attr_name != None:
             self_href += '/' + attr_name
             
         hrefs = [ ]
-        hrefs.append({'rel': 'self',   'href': self_href})
-        hrefs.append({'rel': 'owner',  'href': owner_href })
-        hrefs.append({'rel': 'root',   'href': root_href }) 
+        hrefs.append({'rel': 'self',   'href': self_href + hostQuery})
+        hrefs.append({'rel': 'owner',  'href': owner_href + hostQuery})
+        hrefs.append({'rel': 'root',   'href': root_href + hostQuery}) 
         response['hrefs'] = hrefs 
         
         self.set_header('Content-Type', 'application/json')
@@ -1613,15 +1705,18 @@ class AttributeHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror) 
             
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/' 
-        root_href = href + 'groups/' + rootUUID
-        owner_href = href + col_name + '/' + obj_uuid 
-        self_href = owner_href + '/attributes'
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host") 
+        root_href = href + 'groups/' + rootUUID 
+        owner_href = href + col_name + '/' + obj_uuid
+        self_href = owner_href + '/attributes' 
             
-        hrefs.append({'rel': 'self',       'href': self_href})
-        hrefs.append({'rel': 'owner',      'href': owner_href })
-        hrefs.append({'rel': 'root',       'href': root_href }) 
-        hrefs.append({'rel': 'home',       'href': href }) 
+        hrefs.append({'rel': 'self',       'href': self_href + hostQuery})
+        hrefs.append({'rel': 'owner',      'href': owner_href + hostQuery})
+        hrefs.append({'rel': 'root',       'href': root_href + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery }) 
         response['hrefs'] = hrefs 
         
         self.set_header('Content-Type', 'application/json')
@@ -1686,12 +1781,15 @@ class GroupHandler(RequestHandler):
             raise HTTPError(status, reason=e.strerror) 
                          
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'groups/' + reqUuid})
-        hrefs.append({'rel': 'links',      'href': href + 'groups/' + reqUuid + '/links'})
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
-        hrefs.append({'rel': 'attributes', 'href': href + 'groups/' + reqUuid + '/attributes'})        
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'groups/' + reqUuid + hostQuery})
+        hrefs.append({'rel': 'links',      'href': href + 'groups/' + reqUuid + '/links' + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'groups/' + reqUuid + '/attributes' + hostQuery})        
         response['id'] = reqUuid
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
@@ -1724,10 +1822,13 @@ class GroupHandler(RequestHandler):
         hrefs = []
                         
         # write the response
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'groups' })
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'groups' + hostQuery })
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery} ) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery}) 
         response['hrefs'] = hrefs
          
         self.set_header('Content-Type', 'application/json')
@@ -1781,10 +1882,13 @@ class GroupCollectionHandler(RequestHandler):
                          
         # write the response
         response['groups'] = items
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'groups' })
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'groups'  + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery}) 
         response['hrefs'] = hrefs
          
         self.set_header('Content-Type', 'application/json')
@@ -1844,14 +1948,17 @@ class GroupCollectionHandler(RequestHandler):
         self.set_header('Content-Location', href + '/groups/' + grpUUID)
         
         # got everything we need, put together the response
-        href = self.request.protocol + '://' + domain + '/'
         response = { } 
         hrefs = []
-        hrefs.append({'rel': 'self',       'href': href + 'groups/' + grpUUID})
-        hrefs.append({'rel': 'links',      'href': href + 'groups/' + grpUUID + '/links'})
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
-        hrefs.append({'rel': 'attributes', 'href': href + 'groups/' + grpUUID + '/attributes'})        
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'groups/' + grpUUID + hostQuery})
+        hrefs.append({'rel': 'links',      'href': href + 'groups/' + grpUUID + '/links' + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'groups/' + grpUUID + '/attributes' + hostQuery})        
         response['id'] = grpUUID
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
@@ -1911,10 +2018,13 @@ class DatasetCollectionHandler(RequestHandler):
                          
         # write the response
         response['datasets'] = items
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datasets' })
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'datasets' + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery }) 
         response['hrefs'] = hrefs
          
         self.set_header('Content-Type', 'application/json')
@@ -2042,11 +2152,14 @@ class DatasetCollectionHandler(RequestHandler):
       
         # got everything we need, put together the response
         hrefs = [ ]
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datasets/' + item['id']})
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + item['id'] + '/attributes'})   
-        hrefs.append({'rel': 'value', 'href': href + 'datasets/' + item['id'] + '/value'})        
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'datasets/' + item['id'] + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'attributes', 'href': href + 'datasets/' + item['id'] + '/attributes' + hostQuery})   
+        hrefs.append({'rel': 'value', 'href': href + 'datasets/' + item['id'] + '/value' + hostQuery})        
         response['id'] = item['id']
         response['attributeCount'] = item['attributeCount']
         response['hrefs'] = hrefs
@@ -2103,10 +2216,14 @@ class TypeCollectionHandler(RequestHandler):
                          
         # write the response
         response['datatypes'] = items
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datatypes' })
-        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'home',       'href': href }) 
+    
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'datatypes' + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery}) 
         response['hrefs'] = hrefs
         
          
@@ -2175,10 +2292,13 @@ class TypeCollectionHandler(RequestHandler):
       
         # got everything we need, put together the response
         hrefs = [ ]
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + item['id']})
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + 'datatypes/' + item['id'] + hostQuery})
         hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID}) 
-        hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + item['id'] + '/attributes'})   
+        hrefs.append({'rel': 'attributes', 'href': href + 'datatypes/' + item['id'] + '/attributes' + hostQuery})   
         response['id'] = item['id']
         response['attributeCount'] = 0
         response['hrefs'] = hrefs
@@ -2312,12 +2432,15 @@ class RootHandler(RequestHandler):
         domain = self.getDomain() 
         # generate response 
         hrefs = [ ]
-        href = self.request.protocol + '://' + domain + '/'
-        hrefs.append({'rel': 'self', 'href': href})
-        hrefs.append({'rel': 'database', 'href': href + 'datasets'})
-        hrefs.append({'rel': 'groupbase', 'href': href + 'groups'})
-        hrefs.append({'rel': 'typebase', 'href': href + 'datatypes' })
-        hrefs.append({'rel': 'root',     'href': href + 'groups/' + rootUUID})
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self', 'href': href + hostQuery})
+        hrefs.append({'rel': 'database', 'href': href + 'datasets' + hostQuery})
+        hrefs.append({'rel': 'groupbase', 'href': href + 'groups' + hostQuery})
+        hrefs.append({'rel': 'typebase', 'href': href + 'datatypes' + hostQuery })
+        hrefs.append({'rel': 'root',     'href': href + 'groups/' + rootUUID + hostQuery})
             
         response = {  }
         response['created'] = unixTimeToUTC(op.getctime(filePath))
@@ -2405,13 +2528,15 @@ class RootHandler(RequestHandler):
             # This exception may happen if the file has been imported directly
             # after toc creation
             log.warn("IOError removing toc entry")
-        
-        try:    
+            
+        try:  
             os.remove(filePath)  
         except IOError as ioe:
             log.info("IOError deleting HDF5 file: " + str(ioe.errno) + " " + ioe.strerror)
             raise HTTPError(500, "Unexpected error: unable to delete collection") 
-            
+         
+        
+        
         
               
 class InfoHandler(RequestHandler):

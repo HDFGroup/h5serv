@@ -20,7 +20,7 @@ class AttributeTest(unittest.TestCase):
         super(AttributeTest, self).__init__(*args, **kwargs)
         self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))    
        
-    def testGet(self):
+    def testGetGroupAttr(self):
         for domain_name in ('tall', 'tall_ro'):
             domain = domain_name + '.' + config.get('domain') 
             rootUUID = helper.getRootUUID(domain)
@@ -46,6 +46,55 @@ class AttributeTest(unittest.TestCase):
             expected = range(97, 107)
             expected[9] = 0
             self.assertEqual(data, expected) 
+            self.assertEqual(len(rspJson['hrefs']), 4)
+            
+    def testGetDatasetAttr(self):
+        for domain_name in ('tall',  'tall_ro'):
+            domain = domain_name + '.' + config.get('domain') 
+            rootUUID = helper.getRootUUID(domain)
+            # get dataset uuid at path: 'g1/g1.1/dset1.1.1'
+            req = helper.getEndpoint() + "/groups/" + rootUUID + "/links/g1"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertTrue('link' in rspJson)
+            link = rspJson['link']
+            g1UUID = link['id']
+            req = helper.getEndpoint() + "/groups/" + g1UUID + "/links/g1.1"
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertTrue('link' in rspJson)
+            link = rspJson['link']
+            g11UUID = link['id']
+            req = helper.getEndpoint() + "/groups/" + g11UUID + "/links/dset1.1.1"
+            rsp = requests.get(req, headers=headers)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertTrue('link' in rspJson)
+            link = rspJson['link']
+            dset111UUID = link['id']
+            
+            req = helper.getEndpoint() + "/datasets/" + dset111UUID + "/attributes/attr1"
+            rsp = requests.get(req, headers=headers)
+            rspJson = json.loads(rsp.text)
+           
+            self.assertEqual(rspJson['name'], 'attr1')
+            self.assertTrue('type' in rspJson)
+            type = rspJson['type']
+            self.assertEqual(type['class'], 'H5T_INTEGER')
+            self.assertEqual(type['base'], 'H5T_STD_I8LE')
+            self.assertTrue('shape' in rspJson)
+            shape = rspJson['shape']
+            self.assertEqual(shape['class'], 'H5S_SIMPLE')
+            self.assertEqual(len(shape['dims']), 1)
+            self.assertEqual(shape['dims'][0], 27) 
+            self.assertTrue('maxdims' not in shape) 
+            data = rspJson['value'] 
+            self.assertEqual(len(data), 27)
+            # first value is 49           
+            self.assertEqual(data[0], 49) 
             self.assertEqual(len(rspJson['hrefs']), 4)
             
     def testGetAll(self):
