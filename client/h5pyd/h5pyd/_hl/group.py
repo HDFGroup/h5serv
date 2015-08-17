@@ -28,6 +28,7 @@ from . import dataset
 from .dataset import Dataset
 from . import datatype
 from .datatype import Datatype
+from .. import hdf5dtype
 
 
 class Group(HLObject, MutableMappingHDF5):
@@ -37,17 +38,14 @@ class Group(HLObject, MutableMappingHDF5):
 
     def __init__(self, bind):
         #print "group init, bind:", bind
-             
-        
+                
         """ Create a new Group object by binding to a low-level GroupID.
         """
         
         with phil:
             if not isinstance(bind, GroupID):
                 raise ValueError("%s is not a GroupID" % bind)
-            HLObject.__init__(self, bind)
-            
-         
+            HLObject.__init__(self, bind)        
 
     def create_group(self, name):
         """ Create and return a new subgroup.
@@ -411,14 +409,27 @@ class Group(HLObject, MutableMappingHDF5):
         elif isinstance(obj, ExternalLink):
             body = {'h5path': obj.path,
                     'h5domain': obj.filename }
-            print "create external", obj.filename
             req = "/groups/" + self.id.uuid + "/links/" + name
             self.PUT(req, body=body)
             #self.id.links.create_external(name, self._e(obj.filename),
             #              self._e(obj.path), lcpl=lcpl, lapl=self._lapl)
 
         elif isinstance(obj, numpy.dtype):
-            pass  #todo
+            # print "create named type"
+            
+            type_json = hdf5dtype.getTypeItem(obj)
+            #print "type_json:", type_json
+            req = "/datatypes"
+      
+            body = {'type': type_json }
+            rsp = self.POST(req, body=body)
+            body['id'] = rsp['id']
+             
+            type_id = TypeID(self, body)
+            req = "/groups/" + self.id.uuid + "/links/" + name
+            body = {'id': type_id.uuid }
+            self.PUT(req, body=body)
+             
             #htype = h5t.py_create(obj)
             #htype.commit(self.id, name, lcpl=lcpl)
 

@@ -59,7 +59,6 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
 
     Only creates anonymous datasets.
     """
-
      
     # Convert data to a C-contiguous ndarray
     if data is not None:
@@ -85,8 +84,8 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
 
     if isinstance(dtype, Datatype):
         # Named types are used as-is
-        tid = dtype.id
-        dtype = tid.dtype  # Following code needs this
+        type_json = dtype.id.type_json
+           
     else:
         # Validate dtype
         if dtype is None and data is None:
@@ -144,6 +143,7 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
     body = {'type': type_json, 'shape': shape}
     if maxshape:
         body['maxshape'] = maxshape
+     
     rsp = parent.POST(req, body=body)
     body['id'] = rsp['id']
     body['shape'] = shape_json
@@ -154,7 +154,7 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
         body = {}
         body['value'] = data.tolist()
         parent.PUT(req, body=body)
-        
+         
     return dset_id
    
     
@@ -313,6 +313,7 @@ class Dataset(HLObject):
         self._filters = [] # filters.get_filters(self._dcpl)
         self._local = None #local()
         # make a numpy dtype out of the type json
+        
         self._dtype = hdf5dtype.createDataType(self.id.type_json)
         self._shape = self.id.shape_json['dims']
         # self._local.astype = None #todo
@@ -739,8 +740,6 @@ class Dataset(HLObject):
         # Use mtype derived from array (let DatasetID.write figure it out)
         else:
             mshape = val.shape
-            print "val:", val
-            print "mshape:", mshape
             mtype = None
 
         # Perform the dataspace selection
@@ -779,7 +778,6 @@ class Dataset(HLObject):
         
             
         body['value'] = val.tolist()
-        print "body:", str(body)
         self.PUT(req, body=body)
         """
         mspace = h5s.create_simple(mshape_pad, (h5s.UNLIMITED,)*len(mshape_pad))
