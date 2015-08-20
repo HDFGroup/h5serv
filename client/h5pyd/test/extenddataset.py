@@ -12,9 +12,11 @@
 import sys
 sys.path.append('..')
 import numpy as np
-import h5pyd
+import h5pyd as h5pyd
 
-f = h5pyd.File("createdataset.client_test.hdfgroup.org", "w", endpoint="http://127.0.0.1:5000")
+primes = [2, 3, 5, 7, 11, 13, 17, 19]
+
+f = h5pyd.File("extenddataset.client_test.hdfgroup.org", "w", endpoint="http://127.0.0.1:5000")
 
 print "filename,", f.filename
 print "name:", f.name
@@ -22,7 +24,8 @@ print "uuid:", f.id.id
  
 print "create dataset"
  
-dset = f.create_dataset('ints', (10,), dtype='i8')
+ 
+dset = f.create_dataset('ints', (1,len(primes)), maxshape=(None, len(primes)), dtype='i8')
 
 print "name:", dset.name
 print "uuid:", dset.id.id
@@ -31,21 +34,10 @@ print "dset.type:", dset.dtype
 print "dset.maxshape:", dset.maxshape
 
 print "writing data..."
-dset[...] = range(10)
+dset[0:,:] = primes
 print "values:", dset[...]
-
-print "write selection..."
-dset[2:5] = [20,30,40]
-print "values:", dset[...]
-
-data = np.arange(13).astype('f')
-print "input data:", data[...]
-dset = f.create_dataset('x', data=data)  
-print "output data:", dset[...]
-print "[1:7:3]:", dset[1:7:3]
-dset[3:6] = (77.7, 88.8, 99.9)
-print "output data:", dset[...]
 
 f.close()
+ 
 
  
