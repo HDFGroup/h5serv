@@ -130,24 +130,33 @@ def make_new_dset(parent, shape=None, dtype=None, data=None,
         raise TypeError("track_times must be either True or False")
     """ 
     if maxshape is not None:
-        maxshape = tuple(m if m is not None else h5s.UNLIMITED for m in maxshape)
+        maxshape = tuple(m if m is not None else 0 for m in maxshape)
     #sid = h5s.create_simple(shape, maxshape)
 
     
     #dset_id = h5d.create(parent.id, None, tid, sid, dcpl=dcpl)
     req = "/datasets"
-    shape_json = {'class': 'H5S_SIMPLE'}
-    shape_json['dims'] = shape
+    body = {'type': type_json } 
+    body['shape'] = shape
+  
     if maxshape is not None:
-        shape_sjon['maxdims'] = maxshape
-    body = {'type': type_json, 'shape': shape}
-    if maxshape:
-        body['maxshape'] = maxshape
+        body['maxdims'] = maxshape
      
     rsp = parent.POST(req, body=body)
-    body['id'] = rsp['id']
-    body['shape'] = shape_json
-    dset_id = DatasetID(parent, body)
+    json_rep = {}
+    json_rep['id'] = rsp['id']
+    
+    req = '/datasets/' + rsp['id']
+    rsp = parent.GET(req)
+    
+    json_rep['shape'] = rsp['shape']
+    json_rep['type'] = rsp['type']
+    if 'creationProperties' in rsp:
+        json_rep['creationProperties'] = rsp['creationProperties']
+    else:
+        json_rep['creationProperties'] = {}
+        
+    dset_id = DatasetID(parent, json_rep)
 
     if data is not None:
         req = "/datasets/" + dset_id.uuid + "/value"
@@ -236,11 +245,13 @@ class Dataset(HLObject):
     @property
     def chunks(self):
         """Dataset chunks (or None)"""
-        """
         dcpl = self._dcpl
-        if dcpl.get_layout() == h5d.CHUNKED:
-            return dcpl.get_chunk()
-        """
+        if 'layout' in dcpl:
+            layout = dcpl['layout']
+            if 'class' in layout:
+                if layout['class'] == 'H5D_CHUNKED':
+                    return layout['dims']
+        
         return None
 
     @property
@@ -283,6 +294,9 @@ class Dataset(HLObject):
         None have no resize limit. """
         
         shape_json = self.id.shape_json
+        if self.id.shape_json['class'] == 'H5S_SCALAR':
+            return ()  # empty tuple
+            
         if 'maxdims' not in shape_json:
             # not resizable, just return dims
             dims = shape_json['dims']
@@ -309,13 +323,17 @@ class Dataset(HLObject):
             raise ValueError("%s is not a DatasetID" % bind)
         HLObject.__init__(self, bind)
 
-        self._dcpl = None  #self.id.get_create_plist()
-        self._filters = [] # filters.get_filters(self._dcpl)
+        self._dcpl = self.id.dcpl_json
+        self._filters = [] # filters.get_filters(self._dcpl)  # todo
         self._local = None #local()
         # make a numpy dtype out of the type json
         
         self._dtype = hdf5dtype.createDataType(self.id.type_json)
-        self._shape = self.id.shape_json['dims']
+        
+        if self.id.shape_json['class'] == 'H5S_SCALAR':
+            self._shape = []
+        else:
+            self._shape = self.id.shape_json['dims']
         # self._local.astype = None #todo
 
     def resize(self, size, axis=None):
@@ -332,23 +350,29 @@ class Dataset(HLObject):
         grown or shrunk independently.  The coordinates of existing data are
         fixed.
         """
-        with phil:
-            if self.chunks is None:
-                raise TypeError("Only chunked datasets can be resized")
+        
+        if self.chunks is None:
+            raise TypeError("Only chunked datasets can be resized")
 
-            if axis is not None:
-                if not (axis >=0 and axis < self.id.rank):
-                    raise ValueError("Invalid axis (0 to %s allowed)" % (self.id.rank-1))
-                try:
-                    newlen = int(size)
-                except TypeError:
-                    raise TypeError("Argument must be a single int if axis is specified")
-                size = list(self.shape)
-                size[axis] = newlen
+        if axis is not None:
+            if not (axis >=0 and axis < self.id.rank):
+                raise ValueError("Invalid axis (0 to %s allowed)" % (self.id.rank-1))
+            try:
+                newlen = int(size)
+            except TypeError:
+                raise TypeError("Argument must be a single int if axis is specified")
+            
+            size = list(self.shape)
+            size[axis] = newlen
 
-            size = tuple(size)
-            self.id.set_extent(size)
-            #h5f.flush(self.id)  # THG recommends
+        size = tuple(size)
+        
+        # send the request to the server
+        body = {'shape': size}
+        req = '/datasets/' + self.id.uuid + '/shape'
+        self.PUT(req, body=body)
+        #self.id.set_extent(size)
+        #h5f.flush(self.id)  # THG recommends
 
     def __len__(self):
         """ The size of the first axis.  TypeError if scalar.

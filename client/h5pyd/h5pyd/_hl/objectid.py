@@ -140,10 +140,18 @@ class DatasetID(ObjectID):
         
     @property
     def dcpl_json(self):
-        dcpl = None
-        if 'creationProperties' in self.obj_json:
-            dcpl = self._obj_json['creationProperties']
+        dcpl = self._obj_json['creationProperties']
         return dcpl
+        
+    @property
+    def rank(self):
+        rank = 0
+        shape = self._obj_json['shape']
+        if shape['class'] == 'H5S_SIMPLE':
+            dims = shape['dims']
+            rank = len(dims)
+        return rank
+            
         
     def __init__(self, parent, item, domain=None, endpoint=None, **kwds):
         """Create a new DatasetID.

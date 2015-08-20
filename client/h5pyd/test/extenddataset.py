@@ -25,16 +25,28 @@ print "uuid:", f.id.id
 print "create dataset"
  
  
-dset = f.create_dataset('ints', (1,len(primes)), maxshape=(None, len(primes)), dtype='i8')
+dset = f.create_dataset('primes', (1,len(primes)), maxshape=(None, len(primes)), dtype='i8')
 
 print "name:", dset.name
 print "uuid:", dset.id.id
 print "shape:", dset.shape
 print "dset.type:", dset.dtype
 print "dset.maxshape:", dset.maxshape
+print 'chunks:', dset.chunks
 
 print "writing data..."
 dset[0:,:] = primes
+print "values:", dset[...]
+
+print "extend by size and axis"
+dset.resize(2, axis=0)
+
+print "add in 2nd row"
+
+for i in range(len(primes)):
+    primes[i] *= 2
+    
+dset[1:,:] = primes
 print "values:", dset[...]
 
 f.close()
