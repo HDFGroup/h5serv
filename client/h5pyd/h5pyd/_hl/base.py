@@ -14,12 +14,14 @@ from __future__ import absolute_import
 
 import posixpath
 import warnings
+import weakref
 import os
 import sys
 import json
 import requests
 import logging
 import logging.handlers
+#from .reference import Reference
 from collections import (
     Mapping, MutableMapping, MappingView, KeysView, ValuesView, ItemsView
 )
@@ -74,7 +76,36 @@ def guess_dtype(data):
     """
     return None
  
+class Reference():
 
+    """
+        Represents an HDF5 object reference
+
+         
+    """
+    @property
+    def id(self):
+        """ Low-level identifier appropriate for this object """
+        return self._id
+        
+    @property
+    def objref(self):
+        """ Weak reference to object """
+        return self._objref  # return weak ref to ref'd object
+      
+        
+    @with_phil
+    def __init__(self, bind):
+        """ Create a new Datatype object by binding to a low-level TypeID.
+        """
+        with phil:
+            self._id = bind._id
+            self._objref = weakref.ref(bind) 
+                    
+    @with_phil
+    def __repr__(self):
+        return "<HDF5 object reference>"
+        
 
 class CommonStateObject(object):
 
@@ -169,6 +200,7 @@ class _RegionProxy(object):
 
     def __init__(self, obj):
         self.id = obj.id
+        self._name = None
 
     def __getitem__(self, args):
         pass
@@ -246,7 +278,7 @@ class HLObject(CommonStateObject):
     @property
     def ref(self):
         """ An (opaque) HDF5 reference to this object """
-        return "todo"
+        return Reference(self)
         #return h5r.create(self.id, b'.', h5r.OBJECT)
 
     @property

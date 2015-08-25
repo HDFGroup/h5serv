@@ -10,7 +10,7 @@
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
 import sys
-import h5pyd
+import h5pyd as h5pyd
 
 def visit_item(name):
     print "visit:", name

@@ -21,7 +21,7 @@ import collections
 import json
 
 from . import base
-from .base import HLObject, MutableMappingHDF5, phil, with_phil
+from .base import HLObject, MutableMappingHDF5, Reference, phil, with_phil
 from . import objectid
 from .objectid import ObjectID, TypeID, GroupID, DatasetID
 from . import dataset
@@ -196,7 +196,7 @@ class Group(HLObject, MutableMappingHDF5):
                 raise TypeError("Incompatible object (%s) already exists" % grp.__class__.__name__)
             return grp
             
-   
+        
     def get_link_json(self, name):
         """ Return parent_uuid and json description of link for given path """
          
@@ -263,6 +263,22 @@ class Group(HLObject, MutableMappingHDF5):
             return tgt
         
         tgt = None
+        
+        if isinstance(name, Reference):
+            tgt = name.objref()  # weak reference to ref object
+            if tgt is not None:
+                return tgt  # ref'd object has not been deleted
+            if isinstance(name.id, GroupID):
+                tgt = getObjByUuid('groups', name.id.uuid)
+            elif isintance(name.id, DatasetID):
+                tgt = getObjByUuid('datasets', name.id.uuid)
+            elif isintance(name.id, TypeID):
+                tgt = getObjByUuid('datatypes', name.id.uuid)
+            else:
+                raise IOError("Unexpected Error - ObjectID type: " + name.__class__.__name__)
+            return tgt
+                
+        
         parent_uuid, link_json = self.get_link_json(name)
         link_class = link_json['class']
         

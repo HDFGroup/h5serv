@@ -75,6 +75,8 @@ and length keys (see definitions of these keys below).
 
 *Note:* Fixed width unicode strings are not currently supported.
 
+*Note:* String Padding other than "H5T_STR_NULLPAD" will get stored as "H5T_STR_NULLPAD"
+
 Example 
 -------
 
@@ -114,6 +116,8 @@ and length keys (see definitions of these keys below) where the value of "length
 
 *Note:* Variable width unicode strings are not currently supported.
 
+*Note:* String Padding other than "H5T_STR_NULLTERM" will get stored as "H5T_STR_NULLTERM"
+
 Example 
 -------
 
@@ -130,7 +134,6 @@ JSON representation of a attribute using a variable length string:
     "type": {
         "class": "H5T_STRING", 
         "charSet": "H5T_CSET_ASCII", 
-        "order": "H5T_ORDER_NONE", 
         "strPad": "H5T_STR_NULLTERM", 
         "length": "H5T_VARIABLE"
     }, 
