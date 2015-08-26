@@ -198,7 +198,6 @@ class AttributeTest(unittest.TestCase):
             field3Type = field3['type']
             self.assertEqual(field3Type['class'], 'H5T_STRING')
             self.assertEqual(field3Type['charSet'], 'H5T_CSET_ASCII')
-            self.assertEqual(field3Type['order'], 'H5T_ORDER_NONE')
             self.assertEqual(field3Type['length'], 6)
             self.assertEqual(field3Type['strPad'], 'H5T_STR_NULLPAD')
             
@@ -300,7 +299,6 @@ class AttributeTest(unittest.TestCase):
         typeItem = rspJson['type']   
         self.assertEqual(typeItem['class'], 'H5T_STRING')
         self.assertEqual(typeItem['charSet'], 'H5T_CSET_ASCII')
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
         self.assertEqual(typeItem['length'], 'H5T_VARIABLE')
         self.assertEqual(typeItem['strPad'], 'H5T_STR_NULLTERM')
         self.assertTrue('value' in rspJson)
@@ -329,7 +327,6 @@ class AttributeTest(unittest.TestCase):
         
         self.assertEqual(typeItem['class'], 'H5T_STRING')
         self.assertEqual(typeItem['charSet'], 'H5T_CSET_ASCII')
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
         self.assertEqual(typeItem['length'], 7)
         self.assertEqual(typeItem['strPad'], 'H5T_STR_NULLPAD')
         self.assertTrue('value' in rspJson)
@@ -525,7 +522,6 @@ class AttributeTest(unittest.TestCase):
         typeItem = rspJson['type']
         self.assertEqual(typeItem['class'], 'H5T_STRING')
         self.assertEqual(typeItem['charSet'], 'H5T_CSET_ASCII')
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
         self.assertEqual(typeItem['length'], 'H5T_VARIABLE')
         self.assertEqual(typeItem['strPad'], 'H5T_STR_NULLTERM')
         data = rspJson['value'] 

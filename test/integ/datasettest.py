@@ -221,7 +221,6 @@ class DatasetTest(unittest.TestCase):
         timeFieldType = timeField['type']
         self.assertEqual(timeFieldType['class'], 'H5T_STRING')
         self.assertEqual(timeFieldType['charSet'], 'H5T_CSET_ASCII')
-        self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
         self.assertEqual(timeFieldType['length'], 6)
         self.assertEqual(timeFieldType['strPad'], 'H5T_STR_NULLPAD')
         tempField = fields[2]
@@ -286,7 +285,6 @@ class DatasetTest(unittest.TestCase):
         timeFieldType = timeField['type']
         self.assertEqual(timeFieldType['class'], 'H5T_STRING')
         self.assertEqual(timeFieldType['charSet'], 'H5T_CSET_ASCII')
-        self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
         self.assertEqual(timeFieldType['length'], 6)
         self.assertEqual(timeFieldType['strPad'], 'H5T_STR_NULLPAD')
         tempField = fields[2]
@@ -344,7 +342,6 @@ class DatasetTest(unittest.TestCase):
         
         self.assertEqual(strFieldTypeBase['class'], 'H5T_STRING')
         self.assertEqual(strFieldTypeBase['charSet'], 'H5T_CSET_ASCII')
-        self.assertEqual(strFieldTypeBase['order'], 'H5T_ORDER_NONE')
         self.assertEqual(strFieldTypeBase['length'], 32)
         # todo - fix, cf https://github.com/HDFGroup/h5serv/issues/20
         #self.assertEqual(strFieldTypeBase['strPad'], 'H5T_STR_SPACEPAD')
@@ -412,7 +409,6 @@ class DatasetTest(unittest.TestCase):
         
         self.assertEqual(typeItem['class'], 'H5T_STRING')
         self.assertEqual(typeItem['charSet'], 'H5T_CSET_ASCII')
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_NONE')
         self.assertEqual(typeItem['length'], 7)
         self.assertEqual(typeItem['strPad'], 'H5T_STR_NULLPAD')
         
@@ -684,7 +680,6 @@ class DatasetTest(unittest.TestCase):
             "h5ex_d_shuffle":  [{'id': 2}, {'id': 1, 'level': 9}], 
             "h5ex_d_sofloat":  [{'id': 6},], 
             "h5ex_d_soint":  [{'id': 6, 'scaleType': 'H5Z_SO_INT'},],
-            "h5ex_d_szip":  [{'id': 4, 'bitsPerPixel': 169, 'coding': 8, 'pixelsPerBlock': 32},], 
             "h5ex_d_unlimgzip":  [{'id': 1, 'level': 9},] }
             
             
@@ -1175,7 +1170,6 @@ class DatasetTest(unittest.TestCase):
         root_uuid = helper.getRootUUID(domain)
         
         type_vstr = {"charSet": "H5T_CSET_ASCII", 
-            "order": "H5T_ORDER_NONE", 
             "class": "H5T_STRING", 
             "strPad": "H5T_STR_NULLTERM", 
             "length": "H5T_VARIABLE" } 
