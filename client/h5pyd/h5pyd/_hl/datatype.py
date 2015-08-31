@@ -46,7 +46,6 @@ class Datatype(HLObject):
     def __init__(self, bind):
         """ Create a new Datatype object by binding to a low-level TypeID.
         """
-        print "data type  init", bind
         with phil:
             if not isinstance(bind, TypeID):
                 # todo: distinguish type from other hl objects
@@ -55,17 +54,6 @@ class Datatype(HLObject):
             
             self._dtype = hdf5dtype.createDataType(self.id.type_json)
              
-        # do a get on the group uuid
-        # may throw an error (say if the datatype was just deleted)
-        """
-        req = "/datatypes/" + self.id.uuid
-        datatype_json = self.GET(req)
-        print "datatupe init ok"
-        type_item = datatype_json['type']
-        print datatype_json['type']
-        print "create dtype"
-        """
-        #
             
     @with_phil
     def __repr__(self):

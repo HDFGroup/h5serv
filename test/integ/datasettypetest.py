@@ -33,9 +33,7 @@ class DatasetTypeTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         typeItem = rspJson['type']
         self.assertEqual(typeItem['base'], 'H5T_IEEE_F32BE') 
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_BE') 
         self.assertEqual(typeItem['class'], 'H5T_FLOAT') 
-        self.assertEqual(typeItem['size'], 4) 
      
         
     def testGetScalar(self):
@@ -50,9 +48,7 @@ class DatasetTypeTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         typeItem = rspJson['type']
         self.assertEqual(typeItem['base'], 'H5T_STD_I32LE') 
-        self.assertEqual(typeItem['order'], 'H5T_ORDER_LE') 
         self.assertEqual(typeItem['class'], 'H5T_INTEGER') 
-        self.assertEqual(typeItem['size'], 4) 
        
     def testGetCompound(self):
         domain = 'compound.' + config.get('domain')  
@@ -75,7 +71,6 @@ class DatasetTypeTest(unittest.TestCase):
         timeFieldType = timeField['type']
         self.assertEqual(timeFieldType['class'], 'H5T_STRING')
         self.assertEqual(timeFieldType['charSet'], 'H5T_CSET_ASCII')
-        self.assertEqual(timeFieldType['order'], 'H5T_ORDER_NONE')
         self.assertEqual(timeFieldType['length'], 6)
         self.assertEqual(timeFieldType['strPad'], 'H5T_STR_NULLPAD')
     

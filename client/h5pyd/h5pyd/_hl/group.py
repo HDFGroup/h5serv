@@ -21,13 +21,14 @@ import collections
 import json
 
 from . import base
-from .base import HLObject, MutableMappingHDF5, phil, with_phil
+from .base import HLObject, MutableMappingHDF5, Reference, phil, with_phil
 from . import objectid
 from .objectid import ObjectID, TypeID, GroupID, DatasetID
 from . import dataset
 from .dataset import Dataset
 from . import datatype
 from .datatype import Datatype
+from .. import hdf5dtype
 
 
 class Group(HLObject, MutableMappingHDF5):
@@ -37,17 +38,14 @@ class Group(HLObject, MutableMappingHDF5):
 
     def __init__(self, bind):
         #print "group init, bind:", bind
-             
-        
+                
         """ Create a new Group object by binding to a low-level GroupID.
         """
         
         with phil:
             if not isinstance(bind, GroupID):
                 raise ValueError("%s is not a GroupID" % bind)
-            HLObject.__init__(self, bind)
-            
-         
+            HLObject.__init__(self, bind)        
 
     def create_group(self, name):
         """ Create and return a new subgroup.
@@ -198,7 +196,7 @@ class Group(HLObject, MutableMappingHDF5):
                 raise TypeError("Incompatible object (%s) already exists" % grp.__class__.__name__)
             return grp
             
-   
+        
     def get_link_json(self, name):
         """ Return parent_uuid and json description of link for given path """
          
@@ -265,6 +263,22 @@ class Group(HLObject, MutableMappingHDF5):
             return tgt
         
         tgt = None
+        
+        if isinstance(name, Reference):
+            tgt = name.objref()  # weak reference to ref object
+            if tgt is not None:
+                return tgt  # ref'd object has not been deleted
+            if isinstance(name.id, GroupID):
+                tgt = getObjByUuid('groups', name.id.uuid)
+            elif isintance(name.id, DatasetID):
+                tgt = getObjByUuid('datasets', name.id.uuid)
+            elif isintance(name.id, TypeID):
+                tgt = getObjByUuid('datatypes', name.id.uuid)
+            else:
+                raise IOError("Unexpected Error - ObjectID type: " + name.__class__.__name__)
+            return tgt
+                
+        
         parent_uuid, link_json = self.get_link_json(name)
         link_class = link_json['class']
         
@@ -411,14 +425,27 @@ class Group(HLObject, MutableMappingHDF5):
         elif isinstance(obj, ExternalLink):
             body = {'h5path': obj.path,
                     'h5domain': obj.filename }
-            print "create external", obj.filename
             req = "/groups/" + self.id.uuid + "/links/" + name
             self.PUT(req, body=body)
             #self.id.links.create_external(name, self._e(obj.filename),
             #              self._e(obj.path), lcpl=lcpl, lapl=self._lapl)
 
         elif isinstance(obj, numpy.dtype):
-            pass  #todo
+            # print "create named type"
+            
+            type_json = hdf5dtype.getTypeItem(obj)
+            #print "type_json:", type_json
+            req = "/datatypes"
+      
+            body = {'type': type_json }
+            rsp = self.POST(req, body=body)
+            body['id'] = rsp['id']
+             
+            type_id = TypeID(self, body)
+            req = "/groups/" + self.id.uuid + "/links/" + name
+            body = {'id': type_id.uuid }
+            self.PUT(req, body=body)
+             
             #htype = h5t.py_create(obj)
             #htype.commit(self.id, name, lcpl=lcpl)
 

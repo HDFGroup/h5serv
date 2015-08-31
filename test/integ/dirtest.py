@@ -61,8 +61,7 @@ class DirTest(unittest.TestCase):
         self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
         self.assertTrue('root' in rspJson)
-        
-              
+                   
     
     def testPutDomain(self): 
         domain_name = "dirtest_putdomain"
@@ -114,9 +113,7 @@ class DirTest(unittest.TestCase):
         # external link should be gone
         req = self.endpoint + "/groups/" + test_group_uuid + "/links/" + domain_name 
         rsp = requests.get(req)
-        self.failUnlessEqual(rsp.status_code, 410)
-        
-        
+        self.failUnlessEqual(rsp.status_code, 410)      
         
     def testDeleteToc(self):
         #test DELETE toc

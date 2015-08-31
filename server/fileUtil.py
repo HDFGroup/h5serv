@@ -117,7 +117,6 @@ def getDomain(filePath):
   
 
 def verifyFile(filePath, writable=False):
-    # logging.info("filePath: " + filePath)
     if not op.isfile(filePath):
         raise HTTPError(404)  # not found
     if not is_hdf5(filePath):
@@ -125,6 +124,7 @@ def verifyFile(filePath, writable=False):
         raise HTTPError(404)
     if writable and not os.access(filePath, os.W_OK):
         # logging.warning('attempting update of read-only file')
+        print "attempting to update read-only file"
         raise HTTPError(403)
 
 def makeDirs(filePath):

@@ -72,7 +72,7 @@ class Dumph5:
             self.db.createSoftLink(parent_uuid, h5path, title)
         elif link_class == 'H5L_TYPE_EXTERNAL':
             h5path = link_obj["h5path"]
-            link_file = link_obj["file"]
+            link_file = link_obj["h5domain"]
             self.db.createExternalLink(parent_uuid, link_file, h5path, title)
         else:
             print "Unable to create link with class:", link_class
@@ -92,7 +92,7 @@ class Dumph5:
             datatype = datatype[len("datatypes/"):]
         dims = None
         max_shape=None
-        fill_value=None
+        creation_props=None
         if "shape" in rsp_json:
             shape = rsp_json["shape"]
             if shape["class"] == 'H5S_SIMPLE':
@@ -111,11 +111,11 @@ class Dumph5:
                     for i in range(len(max_shape)):
                         if max_shape[i] == 0:
                             max_shape[i] = None
-                if "filvalue" in shape:
-                    fill_value = shape["fillvalue"]
-                    
-        self.db.createDataset(datatype, dims, max_shape=max_shape, fill_value=fill_value,
-            obj_uuid=uuid)         
+        if 'creationProperties' in rsp_json:
+            creation_props = rsp_json['creationProperties']
+                                 
+        self.db.createDataset(datatype, dims, max_shape=max_shape, 
+            creation_props=creation_props, obj_uuid=uuid)         
         
         # get the data values    
         rsp_json = self.makeRequest("/datasets/" + uuid + '/value')

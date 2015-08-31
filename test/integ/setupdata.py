@@ -66,7 +66,6 @@ testfiles = {
     'h5ex_d_shuffle.h5': ('.',),
     'h5ex_d_sofloat.h5': ('.',),
     'h5ex_d_soint.h5': ('.',),
-    'h5ex_d_szip.h5': ('.',),
     'h5ex_d_transform.h5': ('.',),
     'h5ex_d_unlimadd.h5': ('.',),
     'h5ex_d_unlimgzip.h5': ('.',),
