@@ -21,9 +21,9 @@ cfg = {
     'toc_name': '.toc.h5',
     'local_ip': '127.0.0.1',  # used by lcoal_dns.py
     'default_dns': '8.8.8.8',  # used by local_dns.py
-    'ssl_port': 5050,
-    'ssl_cert': 'certs/data.hdfgroup.org.crt',  # add relative path to cert for SSL
-    'ssl_key':  'certs/data.hdfgroup.org.key',  # add relative path to cert key for SSL
+    'ssl_port': 6050,
+    'ssl_cert': '', # certs/data.hdfgroup.org.crt',  # add relative path to cert for SSL
+    'ssl_key':  '', # certs/data.hdfgroup.org.key',  # add relative path to cert key for SSL
     'ssl_cert_pwd': 'tampopo',
     'root_userid': 'root',
     'default_acl': 'r',  # default permissions - any subset of 'crud'

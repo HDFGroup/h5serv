@@ -2382,22 +2382,11 @@ class TypeCollectionHandler(RequestHandler):
         self.write(json_encode(response)) 
         self.set_status(201)  # resource created
           
-        
-class RootHandler(RequestHandler):
+class BaseHandler(tornado.web.RequestHandler):
     """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
-        
+    Override of Tornado get_current_user
     """
-    Get current user
-    """
-    def getCurrentUser(self):
+    def get_current_user(self):
         user = None
         pswd = None
         scheme, _, token = auth_header = self.request.headers.get('Authorization', '').partition(' ')
@@ -2410,7 +2399,24 @@ class RootHandler(RequestHandler):
             return user
         else: 
             return None
-        
+            
+    """
+    Get ACL for the given uuid
+    """
+    def get_acl(self, obj_uuid, mode):
+        return True
+            
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
+            
+class RootHandler(BaseHandler): 
     
     """
     Helper method - get group uuid of hardlink, or None if no link
@@ -2426,8 +2432,7 @@ class RootHandler(RequestHandler):
             subgroup_uuid = item['id']                 
         except IOError as e:
             # link_name doesn't exist, return None
-            pass
-                
+            pass               
                 
         return subgroup_uuid
              
@@ -2546,16 +2551,25 @@ class RootHandler(RequestHandler):
         log.info('RootHandler.get ' + self.request.host)
         log.info('remote_ip: ' + self.request.remote_ip)
         domain = self.getDomain()
-        user = self.getCurrentUser()
-        if not user:
-            self.set_status(401)
-            self.set_header('WWW-Authenticate', 'basic realm="h5serv"')
-            return
+        response = self.getRootResponse(filePath)
+        root_uuid = response['root']
+        if not self.get_acl(root_uuid, 'r'):
+            user = self.get_current_user()
+            if not user:
+                self.set_status(401)
+                self.set_header('WWW-Authenticate', 'basic realm="h5serv"')
+                return
+            acl = self.get_acl(root_uuid, 'r', user=user)
+            if not acl:
+                self.set_status(401)
+                self.set_header('WWW-Authenticate', 'basic realm="h5serv"')
+                return
+                
         filePath = getFilePath(domain)
         log.info("filepath: " + filePath)
         verifyFile(filePath)
         
-        response = self.getRootResponse(filePath)
+        
         self.set_header('Content-Type', 'application/json') 
         self.write(json_encode(response)) 
         

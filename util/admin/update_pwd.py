@@ -27,7 +27,7 @@ def main():
        
     filename = None
     passwd = None
-    userid = None
+    username = None
     
     if args.filename:
         filename = args.filename
@@ -35,12 +35,12 @@ def main():
         filename = '../server/passwd.h5'
         
     if args.user:
-        userid = args.user
-        if userid.find(':') != -1:
-            print "invalid userid (':' is not allowed)"
+        username = args.user
+        if username.find(':') != -1:
+            print "invalid username (':' is not allowed)"
             return -1
-        if userid.find('/') != -1:
-            print "invalid userid ('/' is not allowed)"
+        if username.find('/') != -1:
+            print "invalid username ('/' is not allowed)"
             return -1
         
     if args.passwd:
@@ -50,7 +50,7 @@ def main():
             return -1
             
     print ">filename:", filename
-    print ">userid:", userid
+    print ">username:", username
     print ">password:", passwd
     
     
@@ -83,54 +83,56 @@ def main():
         return -1
         
     user_type = f['user_type']
-        
-    
+       
     
     now = int(time.time())
     
     if args.add:
         # add a new user
-        if userid in f.attrs:
+        if username in f.attrs:
             print "user already exists"
             return -1
+        # create userid 1 greater than previous used
+        userid = len(f.attrs) + 1
         data = np.empty((), dtype=user_type)
         data['pwd'] = encrypt_pwd(passwd)
         data['state'] = 'A'
+        data['userid'] = userid
         data['ctime'] = now
         data['mtime'] = now
-        f.attrs.create(userid, data, dtype=user_type)   
+        f.attrs.create(username, data, dtype=user_type)   
     elif args.replace:
-        if userid not in f.attrs:
+        if username not in f.attrs:
             print "user not found"
             return -1
-        data = f.attrs[userid]
+        data = f.attrs[username]
         data['pwd'] = encrypt_pwd(passwd)
         data['mtime'] = now
-        f.attrs.create(userid, data, dtype=user_type)
-    elif userid and passwd:
-        if userid not in f.attrs:
+        f.attrs.create(username, data, dtype=user_type)
+    elif username and passwd:
+        if username not in f.attrs:
             print "user not found"
             return -1
-        data = f.attrs[userid]
+        data = f.attrs[username]
         if data['pwd'] == encrypt_pwd(passwd):
             print "password is valid"
             return 0
         else:
             print "password is not valid"
              
-    elif userid:
-        if userid not in f.attrs:
+    elif username:
+        if username not in f.attrs:
             print "user not found"
             return -1
-        data = f.attrs[userid]
-        print "userid:", userid, "ctime:", print_time(data['ctime']), "mtime:", print_time(data['mtime'])
+        data = f.attrs[username]
+        print "username:", username, "userid:", data['userid'], "state:", data['state'], "ctime:", print_time(data['ctime']), "mtime:", print_time(data['mtime'])
     else:
         # print all users
-        print "userid\tctime           \tmtime"
-        print "---------------------------------------------------"
-        for userid in f.attrs.keys():
-            data = f.attrs[userid]
-            print userid + "\t" + print_time(data['ctime']) + "\t" + print_time(data['mtime'])  
+        print "username\tuserid\tstate\tctime           \tmtime"
+        print "-" * 80
+        for username in f.attrs.keys():
+            data = f.attrs[username]
+            print username + "\t\t" + str(data['userid']) + "\t" + data['state'] + "\t" + print_time(data['ctime']) + "\t" + print_time(data['mtime'])  
     
     f.close()
     
