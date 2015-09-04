@@ -113,8 +113,12 @@ def main():
     
     fields = ('userid', 'create', 'read', 'update', 'delete', 'readACL', 'updateACL')    
     with Hdf5db(filename) as db:
-        obj_uuid = db.getUUIDByPath(h5path)
-        
+        try:
+            obj_uuid = db.getUUIDByPath(h5path)
+        except KeyError:
+            print "no object found at path:", h5path
+            sys.exit(1)
+        print "%8s   %8s  %8s  %8s  %8s  %8s  %8s " % fields
         for userid in userids:
             orig_acl = db.getAcl(obj_uuid, userid)
             acl = np.copy(orig_acl)
