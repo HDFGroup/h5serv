@@ -34,7 +34,7 @@ from timeUtil import unixTimeToUTC
 from fileUtil import getFilePath, getDomain, makeDirs, verifyFile
 from tocUtil import isTocFilePath, getTocFilePath
 from httpErrorUtil import errNoToHttpStatus
-from passwordUtil import isPasswordValid
+from passwordUtil import getUserId
 
     
 class DefaultHandler(RequestHandler):
@@ -2395,16 +2395,31 @@ class BaseHandler(tornado.web.RequestHandler):
             user, _, pswd= base64.decodestring(token).partition(':')
             print "user:", user
             print "pwd:", pswd
-        if isPasswordValid(user, pswd):
+        if user and paswd:
+            self.userid = getUserId(user, pswd)  # throws exception if passwd is not valid 
             return user
         else: 
+            self.userid = -1
             return None
             
+            
     """
-    Get ACL for the given uuid
+    Verify ACL for given action.
+      Raise exception if not authorized
     """
-    def get_acl(self, obj_uuid, mode):
-        return True
+    def verifyAcl(self, acl, action):
+        print "acl:", acl
+        if acl[action]:
+            return 
+        if self.userid <= 0: 
+            self.set_status(401)
+            self.set_header('WWW-Authenticate', 'basic realm="h5serv"')
+            raise HTTPError(401, message="provide  password")
+        # validated user, but doesn't have access
+        self.log.info("unauthorized access for userid: " + str(self.userid))
+        raise HTTPError(403, "Access is not permitted")
+             
+            
             
     """
     Helper method - return domain ath based on either query param
@@ -2516,16 +2531,22 @@ class RootHandler(BaseHandler):
 
     def getRootResponse(self, filePath):
         log = logging.getLogger("h5serv")
+        acl = None
         # used by GET / and PUT /
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(rootUUID, self.userid)
+                
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror) 
         domain = self.getDomain() 
+        
+        self.verifyAcl(acl, 'read')
+            
         # generate response 
         hrefs = [ ]
         href = self.request.protocol + '://' + self.request.host + '/'
@@ -2550,20 +2571,12 @@ class RootHandler(BaseHandler):
         log = logging.getLogger("h5serv")
         log.info('RootHandler.get ' + self.request.host)
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.current_user = self.get_current_user()
         domain = self.getDomain()
+        filePath = getFilePath(domain)
         response = self.getRootResponse(filePath)
         root_uuid = response['root']
-        if not self.get_acl(root_uuid, 'r'):
-            user = self.get_current_user()
-            if not user:
-                self.set_status(401)
-                self.set_header('WWW-Authenticate', 'basic realm="h5serv"')
-                return
-            acl = self.get_acl(root_uuid, 'r', user=user)
-            if not acl:
-                self.set_status(401)
-                self.set_header('WWW-Authenticate', 'basic realm="h5serv"')
-                return
+        
                 
         filePath = getFilePath(domain)
         log.info("filepath: " + filePath)

@@ -33,15 +33,16 @@ def encrypt_pwd(passwd):
  Password util helper functions
 """ 
 
-def isPasswordValid(userid, password):
+def getUserId(user_name, password):
     log = logging.getLogger("h5serv")
+    userid = None
     
-    if not userid:
-        log.info('isPasswordValid - null user')
-        return False
+    if not user_name:
+        log.info('getUserId - null user')
+        raise HTTPError(401, message="provide user name and password")
     if not password:
         log.info('isPasswordValid - null password')
-        return False
+        raise HTTPError(401, message="provide  password")
     log.info("validate password for user: [" + userid + "]")
     filename = config.get('password_file')
     if not filename:
@@ -56,26 +57,26 @@ def isPasswordValid(userid, password):
         log.error("password file is invalid")
         raise HTTPError(500, message="bad configuration")
           
-    f = h5py.File(filename, 'r')
-    if 'user_type' not in f:
-        log.error("password file is missing user_type")
-        raise HTTPError(500, message="bad configuration")
+    with h5py.File(filename, 'r') as f:  
+        if 'user_type' not in f:
+            log.error("password file is missing user_type")
+            raise HTTPError(500, message="bad configuration")
          
-    user_type = f['user_type']
-    
-    isValid = False
+        user_type = f['user_type']
         
-    if userid not in f.attrs:
-        log.info("user: [" + userid + "] not found")
-    else:
-        data = f.attrs[userid]
+        if userid not in f.attrs:
+            log.info("user: [" + user_name + "] not found")
+            raise HTTPError(401, message="provide user and password")
+         
+        data = f.attrs[user_name]
         if data['pwd'] == encrypt_pwd(password):
-            log.info("user: [" + userid + "] password validated")
-            isValid = True
+            log.info("user: [" + user_name + "] password validated")
+            userid = data['userid']
         else:
             log.info("user: [" + userid + "] password is not valid")
-    f.close()
-    return isValid
+            raise HTTPError(401, message="invalid user name/password")
+
+    return userid
     
     
  
