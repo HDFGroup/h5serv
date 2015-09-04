@@ -25,15 +25,14 @@ import hdf5dtype
 #
 def printUsage():
     print "usage: python get_acl.py [-h] -file <filename> [-path h5path] [userid1, userid2, ...]"
-    print "  options -v: verbose, print request and response codes from server"
-    print "  options -filename: name of file"
-    print "  options -path: path to object (default as /)"
-    print "  options -userid: userid of acl to return"
+    print "  options -file: name of file"
+    print "  options -path: h5path to object (default as /)"
+    print "  options [userid]: list of userids (default as all)"
     print " ------------------------------------------------------------------------------"
-    print "  Example - get 'tall.h5' root acl:"
-    print "       python get_acl.py ../../data/test/tall.h5"
-    print "  Example - get acl for 'tall.h5', /g1/g1.1/dset1.1.1, user 123"
-    print "        python get_acl.py ../../data/test/tall.h5 -path /g1/g1.1/dset1.1.1 -userid 123"
+    print "  Example - get all ACL's for root group of file 'tall.h5' "
+    print "       python getacl.py -file ../../data/test/tall.h5"
+    print "  Example - get acl for dataset '/g1/g1.1/dset1.1.1' of 'tall.h5', user 123"
+    print "        python getacl.py -file ../../data/test/tall.h5 -path /g1/g1.1/dset1.1.1  123"
     sys.exit(); 
     
 """
