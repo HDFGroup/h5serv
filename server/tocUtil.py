@@ -38,7 +38,7 @@ def isTocFilePath(filePath):
         isTocFilePath = True
     else:
         isTocFilePath = False
-    log.info("isTocFilePath(" + filePath + ") ->" + str(isTocFilePath))
+    #log.info("isTocFilePath(" + filePath + ") ->" + str(isTocFilePath))
     return isTocFilePath
 
 def createTocFile(dir_path):

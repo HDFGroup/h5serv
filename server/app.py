@@ -34,7 +34,7 @@ from timeUtil import unixTimeToUTC
 from fileUtil import getFilePath, getDomain, makeDirs, verifyFile
 from tocUtil import isTocFilePath, getTocFilePath
 from httpErrorUtil import errNoToHttpStatus
-from passwordUtil import getUserId
+from passwordUtil import getUserId, getUserName
 
     
 class DefaultHandler(RequestHandler):
@@ -450,7 +450,313 @@ class LinkHandler(RequestHandler):
         response['hrefs'] = hrefs      
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
+
+class AclHandler(RequestHandler):
+    """
+    Helper method - return domain ath based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
+        
+    def getRequestCollectionName(self):
+        log = logging.getLogger("h5serv")
+        # request is in the form /(datasets|groups|datatypes)/<id>/acls(/<username>), 
+        # or /acls(/<username>) for domain acl
+        # return datasets | groups | datatypes
+        uri = self.request.uri
+        print "uri:", uri
+        
+        npos = uri.find('/')
+        if npos < 0:
+            log.info("bad uri")
+            raise HTTPError(400)  
+        if uri.startswith('/acls/'):
+            # domain request - return group collection
+            return 'groups'
+            
+        uri = uri[(npos+1):]
+        npos = uri.find('/')  # second '/'
+        if npos < 0:
+            # uri is "/acls"
+            return "groups"
+        col_name = uri[:npos]
+         
+        log.info('got collection name: [' + col_name + ']')
+        if col_name not in ('datasets', 'groups', 'datatypes'):
+            msg = "Internal Server Error: collection name unexpected"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)   # shouldn't get routed here in this case
+    
+        return col_name
+        
+    def getRequestId(self, uri):
+        log = logging.getLogger("h5serv")
+        # helper method
+        # uri should be in the form: /groups/<uuid>/links/<name>
+        # extract the <uuid>
+        uri = self.request.uri
+        idpart = None
+         
+        if uri[:len('/datasets/')] == '/datasets/':
+            idpart = uri[len('/datasets/'):]  # get stuff after /datasets/
+        elif uri[:len('/groups/')] == '/groups/':
+            idpart = uri[len('/groups/'):]  # get stuff after /groups/
+        elif uri[:len('/datatypes/')] == '/datatypes/':
+            idpart = uri[len('/datatypes/'):]  # get stuff after /datatypes/
+        else:
+            # domain acl
+            return None
+        
+        npos = idpart.find('/')
+        if npos <= 0:
+            msg = "Bad Request: URI is invalid"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)  
+        obj_uuid = idpart[:npos]
+         
+         
+        log.info('got id: [' + obj_uuid + ']')
+    
+        return obj_uuid
+        
+    def getName(self):
+        log = logging.getLogger("h5serv")
+        uri = self.request.uri
+        if uri == '/acls':
+            return None  # default domain acl
+        # helper method
+        # uri should be in the form: /group/<uuid>/acl/<username>
+        # this method returns name
+        npos = uri.find('/acls/')
+        if npos < 0:
+            # shouldn't be possible to get here
+            msg = "Internal Server Error: Unexpected uri"
+            log.error(msg)
+            raise HTTPError(500, reason=msg)
+        if npos+len('/acls/') >= len(uri):
+            # no name specified
+            msg = "Bad Request: no name specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
+        userName = uri[npos+len('/acls/'):]
+        if userName.find('/') >= 0:
+            # can't have '/' in link name
+            msg = "Bad Request: invalid linkname, '/' not allowed"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
+        npos = userName.rfind('?')
+        if npos >= 0:
+            # trim off the query params
+            userName = userName[:npos]
+        return userName
+    
+    """ 
+    convertUserIdToUserName - replace userids with username
+    """   
+    def convertUserIdToUserName(self, acl_in):
+        log = logging.getLogger("h5serv")
+        acl_out = None
+        if type(acl_in) in (list, tuple):
+            # convert list to list
+            acl_out = []
+            for item in acl_in:
+                acl_out.append(self.convertUserIdToUserName(item))
+        else:
+            acl_out = {}
+            for key in acl_in.keys():
+                if key == 'userid':
+                    # convert userid to username
+                    userid = acl_in['userid']
+               
+                    user_name = '???'
+                    if userid == 0:
+                        user_name = 'default'
+                    else:
+                        user_name = getUserName(userid)
+                        if user_name is None:
+                            log.warn("user not found for userid: " + str(userid))  
+                    acl_out['userName'] = user_name
+                else:
+                    value = acl_in[key]
+                    acl_out[key] = True if value else False
+        return acl_out
+        
+   
+        
+    def get(self):
+        log = logging.getLogger("h5serv")
+        log.info('AclHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')  
+        log.info('remote_ip: ' + self.request.remote_ip)     
+        
+        req_uuid = self.getRequestId(self.request.uri)
+        domain = self.getDomain()
+        rootUUID = None
+        filePath = getFilePath(domain) 
+        userName = self.getName()
+        col_name = self.getRequestCollectionName()
+        
+        print "req uuid:", req_uuid
+        print "req user:", userName
+        print "req col_name:", col_name
+        
+        userid = None
+        if userName is not None:
+            if userName == 'default':
+                userid = 0
+            else:
+                userid = getUserId(userName)
+                if userid is None:
+                    # username not found
+                    msg = "username does not exist"
+                    log.info(msg)
+                    raise HTTPError(404, reason=msg)
+        
+        request = {}
+        verifyFile(filePath)
+        acl = None
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                if req_uuid:
+                    obj_uuid = req_uuid
+                else:
+                    obj_uuid = rootUUID
+                if userid is None:
+                    acl = db.getAcls(obj_uuid)
+                else:
+                    acl = db.getAcl(obj_uuid, userid)
                 
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror)
+               
+        response = {}     
+        print "got acl:", acl
+        print "type acl", type(acl)
+        acl = self.convertUserIdToUserName(acl)
+        print "acl as dict:", acl
+         
+        response['acls'] = acl
+        
+        if userName is None:
+            print 'set username to empty string'
+            userName = ''  # for string concat in the hrefs
+             
+        hrefs = []     
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + col_name + '/' + obj_uuid + 
+            '/acl/' + url_escape(userName) + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery }) 
+        hrefs.append({'rel': 'owner', 'href': href + col_name + '/' + obj_uuid + hostQuery})  
+        
+        response['hrefs'] = hrefs      
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response))
+    
+    def put(self):
+        log = logging.getLogger("h5serv")
+        log.info('AclHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
+        log.info('remote_ip: ' + self.request.remote_ip)
+        # put - create/update an acl
+        # patterns are:
+        # PUT /group/<id>/acls/<name> {'read': True, 'write': False } 
+        # PUT /acls/<name> {'read'... }
+         
+        req_uuid = self.getRequestId(self.request.uri)
+        col_name = self.getRequestCollectionName()
+        userName = url_unescape(self.getName())
+        
+        if userName is None or len(userName) == 0:
+            msg = "Bad Request: username not provided"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
+            
+        userid = None
+        if userName == 'default':
+            userid = 0
+        else:
+            userid = getUserId(userName)
+            
+        if userid is None:
+            msg = "Bad Request: username not found"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
+            
+        
+        body = None
+        try:
+            body = json.loads(self.request.body)
+        except ValueError as e:
+            msg = "JSON Parser Error: " + e.message
+            log.info(msg)
+            raise HTTPError(400, reason=msg )
+            
+        if 'perm' not in body:
+            msg = "Bad Request: acl not found in request body"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
+            
+        perm = body['perm']
+        acl = {}
+        acl['userid'] = userid
+        for key in ('create', 'read', 'update', 'delete', 'readACL', 'updateACL'):
+            if key in perm:
+                acl[key] = 1 if perm[key] else 0
+        if len(acl) == 1:
+            msg = "Bad Request: no acl permissions found in request body"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
+                                
+        
+        domain = self.getDomain()
+        filePath = getFilePath(domain) 
+        
+        response = { }
+        
+        verifyFile(filePath)
+        rootUUID = None
+        obj_uuid = None
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                if req_uuid is None:
+                    obj_uuid = rootUUID
+                else:
+                    obj_uuid = req_uuid
+                db.setAcl(obj_uuid, acl)
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror)   
+            
+        hrefs = []     
+        href = self.request.protocol + '://' + self.request.host + '/'
+        hostQuery = ''
+        if self.get_query_argument("host", default=None):
+            hostQuery = "?host=" + self.get_query_argument("host")
+        hrefs.append({'rel': 'self',       'href': href + col_name + '/' + obj_uuid + 
+            '/acls/' + url_escape(userName) + hostQuery})
+        hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
+        hrefs.append({'rel': 'home',       'href': href + hostQuery }) 
+        hrefs.append({'rel': 'owner', 'href': href + col_name + '/' + obj_uuid + hostQuery})  
+        
+
+        response['hrefs'] = hrefs      
+        
+        self.set_header('Content-Type', 'application/json')
+        self.write(json_encode(response))
+        self.set_status(201) 
+        
+                                
 class TypeHandler(RequestHandler):
     """
     Helper method - return domain ath based on either query param
@@ -2395,7 +2701,7 @@ class BaseHandler(tornado.web.RequestHandler):
             user, _, pswd= base64.decodestring(token).partition(':')
             print "user:", user
             print "pwd:", pswd
-        if user and paswd:
+        if user and pswd:
             self.userid = getUserId(user, pswd)  # throws exception if passwd is not valid 
             return user
         else: 
@@ -2410,19 +2716,21 @@ class BaseHandler(tornado.web.RequestHandler):
     def verifyAcl(self, acl, action):
         print "acl:", acl
         if acl[action]:
-            return 
+            return
         if self.userid <= 0: 
             self.set_status(401)
             self.set_header('WWW-Authenticate', 'basic realm="h5serv"')
-            raise HTTPError(401, message="provide  password")
+            raise HTTPError(401, "Unauthorized")
+            # raise HTTPError(401, message="provide  password")
         # validated user, but doesn't have access
-        self.log.info("unauthorized access for userid: " + str(self.userid))
+        log = logging.getLogger("h5serv")
+        log.info("unauthorized access for userid: " + str(self.userid))
         raise HTTPError(403, "Access is not permitted")
              
             
             
     """
-    Helper method - return domain ath based on either query param
+    Helper method - return domain auth based on either query param
     or host header
     """  
     def getDomain(self):
@@ -2453,8 +2761,10 @@ class RootHandler(BaseHandler):
              
     """
     Helper method - update TOC when a domain is created
+      If validateOnly is true, then the acl is checked to verify that create is 
+      enabled, but doesn't update the .toc
     """    
-    def addTocEntry(self, domain, filePath):
+    def addTocEntry(self, domain, filePath, validateOnly=False):
         log = logging.getLogger("h5serv")
         hdf5_ext = config.get('hdf5_ext')
         dataPath = config.get('datapath')
@@ -2465,6 +2775,7 @@ class RootHandler(BaseHandler):
             raise HTTPError(500)
         filePath = filePath[len(dataPath):]
         tocFile = getTocFilePath()
+        acl = None
          
         try:
             with Hdf5db(tocFile, app_logger=log) as db:             
@@ -2474,10 +2785,14 @@ class RootHandler(BaseHandler):
                     print "linkName:", linkName
                     if linkName.endswith(hdf5_ext):
                         linkName = linkName[:-(len(hdf5_ext))]
+                        acl = db.getAcl(group_uuid, self.userid)
+                        self.verifyAcl(acl, 'create')  # throws exception is unauthorized
                         db.createExternalLink(group_uuid, domain, '/', linkName)
                     else:
                         subgroup_uuid = self.getSubgroupId(db, group_uuid, linkName)
                         if subgroup_uuid is None:
+                            acl = db.getAcl(group_uuid, self.userid)
+                            self.verifyAcl(acl, 'create')  # throws exception is unauthorized
                             # create subgroup and link to parent group
                             subgroup_uuid = db.createGroup()        
                             # link the new group
@@ -2536,16 +2851,17 @@ class RootHandler(BaseHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
+                print "getting rootuuid"
                 rootUUID = db.getUUIDByPath('/')
                 acl = db.getAcl(rootUUID, self.userid)
                 
-        except IOError as e:
+        except IOError as e:         
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror) 
         domain = self.getDomain() 
         
-        self.verifyAcl(acl, 'read')
+        self.verifyAcl(acl, 'read')  # throws exception is unauthorized
             
         # generate response 
         hrefs = [ ]
@@ -2574,7 +2890,15 @@ class RootHandler(BaseHandler):
         self.current_user = self.get_current_user()
         domain = self.getDomain()
         filePath = getFilePath(domain)
-        response = self.getRootResponse(filePath)
+        try:
+            response = self.getRootResponse(filePath)
+        except HTTPError as e:
+            print "httperror:", e.status_code
+            if e.status_code == 401:
+                # no user provied, just return 401 response
+                return
+            raise e  # re-throw the exception
+            
         root_uuid = response['root']
         
                 
@@ -2590,6 +2914,7 @@ class RootHandler(BaseHandler):
         log = logging.getLogger("h5serv")
         log.info('RootHandler.put ' + self.request.host)  
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.current_user = self.get_current_user()
         
         domain = self.getDomain()
         filePath = getFilePath(domain)
@@ -2745,11 +3070,14 @@ def make_app():
         url(r"/datasets/.*/type", DatatypeHandler),
         url(r"/datasets/.*/shape", ShapeHandler),
         url(r"/datasets/.*/attributes/.*", AttributeHandler),
+        url(r"/datasets/.*/acls/.*", AclHandler),
         url(r"/groups/.*/attributes/.*", AttributeHandler),
+        url(r"/groups/.*/acls/.*", AclHandler),
         url(r"/datatypes/.*/attributes/.*", AttributeHandler),
         url(r"/datasets/.*/attributes", AttributeHandler),
         url(r"/groups/.*/attributes", AttributeHandler),
         url(r"/datatypes/.*/attributes", AttributeHandler),
+        url(r"/datatypes/.*/acls/.*", AclHandler),
         url(r"/datatypes/.*", TypeHandler),
         url(r"/datatypes/", TypeHandler),
         url(r"/datatypes\?.*", TypeCollectionHandler),
@@ -2769,6 +3097,8 @@ def make_app():
         url(r"/groups", GroupCollectionHandler),
         url(r"/info", InfoHandler),
         url(r"/static/(.*)", tornado.web.StaticFileHandler, {'path', '../static/'}),
+        url(r"/acls/.*", AclHandler),
+        url(r"/acls", AclHandler),
         url(r"/", RootHandler),
         url(r".*", DefaultHandler)
     ],  **settings)
