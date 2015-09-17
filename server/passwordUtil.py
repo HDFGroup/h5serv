@@ -41,7 +41,7 @@ def getUserInfo(user_name):
     userid = None
     
     if not user_name:
-        None
+        return None    
      
     log.info("get info for user: [" + user_name + "]")
     filename = config.get('password_file')
@@ -113,8 +113,7 @@ def getUserName(userid):
 
 def validateUserPassword(user_name, password):
     log = logging.getLogger("h5serv")
-    userid = None
-    
+   
     if not user_name:
         log.info('validateUserPassword - null user')
         raise HTTPError(401, message="provide user name and password")
@@ -125,13 +124,12 @@ def validateUserPassword(user_name, password):
      
     if data is None:
         log.info("user: [" + user_name + "] not found")
-        raise HTTPError(401, message="provide user and password")
-         
+        raise HTTPError(401, message="provide user and password")         
         
     if data['pwd'] == encrypt_pwd(password):
         log.info("user: [" + user_name + "] password validated")
     else:
-        log.info("user: [" + userid + "] password is not valid")
+        log.info("user: [" + user_name + "] password is not valid")
         raise HTTPError(401, message="invalid user name/password")
 
     return 

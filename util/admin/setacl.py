@@ -120,13 +120,18 @@ def main():
             sys.exit(1)
         print "%8s   %8s  %8s  %8s  %8s  %8s  %8s " % fields
         for userid in userids:
-            orig_acl = db.getAcl(obj_uuid, userid)
-            acl = np.copy(orig_acl)
+            
+            acl = db.getAclByObjAndUser(obj_uuid, userid)
+            if acl is None and userid != 0:
+                acl = db.getAclByObjAndUser(obj_uuid, 0)
+            if acl is None:
+                acl = db.getDefaultAcl()
+            
             acl['userid'] = userid
             for field in add_list:
-                acl[field] = 1 
+                acl[field] = True 
             for field in remove_list:
-                acl[field] = 0
+                acl[field] = False
                 
             format_args = [userid]
             for field in fields:

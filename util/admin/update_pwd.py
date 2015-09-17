@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+import sys
 import argparse
 import os.path as op
 import os
@@ -19,7 +20,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', "--replace", help="update existing user/password", action="store_true")
     parser.add_argument('-a', "--add", help="add a new user/password", action="store_true")
-    parser.add_argument('-f', "--filename", help='password file')
+    parser.add_argument('-f', "--file", help='password file')
     parser.add_argument('-u', "--user", help='user id')
     parser.add_argument('-p', "--passwd", help='user password') 
       
@@ -29,8 +30,8 @@ def main():
     passwd = None
     username = None
     
-    if args.filename:
-        filename = args.filename
+    if args.file:
+        filename = args.file
     else:
         filename = '../server/passwd.h5'
         
@@ -74,8 +75,6 @@ def main():
         if not os.access(filename, os.W_OK):
             print "password file is not writable"
             return -1
-            
-    print "mode:", mode
     
     f = h5py.File(filename, mode)
     if 'user_type' not in f:
@@ -128,12 +127,14 @@ def main():
         print "username:", username, "userid:", data['userid'], "state:", data['state'], "ctime:", print_time(data['ctime']), "mtime:", print_time(data['mtime'])
     else:
         # print all users
-        print "username\tuserid\tstate\tctime           \tmtime"
-        print "-" * 80
+        sys.stdout.write("{:<25}{:<8}{:<8}{:<20}{:<20}\n".format('username', 'userid', 'state', 'ctime', 'mtime'))
+        sys.stdout.write(("-" * 80)+'\n')
         for username in f.attrs.keys():
             data = f.attrs[username]
-            print username + "\t\t" + str(data['userid']) + "\t" + data['state'] + "\t" + print_time(data['ctime']) + "\t" + print_time(data['mtime'])  
-    
+            
+            sys.stdout.write("{:<25}{:<8}{:<8}{:<20}{:<20}\n".format(username,
+                 str(data['userid']), data['state'], print_time(data['ctime']), print_time(data['mtime']))) 
+             
     f.close()
     
     return 0

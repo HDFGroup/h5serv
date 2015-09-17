@@ -14,7 +14,7 @@ import os
 
 unit_tests = ('timeUtilTest', 'fileUtilTest')
 integ_tests = ('roottest', 'grouptest', 'dirtest', 'linktest', 'datasettest', 'valuetest',
-    'attributetest', 'datatypetest', 'shapetest', 'datasettypetest', 'spidertest')
+    'attributetest', 'datatypetest', 'shapetest', 'datasettypetest', 'spidertest', 'acltest')
 #
 # Run all h5serv tests
 # Run this script before running any integ tests

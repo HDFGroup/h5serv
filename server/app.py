@@ -34,7 +34,7 @@ from timeUtil import unixTimeToUTC
 from fileUtil import getFilePath, getDomain, makeDirs, verifyFile
 from tocUtil import isTocFilePath, getTocFilePath
 from httpErrorUtil import errNoToHttpStatus
-from passwordUtil import getUserId, getUserName
+from passwordUtil import getUserId, getUserName, validateUserPassword
 
     
 class DefaultHandler(RequestHandler):
@@ -66,7 +66,59 @@ class DefaultHandler(RequestHandler):
         log.warning(self.request)
         raise HTTPError(400, reason="No route matches") 
         
-class LinkCollectionHandler(RequestHandler):
+class BaseHandler(tornado.web.RequestHandler):
+    """
+    Override of Tornado get_current_user
+    """
+    def get_current_user(self):
+        user = None
+        pswd = None
+        scheme, _, token = auth_header = self.request.headers.get('Authorization', '').partition(' ')
+        if scheme.lower() == 'basic':
+            print "auth_header:", auth_header
+            user, _, pswd= base64.decodestring(token).partition(':')
+            print "user:", user
+            print "pwd:", pswd
+        if user and pswd:
+            validateUserPassword(user, pswd)  # throws exception if passwd is not valid 
+            self.userid = getUserId(user)
+            return self.userid
+        else: 
+            self.userid = -1
+            return None
+            
+            
+    """
+    Verify ACL for given action.
+      Raise exception if not authorized
+    """
+    def verifyAcl(self, acl, action):
+        print "acl:", acl
+        if acl[action]:
+            return
+        if self.userid <= 0: 
+            self.set_status(401)
+            self.set_header('WWW-Authenticate', 'basic realm="h5serv"')
+            raise HTTPError(401, "Unauthorized")
+            # raise HTTPError(401, message="provide  password")
+        # validated user, but doesn't have access
+        log = logging.getLogger("h5serv")
+        log.info("unauthorized access for userid: " + str(self.userid))
+        raise HTTPError(403, "Access is not permitted")
+             
+            
+            
+    """
+    Helper method - return domain auth based on either query param
+    or host header
+    """  
+    def getDomain(self):
+        domain = self.get_query_argument("host", default=None)
+        if not domain:
+            domain = self.request.host
+        return domain
+        
+class LinkCollectionHandler(BaseHandler):
     """
     Helper method - return domain based on either query param
     or host header
@@ -104,7 +156,8 @@ class LinkCollectionHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('LinkCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']') 
-        log.info('remote_ip: ' + self.request.remote_ip)      
+        log.info('remote_ip: ' + self.request.remote_ip)     
+        self.get_current_user() 
         
         reqUuid = self.getRequestId(self.request.uri)
         domain = self.getDomain()
@@ -128,8 +181,11 @@ class LinkCollectionHandler(RequestHandler):
         rootUUID = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                items = db.getLinkItems(reqUuid, marker=marker, limit=limit)
                 rootUUID = db.getUUIDByPath('/')
+                current_user_acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(current_user_acl, 'read')  # throws exception is unauthorized
+                items = db.getLinkItems(reqUuid, marker=marker, limit=limit)
+                
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -184,7 +240,7 @@ class LinkCollectionHandler(RequestHandler):
         self.write(json_encode(response))
     
         
-class LinkHandler(RequestHandler):
+class LinkHandler(BaseHandler):
     """
     Helper method - return domain ath based on either query param
     or host header
@@ -249,7 +305,8 @@ class LinkHandler(RequestHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('LinkHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')  
-        log.info('remote_ip: ' + self.request.remote_ip)     
+        log.info('remote_ip: ' + self.request.remote_ip)  
+        self.get_current_user()   
         
         reqUuid = self.getRequestId(self.request.uri)
         domain = self.getDomain()
@@ -262,8 +319,10 @@ class LinkHandler(RequestHandler):
         rootUUID = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                item = db.getLinkItemByUuid(reqUuid, linkName)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
+                item = db.getLinkItemByUuid(reqUuid, linkName)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -326,6 +385,7 @@ class LinkHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('LinkHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()  
         # put - create a new link
         # patterns are:
         # PUT /group/<id>/links/<name> {id: <id> } 
@@ -382,13 +442,16 @@ class LinkHandler(RequestHandler):
         rootUUID = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'create')  # throws exception is unauthorized
                 if childUuid:
                     db.linkObject(reqUuid, childUuid, linkName)
                 elif h5domain:
                     db.createExternalLink(reqUuid, h5domain, h5path, linkName)
                 elif h5path:
                     db.createSoftLink(reqUuid, h5path, linkName)
-                rootUUID = db.getUUIDByPath('/')
+                
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -414,6 +477,7 @@ class LinkHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('LinkHandler.delete ' + self.request.host)   
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()  
         reqUuid = self.getRequestId(self.request.uri)
         
         linkName = self.getName(self.request.uri)
@@ -431,8 +495,10 @@ class LinkHandler(RequestHandler):
             raise HTTPError(403, reason=msg)
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                db.unlinkItem(reqUuid, linkName)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'delete')  # throws exception is unauthorized
+                db.unlinkItem(reqUuid, linkName)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -451,7 +517,7 @@ class LinkHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
 
-class AclHandler(RequestHandler):
+class AclHandler(BaseHandler):
     """
     Helper method - return domain ath based on either query param
     or host header
@@ -592,6 +658,7 @@ class AclHandler(RequestHandler):
         log.info('AclHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')  
         log.info('remote_ip: ' + self.request.remote_ip)     
         
+        self.get_current_user()
         req_uuid = self.getRequestId(self.request.uri)
         domain = self.getDomain()
         rootUUID = None
@@ -599,17 +666,13 @@ class AclHandler(RequestHandler):
         userName = self.getName()
         col_name = self.getRequestCollectionName()
         
-        print "req uuid:", req_uuid
-        print "req user:", userName
-        print "req col_name:", col_name
-        
-        userid = None
-        if userName is not None:
+        req_userid = None
+        if userName:
             if userName == 'default':
-                userid = 0
+                req_userid = 0
             else:
-                userid = getUserId(userName)
-                if userid is None:
+                req_userid = getUserId(userName)
+                if req_userid is None:
                     # username not found
                     msg = "username does not exist"
                     log.info(msg)
@@ -618,6 +681,7 @@ class AclHandler(RequestHandler):
         request = {}
         verifyFile(filePath)
         acl = None
+        current_user_acl = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
@@ -625,10 +689,14 @@ class AclHandler(RequestHandler):
                     obj_uuid = req_uuid
                 else:
                     obj_uuid = rootUUID
-                if userid is None:
+                    
+                current_user_acl = db.getAcl(obj_uuid, self.userid)
+                self.verifyAcl(current_user_acl, 'readACL')  # throws exception is unauthorized
+                if req_userid is None:
                     acl = db.getAcls(obj_uuid)
                 else:
-                    acl = db.getAcl(obj_uuid, userid)
+                    acl = db.getAcl(obj_uuid, req_userid)
+                
                 
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
@@ -666,6 +734,7 @@ class AclHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('AclHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.current_user = self.get_current_user()
         # put - create/update an acl
         # patterns are:
         # PUT /group/<id>/acls/<name> {'read': True, 'write': False } 
@@ -680,13 +749,14 @@ class AclHandler(RequestHandler):
             log.info(msg)
             raise HTTPError(400, reason=msg)
             
-        userid = None
+        req_userid = None   # this is the userid of the acl we'll be updating
+        # self.userid is the userid of the requestor
         if userName == 'default':
-            userid = 0
+            req_userid = 0
         else:
-            userid = getUserId(userName)
+            req_userid = getUserId(userName)
             
-        if userid is None:
+        if req_userid is None:
             msg = "Bad Request: username not found"
             log.info(msg)
             raise HTTPError(400, reason=msg)
@@ -707,7 +777,7 @@ class AclHandler(RequestHandler):
             
         perm = body['perm']
         acl = {}
-        acl['userid'] = userid
+        acl['userid'] = req_userid
         for key in ('create', 'read', 'update', 'delete', 'readACL', 'updateACL'):
             if key in perm:
                 acl[key] = 1 if perm[key] else 0
@@ -732,6 +802,8 @@ class AclHandler(RequestHandler):
                     obj_uuid = rootUUID
                 else:
                     obj_uuid = req_uuid
+                current_user_acl = db.getAcl(obj_uuid, self.userid)
+                self.verifyAcl(current_user_acl, 'updateACL')  # throws exception is unauthorized
                 db.setAcl(obj_uuid, acl)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
@@ -757,7 +829,7 @@ class AclHandler(RequestHandler):
         self.set_status(201) 
         
                                 
-class TypeHandler(RequestHandler):
+class TypeHandler(BaseHandler):
     """
     Helper method - return domain ath based on either query param
     or host header
@@ -794,6 +866,8 @@ class TypeHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('TypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
+        
         reqUuid = self.getRequestId()
         domain = self.getDomain()
         filePath = getFilePath(domain) 
@@ -805,8 +879,11 @@ class TypeHandler(RequestHandler):
         item = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                item = db.getCommittedTypeItemByUuid(reqUuid)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                print "type acl:", acl
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
+                item = db.getCommittedTypeItemByUuid(reqUuid)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -838,7 +915,9 @@ class TypeHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('TypeHandler.delete ' + self.request.host)   
         log.info('remote_ip: ' + self.request.remote_ip)
-        uuid = self.getRequestId()
+        self.get_current_user()
+        
+        req_uuid = self.getRequestId()
         domain = self.getDomain()
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
@@ -847,8 +926,10 @@ class TypeHandler(RequestHandler):
         rootUUID = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                db.deleteObjectByUuid('datatype', uuid)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(req_uuid, self.userid)
+                self.verifyAcl(acl, 'delete')  # throws exception is unauthorized
+                db.deleteObjectByUuid('datatype', req_uuid)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -868,7 +949,7 @@ class TypeHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
                 
-class DatatypeHandler(RequestHandler):
+class DatatypeHandler(BaseHandler):
     """
     Helper method - return domain ath based on either query param
     or host header
@@ -908,6 +989,7 @@ class DatatypeHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('DatatypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
         
         reqUuid = self.getRequestId()
         domain = self.getDomain()
@@ -920,8 +1002,10 @@ class DatatypeHandler(RequestHandler):
         item = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                item = db.getDatasetTypeItemByUuid(reqUuid)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
+                item = db.getDatasetTypeItemByUuid(reqUuid)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -942,7 +1026,7 @@ class DatatypeHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
                 
-class ShapeHandler(RequestHandler):
+class ShapeHandler(BaseHandler):
     """
     Helper method - return domain ath based on either query param
     or host header
@@ -955,6 +1039,7 @@ class ShapeHandler(RequestHandler):
         
     def getRequestId(self):
         log = logging.getLogger("h5serv")
+        
         # request is in the form /datasets/<id>/shape, return <id>
         uri = self.request.uri
         npos = uri.rfind('/shape')
@@ -982,6 +1067,7 @@ class ShapeHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('ShapeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
         
         reqUuid = self.getRequestId()
         domain = self.getDomain()
@@ -995,8 +1081,10 @@ class ShapeHandler(RequestHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                item = db.getDatasetItemByUuid(reqUuid)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
+                item = db.getDatasetItemByUuid(reqUuid)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -1023,6 +1111,8 @@ class ShapeHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('ShapeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
+        
         reqUuid = self.getRequestId()       
         domain = self.getDomain()
         filePath = getFilePath(domain)
@@ -1069,6 +1159,8 @@ class ShapeHandler(RequestHandler):
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'update')  # throws exception is unauthorized
                 db.resizeDataset(reqUuid, shape)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
@@ -1090,7 +1182,7 @@ class ShapeHandler(RequestHandler):
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response)) 
                 
-class DatasetHandler(RequestHandler):
+class DatasetHandler(BaseHandler):
     """
     Helper method - return domain ath based on either query param
     or host header
@@ -1174,6 +1266,7 @@ class DatasetHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('DatasetHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
         
         reqUuid = self.getRequestId()
         domain = self.getDomain()
@@ -1186,8 +1279,10 @@ class DatasetHandler(RequestHandler):
         item = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                item = db.getDatasetItemByUuid(reqUuid)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
+                item = db.getDatasetItemByUuid(reqUuid)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -1233,7 +1328,9 @@ class DatasetHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('DatasetHandler.delete host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
-        uuid = self.getRequestId()
+        self.get_current_user()
+        
+        req_uuid = self.getRequestId()
         domain = self.getDomain()
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
@@ -1244,8 +1341,10 @@ class DatasetHandler(RequestHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                db.deleteObjectByUuid('dataset', uuid)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(req_uuid, self.userid)
+                self.verifyAcl(acl, 'delete')  # throws exception is unauthorized
+                db.deleteObjectByUuid('dataset', req_uuid)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -1265,7 +1364,7 @@ class DatasetHandler(RequestHandler):
         self.write(json_encode(response)) 
             
                 
-class ValueHandler(RequestHandler):
+class ValueHandler(BaseHandler):
     """
     Helper method - return domain based on either query param
     or host header
@@ -1465,6 +1564,7 @@ class ValueHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('ValueHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
         
         reqUuid = self.getRequestId()
         domain = self.getDomain()
@@ -1486,6 +1586,9 @@ class ValueHandler(RequestHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
                 item = db.getDatasetItemByUuid(reqUuid)
                 item_type = item['type']
                 
@@ -1605,6 +1708,7 @@ class ValueHandler(RequestHandler):
         log.info('ValueHandler.post host=[' + self.request.host + '] uri=[' +
              self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
         
         reqUuid = self.getRequestId()
         domain = self.getDomain()
@@ -1638,6 +1742,9 @@ class ValueHandler(RequestHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
                 item = db.getDatasetItemByUuid(reqUuid)
                 shape = item['shape']
                 if shape['class'] == 'H5S_SCALAR':
@@ -1661,7 +1768,7 @@ class ValueHandler(RequestHandler):
                             raise HTTPError(400, reason=msg)
              
                 values = db.getDatasetPointSelectionByUuid(reqUuid, points) 
-                rootUUID = db.getUUIDByPath('/')
+              
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -1688,6 +1795,7 @@ class ValueHandler(RequestHandler):
         log.info('ValueHandler.put host=[' + self.request.host + '] uri=[' + 
             self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
         
         reqUuid = self.getRequestId()
         domain = self.getDomain()
@@ -1740,6 +1848,9 @@ class ValueHandler(RequestHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'update')  # throws exception is unauthorized
                 item = db.getDatasetItemByUuid(reqUuid)
                 dsetshape = item['shape']
                 dims = dsetshape['dims']
@@ -1757,7 +1868,7 @@ class ValueHandler(RequestHandler):
         
         log.info("value post succeeded")   
            
-class AttributeHandler(RequestHandler):
+class AttributeHandler(BaseHandler):
     """
     Helper method - return domain based on either query param
     or host header
@@ -1859,6 +1970,7 @@ class AttributeHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('AttributeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
         
         reqUuid = self.getRequestId()
         domain = self.getDomain()
@@ -1884,13 +1996,16 @@ class AttributeHandler(RequestHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
                 if attr_name != None:
                     item = db.getAttributeItem(col_name, reqUuid, attr_name)
                     items.append(item)
                 else:
                     # get all attributes (but without data)
                     items = db.getAttributeItems(col_name, reqUuid, marker, limit)
-                rootUUID = db.getUUIDByPath('/')
+                
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -1958,6 +2073,7 @@ class AttributeHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('AttributeHandler.put host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
         
         domain = self.getDomain()
         col_name = self.getRequestCollectionName()
@@ -2025,8 +2141,12 @@ class AttributeHandler(RequestHandler):
                    
         try:
             with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'create')  # throws exception is unauthorized
                 db.createAttribute(col_name, reqUuid, attr_name, dims, datatype, data)
                 rootUUID = db.getUUIDByPath('/')
+                 
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -2059,6 +2179,8 @@ class AttributeHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('AttributeHandler.delete ' + self.request.host)   
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
+        
         obj_uuid = self.getRequestId()
         domain = self.getDomain()
         col_name = self.getRequestCollectionName()
@@ -2076,8 +2198,11 @@ class AttributeHandler(RequestHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                db.deleteAttribute(col_name, obj_uuid, attr_name)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(obj_uuid, self.userid)
+                self.verifyAcl(acl, 'delete')  # throws exception is unauthorized
+                db.deleteAttribute(col_name, obj_uuid, attr_name)
+                
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -2104,7 +2229,7 @@ class AttributeHandler(RequestHandler):
         log.info("Attribute delete succeeded")
                 
          
-class GroupHandler(RequestHandler):
+class GroupHandler(BaseHandler):
     """
     Helper method - return domain ath based on either query param
     or host header
@@ -2139,6 +2264,8 @@ class GroupHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('GroupHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
+        
         reqUuid = self.getRequestId()
         domain = self.getDomain()
         filePath = getFilePath(domain) 
@@ -2152,8 +2279,11 @@ class GroupHandler(RequestHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')             
+                acl = db.getAcl(reqUuid, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
                 item = db.getGroupItemByUuid(reqUuid)
-                rootUUID = db.getUUIDByPath('/')
+                
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -2183,15 +2313,19 @@ class GroupHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('GroupHandler.delete ' + self.request.host)   
         log.info('remote_ip: ' + self.request.remote_ip)
-        uuid = self.getRequestId()
+        self.get_current_user()
+        
+        req_uuid = self.getRequestId()
         domain = self.getDomain()
         filePath = getFilePath(domain)
         verifyFile(filePath, True)
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                db.deleteObjectByUuid('group', uuid)
-                rootUUID = db.getUUIDByPath('/') 
+                rootUUID = db.getUUIDByPath('/')             
+                acl = db.getAcl(req_uuid, self.userid)
+                self.verifyAcl(acl, 'delete')  # throws exception is unauthorized
+                db.deleteObjectByUuid('group', req_uuid)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -2215,7 +2349,7 @@ class GroupHandler(RequestHandler):
         
     
                 
-class GroupCollectionHandler(RequestHandler):
+class GroupCollectionHandler(BaseHandler):
     """
     Helper method - return domain ath based on either query param
     or host header
@@ -2230,6 +2364,9 @@ class GroupCollectionHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('GroupCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
+        
+                
         domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -2252,8 +2389,10 @@ class GroupCollectionHandler(RequestHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                items = db.getCollection("groups", marker, limit)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(rootUUID, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
+                items = db.getCollection("groups", marker, limit)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -2281,6 +2420,7 @@ class GroupCollectionHandler(RequestHandler):
             msg = "Method Not Allowed: bad group post request"
             log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
+        self.get_current_user()
         
         parent_group_uuid = None
         link_name = None
@@ -2311,6 +2451,9 @@ class GroupCollectionHandler(RequestHandler):
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
+                current_user_acl = db.getAcl(rootUUID, self.userid)
+           
+                self.verifyAcl(current_user_acl, 'create')  # throws exception is unauthorized
                 grpUUID = db.createGroup()
                 item = db.getGroupItemByUuid(grpUUID)
                 # if link info is provided, link the new group
@@ -2350,7 +2493,7 @@ class GroupCollectionHandler(RequestHandler):
         self.set_status(201)  # resource created
         
         
-class DatasetCollectionHandler(RequestHandler):
+class DatasetCollectionHandler(BaseHandler):
     """
     Helper method - return domain ath based on either query param
     or host header
@@ -2365,6 +2508,8 @@ class DatasetCollectionHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('DatasetCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
+        
         domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -2388,8 +2533,10 @@ class DatasetCollectionHandler(RequestHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                items = db.getCollection("datasets", marker, limit)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(rootUUID, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
+                items = db.getCollection("datasets", marker, limit)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -2413,6 +2560,8 @@ class DatasetCollectionHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('DatasetHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
+        
         if self.request.uri != '/datasets':
             msg = "Method not Allowed: invalid datasets post request"
             log.info(msg)
@@ -2518,6 +2667,13 @@ class DatasetCollectionHandler(RequestHandler):
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(rootUUID, self.userid)
+                self.verifyAcl(acl, 'create')  # throws exception is unauthorized
+                # verify the link perm as well
+                if group_uuid and group_uuid != rootUUID:
+                    acl = db.getAcl(group_uuid, self.userid)
+                    self.verifyAcl(acl, 'create')  # throws exception is unauthorized
+                    
                 item = db.createDataset(datatype, dims, maxdims, creation_props=creationProps)
                 if group_uuid:
                     # link the new dataset
@@ -2549,7 +2705,7 @@ class DatasetCollectionHandler(RequestHandler):
         self.write(json_encode(response))  
         self.set_status(201)  # resource created
         
-class TypeCollectionHandler(RequestHandler):
+class TypeCollectionHandler(BaseHandler):
     """
     Helper method - return domain ath based on either query param
     or host header
@@ -2564,6 +2720,8 @@ class TypeCollectionHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('TypeCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
+        
         domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -2586,8 +2744,10 @@ class TypeCollectionHandler(RequestHandler):
         items = None
         try:
             with Hdf5db(filePath) as db:
-                items = db.getCollection("datatypes", marker, limit)
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(rootUUID, self.userid)
+                self.verifyAcl(acl, 'read')  # throws exception is unauthorized
+                items = db.getCollection("datatypes", marker, limit)
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
@@ -2613,6 +2773,8 @@ class TypeCollectionHandler(RequestHandler):
         log = logging.getLogger("h5serv")
         log.info('TypeHandler.post host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        self.get_current_user()
+        
         if self.request.uri != '/datatypes':
             msg = "Method not Allowed: invalid URI"
             log.info(msg)
@@ -2656,6 +2818,8 @@ class TypeCollectionHandler(RequestHandler):
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(rootUUID, self.userid)
+                self.verifyAcl(acl, 'create')  # throws exception is unauthorized
                 item = db.createCommittedType(datatype)
                 # if link info is provided, link the new group
                 if parent_group_uuid:
@@ -2688,56 +2852,7 @@ class TypeCollectionHandler(RequestHandler):
         self.write(json_encode(response)) 
         self.set_status(201)  # resource created
           
-class BaseHandler(tornado.web.RequestHandler):
-    """
-    Override of Tornado get_current_user
-    """
-    def get_current_user(self):
-        user = None
-        pswd = None
-        scheme, _, token = auth_header = self.request.headers.get('Authorization', '').partition(' ')
-        if scheme.lower() == 'basic':
-            print "auth_header:", auth_header
-            user, _, pswd= base64.decodestring(token).partition(':')
-            print "user:", user
-            print "pwd:", pswd
-        if user and pswd:
-            self.userid = getUserId(user, pswd)  # throws exception if passwd is not valid 
-            return user
-        else: 
-            self.userid = -1
-            return None
-            
-            
-    """
-    Verify ACL for given action.
-      Raise exception if not authorized
-    """
-    def verifyAcl(self, acl, action):
-        print "acl:", acl
-        if acl[action]:
-            return
-        if self.userid <= 0: 
-            self.set_status(401)
-            self.set_header('WWW-Authenticate', 'basic realm="h5serv"')
-            raise HTTPError(401, "Unauthorized")
-            # raise HTTPError(401, message="provide  password")
-        # validated user, but doesn't have access
-        log = logging.getLogger("h5serv")
-        log.info("unauthorized access for userid: " + str(self.userid))
-        raise HTTPError(403, "Access is not permitted")
-             
-            
-            
-    """
-    Helper method - return domain auth based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
+
             
 class RootHandler(BaseHandler): 
     
@@ -2782,7 +2897,6 @@ class RootHandler(BaseHandler):
                 group_uuid = db.getUUIDByPath('/')
                 pathNames = filePath.split('/')
                 for linkName in pathNames:
-                    print "linkName:", linkName
                     if linkName.endswith(hdf5_ext):
                         linkName = linkName[:-(len(hdf5_ext))]
                         acl = db.getAcl(group_uuid, self.userid)
@@ -2818,8 +2932,7 @@ class RootHandler(BaseHandler):
         filePath = filePath[len(dataPath):]
         tocFile = getTocFilePath()
         log.info("removeTocEntry - domain: " + domain + " filePath: " + filePath)
-       
-        
+             
         try:
             with Hdf5db(tocFile, app_logger=log) as db:             
                 group_uuid = db.getUUIDByPath('/')
@@ -2851,7 +2964,6 @@ class RootHandler(BaseHandler):
         
         try:
             with Hdf5db(filePath, app_logger=log) as db:
-                print "getting rootuuid"
                 rootUUID = db.getUUIDByPath('/')
                 acl = db.getAcl(rootUUID, self.userid)
                 
@@ -2893,7 +3005,6 @@ class RootHandler(BaseHandler):
         try:
             response = self.getRootResponse(filePath)
         except HTTPError as e:
-            print "httperror:", e.status_code
             if e.status_code == 401:
                 # no user provied, just return 401 response
                 return
@@ -2949,6 +3060,8 @@ class RootHandler(BaseHandler):
         log = logging.getLogger("h5serv")
         log.info('RootHandler.delete ' + self.request.host)  
         log.info('remote_ip: ' + self.request.remote_ip) 
+        self.get_current_user()
+        
         domain = self.getDomain()
         filePath = getFilePath(domain)
         log.info("delete filePath: " + filePath)
@@ -2970,6 +3083,16 @@ class RootHandler(BaseHandler):
             msg = "Forbidden: Resource is read-only"
             log.info(msg)
             raise HTTPError(403, reason=msg)  # Forbidden - TOC file
+            
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                acl = db.getAcl(rootUUID, self.userid)
+                self.verifyAcl(acl, 'delete')  # throws exception is unauthorized            
+        except IOError as e:         
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror) 
         
         try:
             self.removeTocEntry(domain, filePath)

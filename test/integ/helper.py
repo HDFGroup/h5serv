@@ -13,6 +13,7 @@ import requests
 import config
 import unittest
 import json
+import base64
 
 """
     Helper function - get endpoint we'll send http requests to 
@@ -37,9 +38,13 @@ def validateId(id):
 """
 Helper function - get root uuid  
 """ 
-def getRootUUID(domain):
+def getRootUUID(domain, user=None, password=None):
     req = getEndpoint() + "/"
     headers = {'host': domain}
+    if user is not None:
+        # if user is supplied, add the auth header
+        auth_string = base64.b64encode(user + ':' + password)
+        headers['Authorization'] = "Basic " + auth_string
     rsp = requests.get(req, headers=headers)
     rootUUID = None
     if rsp.status_code == 200:
@@ -66,6 +71,54 @@ def getUUID(domain, parentUuid, name):
         tgtUuid = target['id']
 
     return tgtUuid
+"""
+Helper function - get uuid for a given path
+"""
+def getUUIDByPath(domain, path, user=None, password=None):
+    if path[0] != '/':
+        raise KeyError("only abs paths") # only abs paths
+            
+    parent_uuid = getRootUUID(domain, user=user, password=password)  
+     
+    if path == '/':
+        return parent_uuid
+            
+    headers = {'host': domain}
+    if user is not None:
+        # if user is supplied, add the auth header
+        auth_string = base64.b64encode(user + ':' + password)
+        headers['Authorization'] = "Basic " + auth_string
+            
+    # make a fake tgt_json to represent 'link' to root group
+    tgt_json = {'collection': "groups", 'class': "H5L_TYPE_HARD", 'id': parent_uuid }
+    tgt_uuid = None
+            
+    names = path.split('/')         
+                      
+    for name in names:
+        if not name: 
+            continue
+        if parent_uuid is None:
+            raise KeyError("not found")
+                 
+        req = getEndpoint() + "/groups/" + parent_uuid + "/links/" + name
+        rsp = requests.get(req, headers=headers)
+        if rsp.status_code != 200:
+            raise KeyError("not found")
+        rsp_json = json.loads(rsp.text)    
+        tgt_json = rsp_json['link']
+            
+        if tgt_json['class'] == 'H5L_TYPE_HARD':
+            #print "hard link, collection:", link_json['collection']
+            if tgt_json['collection'] == 'groups':
+                parent_uuid = tgt_json['id']    
+            else:
+                parent_uuid = None
+            tgt_uuid = tgt_json['id']
+        else:
+            raise KeyError("non-hard link")
+    return tgt_uuid
+            
 """
 Helper function - create an anonymous group
 """    
