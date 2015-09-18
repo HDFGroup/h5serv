@@ -361,7 +361,6 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(len(shape['dims']), 1)
         self.assertEqual(shape['dims'][0], 4)  
         typeItem = rspJson['type']  # returns '/datatypes/<uuid>'
-        print "typeItem", typeItem
         npos = typeItem.rfind('/')
         type_uuid = typeItem[(npos+1):]
         self.assertTrue(helper.validateId(type_uuid))
