@@ -75,10 +75,7 @@ class BaseHandler(tornado.web.RequestHandler):
         pswd = None
         scheme, _, token = auth_header = self.request.headers.get('Authorization', '').partition(' ')
         if scheme.lower() == 'basic':
-            print "auth_header:", auth_header
             user, _, pswd= base64.decodestring(token).partition(':')
-            print "user:", user
-            print "pwd:", pswd
         if user and pswd:
             validateUserPassword(user, pswd)  # throws exception if passwd is not valid 
             self.userid = getUserId(user)
@@ -93,7 +90,6 @@ class BaseHandler(tornado.web.RequestHandler):
       Raise exception if not authorized
     """
     def verifyAcl(self, acl, action):
-        print "acl:", acl
         if acl[action]:
             return
         if self.userid <= 0: 
@@ -534,7 +530,6 @@ class AclHandler(BaseHandler):
         # or /acls(/<username>) for domain acl
         # return datasets | groups | datatypes
         uri = self.request.uri
-        print "uri:", uri
         
         npos = uri.find('/')
         if npos < 0:
@@ -704,15 +699,11 @@ class AclHandler(BaseHandler):
             raise HTTPError(status, reason=e.strerror)
                
         response = {}     
-        print "got acl:", acl
-        print "type acl", type(acl)
         acl = self.convertUserIdToUserName(acl)
-        print "acl as dict:", acl
          
         response['acls'] = acl
         
         if userName is None:
-            print 'set username to empty string'
             userName = ''  # for string concat in the hrefs
              
         hrefs = []     
@@ -881,7 +872,6 @@ class TypeHandler(BaseHandler):
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
                 acl = db.getAcl(reqUuid, self.userid)
-                print "type acl:", acl
                 self.verifyAcl(acl, 'read')  # throws exception is unauthorized
                 item = db.getCommittedTypeItemByUuid(reqUuid)
         except IOError as e:
