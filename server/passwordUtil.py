@@ -1,0 +1,138 @@
+##############################################################################
+# Copyright by The HDF Group.                                                #
+# All rights reserved.                                                       #
+#                                                                            #
+# This file is part of H5Serv (HDF5 REST Server) Service, Libraries and      #
+# Utilities.  The full HDF5 REST Server copyright notice, including          #
+# terms governing use, modification, and redistribution, is contained in     #
+# the file COPYING, which can be found at the root of the source code        #
+# distribution tree.  If you do not have access to this file, you may        #
+# request a copy from help@hdfgroup.org.                                     #
+##############################################################################
+import os
+import os.path as op
+import hashlib
+import logging
+import h5py
+import numpy as np
+ 
+
+from tornado.web import HTTPError
+
+ 
+import config
+
+"""
+ One way password encryptyion
+"""
+def encrypt_pwd(passwd):
+    encrypted = hashlib.sha224(passwd).hexdigest()
+    return encrypted 
+
+"""
+ Password util helper functions
+""" 
+
+"""
+  getUserInfo: return user data
+"""
+def getUserInfo(user_name):
+    log = logging.getLogger("h5serv")
+    userid = None
+    
+    if not user_name:
+        return None    
+     
+    log.info("get info for user: [" + user_name + "]")
+    filename = config.get('password_file')
+    if not filename:
+        log.error("no config for password_file")
+        raise HTTPError(500, message="bad configuration")
+    # verify file exists and is writable
+    if not op.isfile(filename):
+        log.error("password file is missing")
+        raise HTTPError(500, message="bad configuration")
+                
+    if not h5py.is_hdf5(filename):
+        log.error("password file is invalid")
+        raise HTTPError(500, message="bad configuration")
+          
+    with h5py.File(filename, 'r') as f:  
+        if user_name not in f.attrs:
+            return None
+         
+        data = f.attrs[user_name]
+        return data
+
+"""
+  getUserId: get id for given user name
+"""
+def getUserId(user_name):
+    data = getUserInfo(user_name)
+    userid = None
+    if data is not None:
+        userid = data['userid']
+    return userid
+    
+"""
+  getUserName: return user name for given user id
+  #todo: may need to be optimized to support large number of users
+  
+"""
+def getUserName(userid):
+    log = logging.getLogger("h5serv")
+       
+    log.info("get user name for userid: [" + str(userid) + "]")
+    filename = config.get('password_file')
+    if not filename:
+        log.error("no config for password_file")
+        raise HTTPError(500, message="bad configuration")
+    # verify file exists and is writable
+    if not op.isfile(filename):
+        log.error("password file is missing")
+        raise HTTPError(500, message="bad configuration")
+                
+    if not h5py.is_hdf5(filename):
+        log.error("password file is invalid")
+        raise HTTPError(500, message="bad configuration")
+          
+    with h5py.File(filename, 'r') as f:  
+        for attr_name in f.attrs:
+            attr = f.attrs[attr_name]
+            if attr['userid'] == userid:
+                return attr_name
+         
+    return None
+
+          
+
+"""
+  validateUserPassword: verify user and password.
+    throws exception if not valid
+"""
+
+def validateUserPassword(user_name, password):
+    log = logging.getLogger("h5serv")
+   
+    if not user_name:
+        log.info('validateUserPassword - null user')
+        raise HTTPError(401, message="provide user name and password")
+    if not password:
+        log.info('isPasswordValid - null password')
+        raise HTTPError(401, message="provide  password")
+    data = getUserInfo(user_name)
+     
+    if data is None:
+        log.info("user: [" + user_name + "] not found")
+        raise HTTPError(401, message="provide user and password")         
+        
+    if data['pwd'] == encrypt_pwd(password):
+        log.info("user: [" + user_name + "] password validated")
+    else:
+        log.info("user: [" + user_name + "] password is not valid")
+        raise HTTPError(401, message="invalid user name/password")
+
+    return 
+    
+    
+ 

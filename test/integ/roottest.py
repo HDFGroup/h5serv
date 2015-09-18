@@ -14,6 +14,7 @@ import config
 import helper
 import unittest
 import json
+import base64
 
 class RootTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -34,6 +35,11 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
+        if rsp.status_code == 401:
+            auth_string = base64.b64encode("john:bp")
+            
+            headers['Authorization'] = "Basic " + auth_string
+            rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)

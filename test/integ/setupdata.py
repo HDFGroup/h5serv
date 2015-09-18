@@ -22,7 +22,7 @@ DES = "../../data/test"
 # files to be copied into test directory
 testfiles = {
     'tall.h5': ('.',  'tall_updated.h5', 'tall_ro.h5', 'tall_g2_deleted.h5', 
-            'tall_dset112_deleted.h5', 'tall_dset22_deleted.h5'),
+            'tall_dset112_deleted.h5', 'tall_dset22_deleted.h5', 'tall_acl.h5', 'tall_acl_delete.h5'),
     'tall_with_udlink.h5': ('.',),
     'scalar.h5': ('.', 'scalar_1d_deleted.h5',),
     'namedtype.h5': ('.', 'namedtype_deleted.h5'),
@@ -89,6 +89,22 @@ testfiles = {
 # files that will get set as read-only
 read_only_files = ( 'tall_ro.h5', 'readonly.h5')
 
+
+"""
+Create test accounts
+ - add test_user1 and test_user2 if they don't exist already
+"""
+
+def addTestAccounts():
+    password_file = "../../util/admin/passwd.h5"
+    if not os.path.exists(password_file):
+        os.system('cd ../../util/admin; python makepwd_file.py; cd-')
+        
+    add_user_script = 'python ../../util/admin/update_pwd.py' 
+    add_user_script += ' -f ' + password_file  
+    os.system(add_user_script + ' -a -u test_user1 -p test')
+    os.system(add_user_script + ' -a -u test_user2 -p test')
+    
 """
 Make a testfile with 1000 sub-groups
 """
@@ -185,6 +201,10 @@ if not os.path.exists(SRC):
 if not  os.path.exists(DES):
     # create the data/test directory if it doesn't exist
     os.mkdir(DES)
+   
+   
+# create test accounts
+addTestAccounts()
     
 # create group1k.h5 (if not created before)
 makeGroup1k()
