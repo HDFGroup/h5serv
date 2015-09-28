@@ -312,9 +312,9 @@ class HLObject(CommonStateObject):
         req = self.id.endpoint + req
             
         headers = {'host': self.id.domain}
-        self.log.info("GET: " + req)
+        #self.log.info("GET: " + req)
         rsp = requests.get(req, headers=headers)
-        self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
+        #self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
         if rsp.status_code != 200:
              raise IOError(rsp.reason)
         #print "rsp text", rsp.text    
@@ -335,9 +335,9 @@ class HLObject(CommonStateObject):
         data = json.dumps(body)
             
         headers = {'host': self.id.domain}
-        self.log.info("PUT: " + req)
+        #self.log.info("PUT: " + req)
         rsp = requests.put(req, data=data, headers=headers)
-        self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
+        #self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
         if rsp.status_code not in (200, 201):
             raise IOError(rsp.reason)
         
@@ -358,9 +358,9 @@ class HLObject(CommonStateObject):
         data = json.dumps(body)
             
         headers = {'host': self.id.domain}
-        self.log.info("PST: " + req)
+        #self.log.info("PST: " + req)
         rsp = requests.post(req, data=data, headers=headers)
-        self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
+        #self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
         if rsp.status_code not in (200, 201):
             raise IOError(rsp.reason)
         
@@ -377,9 +377,9 @@ class HLObject(CommonStateObject):
         req = self.id.endpoint + req
         
         headers = {'host': self.id.domain}
-        self.log.info("DEL: " + req)
+        #self.log.info("DEL: " + req)
         rsp = requests.delete(req, headers=headers)
-        self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
+        #self.log.info("RSP: " + str(rsp.status_code) + ':' + rsp.text)
         if rsp.status_code != 200:
             raise IOError(rsp.reason)
         rsp_json = json.loads(rsp.text)
