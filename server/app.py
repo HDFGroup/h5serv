@@ -120,39 +120,56 @@ class BaseHandler(tornado.web.RequestHandler):
         if not domain:
             domain = self.request.host
         return domain
-        
-class LinkCollectionHandler(BaseHandler):
-                
-    def getRequestId(self, uri):
+    
+    """
+    Helper method - return request uuid from request URI  
+    URI' are of the form:
+        /groups/<uuid>/xxx
+        /datasets/<uuid>/xxx
+        /datatypes/<uuid>/xxx
+    extract the <uuid> and return it.
+    Throw 500 error is the URI is not in the above form
+    """
+    def getRequestId(self):
         log = logging.getLogger("h5serv")
-        # helper method
-        # uri should be in the form: /groups/<uuid>/links
-        # extract the <uuid>
+        
         uri = self.request.uri
-        if uri[:len('/groups/')] != '/groups/':
-            # should not get here!
-            log.error("unexpected uri: " + uri)
-            raise HTTPError(500)
-        uri = uri[len('/groups/'):]  # get stuff after /groups/
+        if uri.startswith('/groups/'):
+            uri = uri[len('/groups/'):]  # get stuff after /groups/
+        elif uri.startswith('/datasets/'):
+            uri = uri[len('/datasets/'):]  # get stuff after /datasets/
+        elif uri.startswith('/datatypes/'):
+            uri = uri[len('/datatypes/'):]  # get stuff after /datatypes/
+        else:
+            
+            msg = "unexpected uri: " + uri
+            log.error(msg)
+            raise HTTPError(500, reason=msg) 
+            
+            return None
         npos = uri.find('/')
-        if npos <= 0:
+        if npos < 0:
+            uuid = uri
+        elif npos == 0:
             msg = "Bad Request: uri is invalid"
             log.info(msg)
-            raise HTTPError(400, reason=msg)  
-        id = uri[:npos]
+            raise HTTPError(400, reason=msg)
+        else:
+            uuid = uri[:npos]
          
-        log.info('got id: [' + id + ']')
+        log.info('got uuid: [' + uuid + ']')
     
-        return id
+        return uuid
         
-        
+class LinkCollectionHandler(BaseHandler):
+                           
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('LinkCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']') 
         log.info('remote_ip: ' + self.request.remote_ip)     
         self.get_current_user() 
         
-        reqUuid = self.getRequestId(self.request.uri)
+        reqUuid = self.getRequestId()
         domain = self.getDomain()
         filePath = getFilePath(domain)
         
@@ -235,29 +252,6 @@ class LinkCollectionHandler(BaseHandler):
         
 class LinkHandler(BaseHandler):
         
-    def getRequestId(self, uri):
-        log = logging.getLogger("h5serv")
-        # helper method
-        # uri should be in the form: /groups/<uuid>/links/<name>
-        # extract the <uuid>
-        uri = self.request.uri
-        if uri[:len('/groups/')] != '/groups/':
-            # should not get here!
-            msg = "Internal Server Error: Unexpected uri"
-            log.error(msg)
-            raise HTTPError(500, reason=msg)
-        uri = uri[len('/groups/'):]  # get stuff after /groups/
-        npos = uri.find('/')
-        if npos <= 0:
-            log.info("bad uri")
-            raise HTTPError(400)  
-        
-        id = uri[:npos]
-         
-        log.info('got id: [' + id + ']')
-    
-        return id
-        
     def getName(self, uri):
         log = logging.getLogger("h5serv")
         # helper method
@@ -292,7 +286,7 @@ class LinkHandler(BaseHandler):
         log.info('remote_ip: ' + self.request.remote_ip)  
         self.get_current_user()   
         
-        reqUuid = self.getRequestId(self.request.uri)
+        reqUuid = self.getRequestId()
         domain = self.getDomain()
         filePath = getFilePath(domain) 
         linkName = self.getName(self.request.uri)
@@ -372,10 +366,10 @@ class LinkHandler(BaseHandler):
         self.get_current_user()  
         # put - create a new link
         # patterns are:
-        # PUT /group/<id>/links/<name> {id: <id> } 
-        # PUT /group/<id>/links/<name> {h5path: <path> } 
-        # PUT /group/<id>/links/<name> {h5path: <path>, h5domain: <href> }
-        reqUuid = self.getRequestId(self.request.uri)
+        # PUT /groups/<id>/links/<name> {id: <id> } 
+        # PUT /groups/<id>/links/<name> {h5path: <path> } 
+        # PUT /groups/<id>/links/<name> {h5path: <path>, h5domain: <href> }
+        reqUuid = self.getRequestId()
         
         linkName = url_unescape(self.getName(self.request.uri))
         
@@ -462,7 +456,7 @@ class LinkHandler(BaseHandler):
         log.info('LinkHandler.delete ' + self.request.host)   
         log.info('remote_ip: ' + self.request.remote_ip)
         self.get_current_user()  
-        reqUuid = self.getRequestId(self.request.uri)
+        reqUuid = self.getRequestId()
         
         linkName = self.getName(self.request.uri)
         
@@ -519,6 +513,7 @@ class AclHandler(BaseHandler):
             return 'groups'
             
         uri = uri[(npos+1):]
+        
         npos = uri.find('/')  # second '/'
         if npos < 0:
             # uri is "/acls"
@@ -532,40 +527,12 @@ class AclHandler(BaseHandler):
             raise HTTPError(500, reason=msg)   # shouldn't get routed here in this case
     
         return col_name
-        
-    def getRequestId(self, uri):
-        log = logging.getLogger("h5serv")
-        # helper method
-        # uri should be in the form: /groups/<uuid>/links/<name>
-        # extract the <uuid>
-        uri = self.request.uri
-        idpart = None
-         
-        if uri[:len('/datasets/')] == '/datasets/':
-            idpart = uri[len('/datasets/'):]  # get stuff after /datasets/
-        elif uri[:len('/groups/')] == '/groups/':
-            idpart = uri[len('/groups/'):]  # get stuff after /groups/
-        elif uri[:len('/datatypes/')] == '/datatypes/':
-            idpart = uri[len('/datatypes/'):]  # get stuff after /datatypes/
-        else:
-            # domain acl
-            return None
-        
-        npos = idpart.find('/')
-        if npos <= 0:
-            msg = "Bad Request: URI is invalid"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)  
-        obj_uuid = idpart[:npos]
-         
-         
-        log.info('got id: [' + obj_uuid + ']')
-    
-        return obj_uuid
+     
         
     def getName(self):
         log = logging.getLogger("h5serv")
         uri = self.request.uri
+         
         if uri == '/acls':
             return None  # default domain acl
         # helper method
@@ -630,14 +597,20 @@ class AclHandler(BaseHandler):
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('AclHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')  
-        log.info('remote_ip: ' + self.request.remote_ip)     
+        log.info('remote_ip: ' + self.request.remote_ip)    
         
         self.get_current_user()
-        req_uuid = self.getRequestId(self.request.uri)
+        req_uuid = None
+        if not self.request.uri.startswith("/acls"):
+            # get UUID for object unless this is a get on domain acl
+            req_uuid = self.getRequestId()
+        
         domain = self.getDomain()
+      
         rootUUID = None
         filePath = getFilePath(domain) 
         userName = self.getName()
+  
         col_name = self.getRequestCollectionName()
         
         req_userid = None
@@ -699,6 +672,7 @@ class AclHandler(BaseHandler):
         response['hrefs'] = hrefs      
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
+              
     
     def put(self):
         log = logging.getLogger("h5serv")
@@ -709,8 +683,10 @@ class AclHandler(BaseHandler):
         # patterns are:
         # PUT /group/<id>/acls/<name> {'read': True, 'write': False } 
         # PUT /acls/<name> {'read'... }
-         
-        req_uuid = self.getRequestId(self.request.uri)
+        
+        req_uuid = None
+        if not self.request.uri.startswith("/acls/"):
+            req_uuid = self.getRequestId()
         col_name = self.getRequestCollectionName()
         userName = url_unescape(self.getName())
         
@@ -801,28 +777,6 @@ class AclHandler(BaseHandler):
                                 
 class TypeHandler(BaseHandler):
      
-    
-    # or 'Snn' for fixed string or 'vlen_bytes' for variable 
-    def getRequestId(self):
-        log = logging.getLogger("h5serv")
-        # request is in the form /datatypes/<id>, return <id>
-        uri = self.request.uri
-        npos = uri.rfind('/')
-        if npos < 0:
-            msg = "Internal Server Error: Unexpected routing"
-            log.error(msg)
-            raise HTTPError(500, reason=msg)  # should not get routed to TypeHandler in this case
-        if npos == len(uri) - 1:
-            msg = "Bad Request: id is not specified"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)
-        rpos = uri.rfind('?')
-        if rpos < 0:
-            rpos = len(uri)
-        id = uri[(npos+1):rpos]
-        log.info('got id: [' + id + ']')
-    
-        return id
         
     def get(self):
         log = logging.getLogger("h5serv")
@@ -831,6 +785,11 @@ class TypeHandler(BaseHandler):
         self.get_current_user()
         
         reqUuid = self.getRequestId()
+         
+        if not reqUuid:
+            msg = "Bad Request: id is not specified"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
         domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
@@ -869,8 +828,7 @@ class TypeHandler(BaseHandler):
         
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
-        
-    
+            
         
     def delete(self): 
         log = logging.getLogger("h5serv")
@@ -912,32 +870,7 @@ class TypeHandler(BaseHandler):
                 
 class DatatypeHandler(BaseHandler):
     
-        
-    def getRequestId(self):
-        log = logging.getLogger("h5serv")
-        # request is in the form /datasets/<id>/type, return <id>
-        uri = self.request.uri
-        npos = uri.rfind('/type')
-        if npos < 0:
-            msg = "Internal Server Error: Unexpected routing"
-            log.error(msg)
-            raise HTTPError(500, reason=msg)  # should not get routed to DatatypeHandler in this case
-        id_part = uri[:npos]
-        npos = id_part.rfind('/')
-        if npos < 0:
-            msg = "Internal Server Error: Unexpected routing"
-            log.error(msg)
-            raise HTTPError(500, reason=msg)  # should not get routed to DatatypeHandler in this case
-        
-        if npos == len(id_part) - 1:
-            msg = "Bad Request: id is not specified"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)
-        id = id_part[(npos+1):]
-        log.info('got id: [' + id + ']')
     
-        return id
-        
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('DatatypeHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
@@ -980,33 +913,6 @@ class DatatypeHandler(BaseHandler):
         self.write(json_encode(response))
                 
 class ShapeHandler(BaseHandler):
-     
-        
-    def getRequestId(self):
-        log = logging.getLogger("h5serv")
-        
-        # request is in the form /datasets/<id>/shape, return <id>
-        uri = self.request.uri
-        npos = uri.rfind('/shape')
-        if npos < 0:
-            msg = "Internal Server Error: Unexpected routing"
-            log.error(msg)
-            raise HTTPError(500, reason=msg)  # should not get routed to ShapeHandler in this case
-        id_part = uri[:npos]
-        npos = id_part.rfind('/')
-        if npos < 0:
-            msg = "Internal Server Error: Unexpected routing"
-            log.error(msg)
-            raise HTTPError(500, reason=msg)  # should not get routed to ShapeHandler in this case
-        
-        if npos == len(id_part) - 1:
-            msg = "Bad Request: id is not specified"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)
-        id = id_part[(npos+1):]
-        log.info('got id: [' + id + ']')
-    
-        return id
         
     def get(self):
         log = logging.getLogger("h5serv")
@@ -1130,28 +1036,6 @@ class ShapeHandler(BaseHandler):
 class DatasetHandler(BaseHandler):
      
    
-    def getRequestId(self):
-        log = logging.getLogger("h5serv")
-        # request is in the form /datasets/<id>, return <id>
-        uri = self.request.uri
-        start = uri.rfind('/')
-        if start < 0:
-            msg = "Internal Server Error: unexpected routing"
-            log.error(msg)
-            raise HTTPError(500, reason=msg)  # should not get routed to TypeHandler in this case
-        if start == len(uri) - 1:
-            msg = "Bad Request: id not specified"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)
-        end = uri.rfind('?')
-        if end < 0:
-            end = len(uri)
-            
-        id = uri[(start+1):end]
-        log.info('got id: [' + id + ']')
-    
-        return id
-        
     """
     Helper method - return query options for a "reasonable" size data preview selection.
     Return None if the dataset is small enough that a preview is not needed.
@@ -1463,29 +1347,7 @@ class ValueHandler(BaseHandler):
                 raise HTTPError(400, reason=msg)
             slices.append(s)
         return tuple(slices)
-        
-    """
-    Helper method - get uuid for the dataset
-    """    
-    def getRequestId(self):
-        log = logging.getLogger("h5serv")
-        # request is in the form /datasets/<id>/value?xxx, return <id>
-        uri = self.request.uri
-        if uri[:len('/datasets/')] != '/datasets/':
-            # should not get here!
-            log.error("unexpected uri: " + uri)
-            raise HTTPError(500)
-        uri = uri[len('/datasets/'):]  # get stuff after /datasets/
-        npos = uri.find('/')
-        if npos <= 0:
-            msg = "Bad Request: uri is invalid"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)  
-        id = uri[:npos]
-         
-        log.info('got id: [' + id + ']')
     
-        return id
         
     def get(self):
         log = logging.getLogger("h5serv")
@@ -1807,34 +1669,6 @@ class AttributeHandler(BaseHandler):
         else:
             return data
     
-    def getRequestId(self):
-        log = logging.getLogger("h5serv")
-        # request is in the form /(datasets|groups|datatypes)/<id>/attributes(/<name>), 
-        # return <id>
-        uri = self.request.uri
-        idpart = None
-        if uri[:len('/datasets/')] == '/datasets/':
-            idpart = uri[len('/datasets/'):]  # get stuff after /datasets/
-        elif uri[:len('/groups/')] == '/groups/':
-            idpart = uri[len('/groups/'):]  # get stuff after /groups/
-        elif uri[:len('/datatypes/')] == '/datatypes/':
-            idpart = uri[len('/datatypes/'):]  # get stuff after /datatypes/
-        else:
-            # should not get here!
-            msg = "Internal Server Error: unexpected uri: " + uri
-            log.error(msg)
-            raise HTTPError(500, reason=msg)
-        
-        npos = idpart.find('/')
-        if npos <= 0:
-            msg = "Bad Request: URI is invalid"
-            log.info(msg)
-            raise HTTPError(400, reason=msg)  
-        id = idpart[:npos]
-         
-        log.info('got id: [' + id + ']')
-    
-        return id
         
     def getRequestName(self):
         log = logging.getLogger("h5serv")
@@ -2148,26 +1982,6 @@ class AttributeHandler(BaseHandler):
                 
          
 class GroupHandler(BaseHandler):
-        
-    def getRequestId(self):
-        log = logging.getLogger("h5serv")
-        uri = self.request.uri
-        npos = uri.rfind('/')
-        if npos < 0:
-            msg = "Internal Server Error: unexpected routing"
-            log.error(msg)
-            raise HTTPError(500, reason=msg)  # should not get routed to GroupHandler in this case
-        if npos == len(uri) - 1:
-            msg = "Bad Request: id could not be found in URI"
-            log.info(msg)
-            raise HTTPError(400, message=msg)
-        rpos = uri.rfind('?')
-        if rpos < 0:
-            rpos = len(uri)
-        id = uri[(npos+1):rpos]
-        log.info('got id: [' + id + ']')
-    
-        return id
             
     def get(self):
         log = logging.getLogger("h5serv")
@@ -2176,6 +1990,7 @@ class GroupHandler(BaseHandler):
         self.get_current_user()
         
         reqUuid = self.getRequestId()
+            
         domain = self.getDomain()
         filePath = getFilePath(domain) 
         verifyFile(filePath)
