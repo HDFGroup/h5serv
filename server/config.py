@@ -28,7 +28,8 @@ cfg = {
     'root_userid': 'root',
     'default_acl': 'r',  # default permissions - any subset of 'crud'
     'password_file': '../util/admin/passwd.h5',
-    'static_path': '../static',
+    'static_url': r'/views/(.*)',
+    'static_path': r'../static',
     'cors_domain': '*'  # set to None to disallow CORS (cross-origin resource sharing)
 }
    

@@ -122,8 +122,7 @@ class BaseHandler(tornado.web.RequestHandler):
         return domain
         
 class LinkCollectionHandler(BaseHandler):
-     
-           
+                
     def getRequestId(self, uri):
         log = logging.getLogger("h5serv")
         # helper method
@@ -801,15 +800,7 @@ class AclHandler(BaseHandler):
         
                                 
 class TypeHandler(BaseHandler):
-    """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
+     
     
     # or 'Snn' for fixed string or 'vlen_bytes' for variable 
     def getRequestId(self):
@@ -920,15 +911,7 @@ class TypeHandler(BaseHandler):
         self.write(json_encode(response))
                 
 class DatatypeHandler(BaseHandler):
-    """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
+    
         
     def getRequestId(self):
         log = logging.getLogger("h5serv")
@@ -997,15 +980,7 @@ class DatatypeHandler(BaseHandler):
         self.write(json_encode(response))
                 
 class ShapeHandler(BaseHandler):
-    """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
+     
         
     def getRequestId(self):
         log = logging.getLogger("h5serv")
@@ -1153,15 +1128,7 @@ class ShapeHandler(BaseHandler):
         self.write(json_encode(response)) 
                 
 class DatasetHandler(BaseHandler):
-    """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
+     
    
     def getRequestId(self):
         log = logging.getLogger("h5serv")
@@ -1335,17 +1302,7 @@ class DatasetHandler(BaseHandler):
             
                 
 class ValueHandler(BaseHandler):
-    """
-    Helper method - return domain based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
-      
-    
+     
     """
     Helper method - return slice for dim based on query params
     
@@ -1839,15 +1796,6 @@ class ValueHandler(BaseHandler):
         log.info("value post succeeded")   
            
 class AttributeHandler(BaseHandler):
-    """
-    Helper method - return domain based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
 
     # convert embedded list (list of lists) to tuples
     def convertToTuple(self, data):
@@ -2200,15 +2148,6 @@ class AttributeHandler(BaseHandler):
                 
          
 class GroupHandler(BaseHandler):
-    """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
         
     def getRequestId(self):
         log = logging.getLogger("h5serv")
@@ -2320,15 +2259,6 @@ class GroupHandler(BaseHandler):
     
                 
 class GroupCollectionHandler(BaseHandler):
-    """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
             
     def get(self):
         log = logging.getLogger("h5serv")
@@ -2464,15 +2394,6 @@ class GroupCollectionHandler(BaseHandler):
         
         
 class DatasetCollectionHandler(BaseHandler):
-    """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
             
     def get(self):
         log = logging.getLogger("h5serv")
@@ -2676,16 +2597,7 @@ class DatasetCollectionHandler(BaseHandler):
         self.set_status(201)  # resource created
         
 class TypeCollectionHandler(BaseHandler):
-    """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
-            
+     
     def get(self):
         log = logging.getLogger("h5serv")
         log.info('TypeCollectionHandler.get host=[' + self.request.host + '] uri=[' + self.request.uri + ']')
@@ -3149,14 +3061,21 @@ def shutdown():
     log.info("closing db")
 
 def make_app():
+    static_url =  config.get('static_url')
+    static_path = config.get('static_path')
     settings = {
-        "static_path": os.path.join(os.path.dirname(__file__), config.get('static_path')),
+        # "static_path": os.path.join(os.path.dirname(__file__), 'static'),
+        "static_path": 'static',
         # "cookie_secret": "__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
         # "login_url": "/login",
         # "xsrf_cookies": True,
         "debug": config.get('debug')
     }
-    print 'static_path:', settings['static_path']
+       
+    favicon_path = "favicon.ico" 
+    print "dirname path:", os.path.dirname(__file__)
+    print "favicon_path:", favicon_path
+    print 'Static content in the path:' + static_path + " will be displayed via the url: " + static_url
     print 'isdebug:', settings['debug']
     
     app = Application( [
@@ -3189,13 +3108,11 @@ def make_app():
         url(r"/groups\?.*", GroupCollectionHandler),
         url(r"/groups", GroupCollectionHandler),
         url(r"/info", InfoHandler),
-        url(r"/static/(.*)", tornado.web.StaticFileHandler, {'path', settings['static_path']}),
-        url(r'/favicon.ico', tornado.web.StaticFileHandler, {'path': "./favicon.ico"}),
-        url(r"/views/(.*)", tornado.web.StaticFileHandler, {'path': '../../hdfwebui/views/'}),
+        url(static_url, tornado.web.StaticFileHandler, {'path': static_path}),
+        url(r"/(favicon\.ico)", tornado.web.StaticFileHandler, {'path': favicon_path}),
         url(r"/acls/.*", AclHandler),
         url(r"/acls", AclHandler),
         url(r"/", RootHandler),
-        
         url(r".*", DefaultHandler)
     ],  **settings)
     return app
