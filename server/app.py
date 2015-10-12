@@ -31,7 +31,7 @@ from hdf5db import Hdf5db
 import hdf5dtype
 
 from timeUtil import unixTimeToUTC
-from fileUtil import getFilePath, getDomain, makeDirs, verifyFile
+from fileUtil import getFilePath,  makeDirs, verifyFile
 from tocUtil import isTocFilePath, getTocFilePath
 from httpErrorUtil import errNoToHttpStatus
 from passwordUtil import getUserId, getUserName, validateUserPassword
@@ -67,6 +67,15 @@ class DefaultHandler(RequestHandler):
         raise HTTPError(400, reason="No route matches") 
         
 class BaseHandler(tornado.web.RequestHandler):
+    
+    """
+    Enable CORS
+    """
+    def set_default_headers(self):
+        cors_domain = config.get('cors_domain')
+        if cors_domain:
+            self.set_header('Access-Control-Allow-Origin', cors_domain)
+        
     """
     Override of Tornado get_current_user
     """
@@ -100,9 +109,7 @@ class BaseHandler(tornado.web.RequestHandler):
         # validated user, but doesn't have access
         log = logging.getLogger("h5serv")
         log.info("unauthorized access for userid: " + str(self.userid))
-        raise HTTPError(403, "Access is not permitted")
-             
-            
+        raise HTTPError(403, "Access is not permitted")           
             
     """
     Helper method - return domain auth based on either query param
@@ -115,17 +122,8 @@ class BaseHandler(tornado.web.RequestHandler):
         return domain
         
 class LinkCollectionHandler(BaseHandler):
-    """
-    Helper method - return domain based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
-        
-        
+     
+           
     def getRequestId(self, uri):
         log = logging.getLogger("h5serv")
         # helper method
@@ -237,15 +235,6 @@ class LinkCollectionHandler(BaseHandler):
     
         
 class LinkHandler(BaseHandler):
-    """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
         
     def getRequestId(self, uri):
         log = logging.getLogger("h5serv")
@@ -514,15 +503,6 @@ class LinkHandler(BaseHandler):
         self.write(json_encode(response))
 
 class AclHandler(BaseHandler):
-    """
-    Helper method - return domain ath based on either query param
-    or host header
-    """  
-    def getDomain(self):
-        domain = self.get_query_argument("host", default=None)
-        if not domain:
-            domain = self.request.host
-        return domain
         
     def getRequestCollectionName(self):
         log = logging.getLogger("h5serv")
@@ -3170,7 +3150,7 @@ def shutdown():
 
 def make_app():
     settings = {
-        "static_path": os.path.join(os.path.dirname(__file__), "../static"),
+        "static_path": os.path.join(os.path.dirname(__file__), config.get('static_path')),
         # "cookie_secret": "__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
         # "login_url": "/login",
         # "xsrf_cookies": True,
@@ -3209,10 +3189,13 @@ def make_app():
         url(r"/groups\?.*", GroupCollectionHandler),
         url(r"/groups", GroupCollectionHandler),
         url(r"/info", InfoHandler),
-        url(r"/static/(.*)", tornado.web.StaticFileHandler, {'path', '../static/'}),
+        url(r"/static/(.*)", tornado.web.StaticFileHandler, {'path', settings['static_path']}),
+        url(r'/favicon.ico', tornado.web.StaticFileHandler, {'path': "./favicon.ico"}),
+        url(r"/views/(.*)", tornado.web.StaticFileHandler, {'path': '../../hdfwebui/views/'}),
         url(r"/acls/.*", AclHandler),
         url(r"/acls", AclHandler),
         url(r"/", RootHandler),
+        
         url(r".*", DefaultHandler)
     ],  **settings)
     return app

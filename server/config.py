@@ -27,7 +27,9 @@ cfg = {
     'ssl_cert_pwd': '',
     'root_userid': 'root',
     'default_acl': 'r',  # default permissions - any subset of 'crud'
-    'password_file': '../util/admin/passwd.h5'
+    'password_file': '../util/admin/passwd.h5',
+    'static_path': '../static',
+    'cors_domain': '*'  # set to None to disallow CORS (cross-origin resource sharing)
 }
    
 def get(x):     
