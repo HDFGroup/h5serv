@@ -59,6 +59,7 @@ Options:
         (assuming the server is using port 5000):
         ``python exporth5.py -endpoint=127.0.0.1 -port=5000 tall.test.hdfgroup.org tall.h5``
 
+The following two utilities are located in hdf5-json submodule: hdf5-json/util.
 
 jsontoh5.py
 -----------

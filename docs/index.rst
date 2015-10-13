@@ -23,6 +23,7 @@ Contents:
    Types/index
    Reference
    Utilities
+   AdminTools
    WhatsNew/index
    Tutorials/index
    FAQ/index
