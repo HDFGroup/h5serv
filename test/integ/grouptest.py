@@ -38,6 +38,24 @@ class GroupTest(unittest.TestCase):
             self.failUnlessEqual(rspJson["linkCount"], 2)
             self.failUnlessEqual(rspJson["attributeCount"], 2)
             self.failUnlessEqual(rsp.status_code, 200)
+            
+    def testGetWithHostQuery(self):
+        for domain_name in ('tall',):
+            domain = domain_name + '.' + config.get('domain')    
+            req = self.endpoint + "/?host=" + domain
+            rsp = requests.get(req)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            rootUUID = rspJson["root"]
+            self.assertTrue(helper.validateId(rootUUID))
+        
+            req = self.endpoint + "/groups/" + rootUUID + "?host=" + domain
+            rsp = requests.get(req)
+            self.failUnlessEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.failUnlessEqual(rspJson["linkCount"], 2)
+            self.failUnlessEqual(rspJson["attributeCount"], 2)
+            self.failUnlessEqual(rsp.status_code, 200)
           
     def testPost(self):
         # test PUT_root

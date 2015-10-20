@@ -134,6 +134,12 @@ class BaseHandler(tornado.web.RequestHandler):
         log = logging.getLogger("h5serv")
         
         uri = self.request.uri
+        
+        # strip off any query params
+        npos = uri.find('?')
+        if npos > 0:
+            uri = uri[:npos]
+            
         if uri.startswith('/groups/'):
             uri = uri[len('/groups/'):]  # get stuff after /groups/
         elif uri.startswith('/datasets/'):
