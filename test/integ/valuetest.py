@@ -498,10 +498,10 @@ class ValueTest(unittest.TestCase):
                     "wind == 'W 5'": 3,
                     "temp > 61": 53,
                     "(date >=22) %26 (date <= 24)": 62,
-                    "(date == 21) %26 (temp > 70)": 10,
+                    "(date == 21) %26 (temp > 70)": 4,
                     "(wind == 'E 7') | (wind == 'S 7')": 7 }
        
-        queries = {    "(date == 21) %26 (temp >= 72)": 4 }
+        #queries = {    "(date == 21) %26 (temp >= 72)": 4 }
         domain = 'compound.' + config.get('domain') 
         headers = {'host': domain} 
         root_uuid = helper.getRootUUID(domain)
