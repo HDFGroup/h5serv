@@ -23,6 +23,7 @@ from h5py.h5t import check_dtype
 
 #from . import base
 from .base import HLObject
+from .base import phil, with_phil
 from .objectid import ObjectID, TypeID, DatasetID
 #from . import filters
 from . import selections as sel

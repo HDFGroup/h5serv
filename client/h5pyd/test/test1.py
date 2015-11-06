@@ -51,6 +51,7 @@ print "dset111 uuid:", dset111.id.uuid
 print "dset111 name:", dset111.name
 print "dset111 dims:", dset111.shape
 print "dset111 type:", dset111.dtype
+print "dset111 len:", len(dset111)
 
  
 attr1 = dset111.attrs['attr1']
