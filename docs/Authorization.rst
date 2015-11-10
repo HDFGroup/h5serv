@@ -23,22 +23,22 @@ http request which conveys the userid and password.
 
 The authorization string is constructed as follows:
 
-# Username and password are combined into a string "username:password". Note that username cannot contain the ":" character.
-# The resulting string is then encoded using the RFC2045-MIME variant of Base64, except not limited to 76 char/line
-# The authorization method and a space i.e. "Basic " is then put before the encoded string.
+ # Username and password are combined into a string "username:password". Note that username cannot contain the ":" character
+ # The resulting string is then encoded using the RFC2045-MIME variant of Base64, except not limited to 76 char/line
+ # The authorization method and a space i.e. "Basic " is then put before the encoded string
 
 For example, if the user agent uses 'Aladdin' as the username and 'open sesame' as the password then the field is formed as follows:
 Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
 
 If the authorization string is validated, the server will verify the request is authorized as
 per the object's ACL list.  If not authorized a http status 403 - Forbidden will be returned.
-See :doc:`AclOps`) for information on how to use ACL's.
+See :doc:`../AclOps`) for information on how to use ACL's.
 
 User ids and passwords
 ----------------------
 
 User ids and passwords are maintained in an HDF5 file referenced in the server config: 
-'password_file'.  The admin tool (See :doc:`AdminTools`): update_pwd.py can be used 
+'password_file'.  The admin tool (See :doc:`AdminTools`) script: update_pwd.py can be used 
 to create new users and update passwords.
 
 

@@ -5,12 +5,13 @@ Reference
 .. toctree::
    :maxdepth: 2
 
-   Resources
-   Diagram
+   Authorization
    CommonRequestHeaders
    CommonResponseHeaders
    CommonErrorResponses
-   Authorization
-   UsingIteration
+   Diagram
    Hypermedia
+   Resources
+   UsingIteration
+   
     
