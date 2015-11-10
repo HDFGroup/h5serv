@@ -69,11 +69,17 @@ acl
 A JSON object that describe a users acces permisions.  Subkeys of acl are:
 
 userName: the userid of the requested user
+
 create: A boolean flag that indicated if the user is authorized to create new resources
+
 delete: A boolean flag that indicated if the user is authorized to delete resources
+
 read: A boolean flag that indicated if the user is authorized to read (GET) resources
+
 update: A boolean flag that indicated if the user is authorized to update resources
+
 readACL: A boolean flag that indicated if the user is authorized to read the object's ACL
+
 updateACL: A boolean flag that indicated if the user is authorized to update the object's ACL
 
  
