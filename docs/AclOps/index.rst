@@ -39,7 +39,7 @@ ann        true  true     true    true    true     true
 
 This ACL would enable anyone to read (perform GET requests).  User 'joe' would be able 
 to read and update (modify values in the dataset).  While user 'ann' would have full 
-controll to do any operation on the dataset (including modifying permissions for herself or
+control to do any operation on the dataset (including modifying permissions for herself or
 other users).
 
 The following unauthenticated (no HTTP Authorization header) 
@@ -71,11 +71,11 @@ Note: HTTP Status 401 basically says: "you can't have access until you tell me w
 while HTTP Status 403 says: "I know who you are, but you don't have permissions to access this
 resource.".
 
-Root ACL Inheritence
+Root ACL Inheritance
 --------------------
 
 In many cases it will be desired to have a default ACL that applies to each resource in the domain.
-This can be accomplished by defining an ACL for the root group.  This will controll the access 
+This can be accomplished by defining an ACL for the root group.  This will control the access 
 rights for any resource unless of ACL is present in that resource for the requesting user.
 
 For a given user then, the permissions for a resource are found in the following way:

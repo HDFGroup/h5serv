@@ -10,7 +10,7 @@ username and password against a value stored within a password file.
 
 If neither the requested object (Group, Dataset, or Committed Datatype) nor the object's root group
 has an Access Control List (ACL), authorization is not required and no authentication string
-needs to be suplied. See :doc:`../AclOps`) for information on how to use ACL's.
+needs to be supplied. See :doc:`../AclOps`) for information on how to use ACL's.
 
 If the requested object (or object's root group), does have an ACL, authorization may be required 
 (if the object is not publically readable),
