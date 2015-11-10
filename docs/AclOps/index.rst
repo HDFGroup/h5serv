@@ -80,11 +80,11 @@ rights for any resource unless of ACL is present in that resource for the reques
 
 For a given user then, the permissions for a resource are found in the following way:
 
-# If the user is present in the resources ACL, those permissions are used
-# If no user is present in the resources ACL, but is present in the root group, those permissions are used
-# Otherwise, if a 'default' user is present in the resource ACL, those permissions are used
-# If a 'default' user is not present in the resource ACL, but is present in the root ACL, those permissions are used
-# If no 'default' user is present in the root ACL, the permissions defined in the 'default_acl' config is used.
+ 1. If the user is present in the resources ACL, those permissions are used
+ 2. If no user is present in the resources ACL, but is present in the root group, those permissions are used
+ 3. Otherwise, if a 'default' user is present in the resource ACL, those permissions are used
+ 4. If a 'default' user is not present in the resource ACL, but is present in the root ACL, those permissions are used
+ 5. If no 'default' user is present in the root ACL, the permissions defined in the 'default_acl' config is used.
   
 List of Operations
 ------------------
