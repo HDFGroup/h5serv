@@ -422,6 +422,17 @@ class AclTest(unittest.TestCase):
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization
         
+        # try malformed auth string 
+        headers['Authorization'] = "Basic " + "xxx123"
+        rsp = requests.delete(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 400)  # bad auth header
+        
+        # try invalid password
+        headers['Authorization'] = "Basic " + base64.b64encode('test_user1' +
+            ':' + "notmypassword")
+        rsp = requests.delete(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 401)  # need valid auth header     
+        
         headers = self.getHeaders(user=self.user1)
         rsp = requests.delete(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 403)  # not authorized 

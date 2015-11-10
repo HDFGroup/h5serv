@@ -21,6 +21,7 @@ import tornado.httpserver
 import sys
 import ssl
 import base64
+import binascii
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, url_escape, url_unescape
@@ -83,8 +84,14 @@ class BaseHandler(tornado.web.RequestHandler):
         user = None
         pswd = None
         scheme, _, token = auth_header = self.request.headers.get('Authorization', '').partition(' ')
-        if scheme.lower() == 'basic':
-            user, _, pswd= base64.decodestring(token).partition(':')
+        if scheme and token and scheme.lower() == 'basic':
+            try:
+                token_decoded = base64.decodestring(token)
+            except binascii.Error:
+                raise HTTPError(400, "Malformed authorization header")  
+            if token_decoded.index(':') < 0:
+                raise HTTPError(400, "Malformed authorization header")
+            user, _, pswd= token_decoded.partition(':')
         if user and pswd:
             validateUserPassword(user, pswd)  # throws exception if passwd is not valid 
             self.userid = getUserId(user)
