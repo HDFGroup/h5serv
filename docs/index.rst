@@ -21,6 +21,7 @@ Contents:
    DatatypeOps/index
    AttrOps/index
    Types/index
+   AclOps/index
    Reference
    Utilities
    AdminTools

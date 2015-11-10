@@ -6,7 +6,7 @@ Request Authentication
 -----------------------
 h5serv supports HTTP Basic authentication to authenticate users by comparing an encrypted 
 username and password against a value stored within a password file.  
-(See :doc: `AdminTools` to create a password file and add user accounts.) 
+(See :doc:`AdminTools` to create a password file and add user accounts.) 
 
 If neither the requested object (Group, Dataset, or Committed Datatype) nor the object's root group
 has an Access Control List (ACL), authorization is not required and no authentication string
