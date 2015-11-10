@@ -118,12 +118,25 @@ class AclTest(unittest.TestCase):
         headers = self.getHeaders(self.user2)  
         req = self.endpoint + "/acls"
         rsp = requests.get(req, headers=headers)
+    
         self.failUnlessEqual(rsp.status_code, 200)   
         
         rspJson = json.loads(rsp.text)
         self.assertTrue('acls' in rspJson)
         acls = rspJson['acls']
         self.failUnlessEqual(len(acls), 3)
+        
+        # get acl for a particular user
+        headers = self.getHeaders(self.user2)  
+        req = self.endpoint + "/acls/" + self.user1['username']
+        rsp = requests.get(req, headers=headers)
+    
+        self.failUnlessEqual(rsp.status_code, 200)   
+        
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('acl' in rspJson)
+        acl = rspJson['acl']
+        self.failUnlessEqual(len(acl.keys()), 7)
         
     def testAttributes(self):
         self.domain = 'tall_acl.' + config.get('domain')  
@@ -157,8 +170,7 @@ class AclTest(unittest.TestCase):
         self.failUnlessEqual(rsp.status_code, 200)  # OK
         rspJson = json.loads(rsp.text)  
         self.failUnlessEqual(rspJson['value'], 42)  
-        
-        
+               
         # delete attribute
         headers = self.getHeaders()
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + 'a1'

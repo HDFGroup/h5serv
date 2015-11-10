@@ -665,19 +665,24 @@ class AclHandler(BaseHandler):
                
         response = {}     
         acl = self.convertUserIdToUserName(acl)
-         
-        response['acls'] = acl
         
         if userName is None:
             userName = ''  # for string concat in the hrefs
+            response['acls'] = acl
+        else:
+            response['acl'] = acl
              
         hrefs = []     
         href = self.request.protocol + '://' + self.request.host + '/'
         hostQuery = ''
         if self.get_query_argument("host", default=None):
             hostQuery = "?host=" + self.get_query_argument("host")
-        hrefs.append({'rel': 'self',       'href': href + col_name + '/' + obj_uuid + 
-            '/acl/' + url_escape(userName) + hostQuery})
+        if current_user_acl:
+            hrefs.append({'rel': 'self',       'href': href + col_name + '/' + obj_uuid + 
+                '/acls/' + url_escape(userName) + hostQuery})
+        else:
+            hrefs.append({'rel': 'self',       'href': href + col_name + '/' + obj_uuid + 
+                '/acls' + hostQuery})
         hrefs.append({'rel': 'root',       'href': href + 'groups/' + rootUUID + hostQuery}) 
         hrefs.append({'rel': 'home',       'href': href + hostQuery }) 
         hrefs.append({'rel': 'owner', 'href': href + col_name + '/' + obj_uuid + hostQuery})  
