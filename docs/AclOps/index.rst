@@ -93,5 +93,7 @@ List of Operations
    :maxdepth: 1
 
    GET_ACL
+   GET_ACLs
+   PUT_ACL
     
     

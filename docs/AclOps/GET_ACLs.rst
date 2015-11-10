@@ -1,10 +1,11 @@
 **********************************************
-GET ACL
+GET ACLs
 **********************************************
 
 Description
 ===========
-Returns access information for the given user for the object with the UUID provided in the URI.
+Returns access information for all users defined in the ACL (Access Control List) 
+for the object with the UUID provided in the URI.
 
 Requests
 ========
@@ -12,34 +13,32 @@ Requests
 Syntax
 ------
 
-To get a user's access information for a group:
+To get the ACL for a group:
 
 .. code-block:: http
-    GET /groups/<id>/acls/<userid> HTTP/1.1
+    GET /groups/<id>/acls HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
 
-To get a user's access information for a dataset:
+To get the ACL for a dataset:
 
 .. code-block:: http
-    GET /datasets/<id>/acls/<userid> HTTP/1.1
+    GET /datasets/<id>/acls HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
 
-To get a user's access information for a committed datatype:
+To get the ACL for a committed datatype:
 
 .. code-block:: http
-    GET /datatypes/<id>/acls/<userid> HTTP/1.1
+    GET /datatypes/<id>/acls HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
 
 where:
     
 *<id>* is the UUID of the requested dataset/group/committed datatype.
-*<userid>* is the userid for the requested user.  Use the special userid "default" to 
-get the default access permisions for the object.
     
 Request Parameters
 ------------------
@@ -65,11 +64,13 @@ Response Elements
 On success, a JSON response will be returned with the following elements:
 
 
-acl
-^^^
-A JSON object that describe a users acces permisions.  Subkeys of acl are:
+acls
+^^^^
+A JSON list that contains one element for each user specified in the ACL.
+The elements will be JSON object that describe the users acces permisions.  
+Subkeys of the element are are:
 
-userName: the userid of the requested user
+userName: the userid of the user ('default' for the default access)
 
 create: A boolean flag that indicated if the user is authorized to create new resources
 
@@ -102,7 +103,7 @@ Sample Request
 
 .. code-block:: http
 
-    GET /groups/052dcbbd-9d33-11e4-86ce-3c15c2da029e/acls/test_user1 HTTP/1.1
+    GET /groups/052dcbbd-9d33-11e4-86ce-3c15c2da029e/acls  HTTP/1.1
     host: tall.test.hdfgroup.org
     Accept-Encoding: gzip, deflate
     Accept: */*
@@ -123,18 +124,38 @@ Sample Response
 .. code-block:: json
 
     {
-    "acl": {
-        "create": false,
-        "delete": false,
-        "read": true,
-        "readACL": false,
-        "update": false,
-        "updateACL": false,
-        "userName": "test_user1"
-    },
+    "acls": [
+        {
+            "create": true,
+            "delete": true,
+            "read": true,
+            "readACL": true,
+            "update": true,
+            "updateACL": true,
+            "userName": "test_user2"
+        },
+        {
+            "create": false,
+            "delete": false,
+            "read": true,
+            "readACL": false,
+            "update": false,
+            "updateACL": false,
+            "userName": "test_user1"
+        },
+        {
+            "create": false,
+            "delete": false,
+            "read": false,
+            "readACL": false,
+            "update": false,
+            "updateACL": false,
+            "userName": "default"
+        }
+    ],
     "hrefs": [
         {
-            "href": "http://tall_acl.test.hdfgroup.org/groups/eb8f6959-8775-11e5-96b6-3c15c2da029e/acls/test_user1",
+            "href": "http://tall_acl.test.hdfgroup.org/groups/eb8f6959-8775-11e5-96b6-3c15c2da029e/acls",
             "rel": "self"
         },
         {
@@ -155,7 +176,7 @@ Related Resources
 =================
 
 * :doc:`PUT_ACL`
-* :doc:`GET_ACLs`
+* :doc:`GET_ACL`
 
  
 
