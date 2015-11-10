@@ -29,7 +29,9 @@ The authorization string is constructed as follows:
 
 For example, if the user agent uses 'Aladdin' as the username and 'open sesame' as the password then the field is 
 formed as follows:
-``Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==``.
+``Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==``.  When passwords are being sent over an open
+network, SSL connections should be used to avoid "man in the middle attacks".  The Base64 encoding is
+easily reversible and if using plain http there is no assurance that the password will not be compromised.
 
 If the authorization string is validated, the server will verify the request is authorized as
 per the object's ACL list.  If not authorized a http status 403 - Forbidden will be returned.
