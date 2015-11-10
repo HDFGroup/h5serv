@@ -86,4 +86,12 @@ For a given user then, the permissions for a resource are found in the following
 # If a 'default' user is not present in the resource ACL, but is present in the root ACL, those permissions are used
 # If no 'default' user is present in the root ACL, the permissions defined in the 'default_acl' config is used.
   
+List of Operations
+------------------
 
+.. toctree::
+   :maxdepth: 1
+
+   GET_ACL
+    
+    
