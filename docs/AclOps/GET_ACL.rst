@@ -40,8 +40,8 @@ To get a user's access information for a committed datatype:
 
 where:
     
-*<id>* is the UUID of the requested dataset/group/committed datatype.
-*<userid>* is the userid for the requested user.  Use the special userid "default" to 
+* <id> is the UUID of the requested dataset/group/committed datatype.
+* <userid> is the userid for the requested user.  Use the special userid "default" to 
 get the default access permisions for the object.
     
 Request Parameters
