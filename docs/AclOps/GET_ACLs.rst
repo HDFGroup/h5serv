@@ -16,6 +16,7 @@ Syntax
 To get the ACL for a group:
 
 .. code-block:: http
+
     GET /groups/<id>/acls HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
@@ -24,6 +25,7 @@ To get the ACL for a group:
 To get the ACL for a dataset:
 
 .. code-block:: http
+
     GET /datasets/<id>/acls HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
@@ -32,6 +34,7 @@ To get the ACL for a dataset:
 To get the ACL for a committed datatype:
 
 .. code-block:: http
+
     GET /datatypes/<id>/acls HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>

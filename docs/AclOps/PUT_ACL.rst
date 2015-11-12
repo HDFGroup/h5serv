@@ -15,6 +15,7 @@ Syntax
 To update a user's access information for a group:
 
 .. code-block:: http
+
     PUT /groups/<id>/acls/<userid> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
@@ -23,6 +24,7 @@ To update a user's access information for a group:
 To get a user's access information for a dataset:
 
 .. code-block:: http
+
     PUT /datasets/<id>/acls/<userid> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
@@ -31,6 +33,7 @@ To get a user's access information for a dataset:
 To get a user's access information for a committed datatype:
 
 .. code-block:: http
+
     PUT /datatypes/<id>/acls/<userid> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
