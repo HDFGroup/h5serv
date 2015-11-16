@@ -22,8 +22,8 @@ cfg = {
     'local_ip': '127.0.0.1',  # used by lcoal_dns.py
     'default_dns': '8.8.8.8',  # used by local_dns.py
     'ssl_port': 6050,
-    'ssl_cert': '', # certs/data.hdfgroup.org.crt',  # add relative path to cert for SSL
-    'ssl_key':  '', # certs/data.hdfgroup.org.key',  # add relative path to cert key for SSL
+    'ssl_cert': '',  # certs/data.hdfgroup.org.crt',  # add relative path to cert for SSL
+    'ssl_key':  '',  # certs/data.hdfgroup.org.key',  # add relative path to cert key for SSL
     'ssl_cert_pwd': '',
     'root_userid': 'root',
     'default_acl': 'r',  # default permissions - any subset of 'crud'
@@ -32,9 +32,10 @@ cfg = {
     'static_path': r'../static',
     'cors_domain': '*'  # set to None to disallow CORS (cross-origin resource sharing)
 }
-   
-def get(x):     
-    # see if there is a command-line override   
+
+
+def get(x):
+    # see if there is a command-line override
     option = '--'+x+'='
     for i in range(1, len(sys.argv)):
         #print i, sys.argv[i]
@@ -45,8 +46,5 @@ def get(x):
     # see if there are an environment variable override
     if x.upper() in os.environ:
         return os.environ[x.upper()]
-    # no command line override, just return the cfg value        
+    # no command line override, just return the cfg value
     return cfg[x]
-
-  
-  

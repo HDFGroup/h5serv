@@ -21,7 +21,8 @@ import fileUtil
 """
  TOC (Table of contents) util helper functions
  Creates a directory listing in the form of an HDF5 file
-""" 
+"""
+
 
 def getTocFilePath():
     datapath = config.get('datapath')
@@ -29,21 +30,21 @@ def getTocFilePath():
     if not op.exists(toc_file_path):
         createTocFile(datapath)
     return toc_file_path
-    
+
+
 def isTocFilePath(filePath):
-    log = logging.getLogger("h5serv")
     datapath = config.get('datapath')
     toc_file_path = op.join(datapath, config.get('toc_name'))
     if filePath == toc_file_path:
         isTocFilePath = True
     else:
         isTocFilePath = False
-    #log.info("isTocFilePath(" + filePath + ") ->" + str(isTocFilePath))
     return isTocFilePath
+
 
 def createTocFile(dir_path):
     log = logging.getLogger("h5serv")
-    log.info("createTocFile(" + dir_path + ")") 
+    log.info("createTocFile(" + dir_path + ")")
     hdf5_ext = config.get('hdf5_ext')
     if not op.exists(dir_path):
         raise IOError("invalid path")
@@ -68,14 +69,13 @@ def createTocFile(dir_path):
                     log.info("createTocFile - create_group: " + grp_path)
                     grp = f.create_group(grp_path)
                 domain_path = fileUtil.getDomain(file_path)
-                #verify that we can convert the domain back to a file path
+                # verify that we can convert the domain back to a file path
                 try:
                     fileUtil.getFilePath(domain_path)
                     # ok - add the external link
                     log.info("createTocFile - ExternalLink: " + domain_path)
                     grp[file_name] = h5py.ExternalLink(domain_path, "/")
                 except HTTPError:
-                    log.info("file path: [" + file_path + "] is not valid dns name, ignoring")
-        
-    
-  
+                    log.info(
+                        "file path: [" + file_path +
+                        "] is not valid dns name, ignoring")
