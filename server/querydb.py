@@ -14,16 +14,12 @@
 This class provides an interface to pytables.
 """
 
-import numpy as np
 import tables
-import os.path as op
 import os
 import logging
 
 
 class Querydb:
-
-    
     @staticmethod
     def getVersionInfo():
         versionInfo = {}
@@ -50,7 +46,6 @@ class Querydb:
 
         self.f = tables.open_file(filePath, mode)
 
-
     def __enter__(self):
         self.log.info('querydb __enter')
         return self
@@ -60,10 +55,10 @@ class Querydb:
         filename = self.f.filename
         self.f.flush()
         self.f.close()
-        
+
     def doQuery(self, path, query, start=0, stop=-1, step=1, limit=None):
         self.log.info("doQuery - path: " + path + "query:" + query)
-    
+
         dset = self.f.root._f_get_child(path)
         values = []
         indexes = []
@@ -84,6 +79,3 @@ class Querydb:
         rsp["indexes"] = indexes
         rsp["values"] = values
         return rsp
-
-
-    

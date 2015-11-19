@@ -1,11 +1,12 @@
 from datetime import datetime
 import pytz
 
-"""
-    Convert unix timestamp (seconds since Jan 1, 1970, to ISO-8601 compatible
-    UTC time string
-"""    
+
 def unixTimeToUTC(timestamp):
+    """Convert unix timestamp (seconds since Jan 1, 1970, to ISO-8601
+    compatible UTC time string.
+
+    """
     utc = pytz.utc
     dtTime = datetime.fromtimestamp(timestamp, utc)
     iso_str = dtTime.isoformat()
