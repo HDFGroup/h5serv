@@ -92,6 +92,7 @@ def getFilePath(host_value):
             host = host[:npos]
 
     filePath += ".h5"   # add extension
+    print "filePath:", filePath
 
     # logging.info('getFilePath[' + host + '] -> "' + filePath + '"')
 
@@ -100,6 +101,8 @@ def getFilePath(host_value):
 
 def getDomain(filePath):
     # Get domain given a file path
+    
+    datapath = os.path.abspath(config.get('datapath'))  # base path for data directory
     if filePath.endswith(".h5"):
         domain = op.basename(filePath)[:-3]
     elif filePath.endswith(".hdf5"):
@@ -107,7 +110,8 @@ def getDomain(filePath):
     else:
         domain = op.basename(filePath)
     dirname = op.dirname(filePath)
-    while len(dirname) > 0 and not op.samefile(dirname, config.get('datapath')):
+    
+    while len(dirname) > 0 and dirname != datapath:
         domain += '.'
         domain += op.basename(dirname)
         dirname = op.dirname(dirname)

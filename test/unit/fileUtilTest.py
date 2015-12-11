@@ -46,6 +46,10 @@ class FileUtilTest(unittest.TestCase):
         filePath = "somevalue"
         domain = getDomain(filePath)
         self.assertEqual(domain, 'somevalue.' + config.get('domain'))
+        filePath = "subdir/tall.h5"
+        domain = getDomain(filePath)
+        print domain
+        self.assertEqual(domain, 'tall.subdir.' + config.get('domain'))
        
         
             
