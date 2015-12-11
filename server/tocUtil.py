@@ -44,6 +44,8 @@ def isTocFilePath(filePath):
 
 def createTocFile(dir_path):
     log = logging.getLogger("h5serv")
+    if os.name == 'nt':
+        dir_path = dir_path.replace('\\', '/')  # use unix style to map to HDF5 convention
     log.info("createTocFile(" + dir_path + ")")
     hdf5_ext = config.get('hdf5_ext')
     if not op.exists(dir_path):
@@ -56,6 +58,8 @@ def createTocFile(dir_path):
         grp_path = root[len(dir_path):]
         if not grp_path:
             continue
+        if os.name == 'nt':
+            grp_path = grp_path.replace('\\', '/')
         grp = None
         for file_name in files:
             if file_name[0] == '.':
@@ -63,8 +67,11 @@ def createTocFile(dir_path):
             if len(file_name) < 4 or file_name[-3:] != hdf5_ext:
                 continue
             file_path = op.join(root, file_name)
+            if os.name == 'nt':
+                file_path = file_path.replace('\\', '/')  # use unix style to map to HDF5 convention
+            log.info("createTocFile, path: " + file_path)
             file_name = file_name[:-3]
-            if h5py.is_hdf5(file_path):
+            if h5py.is_hdf5(file_path): 
                 if not grp:
                     log.info("createTocFile - create_group: " + grp_path)
                     grp = f.create_group(grp_path)

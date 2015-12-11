@@ -92,29 +92,34 @@ def getFilePath(host_value):
             host = host[:npos]
 
     filePath += ".h5"   # add extension
-    print "filePath:", filePath
-
+     
     # logging.info('getFilePath[' + host + '] -> "' + filePath + '"')
 
     return filePath
 
 
-def getDomain(filePath):
+def getDomain(file_path):
     # Get domain given a file path
     
-    datapath = os.path.abspath(config.get('datapath'))  # base path for data directory
-    if filePath.endswith(".h5"):
-        domain = op.basename(filePath)[:-3]
-    elif filePath.endswith(".hdf5"):
-        domain = op.basename(filePath)[:-5]
+    data_path = op.normpath(config.get('datapath'))  # base path for data directory
+    file_path = op.normpath(file_path)
+    if op.isabs(file_path):
+        # compare with absolute path if we'r given an absolute path
+        data_path = op.abspath(data_path)
+        
+    if file_path.endswith(".h5"):
+        domain = op.basename(file_path)[:-3]
+    elif file_path.endswith(".hdf5"):
+        domain = op.basename(file_path)[:-5]
     else:
-        domain = op.basename(filePath)
-    dirname = op.dirname(filePath)
+        domain = op.basename(file_path)
+    dirname = op.dirname(file_path)
     
-    while len(dirname) > 0 and dirname != datapath:
+    while len(dirname) > 0 and dirname != data_path:
         domain += '.'
         domain += op.basename(dirname)
         dirname = op.dirname(dirname)
+     
     domain += '.'
     domain += config.get('domain')
 
@@ -129,7 +134,6 @@ def verifyFile(filePath, writable=False):
         raise HTTPError(404)
     if writable and not os.access(filePath, os.W_OK):
         # logging.warning('attempting update of read-only file')
-        print("attempting to update read-only file")
         raise HTTPError(403)
 
 

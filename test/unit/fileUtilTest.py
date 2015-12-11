@@ -12,6 +12,7 @@
 import unittest
 import time
 import sys
+import os
 from tornado.web import HTTPError
  
 
@@ -40,6 +41,7 @@ class FileUtilTest(unittest.TestCase):
         self.assertRaises(HTTPError, getFilePath, domain)
         
     def testGetDomain(self):
+        """
         filePath = "tall.h5"
         domain = getDomain(filePath)
         self.assertEqual(domain, 'tall.' + config.get('domain'))
@@ -48,8 +50,24 @@ class FileUtilTest(unittest.TestCase):
         self.assertEqual(domain, 'somevalue.' + config.get('domain'))
         filePath = "subdir/tall.h5"
         domain = getDomain(filePath)
-        print domain
         self.assertEqual(domain, 'tall.subdir.' + config.get('domain'))
+        """
+        filePath = os.path.join(config.get('datapath'), 'subdir/tall.h5')
+        domain = getDomain(filePath)
+        self.assertEqual(domain, 'tall.subdir.' + config.get('domain'))
+        
+        filePath = os.path.join(config.get('datapath'), 'subdir/tall.h5')
+        filePath = os.path.abspath(filePath)
+        domain = getDomain(filePath)
+        self.assertEqual(domain, 'tall.subdir.' + config.get('domain'))
+        
+        
+        # verify backslashes are ok for windows...
+        if os.name == 'nt':
+            filePath = "subdir\\subsubdir\\tall.h5"
+            domain = getDomain(filePath)
+            self.assertEqual(domain, 'tall.subsubdir.subdir.' + config.get('domain'))
+            
        
         
             
