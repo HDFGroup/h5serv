@@ -96,14 +96,17 @@ Create test accounts
 """
 
 def addTestAccounts():
-    password_file = "../../util/admin/passwd.h5"
-    if not os.path.exists(password_file):
-        os.system('cd ../../util/admin; python makepwd_file.py; cd-')
-        
-    add_user_script = 'python ../../util/admin/update_pwd.py' 
+    password_file = "passwd.h5" 
+    cwd = os.getcwd()
+    os.chdir('../../util/admin')
+    if not os.path.isfile(password_file):    
+        os.system('python makepwd_file.py')
+              
+    add_user_script = 'python update_pwd.py' 
     add_user_script += ' -f ' + password_file  
     os.system(add_user_script + ' -a -u test_user1 -p test')
     os.system(add_user_script + ' -a -u test_user2 -p test')
+    os.chdir(cwd)
     
 """
 Make a testfile with 1000 sub-groups
@@ -150,7 +153,6 @@ def makeType1k():
 Make a testfile with 1000 datasets
 """
 def makeDataset1k():
-    print "type!"
     file_path = SRC + "/dset1k.h5" 
     print file_path
     if os.path.exists(file_path):
