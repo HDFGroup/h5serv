@@ -44,7 +44,7 @@ class Querydb:
 
         self.log.info("init -- filePath: " + filePath + " mode: " + mode)
 
-        self.f = tables.open_file(filePath, mode)
+        self.f = tables.open_file(filePath, mode=mode)
 
     def __enter__(self):
         self.log.info('querydb __enter')
@@ -70,7 +70,7 @@ class Querydb:
             for field in dset.colnames:
                 item.append(row[field])
             values.append(item)
-            indexes.append(row.nrow)
+            indexes.append(int(row.nrow))  # convert numpy.int64 to int
             count += 1
 
             if limit and (count == limit):
