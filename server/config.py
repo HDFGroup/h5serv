@@ -16,6 +16,7 @@ cfg = {
     'port':   5000,
     'debug':  True,
     'datapath': '../data/',
+    'public_dir': ['public', 'test'],
     'domain':  'hdfgroup.org',
     'hdf5_ext': '.h5',
     'toc_name': '.toc.h5',

@@ -20,7 +20,7 @@ from tornado.web import HTTPError
 
 from h5py import is_hdf5
 import config
-from tocUtil import getTocFilePath
+#from tocUtil import getTocFilePath
 
 
 def getFileModCreateTimes(filePath):
@@ -61,8 +61,8 @@ def getFilePath(host_value):
 
     if host.lower() == topdomain:
         # if host is the same as topdomain, return toc path
-        filePath = getTocFilePath()
-        return filePath
+        # filePath = getTocFilePath()
+        return None
 
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
         raise HTTPError(403, message='top-level domain is not valid')
@@ -125,8 +125,9 @@ def getDomain(file_path):
 
     return domain
 
-
 def verifyFile(filePath, writable=False):
+    """ verify given file exists and is an HDF5 file
+    """
     if not op.isfile(filePath):
         raise HTTPError(404)  # not found
     if not is_hdf5(filePath):

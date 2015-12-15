@@ -489,6 +489,22 @@ class ValueTest(unittest.TestCase):
         self.assertEqual(len(item), 5)
         self.assertEqual(item[0], 23)
         
+    """    
+    def testsnp(self):
+        limit = 20
+        domain = 'snp500.demo.hdfgroup.org'  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(root_uuid is not None)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        req += "?query=symbol == 'AAPL'&Limit=" + str(limit) # values where date field = 23
+        print req
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        print rspJson
+    """    
     
     
     def testQueries(self):

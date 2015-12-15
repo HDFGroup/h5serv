@@ -31,8 +31,8 @@ from hdf5db import Hdf5db
 import hdf5dtype
 
 from timeUtil import unixTimeToUTC
-from fileUtil import getFilePath,  makeDirs, verifyFile
-from tocUtil import isTocFilePath, getTocFilePath
+import fileUtil  
+import tocUtil  
 from httpErrorUtil import errNoToHttpStatus
 from passwordUtil import getUserId, getUserName, validateUserPassword
 
@@ -127,6 +127,33 @@ class BaseHandler(tornado.web.RequestHandler):
         if not domain:
             domain = self.request.host
         return domain
+        
+    def getFilePath(self, domain):
+        """ Helper method - return file path for given domain.
+        """
+        filePath = fileUtil.getFilePath(domain)
+        if filePath is None:
+            # return .toc file apth
+            filePath = tocUtil.getTocFilePath()
+         
+        fileUtil.verifyFile(filePath)    
+        
+        return filePath
+        
+    def isWritable(self, filePath):
+        """Helper method - raise 403 error if given file path is not writable
+        """
+        fileUtil.verifyFile(filePath, writable=True)
+        
+    def isTocFilePath(self, filePath):
+        """Helper method - return True if this is a TOC file apth
+        """
+        print("isTocFilePath: ", filePath)
+        if tocUtil.isTocFilePath(filePath):
+            return True
+        else:
+            return False
+            
 
     def getRequestId(self):
         """
@@ -186,7 +213,7 @@ class LinkCollectionHandler(BaseHandler):
 
         reqUuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
+        filePath = self.getFilePath(domain)
 
         # Get optional query parameters
         limit = self.get_query_argument("Limit", 0)
@@ -201,7 +228,6 @@ class LinkCollectionHandler(BaseHandler):
 
         response = {}
 
-        verifyFile(filePath)
         items = None
         rootUUID = None
         try:
@@ -244,7 +270,7 @@ class LinkCollectionHandler(BaseHandler):
                 if link_item['h5domain'].endswith(config.get('domain')):
                     target = self.request.protocol + '://'
                     targetHostQuery = ''
-                    if hostQuery or isTocFilePath(filePath):
+                    if hostQuery or self.isTocFilePath(filePath):
                         target += self.request.host
                         targetHostQuery = '?host=' + link_item['h5domain']
                     else:
@@ -313,12 +339,11 @@ class LinkHandler(BaseHandler):
 
         reqUuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
+        filePath = self.getFilePath(domain)
         linkName = self.getName(self.request.uri)
 
         response = {}
 
-        verifyFile(filePath)
         rootUUID = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
@@ -375,7 +400,7 @@ class LinkHandler(BaseHandler):
             if item['h5domain'].endswith(config.get('domain')):
                 target = self.request.protocol + '://'
                 targetHostQuery = ''
-                if hostQuery or isTocFilePath(filePath):
+                if hostQuery or self.isTocFilePath(filePath):
                     target += self.request.host
                     targetHostQuery = '?host=' + item['h5domain']
                 else:
@@ -444,15 +469,14 @@ class LinkHandler(BaseHandler):
             raise HTTPError(400, reasoln=msg)
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        if isTocFilePath(filePath):
+        filePath = self.getFilePath(domain)
+        if self.isTocFilePath(filePath):
             msg = "Forbidden: links can not be directly created in TOC domain"
             log.info(msg)
             raise HTTPError(403, reason=msg)
 
         response = {}
 
-        verifyFile(filePath)
         rootUUID = None
         try:
             with Hdf5db(filePath, app_logger=log) as db:
@@ -511,9 +535,9 @@ class LinkHandler(BaseHandler):
         domain = self.getDomain()
         response = {}
         rootUUID = None
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
-        if isTocFilePath(filePath):
+        filePath = self.getFilePath(domain)
+        self.isWritable(filePath)
+        if self.isTocFilePath(filePath):
             msg = "Forbidden: links can not be directly modified in TOC domain"
             log.info(msg)
             raise HTTPError(403, reason=msg)
@@ -658,7 +682,7 @@ class AclHandler(BaseHandler):
         domain = self.getDomain()
 
         rootUUID = None
-        filePath = getFilePath(domain)
+        filePath = self.getFilePath(domain)
         userName = self.getName()
 
         col_name = self.getRequestCollectionName()
@@ -676,7 +700,6 @@ class AclHandler(BaseHandler):
                     raise HTTPError(404, reason=msg)
 
         request = {}
-        verifyFile(filePath)
         acl = None
         current_user_acl = None
         try:
@@ -798,11 +821,10 @@ class AclHandler(BaseHandler):
             raise HTTPError(400, reason=msg)
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
+        filePath = self.getFilePath(domain)
 
         response = {}
 
-        verifyFile(filePath)
         rootUUID = None
         obj_uuid = None
         try:
@@ -860,8 +882,7 @@ class TypeHandler(BaseHandler):
             log.info(msg)
             raise HTTPError(400, reason=msg)
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         response = {}
         hrefs = []
@@ -913,8 +934,8 @@ class TypeHandler(BaseHandler):
 
         req_uuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
+        filePath = self.getFilePath(domain)
+        self.isWritable(filePath)
         response = {}
         hrefs = []
         rootUUID = None
@@ -956,8 +977,7 @@ class DatatypeHandler(BaseHandler):
 
         reqUuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         response = {}
         hrefs = []
@@ -1007,8 +1027,7 @@ class ShapeHandler(BaseHandler):
 
         reqUuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         response = {}
         hrefs = []
@@ -1056,8 +1075,8 @@ class ShapeHandler(BaseHandler):
 
         reqUuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
+        filePath = self.getFilePath(domain)
+        self.isWritable(filePath)
 
         response = {}
         hrefs = []
@@ -1185,8 +1204,7 @@ class DatasetHandler(BaseHandler):
 
         reqUuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         response = {}
         hrefs = []
@@ -1258,8 +1276,8 @@ class DatasetHandler(BaseHandler):
 
         req_uuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
+        filePath = self.getFilePath(domain)
+        self.isWritable(filePath)
 
         response = {}
         hrefs = []
@@ -1462,8 +1480,7 @@ class ValueHandler(BaseHandler):
 
         reqUuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         response = {}
         hrefs = []
@@ -1617,8 +1634,7 @@ class ValueHandler(BaseHandler):
 
         reqUuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         body = None
         try:
@@ -1708,8 +1724,7 @@ class ValueHandler(BaseHandler):
 
         reqUuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
         points = None
         start = None
         stop = None
@@ -1848,8 +1863,7 @@ class AttributeHandler(BaseHandler):
         domain = self.getDomain()
         col_name = self.getRequestCollectionName()
         attr_name = self.getRequestName()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         response = {}
         hrefs = []
@@ -1952,8 +1966,7 @@ class AttributeHandler(BaseHandler):
             msg = "Bad Request: attribute name not supplied"
             log.info(msg)
             raise HTTPError(400, reason=msg)
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         body = None
         try:
@@ -2057,8 +2070,8 @@ class AttributeHandler(BaseHandler):
             msg = "Bad Request: attribute name not specified"
             log.info(msg)
             raise HTTPError(400, reason=msg)
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
+        filePath = self.getFilePath(domain)
+        self.isWritable(filePath)
 
         response = {}
         hrefs = []
@@ -2110,8 +2123,7 @@ class GroupHandler(BaseHandler):
         reqUuid = self.getRequestId()
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         response = {}
 
@@ -2170,9 +2182,8 @@ class GroupHandler(BaseHandler):
 
         req_uuid = self.getRequestId()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
-
+        filePath = self.getFilePath(domain)
+        self.isWritable(filePath)
         try:
             with Hdf5db(filePath, app_logger=log) as db:
                 rootUUID = db.getUUIDByPath('/')
@@ -2213,8 +2224,7 @@ class GroupCollectionHandler(BaseHandler):
         self.get_current_user()
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
         rootUUID = None
 
         # Get optional query parameters
@@ -2296,8 +2306,8 @@ class GroupCollectionHandler(BaseHandler):
                 "add link to: " + parent_group_uuid + " with name: " + link_name)
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
+        filePath = self.getFilePath(domain)
+        self.isWritable(filePath)
 
         try:
             with Hdf5db(filePath, app_logger=log) as db:
@@ -2364,8 +2374,7 @@ class DatasetCollectionHandler(BaseHandler):
         self.get_current_user()
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         # Get optional query parameters
         limit = self.get_query_argument("Limit", 0)
@@ -2424,8 +2433,8 @@ class DatasetCollectionHandler(BaseHandler):
             raise HTTPError(405, reason=msg)  # Method not allowed
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
+        filePath = self.getFilePath(domain)
+        self.isWritable(filePath)
         dims = None
         group_uuid = None
         link_name = None
@@ -2583,8 +2592,7 @@ class TypeCollectionHandler(BaseHandler):
         self.get_current_user()
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath)
+        filePath = self.getFilePath(domain)
 
         # Get optional query parameters
         limit = self.get_query_argument("Limit", 0)
@@ -2646,8 +2654,8 @@ class TypeCollectionHandler(BaseHandler):
             raise HTTPError(405, reason=msg)  # Method not allowed
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        verifyFile(filePath, True)
+        filePath = self.getFilePath(domain)
+        self.isWritable(filePath)
 
         body = None
         try:
@@ -2755,12 +2763,11 @@ class RootHandler(BaseHandler):
         hdf5_ext = config.get('hdf5_ext')
         dataPath = config.get('datapath')
         log.info("addTocEntry - domain: " + domain + " filePath: " + filePath)
-        verifyFile(filePath)   # create TOC file if it does not exist already
         if not filePath.startswith(dataPath):
             log.error("unexpected filepath: " + filePath)
             raise HTTPError(500)
         filePath = filePath[len(dataPath):]
-        tocFile = getTocFilePath()
+        tocFile = tocUtil.getTocFilePath()
         acl = None
 
         try:
@@ -2800,7 +2807,7 @@ class RootHandler(BaseHandler):
             log.error("unexpected filepath: " + filePath)
             raise HTTPError(500)
         filePath = filePath[len(dataPath):]
-        tocFile = getTocFilePath()
+        tocFile = tocUtil.getTocFilePath()
         log.info(
             "removeTocEntry - domain: " + domain + " filePath: " + filePath)
 
@@ -2874,7 +2881,7 @@ class RootHandler(BaseHandler):
         log.info('remote_ip: ' + self.request.remote_ip)
         self.current_user = self.get_current_user()
         domain = self.getDomain()
-        filePath = getFilePath(domain)
+        filePath = self.getFilePath(domain)
         try:
             response = self.getRootResponse(filePath)
         except HTTPError as e:
@@ -2885,9 +2892,8 @@ class RootHandler(BaseHandler):
 
         root_uuid = response['root']
 
-        filePath = getFilePath(domain)
+        filePath = self.getFilePath(domain)
         log.info("filepath: " + filePath)
-        verifyFile(filePath)
 
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
@@ -2899,18 +2905,22 @@ class RootHandler(BaseHandler):
         self.current_user = self.get_current_user()
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
-        log.info("put filePath: " + filePath)
+        filePath = fileUtil.getFilePath(domain)
+        
+        if filePath is None:
+            filePath = tocUtil.getTocFilePath()
+            
         if op.isfile(filePath):
             msg = "Conflict: resource exists"
             log.info(msg)
             raise HTTPError(409, reason=msg)  # Conflict - is this the correct code?
-        if isTocFilePath(filePath):
+        
+        if filePath is not None and self.isTocFilePath(filePath):
             msg = "Forbidden: invalid resource"
             log.info(msg)
             raise HTTPError(403, reason=msg)  # Forbidden - TOC file
         # create directories as needed
-        makeDirs(op.dirname(filePath))
+        fileUtil.makeDirs(op.dirname(filePath))
         log.info("creating file: [" + filePath + "]")
 
         try:
@@ -2936,9 +2946,9 @@ class RootHandler(BaseHandler):
         self.get_current_user()
 
         domain = self.getDomain()
-        filePath = getFilePath(domain)
+        filePath = self.getFilePath(domain)
         log.info("delete filePath: " + filePath)
-        verifyFile(filePath, True)
+        self.isWritable(filePath)
 
         if not op.isfile(filePath):
             # file not there
@@ -2952,7 +2962,7 @@ class RootHandler(BaseHandler):
             log.info(msg)
             raise HTTPError(403, reason=msg)  # Forbidden
 
-        if isTocFilePath(filePath):
+        if self.isTocFilePath(filePath):
             msg = "Forbidden: Resource is read-only"
             log.info(msg)
             raise HTTPError(403, reason=msg)  # Forbidden - TOC file
