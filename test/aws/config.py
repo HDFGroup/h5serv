@@ -15,7 +15,8 @@ import sys
 cfg = {
     'server': 'data.hdfgroup.org',
     'port':   7258,  # HTTPS port
-    'domain':   'test.data.hdfgroup.org'
+    'domain':   'test.data.hdfgroup.org',
+    'hdf5_ext': '.h5'
 }
    
 def get(x):     

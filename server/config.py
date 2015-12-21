@@ -20,6 +20,8 @@ cfg = {
     'domain':  'hdfgroup.org',
     'hdf5_ext': '.h5',
     'toc_name': '.toc.h5',
+    'home_dir': 'home',
+    'toc_folder_filter': '[^@]+@[^@]+\.[^@]+',
     'local_ip': '127.0.0.1',  # used by lcoal_dns.py
     'default_dns': '8.8.8.8',  # used by local_dns.py
     'ssl_port': 6050,

@@ -13,7 +13,8 @@ cfg = {
     'testfiledir': '../../testfiles/',
     'domain':  'unit.hdf.io',
     'datapath': '../data/',
-    'uuidlen':  36 
+    'uuidlen':  36,
+    'hdf5_ext': '.h5'
 }
    
 def get(x):

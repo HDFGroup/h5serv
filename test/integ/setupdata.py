@@ -222,6 +222,9 @@ makeDataset1k()
 
 removeFilesFromDir(DES)
 
+# remove test user directory
+removeFilesFromDir("../../data/home/test_user1")
+
 test_dirs = ('.', 'subdir', 'subdir/subdir')
 for dir_name in test_dirs:
     tgt_dir = DES

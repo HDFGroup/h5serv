@@ -41,7 +41,7 @@ class FileUtilTest(unittest.TestCase):
         self.assertRaises(HTTPError, getFilePath, domain)
         
     def testGetDomain(self):
-        """
+        
         filePath = "tall.h5"
         domain = getDomain(filePath)
         self.assertEqual(domain, 'tall.' + config.get('domain'))
@@ -51,7 +51,7 @@ class FileUtilTest(unittest.TestCase):
         filePath = "subdir/tall.h5"
         domain = getDomain(filePath)
         self.assertEqual(domain, 'tall.subdir.' + config.get('domain'))
-        """
+        
         filePath = os.path.join(config.get('datapath'), 'subdir/tall.h5')
         domain = getDomain(filePath)
         self.assertEqual(domain, 'tall.subdir.' + config.get('domain'))
@@ -61,16 +61,15 @@ class FileUtilTest(unittest.TestCase):
         domain = getDomain(filePath)
         self.assertEqual(domain, 'tall.subdir.' + config.get('domain'))
         
+        filePath = "/foo"
+        domain = getDomain(filePath)
+        print "domain:", domain
         
         # verify backslashes are ok for windows...
         if os.name == 'nt':
             filePath = "subdir\\subsubdir\\tall.h5"
             domain = getDomain(filePath)
-            self.assertEqual(domain, 'tall.subsubdir.subdir.' + config.get('domain'))
-            
-       
-        
-            
+            self.assertEqual(domain, 'tall.subsubdir.subdir.' + config.get('domain'))          
              
 if __name__ == '__main__':
     #setup test files

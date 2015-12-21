@@ -19,6 +19,7 @@ class DirTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(DirTest, self).__init__(*args, **kwargs)
         self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))
+        self.user1 = {'username':'test_user1', 'password':'test'}
     
         
     def testGetToc(self):  
@@ -53,6 +54,25 @@ class DirTest(unittest.TestCase):
         self.assertEqual(link['title'], 'tall')
         self.assertEqual(link['h5path'], '/')
         self.assertEqual(link['h5domain'], 'tall.test.' + domain)
+        
+    def testGetUserToc(self):  
+        domain = config.get('domain')  
+        if domain.startswith('test.'):
+            domain = domain[5:]
+        domain = self.user1['username'] + ".home." + domain
+         
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('root' in rspJson)
+        root_uuid = rspJson['root']
+        #req = self.endpoint + "/groups/" + root_uuid 
+        #rsp = requests.get(req, headers=headers)
+        #self.failUnlessEqual(rsp.status_code, 200)
+        
         
     def testNoHostHeader(self):
         req = self.endpoint + "/"

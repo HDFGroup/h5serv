@@ -20,7 +20,7 @@ from tornado.web import HTTPError
 
 from h5py import is_hdf5
 import config
-#from tocUtil import getTocFilePath
+from passwordUtil import getUserInfo
 
 
 def getFileModCreateTimes(filePath):
@@ -62,7 +62,9 @@ def getFilePath(host_value):
     if host.lower() == topdomain:
         # if host is the same as topdomain, return toc path
         # filePath = getTocFilePath()
-        return None
+        filePath = config.get('datapath')
+        filePath = op.join(filePath, config.get('toc_name') )
+        return filePath
 
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
         raise HTTPError(403, message='top-level domain is not valid')
@@ -73,27 +75,91 @@ def getFilePath(host_value):
 
     host = host[:-(len(topdomain)+1)]   # strip off top domain part
 
-    if len(host) == 0 or host[0] == '.':
-        # needs a least one character (which can't be '.')
+    if len(host) == 0 or host[0] == '.' or host[-1] == '.':
+        # needs a least one character (which can't be '.', or have '.' as first or last char)
         raise HTTPError(400, message='domain name is not valid')
 
+    dns_path = host.split('.')
+    dns_path.reverse()  # flip to filesystem ordering
     filePath = config.get('datapath')
-    while len(host) > 0:
-        if len(filePath) > 0 and filePath[len(filePath) - 1] != '/':
-            filePath += '/'  # add a directory separator
-        npos = host.rfind('.')
-        if npos < 0:
-            filePath += host
-            host = ''
-        elif npos == 0 or npos == len(host) - 1:
+    num_parts = 0
+    for field in dns_path:      
+        if len(field) == 0:   
             raise HTTPError(400)  # Bad syntax
-        else:
-            filePath += host[(npos+1):]
-            host = host[:npos]
+        
+        filePath = op.join(filePath, field)
+        num_parts += 1
 
-    filePath += ".h5"   # add extension
+    # check to see if this is the user's home domain
+    if num_parts == 2 and dns_path[0] == config.get('home_dir'):
+        user_info = getUserInfo(dns_path[1])
+        if user_info is None:
+            raise HTTPError(404)  # not found
+        makeDirs(filePath)  # add user directory if it doesn't exist
+        filePath = op.join(filePath, config.get('toc_name') )
+    else:    
+        filePath += config.get('hdf5_ext')   # add extension
      
-    # logging.info('getFilePath[' + host + '] -> "' + filePath + '"')
+    #print('getFilePath[' + host + '] -> "' + filePath + '"')
+
+    return filePath
+    
+def getTocFilePath(host_value):
+    """ Return toc file path for given domain value.
+        Will return path "../data/.toc.h5" for public domains or
+        "../data/home/<user>/.toc.h5" for user domains.
+    """
+    # logging.info('getFilePath[' + host_value + ']')
+    # strip off port specifier (if present)
+    npos = host_value.rfind(':')
+    if npos > 0:
+        host = host_value[:npos]
+    else:
+        host = host_value
+
+    topdomain = config.get('domain')
+
+    # check to see if this is an ip address
+    if isIPAddress(host):
+        host = topdomain  # use topdomain
+
+    if host.lower() == topdomain:
+        # if host is the same as topdomain, return toc path
+        # filePath = getTocFilePath()
+        filePath = config.get('datapath')
+        filePath = op.join(filePath, config.get('toc_name') )
+        return filePath
+
+    if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
+        raise HTTPError(403, message='top-level domain is not valid')
+
+    if host[-(len(topdomain) + 1)] != '.':
+        # there needs to be a dot separator
+        raise HTTPError(400, message='domain name is not valid')
+
+    host = host[:-(len(topdomain)+1)]   # strip off top domain part
+
+    if len(host) == 0 or host[0] == '.' or host[-1] == '.':
+        # needs a least one character (which can't be '.', or have '.' as first or last char)
+        raise HTTPError(400, message='domain name is not valid')
+
+    dns_path = host.split('.')
+    dns_path.reverse()  # flip to filesystem ordering
+    filePath = config.get('datapath')
+    
+    if dns_path[0] == config.get('home_dir'):
+        filePath = op.join(filePath, config.get('home_dir'))
+        filePath = op.join(filePath, dns_path[1])
+        user_info = getUserInfo(dns_path[1])
+        if user_info is None:
+            raise HTTPError(404)  # not found
+        makeDirs(filePath)  # add user directory if it doesn't exist
+        filePath = op.join(filePath, config.get('toc_name'))
+        #print("return user toc filepath")
+    else:
+        # not home dir, just return top-level toc
+        filePath = op.join(filePath, config.get('toc_name'))
+        #print("return default toc filepath")
 
     return filePath
 
@@ -103,19 +169,18 @@ def getDomain(file_path):
     
     data_path = op.normpath(config.get('datapath'))  # base path for data directory
     file_path = op.normpath(file_path)
+    hdf5_ext = config.get("hdf5_ext")
     if op.isabs(file_path):
-        # compare with absolute path if we'r given an absolute path
+        # compare with absolute path if we're given an absolute path
         data_path = op.abspath(data_path)
         
-    if file_path.endswith(".h5"):
-        domain = op.basename(file_path)[:-3]
-    elif file_path.endswith(".hdf5"):
-        domain = op.basename(file_path)[:-5]
+    if file_path.endswith(hdf5_ext):
+        domain = op.basename(file_path)[:-(len(hdf5_ext))]
     else:
         domain = op.basename(file_path)
     dirname = op.dirname(file_path)
     
-    while len(dirname) > 0 and dirname != data_path:
+    while len(dirname) > 1 and dirname != data_path:
         domain += '.'
         domain += op.basename(dirname)
         dirname = op.dirname(dirname)
@@ -136,6 +201,17 @@ def verifyFile(filePath, writable=False):
     if writable and not os.access(filePath, os.W_OK):
         # logging.warning('attempting update of read-only file')
         raise HTTPError(403)
+        
+def isFile(filePath):
+    """ verify given file exists and is an HDF5 file
+    """
+    if not op.isfile(filePath):
+        return False
+    if not is_hdf5(filePath):
+        # logging.warning('this is not a hdf5 file!')
+        raise False
+    return True
+     
 
 
 def makeDirs(filePath):

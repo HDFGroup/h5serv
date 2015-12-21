@@ -11,6 +11,7 @@
 ##############################################################################
 import os
 import os.path as op
+import re
 from tornado.web import HTTPError
 import logging
 
@@ -24,11 +25,16 @@ import fileUtil
 """
 
 
-def getTocFilePath():
+def getTocFilePath(user=None):
     datapath = config.get('datapath')
-    toc_file_path = op.join(datapath, config.get('toc_name'))
-    if not op.exists(toc_file_path):
-        createTocFile(datapath)
+    if user is None:
+        #print("get default toc")
+        toc_file_path = op.join(datapath, config.get('toc_name'))
+    else:
+        #print("get user toc")
+        toc_file_path = op.join(datapath, config.get('home_dir'))
+        toc_file_path = op.join(toc_file_path, config.get('toc_name'))
+ 
     return toc_file_path
 
 
@@ -42,47 +48,79 @@ def isTocFilePath(filePath):
     return isTocFilePath
 
 
-def createTocFile(dir_path):
+def createTocFile(datapath):
     log = logging.getLogger("h5serv")
-    if os.name == 'nt':
-        dir_path = dir_path.replace('\\', '/')  # use unix style to map to HDF5 convention
-    log.info("createTocFile(" + dir_path + ")")
-    hdf5_ext = config.get('hdf5_ext')
-    if not op.exists(dir_path):
-        raise IOError("invalid path")
-    toc_path = op.join(dir_path, config.get('toc_name'))
-    if op.isfile(toc_path):
-        raise IOError("toc file exists")
-    f = h5py.File(toc_path, 'w')
-    for root, subdirs, files in os.walk(dir_path):
-        grp_path = root[len(dir_path):]
-        if not grp_path:
+    log.info("createTocFile(" + datapath + ")")
+    if datapath.endswith(config.get('toc_name')):
+        toc_dir = op.dirname(datapath)
+        toc_file = datapath
+    else:
+        toc_dir = datapath
+        toc_file = op.join(toc_dir, config.get("toc_name"))
+     
+    log.info("check toc with: " + toc_file)    
+    if op.exists(toc_file):
+        raise IOError("toc file already exists")
+    
+    #if os.name == 'nt':
+    #    toc_dir = toc_dir.replace('\\', '/')  # use unix style to map to HDF5 convention
+    
+    hdf5_ext = config.get('hdf5_ext')  
+    folder_regex = config.get('toc_folder_filter')
+    
+    f = h5py.File(toc_file, 'w')
+     
+    for root, subdirs, files in os.walk(toc_dir):
+        #print("files: ", files)
+        log.info( "root: " + root)
+        if folder_regex and re.match(folder_regex, op.basename(root)):
+            log.info("skipping director (filter match)")
+            continue
+        grppath = root[len(datapath):]
+        log.info("grppath: " + grppath)
+        if not grppath:
             continue
         if os.name == 'nt':
-            grp_path = grp_path.replace('\\', '/')
+            grppath = grppath.replace('\\', '/')  # match HDF5 convention
         grp = None
-        for file_name in files:
-            if file_name[0] == '.':
+        if grppath == '/.':
+            grp = f['/']  # use root group
+        domainpath = fileUtil.getDomain(grppath)
+        log.info("domainpath: " + domainpath)
+        for filename in files:
+            log.info("walk, file: " + filename)
+            if filename[0] == '.':
+                log.info("skip hidden")
                 continue  # skip 'hidden' files
-            if len(file_name) < 4 or file_name[-3:] != hdf5_ext:
-                continue
-            file_path = op.join(root, file_name)
+            
+            filepath = op.join(root, filename)
             if os.name == 'nt':
-                file_path = file_path.replace('\\', '/')  # use unix style to map to HDF5 convention
-            log.info("createTocFile, path: " + file_path)
-            file_name = file_name[:-3]
-            if h5py.is_hdf5(file_path): 
-                if not grp:
-                    log.info("createTocFile - create_group: " + grp_path)
-                    grp = f.create_group(grp_path)
-                domain_path = fileUtil.getDomain(file_path)
-                # verify that we can convert the domain back to a file path
-                try:
-                    fileUtil.getFilePath(domain_path)
-                    # ok - add the external link
-                    log.info("createTocFile - ExternalLink: " + domain_path)
-                    grp[file_name] = h5py.ExternalLink(domain_path, "/")
-                except HTTPError:
-                    log.info(
-                        "file path: [" + file_path +
-                        "] is not valid dns name, ignoring")
+                filepath = filepath.replace('\\', '/')  # use unix style to map to HDF5 convention
+            log.info("createTocFile, path: " + filepath)
+            
+            if (op.islink(filepath)):
+                log.info("symlink: " + filepath)
+                if not op.isdir(filepath):
+                    log.info("skipping non-dir symlink")  
+                    continue  # don't include symlinks to files
+            else:
+                if len(filename) < 4 or filename[-3:] != hdf5_ext:
+                    log.info("skip non-hdf5 extension")
+                    continue
+                if not h5py.is_hdf5(filepath):
+                    log.info("skip non-hdf5 file")
+                    continue
+                filename = filename[:-(len(hdf5_ext))]
+            if not grp:
+                log.info("createTocFile - create_group: " + grppath)
+                grp = f.create_group(grppath)
+                    
+            filedomain = filename + "." + domainpath
+            # verify that we can convert the domain back to a file path
+            try:
+                fileUtil.getFilePath(filedomain)
+                # ok - add the external link
+                log.info("createTocFile - ExternalLink: " + domainpath)
+                grp[filename] = h5py.ExternalLink(filedomain, "/")
+            except HTTPError:
+                log.info("file path: [" + filepath + "] is not valid dns name, ignoring")

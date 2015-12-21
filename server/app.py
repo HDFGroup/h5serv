@@ -128,15 +128,55 @@ class BaseHandler(tornado.web.RequestHandler):
             domain = self.request.host
         return domain
         
-    def getFilePath(self, domain):
+    def setDefaultAcl(self):
+        """ Set default ACL for user TOC file.
+        """
+        log = logging.getLogger("h5serv")
+        log.info("setDeaultAcl -- userid: " + str(self.userid))
+        if self.userid <= 0:
+            raise HTTPError(500, "Expected userid")
+        username = getUserName(self.userid)
+        filePath = tocUtil.getTocFilePath(username)
+        try:
+            fileUtil.verifyFile(filePath)
+        except HTTPError:
+            log.info("toc file doesn't exist, returning")
+            return
+        try:
+            with Hdf5db(filePath, app_logger=log) as db:
+                rootUUID = db.getUUIDByPath('/')
+                current_user_acl = db.getAcl(rootUUID, self.userid)
+                acl = db.getDefaultAcl()
+                acl['userid'] = userid
+                fields = ('create', 'read', 'update', 'delete', 'readACL', 'updateACL')  
+                for field in fields:
+                    acl[field] = True 
+                db.setAcl(obj_uuid, acl)
+                     
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror)
+         
+        
+    def getFilePath(self, domain, checkExists=True):
         """ Helper method - return file path for given domain.
         """
-        filePath = fileUtil.getFilePath(domain)
-        if filePath is None:
-            # return .toc file apth
-            filePath = tocUtil.getTocFilePath()
          
-        fileUtil.verifyFile(filePath)    
+        log = logging.getLogger("h5serv")
+        log.info("getFilePath: " + domain)
+        tocFilePath = fileUtil.getTocFilePath(domain)
+        log.info("tocFilePath: " + tocFilePath)
+        if not fileUtil.isFile(tocFilePath):
+            tocUtil.createTocFile(tocFilePath)
+            if self.userid > 0:
+                # setup the permision to grant this user exclusive write access
+                # and public read for everyone
+                self.setDefaultAcl()
+            
+        filePath = fileUtil.getFilePath(domain)
+        if checkExists:
+            fileUtil.verifyFile(filePath)  # throws exception if not found  
         
         return filePath
         
@@ -148,7 +188,6 @@ class BaseHandler(tornado.web.RequestHandler):
     def isTocFilePath(self, filePath):
         """Helper method - return True if this is a TOC file apth
         """
-        print("isTocFilePath: ", filePath)
         if tocUtil.isTocFilePath(filePath):
             return True
         else:
@@ -2767,7 +2806,7 @@ class RootHandler(BaseHandler):
             log.error("unexpected filepath: " + filePath)
             raise HTTPError(500)
         filePath = filePath[len(dataPath):]
-        tocFile = tocUtil.getTocFilePath()
+        tocFile = fileUtil.getTocFilePath(domain)
         acl = None
 
         try:
@@ -2807,7 +2846,7 @@ class RootHandler(BaseHandler):
             log.error("unexpected filepath: " + filePath)
             raise HTTPError(500)
         filePath = filePath[len(dataPath):]
-        tocFile = tocUtil.getTocFilePath()
+        tocFile = fileUtil.getTocFilePath(domain)
         log.info(
             "removeTocEntry - domain: " + domain + " filePath: " + filePath)
 
@@ -2905,20 +2944,29 @@ class RootHandler(BaseHandler):
         self.current_user = self.get_current_user()
 
         domain = self.getDomain()
-        filePath = fileUtil.getFilePath(domain)
+        filePath = None
+        log.info("domain: " + domain)
         
-        if filePath is None:
-            filePath = tocUtil.getTocFilePath()
-            
-        if op.isfile(filePath):
+        filePath = self.getFilePath(domain, checkExists=False)
+        
+        if filePath is not None and fileUtil.isFile(filePath):
+            # the file already exists
             msg = "Conflict: resource exists"
             log.info(msg)
             raise HTTPError(409, reason=msg)  # Conflict - is this the correct code?
+             
         
         if filePath is not None and self.isTocFilePath(filePath):
             msg = "Forbidden: invalid resource"
             log.info(msg)
             raise HTTPError(403, reason=msg)  # Forbidden - TOC file
+        
+        if filePath is None:
+            msg = "domain not valid"
+            log.info(msg)
+            raise HTTPError(400, reason=msg)
+        
+        log.info("FilePath: " + filePath)     
         # create directories as needed
         fileUtil.makeDirs(op.dirname(filePath))
         log.info("creating file: [" + filePath + "]")

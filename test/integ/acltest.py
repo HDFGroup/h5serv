@@ -138,6 +138,20 @@ class AclTest(unittest.TestCase):
         acl = rspJson['acl']
         self.failUnlessEqual(len(acl.keys()), 7)
         
+    def testPutDomain(self):
+        
+        self.domain = 'new_domain.test_user1.' + config.get('home_domain')  
+        
+        headers = self.getHeaders()    
+        
+        # put domain in user home folder
+        req = self.endpoint + "/"
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)  
+        # todo - above should fail with 401 - need authorization
+        
+         
+        
     def testAttributes(self):
         self.domain = 'tall_acl.' + config.get('domain')  
         self.setupAcls()

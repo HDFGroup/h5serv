@@ -14,8 +14,10 @@ import sys
 
 cfg = {
     'server': '127.0.0.1',
+    'home_domain': 'home.hdfgroup.org',
     'port':   5000,
-    'domain':   'test.hdfgroup.org'
+    'domain':   'test.hdfgroup.org',
+    'hdf5_ext': '.h5'
 }
    
 def get(x):     
