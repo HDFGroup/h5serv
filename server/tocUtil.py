@@ -76,14 +76,17 @@ def createTocFile(datapath):
         if folder_regex and re.match(folder_regex, op.basename(root)):
             log.info("skipping director (filter match)")
             continue
-        grppath = root[len(datapath):]
-        log.info("grppath: " + grppath)
+        grppath = root[len(toc_dir):]
         if not grppath:
-            continue
+            grppath = '/'
+        if grppath[-1] == '.':
+            grppath = grppath[:-1]
+        log.info("grppath: " + grppath)
+         
         if os.name == 'nt':
             grppath = grppath.replace('\\', '/')  # match HDF5 convention
         grp = None
-        if grppath == '/.':
+        if grppath == '/':
             grp = f['/']  # use root group
         domainpath = fileUtil.getDomain(grppath)
         log.info("domainpath: " + domainpath)
