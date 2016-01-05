@@ -95,7 +95,8 @@ Create test accounts
  - add test_user1 and test_user2 if they don't exist already
 """
 
-def addTestAccounts():
+
+def addTestAccount(user_id):
     password_file = "passwd.h5" 
     cwd = os.getcwd()
     os.chdir('../../util/admin')
@@ -104,9 +105,35 @@ def addTestAccounts():
               
     add_user_script = 'python update_pwd.py' 
     add_user_script += ' -f ' + password_file  
-    os.system(add_user_script + ' -a -u test_user1 -p test')
-    os.system(add_user_script + ' -a -u test_user2 -p test')
+    os.system(add_user_script + ' -a -u ' + user_id + ' -p test')
+    home_dir = "../../data/home"
+    if not os.path.isdir(home_dir):
+        os.mkdir(home_dir)
+    os.chdir(home_dir)
+    
+    # clean out any old files
+    if os.path.isdir(user_id):
+        removeFilesFromDir(user_id)
+    else:
+        # create user home directory   
+        os.mkdir(user_id)
+        
+    os.chdir(user_id)
+    
+    print("cwd:", os.getcwd())
+    # link to "public" directory
+    # create symlink to public directory
+    if os.name != 'nt':
+        print("create symlink")
+        os.symlink("../../public", "public")
+    
     os.chdir(cwd)
+    
+def addTestAccounts():
+    for test_user in ('test_user1', 'test_user2'):
+        addTestAccount(test_user)
+    
+    
     
 """
 Make a testfile with 1000 sub-groups
@@ -176,8 +203,11 @@ def removeFilesFromDir(dir_name):
         file_path = os.path.join(dir_name, file_name)
         try:
             if os.path.isdir(file_path):
-                removeFilesFromDir(file_path)
-                os.rmdir(file_path)
+                if os.path.islink(file_path):
+                    os.unlink(file_path)  # just remove the link
+                else:
+                    removeFilesFromDir(file_path)
+                    os.rmdir(file_path)
             else:
                 if os.path.isfile(file_path):
                     # check for read-only
@@ -222,8 +252,6 @@ makeDataset1k()
 
 removeFilesFromDir(DES)
 
-# remove test user directory
-removeFilesFromDir("../../data/home/test_user1")
 
 test_dirs = ('.', 'subdir', 'subdir/subdir')
 for dir_name in test_dirs:

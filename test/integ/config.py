@@ -17,7 +17,8 @@ cfg = {
     'home_domain': 'home.hdfgroup.org',
     'port':   5000,
     'domain':   'test.hdfgroup.org',
-    'hdf5_ext': '.h5'
+    'hdf5_ext': '.h5',
+    'home_dir': 'home'
 }
    
 def get(x):     

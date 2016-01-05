@@ -23,7 +23,8 @@ cfg = {
     'toc_name': '.toc.h5',
     'toc_folder_filter': '[^@]+@[^@]+\.[^@]+',
     'local_ip': '127.0.0.1',  # used by lcoal_dns.py
-    'password_file': 'passwd.h5'   
+    'password_file': 'passwd.h5',
+    'home_dir': 'home'   
 }
 
 

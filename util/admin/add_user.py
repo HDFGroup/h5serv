@@ -26,6 +26,10 @@ def generate_temp_password(length=6):
     return "".join([chars[ord(c) % len(chars)] for c in os.urandom(length)])
     
 def main():
+    if os.name == 'nt':
+        print("Sorry, this utility is not supported on Windows!")
+        return -1
+        
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', "--user", help='user id')
       
@@ -51,17 +55,8 @@ def main():
     if username.find('/') != -1:
         print "invalid username ('/' is not allowed)"
         return -1
-    if username.find('@') == -1:
-        print "invalid username (should be email address)"
-        return -1
-     
-      
-    passwd = generate_temp_password()
-            
-    print ">filename:", filename
-    print ">username:", username
-    print ">password:", passwd
     
+    passwd = generate_temp_password()
         
     # verify file exists and is writable
     if not op.isfile(filename):
@@ -107,23 +102,26 @@ def main():
         print("data directory not found")
         return -1
     
-    userpath = op.join(datapath, 'users')
+    print "datapth:", datapath
+    userpath = op.join(datapath, config.get('home_dir'))
+    print("userpath:", userpath)
     if not op.isdir(userpath):
         os.mkdir(userpath)
-    userdir = op.join(userpath, userid)
-    if opisdir(userdir):
+    userdir = op.join(userpath, username)
+    if op.isdir(userdir):
         print("user directory already exists")
         return -1
-        
+    
+    # create user directory    
     os.mkdir(userdir)
     
-    toc_name = ".toc.h5"
-    f = h5py.File(toc_name, 'w')
+    # link to "public" directory
+    link_name = op.join(userdir, "public")
+    # create symlink to public directory
+    os.symlink("../../public", link_name)
     
-    public_dir = op.join(datapath, "public")
-    f['public'] = h5py.ExternalLink(filedomain, "/")
-    
-    return 0
+    print passwd
+    return  
      
     
 

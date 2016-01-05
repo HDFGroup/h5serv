@@ -90,7 +90,7 @@ def createTocFile(datapath):
             grp = f['/']  # use root group
         domainpath = fileUtil.getDomain(grppath)
         log.info("domainpath: " + domainpath)
-        for filename in files:
+        for filename in os.listdir(root):
             log.info("walk, file: " + filename)
             if filename[0] == '.':
                 log.info("skip hidden")
@@ -114,12 +114,14 @@ def createTocFile(datapath):
                     log.info("skip non-hdf5 file")
                     continue
                 filename = filename[:-(len(hdf5_ext))]
+                log.info("filename (noext): " + filename)
             if not grp:
                 log.info("createTocFile - create_group: " + grppath)
                 grp = f.create_group(grppath)
                     
-            filedomain = filename + "." + domainpath
+            filedomain = filename + domainpath
             # verify that we can convert the domain back to a file path
+            log.info("filedomain: " + filedomain)
             try:
                 fileUtil.getFilePath(filedomain)
                 # ok - add the external link

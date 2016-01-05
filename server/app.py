@@ -165,7 +165,7 @@ class BaseHandler(tornado.web.RequestHandler):
          
         log = logging.getLogger("h5serv")
         log.info("getFilePath: " + domain)
-        tocFilePath = fileUtil.getTocFilePath(domain)
+        tocFilePath = fileUtil.getTocFilePathForDomain(domain)
         log.info("tocFilePath: " + tocFilePath)
         if not fileUtil.isFile(tocFilePath):
             tocUtil.createTocFile(tocFilePath)
@@ -2806,7 +2806,7 @@ class RootHandler(BaseHandler):
             log.error("unexpected filepath: " + filePath)
             raise HTTPError(500)
         filePath = filePath[len(dataPath):]
-        tocFile = fileUtil.getTocFilePath(domain)
+        tocFile = fileUtil.getTocFilePathForDomain(domain)
         acl = None
 
         try:
@@ -2846,7 +2846,7 @@ class RootHandler(BaseHandler):
             log.error("unexpected filepath: " + filePath)
             raise HTTPError(500)
         filePath = filePath[len(dataPath):]
-        tocFile = fileUtil.getTocFilePath(domain)
+        tocFile = fileUtil.getTocFilePathForDomain(domain)
         log.info(
             "removeTocEntry - domain: " + domain + " filePath: " + filePath)
 

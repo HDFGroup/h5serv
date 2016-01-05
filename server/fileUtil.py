@@ -104,7 +104,7 @@ def getFilePath(host_value):
 
     return filePath
     
-def getTocFilePath(host_value):
+def getTocFilePathForDomain(host_value):
     """ Return toc file path for given domain value.
         Will return path "../data/.toc.h5" for public domains or
         "../data/home/<user>/.toc.h5" for user domains.

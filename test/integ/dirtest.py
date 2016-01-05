@@ -14,6 +14,7 @@ import config
 import helper
 import unittest
 import json
+import os
 
 class DirTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -56,23 +57,38 @@ class DirTest(unittest.TestCase):
         self.assertEqual(link['h5domain'], 'tall.test.' + domain)
         
     def testGetUserToc(self):  
-        domain = config.get('domain')  
+        domain = config.get('domain')
         if domain.startswith('test.'):
             domain = domain[5:]
-        domain = self.user1['username'] + ".home." + domain
-         
+      
+        user_domain = self.user1['username'] + '.home.' + domain
         req = self.endpoint + "/"
-        headers = {'host': domain}
+        headers = {'host': user_domain}
+        # this should get the users .toc file
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
         self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
         self.assertTrue('root' in rspJson)
         root_uuid = rspJson['root']
-        #req = self.endpoint + "/groups/" + root_uuid 
-        #rsp = requests.get(req, headers=headers)
-        #self.failUnlessEqual(rsp.status_code, 200)
+        req = self.endpoint + "/groups/" + root_uuid 
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
         
+        if os.name == 'nt':
+            return # symbolic links used below are not supported on Windows
+            
+        # get link to public folder
+        req =  self.endpoint + "/groups/" + root_uuid + "/links/public"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("link" in rspJson)
+        link_json = rspJson["link"]
+        self.failUnlessEqual(link_json["class"], "H5L_TYPE_EXTERNAL")
+        self.failUnlessEqual(link_json["title"], "public")
+        self.failUnlessEqual(link_json["h5domain"], "public." + domain)      
         
     def testNoHostHeader(self):
         req = self.endpoint + "/"
