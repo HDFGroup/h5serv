@@ -118,8 +118,11 @@ def createTocFile(datapath):
             if not grp:
                 log.info("createTocFile - create_group: " + grppath)
                 grp = f.create_group(grppath)
-                    
-            filedomain = filename + domainpath
+            
+            if domainpath[0] == '.':        
+                filedomain = filename + domainpath
+            else:
+                filedomain = filename + '.' + domainpath
             # verify that we can convert the domain back to a file path
             log.info("filedomain: " + filedomain)
             try:
