@@ -121,12 +121,7 @@ def main():
     f = h5py.File(toc_name, 'w')
     
     public_dir = op.join(datapath, "public")
-    public_didr = 
     f['public'] = h5py.ExternalLink(filedomain, "/")
-    
-    
-    
-    
     
     return 0
      
