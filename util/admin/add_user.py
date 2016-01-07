@@ -8,7 +8,7 @@ import time
 import datetime
 import hashlib
 import config
- 
+
 
 def encrypt_pwd(passwd):
     encrypted = hashlib.sha224(passwd).hexdigest()
@@ -29,12 +29,11 @@ def main():
     if os.name == 'nt':
         print("Sorry, this utility is not supported on Windows!")
         return -1
-        
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', "--user", help='user id')
-      
+    parser.add_argument('-p', "--passwd", help='user password') 
     args = parser.parse_args()
-       
+     
     filename = None
     passwd = None
     username = None
@@ -47,6 +46,7 @@ def main():
     if not args.user:
         print("no userid supplied")
         return -1
+    
          
     username = args.user
     if username.find(':') != -1:
@@ -56,7 +56,13 @@ def main():
         print "invalid username ('/' is not allowed)"
         return -1
     
-    passwd = generate_temp_password()
+    if args.passwd:
+        passwd = args.passwd
+        if len(passwd) < 4:
+            print "password must be at least 4 characters long"
+            return -1
+    else:
+        passwd = generate_temp_password()
         
     # verify file exists and is writable
     if not op.isfile(filename):
@@ -102,9 +108,7 @@ def main():
         print("data directory not found")
         return -1
     
-    print "datapth:", datapath
     userpath = op.join(datapath, config.get('home_dir'))
-    print("userpath:", userpath)
     if not op.isdir(userpath):
         os.mkdir(userpath)
     userdir = op.join(userpath, username)
@@ -121,7 +125,7 @@ def main():
     os.symlink("../../public", link_name)
     
     print passwd
-    return  
+    return 
      
     
 
