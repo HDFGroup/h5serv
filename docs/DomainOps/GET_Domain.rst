@@ -6,15 +6,17 @@ Description
 ===========
 This operation retrieves information about the requested domain.
 
-*Note:* If the HDF DNS Server (see DNS) is configured 
-(see: :doc:`../Installation/DNSSetup`), the  
-operations can specify the domain as part of the URI.  Example:  
+*Note:* If the HDF Dynamic DNS Server (see https://github.com/HDFGroup/dynamic-dns) is running, 
+the operations can specify the domain as part of the URI.  Example:  
 http://tall.data.hdfgroup.org:7253/ 
 returns data about the domain "tall" hosted on data.hdfgroup.org.  
 The DNS server will determine the proper IP that maps to this domain.
 
 If the DNS Server is not setup, specify the desired domain in the Host line of the http
 header.
+
+Alternatively, the domain can be specified as a 'Host' query parameter.  Example:
+http://127.0.0.1:7253?host=tall.data.hdfgroup.org
 
 Requests
 ========

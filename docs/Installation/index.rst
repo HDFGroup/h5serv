@@ -6,4 +6,3 @@ Installation
    :maxdepth: 2
 
    ServerSetup
-   DNSSetup
