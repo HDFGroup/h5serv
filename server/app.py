@@ -509,7 +509,6 @@ class LinkHandler(BaseHandler):
                 h5domain = body["h5domain"]
 
         else:
-            print("request body:", self.request.body)
             msg = "Bad request: put syntax: [" + self.request.body + "]"
             log.info(msg)
             raise HTTPError(400, reasoln=msg)
@@ -2022,8 +2021,6 @@ class AttributeHandler(BaseHandler):
 
         body = None
         try:
-            print("body type:", type(self.request.body))
-            #body = json.loads(self.request.body)
             body = json_decode(self.request.body)
         except ValueError as e:
             msg = "JSON Parser Error: " + e.message
@@ -2510,7 +2507,6 @@ class DatasetCollectionHandler(BaseHandler):
 
         if "shape" in body:
             shape = body["shape"]
-            print("type shape:", type(shape))
             if type(shape) == int:
                 dims = [shape]
             elif type(shape) == list or type(shape) == tuple:
@@ -2798,8 +2794,6 @@ class RootHandler(BaseHandler):
         """
         subgroup_uuid = None
         try:
-            print("group_uuid type:", type(group_uuid))
-            print("link_name type:", type(link_name))
             item = db.getLinkItemByUuid(group_uuid, link_name)
             if item['class'] != 'H5L_TYPE_HARD':
                 return None
@@ -2832,7 +2826,6 @@ class RootHandler(BaseHandler):
         try:
             with Hdf5db(tocFile, app_logger=log) as db:
                 group_uuid = db.getUUIDByPath('/')
-                print("group_uuid type:", type(group_uuid))
                 pathNames = filePath.split('/')
                 for linkName in pathNames:
                     if linkName.endswith(hdf5_ext):
@@ -2842,7 +2835,6 @@ class RootHandler(BaseHandler):
                         db.createExternalLink(group_uuid, domain, '/', linkName)
                     else:
                         subgroup_uuid = self.getSubgroupId(db, group_uuid, linkName)
-                        print("subgroup_uuid type:", type(subgroup_uuid))
                         if subgroup_uuid is None:
                             acl = db.getAcl(group_uuid, self.userid)
                             self.verifyAcl(acl, 'create')  # throws exception is unauthorized
