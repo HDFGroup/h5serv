@@ -511,11 +511,11 @@ class ValueTest(unittest.TestCase):
         # use '%26' rather than '&' since otherwise it will be 
         # interpreted as a http query param seperator
         queries = { "date == 23": 24,
-                    "wind == 'W 5'": 3,
+                    "wind == b'W 5'": 3,
                     "temp > 61": 53,
                     "(date >=22) %26 (date <= 24)": 62,
                     "(date == 21) %26 (temp > 70)": 4,
-                    "(wind == 'E 7') | (wind == 'S 7')": 7 }
+                    "(wind == b'E 7') | (wind == b'S 7')": 7 }
        
         #queries = {    "(date == 21) %26 (temp >= 72)": 4 }
         domain = 'compound.' + config.get('domain') 

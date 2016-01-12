@@ -9,6 +9,12 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
+
+import six
+
+if six.PY3:
+    unicode = str
+    
 import time
 import signal
 import logging
@@ -23,7 +29,7 @@ import base64
 import binascii
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
-from tornado.escape import json_encode, url_escape, url_unescape
+from tornado.escape import json_encode, json_decode, url_escape, url_unescape
 
 from h5json import Hdf5db
 import h5json
@@ -475,7 +481,7 @@ class LinkHandler(BaseHandler):
 
         body = None
         try:
-            body = json.loads(self.request.body)
+            body = json_decode(self.request.body)
         except ValueError as e:
             msg = "JSON Parser Error: " + e.message
             log.info(msg)
@@ -503,6 +509,7 @@ class LinkHandler(BaseHandler):
                 h5domain = body["h5domain"]
 
         else:
+            print("request body:", self.request.body)
             msg = "Bad request: put syntax: [" + self.request.body + "]"
             log.info(msg)
             raise HTTPError(400, reasoln=msg)
@@ -836,7 +843,7 @@ class AclHandler(BaseHandler):
 
         body = None
         try:
-            body = json.loads(self.request.body)
+            body = json_decode(self.request.body)
         except ValueError as e:
             msg = "JSON Parser Error: " + e.message
             log.info(msg)
@@ -1122,7 +1129,7 @@ class ShapeHandler(BaseHandler):
         rootUUID = None
         body = None
         try:
-            body = json.loads(self.request.body)
+            body = json_decode(self.request.body)
         except ValueError as e:
             msg = "JSON Parser Error: " + e.message
             log.info(msg)
@@ -1612,12 +1619,18 @@ class ValueHandler(BaseHandler):
                 with Querydb(filePath, app_logger=log) as db:
                     path = item['alias'][0]
                     rsp = db.doQuery(
-                        path, query_selection,
+                        item_type, path, query_selection,
                         start=start, stop=stop, step=step, limit=limit)
                     values = rsp['values']
+                
                     response['index'] = rsp['indexes']
             except NameError as e:
-                msg = "Query error: " + e.message
+                
+                msg = "Query error"
+                try: 
+                    msg += ": " + e.message
+                except AttributeError:
+                    pass  # no message attribute
                 log.info(msg)
                 raise HTTPError(400, msg)
 
@@ -1677,7 +1690,7 @@ class ValueHandler(BaseHandler):
 
         body = None
         try:
-            body = json.loads(self.request.body)
+            body = json_decode(self.request.body)
         except ValueError as e:
             msg = "JSON Parser Error: " + e.message
             log.info(msg)
@@ -1771,7 +1784,7 @@ class ValueHandler(BaseHandler):
 
         body = None
         try:
-            body = json.loads(self.request.body)
+            body = json_decode(self.request.body)
         except ValueError as e:
             msg = "JSON Parser Error: " + e.message
             log.info(msg)
@@ -2009,7 +2022,9 @@ class AttributeHandler(BaseHandler):
 
         body = None
         try:
-            body = json.loads(self.request.body)
+            print("body type:", type(self.request.body))
+            #body = json.loads(self.request.body)
+            body = json_decode(self.request.body)
         except ValueError as e:
             msg = "JSON Parser Error: " + e.message
             log.info(msg)
@@ -2029,7 +2044,7 @@ class AttributeHandler(BaseHandler):
             elif type(shape) in (str, unicode) and shape == 'H5S_NULL':
                 dims = None
             else:
-                msg = "Bad Request: shape is invalid"
+                msg = "Bad Request: shape is invalid!"
                 log.info(msg)
                 raise HTTPError(400, reason=msg)
         datatype = body["type"]
@@ -2327,7 +2342,7 @@ class GroupCollectionHandler(BaseHandler):
         body = {}
         if self.request.body:
             try:
-                body = json.loads(self.request.body)
+                body = json_decode(self.request.body)
             except ValueError as e:
                 msg = "JSON Parser Error: " + e.message
                 log.info(msg)
@@ -2478,13 +2493,15 @@ class DatasetCollectionHandler(BaseHandler):
         group_uuid = None
         link_name = None
 
-        body = None
-        try:
-            body = json.loads(self.request.body)
-        except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
-            log.info(msg)
-            raise HTTPError(400, reason=msg)
+        body = {}
+        if self.request.body:
+            try:
+                body = json_decode(self.request.body)
+            except ValueError as e:
+                msg = "JSON Parser Error: " + e.message
+                log.info(msg)
+                raise HTTPError(400, reason=msg)
+                
 
         if "type" not in body:
             msg = "Bad Request: Type not specified"
@@ -2493,6 +2510,7 @@ class DatasetCollectionHandler(BaseHandler):
 
         if "shape" in body:
             shape = body["shape"]
+            print("type shape:", type(shape))
             if type(shape) == int:
                 dims = [shape]
             elif type(shape) == list or type(shape) == tuple:
@@ -2698,7 +2716,7 @@ class TypeCollectionHandler(BaseHandler):
 
         body = None
         try:
-            body = json.loads(self.request.body)
+            body = json_decode(self.request.body)
         except ValueError as e:
             msg = "JSON Parser Error: " + e.message
             log.info(msg)
@@ -2780,6 +2798,8 @@ class RootHandler(BaseHandler):
         """
         subgroup_uuid = None
         try:
+            print("group_uuid type:", type(group_uuid))
+            print("link_name type:", type(link_name))
             item = db.getLinkItemByUuid(group_uuid, link_name)
             if item['class'] != 'H5L_TYPE_HARD':
                 return None
@@ -2812,6 +2832,7 @@ class RootHandler(BaseHandler):
         try:
             with Hdf5db(tocFile, app_logger=log) as db:
                 group_uuid = db.getUUIDByPath('/')
+                print("group_uuid type:", type(group_uuid))
                 pathNames = filePath.split('/')
                 for linkName in pathNames:
                     if linkName.endswith(hdf5_ext):
@@ -2821,6 +2842,7 @@ class RootHandler(BaseHandler):
                         db.createExternalLink(group_uuid, domain, '/', linkName)
                     else:
                         subgroup_uuid = self.getSubgroupId(db, group_uuid, linkName)
+                        print("subgroup_uuid type:", type(subgroup_uuid))
                         if subgroup_uuid is None:
                             acl = db.getAcl(group_uuid, self.userid)
                             self.verifyAcl(acl, 'create')  # throws exception is unauthorized
