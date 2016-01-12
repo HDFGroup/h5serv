@@ -49,18 +49,19 @@ Answer 'y' to the prompt, and the packages will be fetched.
 
 In the same command window, run: ``activate h5serv``
 
-In a browser go to: https://github.com/HDFGroup/h5serv and click the "Download ZIP"
-button (right side of page).  Save the file as "h5serv.zip" to your Downloads directory.
+Download the hdf5-json project: ``git clone https://github.com/HDFGroup/hdf5-json.git`` .
+Alternatively, in a browser go to: https://github.com/HDFGroup/hdf5-json and click the 
+"Download ZIP" button (right side of page).   Download the zip file and extract to
+the destination directory of your choice.  
 
-Alternatively, if you have git installed, you can run: 
-``git clone --recursive https://github.com/HDFGroup/h5serv.git`` to download the h5serv source tree. 
+Next, cd to the hdf5-json folder and run: ``python setup.py install``.
 
-If you downloaded the ZIP file, in Windows Explorer, right-click on the file and select 
-"Extract All...".  You can choose any folder as the destination.
+Download the h5serv project: ``git clone https://github.com/HDFGroup/h5serv.git`` .
+Alternatively, download the source zip as described above. 
 
 Next, in the command window, cd to the folder you extracted the source files to.
 
-From here cd to "h5serv-master/server".
+From here cd to "h5serv-master/server" (or just server if you used git).
 
 Run: python app.py
 You should see the output: "Starting event loop on port: 5000".
@@ -90,12 +91,17 @@ Answer 'y' to the prompt, and the packages will be fetched.
 
 In the same shell, run: ``source activate h5serv``
 
-Run: ``git clone --recursive https://github.com/HDFGroup/h5serv.git`` to download the h5serv source
-tree.  Alternatively, in a browser go to: https://github.com/HDFGroup/h5serv and click 
-the "Download ZIP" button (right side of page).  Download the zip file and extract to
+Download the hdf5-json project: ``git clone https://github.com/HDFGroup/hdf5-json.git`` .
+Alternatively, in a browser go to: https://github.com/HDFGroup/hdf5-json and click the 
+"Download ZIP" button (right side of page).   Download the zip file and extract to
 the destination directory of your choice.  
 
-Next, cd to the folder you extracted the source files to.
+Next, cd to the hdf5-json folder and run: ``python setup.py install``.
+
+Download the h5serv project: ``git clone https://github.com/HDFGroup/h5serv.git`` .
+Alternatively, download the source zip as described above. 
+
+Next, cd to the h5serv folder.
 
 From here cd to "server" (or "h5serv-master/server" if you extracted from ZIP file).
 
