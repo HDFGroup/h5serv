@@ -24,12 +24,12 @@ import binascii
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, url_escape, url_unescape
+
+from h5json import Hdf5db
+import h5json
+
 import config
 from querydb import Querydb
-sys.path.append('../hdf5-json/lib')
-from hdf5db import Hdf5db
-import hdf5dtype
-
 from timeUtil import unixTimeToUTC
 import fileUtil  
 import tocUtil  
@@ -956,7 +956,7 @@ class TypeHandler(BaseHandler):
         hrefs.append({'rel': 'home', 'href': href + hostQuery})
         response['id'] = reqUuid
         typeItem = item['type']
-        response['type'] = hdf5dtype.getTypeResponse(typeItem)
+        response['type'] = h5json.getTypeResponse(typeItem)
         response['created'] = unixTimeToUTC(item['ctime'])
         response['lastModified'] = unixTimeToUTC(item['mtime'])
         response['attributeCount'] = item['attributeCount']
@@ -1289,7 +1289,7 @@ class DatasetHandler(BaseHandler):
         hrefs.append({'rel': 'home', 'href': href + hostQuery})
         response['id'] = reqUuid
         typeItem = item['type']
-        response['type'] = hdf5dtype.getTypeResponse(typeItem)
+        response['type'] = h5json.getTypeResponse(typeItem)
         response['shape'] = item['shape']
 
         if 'creationProperties' in item:
@@ -1951,7 +1951,7 @@ class AttributeHandler(BaseHandler):
             responseItem = {}
             responseItem['name'] = item['name']
             typeItem = item['type']
-            responseItem['type'] = hdf5dtype.getTypeResponse(typeItem)
+            responseItem['type'] = h5json.getTypeResponse(typeItem)
             responseItem['shape'] = item['shape']
             responseItem['created'] = unixTimeToUTC(item['ctime'])
             responseItem['lastModified'] = unixTimeToUTC(item['mtime'])
@@ -2951,7 +2951,7 @@ class RootHandler(BaseHandler):
         
         if filePath is not None and fileUtil.isFile(filePath):
             # the file already exists
-            msg = "Conflict: resource exists"
+            msg = "Conflict: resource exists: " + filePath
             log.info(msg)
             raise HTTPError(409, reason=msg)  # Conflict - is this the correct code?
              

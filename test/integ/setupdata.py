@@ -16,7 +16,7 @@ from shutil import copyfile
 import h5py
 import numpy as np
 
-SRC = "../../hdf5-json/data/hdf5"
+SRC = "../test_files"
 DES = "../../data/test"
 
 # files to be copied into test directory

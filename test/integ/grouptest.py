@@ -73,6 +73,7 @@ class GroupTest(unittest.TestCase):
         self.failUnlessEqual(rspJson["linkCount"], 0)
         self.failUnlessEqual(rspJson["attributeCount"], 0)
         self.assertTrue(helper.validateId(rspJson["id"]) ) 
+       
         
     def testPostWithLink(self):
         # test PUT_root
