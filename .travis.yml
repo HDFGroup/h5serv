@@ -14,6 +14,9 @@ install:
     - sudo apt-get install -qq libhdf5-serial-dev 
     - pip install numpy
     - pip install h5py
+    - pip install requests
+    - pip install pytables
+    - pip install pytz
 
 script:
     - python test/testall.py --no-server
