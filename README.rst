@@ -1,6 +1,9 @@
 h5serv - REST-based service for HDF5 data
 ===========================================
 
+.. image:: https://travis-ci.org/HDFGroup/h5serv.svg?branch=develop
+    :target: https://travis-ci.org/HDFGroup/h5serv
+
 Introduction
 ------------
 h5serv is a web service that implements a REST-based web service for HDF5 data stores
