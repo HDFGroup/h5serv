@@ -99,6 +99,7 @@ Create test accounts
 def addTestAccount(user_id):
     password_file = "passwd.h5" 
     cwd = os.getcwd()
+    src_dir = os.path.abspath(SRC)
     os.chdir('../../util/admin')
     if not os.path.isfile(password_file):    
         os.system('python makepwd_file.py')
@@ -107,6 +108,8 @@ def addTestAccount(user_id):
     add_user_script += ' -f ' + password_file  
     os.system(add_user_script + ' -a -u ' + user_id + ' -p test')
     home_dir = "../../data/home"
+    
+    
     if not os.path.isdir(home_dir):
         os.mkdir(home_dir)
     os.chdir(home_dir)
@@ -126,6 +129,7 @@ def addTestAccount(user_id):
     if os.name != 'nt':
         print("create symlink")
         os.symlink("../../public", "public")
+    copyfile(src_dir + '/tall.h5', 'tall.h5') 
     
     os.chdir(cwd)
     

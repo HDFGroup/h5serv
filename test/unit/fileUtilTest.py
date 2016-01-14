@@ -61,9 +61,19 @@ class FileUtilTest(unittest.TestCase):
         domain = getDomain(filePath)
         self.assertEqual(domain, 'tall.subdir.' + config.get('domain'))
         
-        filePath = "/foo"
+        filePath = os.path.join(config.get('datapath'), 'home/test_user1/tall.h5')
         domain = getDomain(filePath)
-        print "domain:", domain
+        self.assertEqual(domain, 'tall.test_user1.home.' + config.get('domain'))
+        
+        filePath = '../data/home/test_user1/tall.h5'
+        domain = getDomain(filePath)
+        self.assertEqual(domain, 'tall.test_user1.home.' + config.get('domain'))
+        
+        #domainpath = fileUtil.getDomain(grppath, base_domain=base_domain)
+        
+        filePath = "../data"
+        domain = getDomain(filePath)
+        self.assertEqual(domain, config.get('domain'))
         
         # verify backslashes are ok for windows...
         if os.name == 'nt':

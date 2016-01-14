@@ -51,6 +51,7 @@ def isTocFilePath(filePath):
 def createTocFile(datapath):
     log = logging.getLogger("h5serv")
     log.info("createTocFile(" + datapath + ")")
+    
     if datapath.endswith(config.get('toc_name')):
         toc_dir = op.dirname(datapath)
         toc_file = datapath
@@ -58,9 +59,14 @@ def createTocFile(datapath):
         toc_dir = datapath
         toc_file = op.join(toc_dir, config.get("toc_name"))
      
-    log.info("check toc with: " + toc_file)    
+    log.info("check toc with path: " + toc_file)    
     if op.exists(toc_file):
-        raise IOError("toc file already exists")
+        msg = "toc file already exists"
+        log.warn(msg)
+        raise IOError(msg)
+        
+    base_domain = fileUtil.getDomain(toc_dir)
+    log.info("base domain: " + base_domain)
     
     #if os.name == 'nt':
     #    toc_dir = toc_dir.replace('\\', '/')  # use unix style to map to HDF5 convention
@@ -88,7 +94,10 @@ def createTocFile(datapath):
         grp = None
         if grppath == '/':
             grp = f['/']  # use root group
-        domainpath = fileUtil.getDomain(grppath)
+         
+        domainpath = fileUtil.getDomain(grppath, base_domain=base_domain)
+        log.info("grppath: " + grppath)
+        log.info("base_domain: " + base_domain)
         log.info("domainpath: " + domainpath)
         for filename in os.listdir(root):
             log.info("walk, file: " + filename)
@@ -100,12 +109,15 @@ def createTocFile(datapath):
             if os.name == 'nt':
                 filepath = filepath.replace('\\', '/')  # use unix style to map to HDF5 convention
             log.info("createTocFile, path: " + filepath)
+            link_target = '/'
             
-            if (op.islink(filepath)):
+            if op.islink(filepath):
                 log.info("symlink: " + filepath)
-                if not op.isdir(filepath):
-                    log.info("skipping non-dir symlink")  
-                    continue  # don't include symlinks to files
+                # todo - quick hack for now to set a symlink with to sub-folder of data dir
+                # todo - revamp to use os.readlink and do the proper thing with the link value
+                filedomain = config.get('domain')
+                link_target += filename
+                log.info("setting symbolic link domainpath to: " + filedomain, " target: /" + filename)
             else:
                 if len(filename) < 4 or filename[-3:] != hdf5_ext:
                     log.info("skip non-hdf5 extension")
@@ -115,20 +127,22 @@ def createTocFile(datapath):
                     continue
                 filename = filename[:-(len(hdf5_ext))]
                 log.info("filename (noext): " + filename)
+                if domainpath[0] == '.':        
+                    filedomain = filename + domainpath
+                else:
+                    filedomain = filename + '.' + domainpath
+                    
+            # create the grp at grppath if it doesn't exist
             if not grp:
                 log.info("createTocFile - create_group: " + grppath)
-                grp = f.create_group(grppath)
-            
-            if domainpath[0] == '.':        
-                filedomain = filename + domainpath
-            else:
-                filedomain = filename + '.' + domainpath
+                grp = f.create_group(grppath)           
+                
             # verify that we can convert the domain back to a file path
             log.info("filedomain: " + filedomain)
             try:
                 fileUtil.getFilePath(filedomain)
                 # ok - add the external link
                 log.info("createTocFile - ExternalLink: " + domainpath)
-                grp[filename] = h5py.ExternalLink(filedomain, "/")
+                grp[filename] = h5py.ExternalLink(filedomain, link_target)
             except HTTPError:
                 log.info("file path: [" + filepath + "] is not valid dns name, ignoring")

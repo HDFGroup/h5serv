@@ -335,7 +335,8 @@ class LinkCollectionHandler(BaseHandler):
             'rel': 'root',
             'href': href + 'groups/' + rootUUID + hostQuery
         })
-        hrefs.append({'rel': 'home', 'href': href + hostQuery})
+        home_dir = config.get("home_dir")
+        hrefs.append({'rel': home_dir, 'href': href + hostQuery})
         hrefs.append({
             'rel': 'owner',
             'href': href + 'groups/' + reqUuid + hostQuery

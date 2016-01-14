@@ -59,9 +59,10 @@ class DirTest(unittest.TestCase):
     def testGetUserToc(self):  
         domain = config.get('domain')
         if domain.startswith('test.'):
-            domain = domain[5:]
+            domain = domain[5:]  # backup over the test part
       
-        user_domain = self.user1['username'] + '.home.' + domain
+        home_dir = config.get("home_dir")
+        user_domain = self.user1['username'] + '.' + home_dir  + '.' + domain
         req = self.endpoint + "/"
         headers = {'host': user_domain}
         # this should get the users .toc file
@@ -78,7 +79,7 @@ class DirTest(unittest.TestCase):
         if os.name == 'nt':
             return # symbolic links used below are not supported on Windows
             
-        # get link to public folder
+        # get link to 'public' folder
         req =  self.endpoint + "/groups/" + root_uuid + "/links/public"
         rsp = requests.get(req, headers=headers)
         self.failUnlessEqual(rsp.status_code, 200)
@@ -88,7 +89,85 @@ class DirTest(unittest.TestCase):
         link_json = rspJson["link"]
         self.failUnlessEqual(link_json["class"], "H5L_TYPE_EXTERNAL")
         self.failUnlessEqual(link_json["title"], "public")
-        self.failUnlessEqual(link_json["h5domain"], "public." + domain)      
+        self.failUnlessEqual(link_json["h5domain"], domain) 
+        self.failUnlessEqual(link_json["h5path"], "/public") 
+        
+        # get link to 'tall' file
+        req =  self.endpoint + "/groups/" + root_uuid + "/links/tall"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("link" in rspJson)
+        link_json = rspJson["link"]
+        self.failUnlessEqual(link_json["class"], "H5L_TYPE_EXTERNAL")
+        self.failUnlessEqual(link_json["title"], "tall")
+        self.failUnlessEqual(link_json["h5domain"], "tall." + user_domain)
+
+        
+    def testPutUserDomain(self):  
+        domain = config.get('domain')
+        home_dir = config.get("home_dir")
+        if domain.startswith('test.'):
+            domain = domain[5:]  # backup over the test part
+      
+        user_domain = self.user1['username'] + '.' + home_dir + '.' + domain
+        
+        # this should get the users .toc file
+        headers = {'host': user_domain }
+        req = self.endpoint + '/'
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('root' in rspJson)
+        toc_root_uuid = rspJson['root']
+        req = self.endpoint + "/groups/" + toc_root_uuid 
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+       
+        
+        # verify that "myfile" doesn't exist yet
+        user_file = "myfile." + user_domain
+        req = self.endpoint + "/"
+        headers = {'host': user_file}
+        #verify that the domain doesn't exist yet
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 404)
+        
+        # do a put on "myfile"
+        rsp = requests.put(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 201)
+        
+        # now the domain should exist  
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        
+        # go back to users toc and get "/home" group
+        headers = {'host': user_domain }
+        req = self.endpoint + "/groups/" + toc_root_uuid + "/links/home"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        link = rspJson['link']
+        self.assertTrue('id' in link)
+        toc_home_uuid = link['id']
+        
+        # get the user_id group
+        req = self.endpoint + "/groups/" + toc_home_uuid + "/links/" + self.user1['username']
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        link = rspJson['link']
+        self.assertTrue('id' in link)
+        toc_user_uuid = link['id']
+        
+        # check that the link exists in the user toc
+        headers = {'host': user_domain }
+        req = self.endpoint + "/groups/" + toc_user_uuid + "/links/myfile"
+        rsp = requests.get(req, headers=headers)
+        self.failUnlessEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+      
         
     def testNoHostHeader(self):
         req = self.endpoint + "/"

@@ -164,7 +164,7 @@ def getTocFilePathForDomain(host_value):
     return filePath
 
 
-def getDomain(file_path):
+def getDomain(file_path, base_domain=None):
     # Get domain given a file path
     
     data_path = op.normpath(config.get('datapath'))  # base path for data directory
@@ -173,11 +173,15 @@ def getDomain(file_path):
     if op.isabs(file_path):
         # compare with absolute path if we're given an absolute path
         data_path = op.abspath(data_path)
-        
+    
+    if file_path == data_path:
+        return config.get('domain')
+            
     if file_path.endswith(hdf5_ext):
         domain = op.basename(file_path)[:-(len(hdf5_ext))]
     else:
         domain = op.basename(file_path)
+
     dirname = op.dirname(file_path)
     
     while len(dirname) > 1 and dirname != data_path:
@@ -186,7 +190,10 @@ def getDomain(file_path):
         dirname = op.dirname(dirname)
      
     domain += '.'
-    domain += config.get('domain')
+    if base_domain:
+        domain += base_domain
+    else:
+        domain += config.get('domain')
 
     return domain
 
