@@ -17,6 +17,7 @@ install:
     - pip install requests
     - pip install tables
     - pip install pytz
+    - pip install tornado 
 
 script:
     - python test/testall.py --no-server
