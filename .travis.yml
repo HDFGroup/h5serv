@@ -1,0 +1,19 @@
+language: python
+
+notifications:
+  email: false
+
+python:
+  - "2.7"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+
+install:
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq libhdf5-serial-dev 
+    - pip install numpy
+    - pip install h5py
+
+script:
+    - python test/testall.py --no-server

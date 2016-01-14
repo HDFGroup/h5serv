@@ -11,6 +11,19 @@
 ##############################################################################
 
 import os
+import sys
+
+cwd = os.getcwd()
+no_server = False
+print(len(sys.argv))
+if len(sys.argv) > 1:
+    if sys.argv[1] == '--no-server':
+        no_server = True
+        
+
+test_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+
+os.chdir(test_dir)
 
 unit_tests = ('timeUtilTest', 'fileUtilTest')
 integ_tests = ('roottest', 'grouptest', 'dirtest', 'linktest', 'datasettest', 'valuetest',
@@ -22,15 +35,24 @@ integ_tests = ('roottest', 'grouptest', 'dirtest', 'linktest', 'datasettest', 'v
 os.chdir('unit')
 for file_name in unit_tests:
     print(file_name)
-    os.system('python ' + file_name + '.py')
-  
-os.chdir('../integ')
+    rc = os.system('python ' + file_name + '.py')
+    if rc != 0:
+        os.chdir(cwd)
+        sys.exit("Failed")
 
-os.system("python ./setupdata.py -f")  # initialize data files
-for file_name in integ_tests:
-    print(file_name)
-    os.system('python ' + file_name + '.py')
-os.chdir('..') 
+if not no_server:  
+    os.chdir('../integ')
+
+    os.system("python ./setupdata.py -f")  # initialize data files
+    for file_name in integ_tests:
+        print(file_name)
+        rc = os.system('python ' + file_name + '.py')
+        if rc != 0:
+            os.chdir(cwd)
+            sys.exit("Failed")
+    os.chdir('..') 
+    
+os.chdir(cwd)
 print("Done!")
  
 
