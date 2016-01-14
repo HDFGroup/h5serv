@@ -30,16 +30,16 @@ class LinkTest(unittest.TestCase):
             req = self.endpoint + "/groups/" + root_uuid + "/links/g1"
             headers = {'host': domain}
             rsp = requests.get(req, headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertTrue("created" in rspJson)
             self.assertTrue("lastModified" in rspJson)
             self.assertTrue('link' in rspJson)
             target = rspJson['link']
             self.assertTrue(helper.validateId(target['id']))
-            self.failUnlessEqual(target['class'], 'H5L_TYPE_HARD')
-            self.failUnlessEqual(target['title'], 'g1')
-            self.failUnlessEqual(target['collection'], 'groups')
+            self.assertEqual(target['class'], 'H5L_TYPE_HARD')
+            self.assertEqual(target['title'], 'g1')
+            self.assertEqual(target['collection'], 'groups')
             
     def testGetSoft(self):
         logging.info("LinkTest.testGetSoft")
@@ -53,14 +53,14 @@ class LinkTest(unittest.TestCase):
             req = self.endpoint + "/groups/" + g121_uuid + "/links/slink"
             headers = {'host': domain}
             rsp = requests.get(req, headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertTrue("created" in rspJson)
             self.assertTrue("lastModified" in rspJson)
             target = rspJson['link']
-            self.failUnlessEqual(target['h5path'], 'somevalue')
-            self.failUnlessEqual(target['class'], 'H5L_TYPE_SOFT')
-            self.failUnlessEqual(target['title'], 'slink')
+            self.assertEqual(target['h5path'], 'somevalue')
+            self.assertEqual(target['class'], 'H5L_TYPE_SOFT')
+            self.assertEqual(target['title'], 'slink')
             self.assertTrue('collection' not in target)
             
     def testGetExternal(self):
@@ -74,17 +74,17 @@ class LinkTest(unittest.TestCase):
             req = self.endpoint + "/groups/" + g12_uuid + "/links/extlink"
             headers = {'host': domain}
             rsp = requests.get(req, headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertTrue("created" in rspJson)
             self.assertTrue("lastModified" in rspJson)
             target = rspJson['link']
-            # self.failUnlessEqual(target, "http://somefile/#h5path(somepath)")
+            # self.assertEqual(target, "http://somefile/#h5path(somepath)")
             
-            self.failUnlessEqual(target['class'], 'H5L_TYPE_EXTERNAL')
-            self.failUnlessEqual(target['h5domain'], 'somefile')
-            self.failUnlessEqual(target['h5path'], 'somepath')
-            self.failUnlessEqual(target['title'], 'extlink')
+            self.assertEqual(target['class'], 'H5L_TYPE_EXTERNAL')
+            self.assertEqual(target['h5domain'], 'somefile')
+            self.assertEqual(target['h5path'], 'somepath')
+            self.assertEqual(target['title'], 'extlink')
             self.assertTrue('collection' not in target)
             
     def testGetUDLink(self):
@@ -96,13 +96,13 @@ class LinkTest(unittest.TestCase):
         req = self.endpoint + "/groups/" + g2_uuid + "/links/udlink"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue("created" in rspJson)
         self.assertTrue("lastModified" in rspJson)
         target = rspJson['link']
-        self.failUnlessEqual(target['class'], 'H5L_TYPE_USER_DEFINED')
-        self.failUnlessEqual(target['title'], 'udlink')
+        self.assertEqual(target['class'], 'H5L_TYPE_USER_DEFINED')
+        self.assertEqual(target['title'], 'udlink')
         
     def testGetLinks(self):
         logging.info("LinkTest.testGetLinks")
@@ -115,7 +115,7 @@ class LinkTest(unittest.TestCase):
             req = self.endpoint + "/groups/" + g12_uuid + "/links"
             headers = {'host': domain}
             rsp = requests.get(req, headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertTrue("links" in rspJson)
             links = rspJson["links"]
@@ -138,18 +138,18 @@ class LinkTest(unittest.TestCase):
             if lastName:
                 params['Marker'] = lastName
             rsp = requests.get(req, headers=headers, params=params)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             if rsp.status_code != 200:
                 break
             rspJson = json.loads(rsp.text)
             links = rspJson['links']
-            self.failUnlessEqual(len(links) <= 50, True)
+            self.assertEqual(len(links) <= 50, True)
             for link in links:
                 lastName = link['title']
                 names.add(lastName)
             if len(links) == 0:
                 break
-        self.failUnlessEqual(len(names), 1000)  # should get 1000 unique links
+        self.assertEqual(len(names), 1000)  # should get 1000 unique links
     
     
     #Fix - This needs to be made more efficient - when deleting links, the code now
@@ -175,7 +175,7 @@ class LinkTest(unittest.TestCase):
         while True:
             print 'count:', count
             rsp = requests.get(req, headers=headers, params=params)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             if rsp.status_code != 200:
                 break
             rspJson = json.loads(rsp.text)
@@ -188,8 +188,8 @@ class LinkTest(unittest.TestCase):
                 # delete link
                 del_req = helper.getEndpoint() + "/groups/" + root_uuid + "/links/" + link['title']
                 rsp = requests.delete(del_req, headers=headers)
-                self.failUnlessEqual(rsp.status_code, 200)
-        self.failUnlessEqual(count, 1000)  # should get 1000 unique links
+                self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(count, 1000)  # should get 1000 unique links
     """
         
     def testGetBadParam(self):
@@ -200,7 +200,7 @@ class LinkTest(unittest.TestCase):
         headers = {'host': domain}
         params = {'Limit': 'abc' }
         rsp = requests.get(req, headers=headers, params=params)
-        self.failUnlessEqual(rsp.status_code, 400)
+        self.assertEqual(rsp.status_code, 400)
     
         
     def testPut(self):
@@ -213,19 +213,19 @@ class LinkTest(unittest.TestCase):
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)  # link doesn't exist
+        self.assertEqual(rsp.status_code, 404)  # link doesn't exist
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # it's there now!
+        self.assertEqual(rsp.status_code, 200)  # it's there now!
         # make a request second time (verify idempotent)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         # now try with a different payload
         grpId2 = helper.createGroup(domain)
         payload["id"] = grpId2
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         
         
     def testPutNameWithSpaces(self):
@@ -238,7 +238,7 @@ class LinkTest(unittest.TestCase):
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         
     def testPutBadReqId(self):
         logging.info("LinkTest.testPutBadReqId")
@@ -250,7 +250,7 @@ class LinkTest(unittest.TestCase):
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)
+        self.assertEqual(rsp.status_code, 404)
         
     def testPutBadLinkId(self):
         logging.info("LinkTest.testPutBadLinkId")
@@ -263,7 +263,7 @@ class LinkTest(unittest.TestCase):
         payload = {"id": badLinkId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)
+        self.assertEqual(rsp.status_code, 404)
         
     def testPutNoName(self):
         logging.info("LinkTest.testPutNoName")
@@ -274,7 +274,7 @@ class LinkTest(unittest.TestCase):
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)
+        self.assertEqual(rsp.status_code, 400)
         
     def testPutBadName(self):
         logging.info("LinkTest.testPutBadName")
@@ -286,7 +286,7 @@ class LinkTest(unittest.TestCase):
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)
+        self.assertEqual(rsp.status_code, 400)
         
     def testPutSoftLink(self):
         logging.info("LinkTest.testPutSoftLink")
@@ -299,16 +299,16 @@ class LinkTest(unittest.TestCase):
         headers = {'host': domain}
         # verify softlink does not exist
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)
+        self.assertEqual(rsp.status_code, 404)
         # make request
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         # verify link is created
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         # verify idempotent
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         
     def testPutExternalLink(self):
         logging.info("LinkTest.testPutExternalLink")
@@ -323,20 +323,20 @@ class LinkTest(unittest.TestCase):
         headers = {'host': domain}
         # verify extlink does not exist
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)
+        self.assertEqual(rsp.status_code, 404)
         # make request
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) 
+        self.assertEqual(rsp.status_code, 201) 
         # verify link is created
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         # verify that it is an external link
         rspJson = json.loads(rsp.text)   
         target = rspJson['link']
               
-        self.failUnlessEqual(target['class'], 'H5L_TYPE_EXTERNAL')
-        self.failUnlessEqual(target['h5domain'], target_domain)
-        self.failUnlessEqual(target['h5path'], target_path)
+        self.assertEqual(target['class'], 'H5L_TYPE_EXTERNAL')
+        self.assertEqual(target['h5domain'], target_domain)
+        self.assertEqual(target['h5path'], target_path)
             
           
     def testPutExternalMissingPath(self):
@@ -352,10 +352,10 @@ class LinkTest(unittest.TestCase):
         headers = {'host': domain}
         # verify extlink does not exist
         rsp = requests.get(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)
+        self.assertEqual(rsp.status_code, 404)
         # make request
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)     
+        self.assertEqual(rsp.status_code, 400)     
         
     def testDelete(self):
         logging.info("LinkTest.testDelete")
@@ -367,20 +367,20 @@ class LinkTest(unittest.TestCase):
         payload = {"id": grpId}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         
         # now remove the link
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         
         # get should fail
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 410)   
+        self.assertEqual(rsp.status_code, 410)   
         
         # Group should still be accessible via uuid
         req = self.endpoint + "/groups/" + grpId
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         
     
        

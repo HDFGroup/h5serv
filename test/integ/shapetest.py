@@ -28,7 +28,7 @@ class ShapeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + dset21_uuid + "/shape"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -44,7 +44,7 @@ class ShapeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + resizable_1d_uuid + "/shape"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -56,7 +56,7 @@ class ShapeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + resizable_2d_uuid + "/shape"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -69,7 +69,7 @@ class ShapeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + unlimited_1d_uuid + "/shape"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -82,7 +82,7 @@ class ShapeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + unlimited_2d_uuid + "/shape"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -101,7 +101,7 @@ class ShapeTest(unittest.TestCase):
         
         # get the existing shape
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -113,11 +113,11 @@ class ShapeTest(unittest.TestCase):
         payload = { 'shape': 20 }
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         
         # get the shape again
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -130,7 +130,7 @@ class ShapeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + resizable_2d_uuid + "/shape"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -144,11 +144,11 @@ class ShapeTest(unittest.TestCase):
         # modify shape by setting extent to maxdims 
         payload = { 'shape': [10, 20] }
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         
         # verify the changed shape
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -162,10 +162,10 @@ class ShapeTest(unittest.TestCase):
         payload = { 'shape': 25 }
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -179,10 +179,10 @@ class ShapeTest(unittest.TestCase):
         payload = { 'shape': [10, 25] }
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue('shape' in rspJson)
         shape = rspJson['shape']
@@ -204,19 +204,19 @@ class ShapeTest(unittest.TestCase):
         payload = { 'shape': [20, 10] }  # wrong rank
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)
+        self.assertEqual(rsp.status_code, 400)
         
         payload = { 'shape': 8 }  # try to shrink
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)        
+        self.assertEqual(rsp.status_code, 400)        
                   
         resizable_2d_uuid = helper.getUUID(domain, root_uuid, 'resizable_2d') 
         req = helper.getEndpoint() + "/datasets/" + resizable_2d_uuid + "/shape"
         payload = { 'shape': [12, 20] }  # try to extend non-extendable dimension
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)
+        self.assertEqual(rsp.status_code, 400)
         
      
     

@@ -36,8 +36,7 @@ class AclTest(unittest.TestCase):
         headers = {'host': self.domain}
         if user is not None:
             # if user is supplied, add the auth header
-            auth_string = base64.b64encode(user['username'] + ':' + user['password'])
-            headers['Authorization'] = "Basic " + auth_string
+            headers['Authorization'] = helper.getAuthString(user['username'], user['password'])
         return headers
               
         
@@ -66,23 +65,23 @@ class AclTest(unittest.TestCase):
             # acl is already setup by another test, return
             return
             
-        self.failUnlessEqual(rsp.status_code, 201)      
+        self.assertEqual(rsp.status_code, 201)      
         
         # set read-only acl for test_user1
         payload = { 'perm': readonly_perm }
         req = self.endpoint + "/acls/test_user1"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         
         # set default acl for domain
         payload = { 'perm': no_perm }
         req = self.endpoint + "/acls/default"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) 
+        self.assertEqual(rsp.status_code, 201) 
         
         # try - again - should report authorizationis required now
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401) 
+        self.assertEqual(rsp.status_code, 401) 
          
            
             
@@ -91,52 +90,52 @@ class AclTest(unittest.TestCase):
         req = self.endpoint + "/acls"
         headers = self.getHeaders()
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
         self.assertTrue('acls' in rspJson)
         
     def testGetDomainAcls(self):
         self.domain = 'tall_acl.' + config.get('domain')  
         self.setupAcls()
-        self.failUnlessEqual(self.domain, 'tall_acl.' + config.get('domain')  )
+        self.assertEqual(self.domain, 'tall_acl.' + config.get('domain')  )
          
         headers = self.getHeaders()    
         
         # read domain acls
         req = self.endpoint + "/acls"
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization
+        self.assertEqual(rsp.status_code, 401)  # needs Authorization
         
         # try with test_user1
         headers = self.getHeaders(self.user1)   
         req = self.endpoint + "/acls"
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # unAuthorization - test_user1 only has read access
+        self.assertEqual(rsp.status_code, 403)  # unAuthorization - test_user1 only has read access
         
         # try with test_user2
         headers = self.getHeaders(self.user2)  
         req = self.endpoint + "/acls"
         rsp = requests.get(req, headers=headers)
     
-        self.failUnlessEqual(rsp.status_code, 200)   
+        self.assertEqual(rsp.status_code, 200)   
         
         rspJson = json.loads(rsp.text)
         self.assertTrue('acls' in rspJson)
         acls = rspJson['acls']
-        self.failUnlessEqual(len(acls), 3)
+        self.assertEqual(len(acls), 3)
         
         # get acl for a particular user
         headers = self.getHeaders(self.user2)  
         req = self.endpoint + "/acls/" + self.user1['username']
         rsp = requests.get(req, headers=headers)
     
-        self.failUnlessEqual(rsp.status_code, 200)   
+        self.assertEqual(rsp.status_code, 200)   
         
         rspJson = json.loads(rsp.text)
         self.assertTrue('acl' in rspJson)
         acl = rspJson['acl']
-        self.failUnlessEqual(len(acl.keys()), 7)
+        self.assertEqual(len(acl.keys()), 7)
         
     def testPutDomain(self):
         
@@ -147,7 +146,7 @@ class AclTest(unittest.TestCase):
         # put domain in user home folder
         req = self.endpoint + "/"
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  
+        self.assertEqual(rsp.status_code, 201)  
         # todo - above should fail with 401 - need authorization
         
          
@@ -163,41 +162,41 @@ class AclTest(unittest.TestCase):
         payload = {'type': 'H5T_STD_I32LE', 'value': 42}    
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/a1"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # auth needed
+        self.assertEqual(rsp.status_code, 401)  # auth needed
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # not authorized
+        self.assertEqual(rsp.status_code, 403)  # not authorized
         
         headers = self.getHeaders(user=self.user2)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  # OK
+        self.assertEqual(rsp.status_code, 201)  # OK
         
         # read group attribute
         headers = self.getHeaders()
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/a1"  
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # un-authorized                
+        self.assertEqual(rsp.status_code, 401)  # un-authorized                
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # OK
+        self.assertEqual(rsp.status_code, 200)  # OK
         rspJson = json.loads(rsp.text)  
-        self.failUnlessEqual(rspJson['value'], 42)  
+        self.assertEqual(rspJson['value'], 42)  
                
         # delete attribute
         headers = self.getHeaders()
         req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + 'a1'
         rsp = requests.delete(req, headers=headers)     
-        self.failUnlessEqual(rsp.status_code, 401)  # auth needed
+        self.assertEqual(rsp.status_code, 401)  # auth needed
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # not authorized
+        self.assertEqual(rsp.status_code, 403)  # not authorized
         
         headers = self.getHeaders(user=self.user2)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200) 
+        self.assertEqual(rsp.status_code, 200) 
         
     def testDataset(self):
         self.domain = 'tall_acl.' + config.get('domain')  
@@ -210,15 +209,15 @@ class AclTest(unittest.TestCase):
         payload = {'type': 'H5T_STD_I32LE' }    
         req = self.endpoint + "/datasets"  
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # auth needed
+        self.assertEqual(rsp.status_code, 401)  # auth needed
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # not authorized
+        self.assertEqual(rsp.status_code, 403)  # not authorized
         
         headers = self.getHeaders(user=self.user2)
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  # OK
+        self.assertEqual(rsp.status_code, 201)  # OK
         
         rspJson = json.loads(rsp.text)  
         dataset_uuid = rspJson['id']
@@ -227,25 +226,25 @@ class AclTest(unittest.TestCase):
         headers = self.getHeaders()
         req = self.endpoint + "/datasets/" + dataset_uuid  
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # un-authorized                    
+        self.assertEqual(rsp.status_code, 401)  # un-authorized                    
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # OK
+        self.assertEqual(rsp.status_code, 200)  # OK
         
         # delete dataset
         headers = self.getHeaders()
         req = self.endpoint + "/datasets/" + dataset_uuid  
         rsp = requests.delete(req, headers=headers)     
-        self.failUnlessEqual(rsp.status_code, 401)  # auth needed
+        self.assertEqual(rsp.status_code, 401)  # auth needed
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # not authorized
+        self.assertEqual(rsp.status_code, 403)  # not authorized
         
         headers = self.getHeaders(user=self.user2)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # OK
+        self.assertEqual(rsp.status_code, 200)  # OK
         
     def testValue(self):
         self.domain = 'tall_acl.' + config.get('domain')  
@@ -258,12 +257,12 @@ class AclTest(unittest.TestCase):
         headers = self.getHeaders()
         req = self.endpoint + "/datasets/" + dset_uuid + "/value"
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # auth needed
+        self.assertEqual(rsp.status_code, 401)  # auth needed
         
         headers = self.getHeaders(user=self.user1)
         req = self.endpoint + "/datasets/" + dset_uuid + "/value"
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # OK
+        self.assertEqual(rsp.status_code, 200)  # OK
         
         # point selection
         points = []
@@ -273,7 +272,7 @@ class AclTest(unittest.TestCase):
         payload = {'points': points}
         headers = self.getHeaders()    
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # auth needed
+        self.assertEqual(rsp.status_code, 401)  # auth needed
         
         # write values
         data = []
@@ -286,15 +285,15 @@ class AclTest(unittest.TestCase):
         payload = { 'value': data }
         headers = self.getHeaders()
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # auth needed
+        self.assertEqual(rsp.status_code, 401)  # auth needed
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # not authorized
+        self.assertEqual(rsp.status_code, 403)  # not authorized
         
         headers = self.getHeaders(user=self.user2)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # OK
+        self.assertEqual(rsp.status_code, 200)  # OK
         
     def testDatatypes(self):
         self.domain = 'tall_acl.' + config.get('domain')  
@@ -306,15 +305,15 @@ class AclTest(unittest.TestCase):
         # test create
         headers = self.getHeaders()
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # auth needed  
+        self.assertEqual(rsp.status_code, 401)  # auth needed  
          
         headers = self.getHeaders(user=self.user1)
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # not authorized
+        self.assertEqual(rsp.status_code, 403)  # not authorized
         
         headers = self.getHeaders(user=self.user2)
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  # created
+        self.assertEqual(rsp.status_code, 201)  # created
         rspJson = json.loads(rsp.text) 
         type_uuid = rspJson['id']
         self.assertTrue(helper.validateId(type_uuid))
@@ -323,24 +322,24 @@ class AclTest(unittest.TestCase):
         req = self.endpoint + "/datatypes/" + type_uuid 
         headers = self.getHeaders()
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # auth needed  
+        self.assertEqual(rsp.status_code, 401)  # auth needed  
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # OK
+        self.assertEqual(rsp.status_code, 200)  # OK
            
         # test delete
         headers = self.getHeaders()
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # auth needed
+        self.assertEqual(rsp.status_code, 401)  # auth needed
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # un authorized
+        self.assertEqual(rsp.status_code, 403)  # un authorized
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # OK
+        self.assertEqual(rsp.status_code, 403)  # OK
          
     def testGroups(self):
         self.domain = 'tall_acl.' + config.get('domain')  
@@ -354,40 +353,40 @@ class AclTest(unittest.TestCase):
         headers = self.getHeaders()
         req = self.endpoint + "/groups/" + g1_uuid
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization
+        self.assertEqual(rsp.status_code, 401)  # needs Authorization
         headers = self.getHeaders(user=self.user1)
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
                   
         # read links
         headers = self.getHeaders()
         req = self.endpoint + "/groups/" + g1_uuid + '/links'
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization
+        self.assertEqual(rsp.status_code, 401)  # needs Authorization
         headers = self.getHeaders(user=self.user1)
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # OK
+        self.assertEqual(rsp.status_code, 200)  # OK
         
         # read link
         headers = self.getHeaders()
         req = self.endpoint + "/groups/" + g1_uuid + '/links/g1.1'
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization
+        self.assertEqual(rsp.status_code, 401)  # needs Authorization
         headers = self.getHeaders(user=self.user1)
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200) # OK
+        self.assertEqual(rsp.status_code, 200) # OK
         
         # create group
         headers = self.getHeaders()
         req = self.endpoint + "/groups"
         rsp = requests.post(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization
+        self.assertEqual(rsp.status_code, 401)  # needs Authorization
         headers = self.getHeaders(user=self.user1)
         rsp = requests.post(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # un-authorized
+        self.assertEqual(rsp.status_code, 403)  # un-authorized
         headers = self.getHeaders(user=self.user2)
         rsp = requests.post(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  # Created
+        self.assertEqual(rsp.status_code, 201)  # Created
         rspJson = json.loads(rsp.text)
         grp_uuid = rspJson['id']
         
@@ -396,37 +395,37 @@ class AclTest(unittest.TestCase):
         payload = { "id": grp_uuid }
         req = self.endpoint + "/groups/" + g1_uuid + '/links/new_group'
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization
+        self.assertEqual(rsp.status_code, 401)  # needs Authorization
         headers = self.getHeaders(user=self.user1)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403) # un-authorized
+        self.assertEqual(rsp.status_code, 403) # un-authorized
         headers = self.getHeaders(user=self.user2)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) # created
+        self.assertEqual(rsp.status_code, 201) # created
         
         # delete link
         headers = self.getHeaders()
         req = self.endpoint + "/groups/" + g1_uuid + '/links/new_group'
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization
+        self.assertEqual(rsp.status_code, 401)  # needs Authorization
         headers = self.getHeaders(user=self.user1)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403) # un-authorized
+        self.assertEqual(rsp.status_code, 403) # un-authorized
         headers = self.getHeaders(user=self.user2)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200) # OK
+        self.assertEqual(rsp.status_code, 200) # OK
                
         # delete group
         headers = self.getHeaders()
         req = self.endpoint + "/groups/" + grp_uuid
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization
+        self.assertEqual(rsp.status_code, 401)  # needs Authorization
         headers = self.getHeaders(user=self.user1)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # un-authorized
+        self.assertEqual(rsp.status_code, 403)  # un-authorized
         headers = self.getHeaders(user=self.user2)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # OK
+        self.assertEqual(rsp.status_code, 200)  # OK
         
     def testRoot(self):
         self.domain = 'tall_acl_delete.' + config.get('domain')  
@@ -436,36 +435,35 @@ class AclTest(unittest.TestCase):
         headers = self.getHeaders()
         req = self.endpoint + "/" 
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization\
+        self.assertEqual(rsp.status_code, 401)  # needs Authorization\
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         
         # delete domain!
         headers = self.getHeaders()
         req = self.endpoint + "/" 
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # needs Authorization
+        self.assertEqual(rsp.status_code, 401)  # needs Authorization
         
         # try malformed auth string 
         headers['Authorization'] = "Basic " + "xxx123"
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)  # bad auth header
+        self.assertEqual(rsp.status_code, 400)  # bad auth header
         
         # try invalid password
-        headers['Authorization'] = "Basic " + base64.b64encode('test_user1' +
-            ':' + "notmypassword")
+        headers['Authorization'] = helper.getAuthString("test_user1", "notmypassword")
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 401)  # need valid auth header     
+        self.assertEqual(rsp.status_code, 401)  # need valid auth header     
         
         headers = self.getHeaders(user=self.user1)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # not authorized 
+        self.assertEqual(rsp.status_code, 403)  # not authorized 
         
         headers = self.getHeaders(user=self.user2)
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)  # OK 
+        self.assertEqual(rsp.status_code, 200)  # OK 
         
         
         

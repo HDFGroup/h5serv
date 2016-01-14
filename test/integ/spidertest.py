@@ -34,8 +34,8 @@ class SpiderTest(unittest.TestCase):
             req = href
         
         rsp = requests.get(req, headers=self.headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
         self.assertTrue("hrefs" in rspJson)
         hrefs = rspJson["hrefs"]

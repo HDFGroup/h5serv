@@ -47,38 +47,38 @@ def main():
                 continue # OK
             if ord(ch) == ord('_'):
                 continue # OK
-            print "invalid username ('", ch, "' is not allowed)"
+            print("invalid username ('", ch, "' is not allowed)")
             return -1
                 
         
     if args.passwd:
         passwd = args.passwd
         if passwd.find(':') != -1:
-            print "invalid passwd (':' is not allowed)"
+            print("invalid passwd (':' is not allowed)")
             return -1
     if args.email:
         email = args.email
         if email.find('@') == -1:
-            print "invalid email address ('@' not found)"
-            return 01
+            print("invalid email address ('@' not found)")
+            return -1
             
-    print ">filename:", filename
-    print ">username:", username
-    print ">password:", passwd
-    print ">email:", email
+    print(">filename:", filename)
+    print(">username:", username)
+    print(">password:", passwd)
+    print(">email:", email)
     
     
     if args.replace:
-        print "replace is on"
+        print("replace is on")
         
         
     # verify file exists and is writable
     if not op.isfile(filename):
-        print "password file:", filename, " does not exist"
+        print("password file:", filename, " does not exist")
         return -1
         
     if not h5py.is_hdf5(filename):
-        print "invalid password file"
+        print("invalid password file")
         return -1
         
     mode = 'r'
@@ -86,12 +86,12 @@ def main():
         mode = 'r+'
     
         if not os.access(filename, os.W_OK):
-            print "password file is not writable"
+            print("password file is not writable")
             return -1
     
     f = h5py.File(filename, mode)
     if 'user_type' not in f:
-        print "invalid password file"
+        print("invalid password file")
         return -1
         
     user_type = f['user_type']
@@ -102,7 +102,7 @@ def main():
     if args.add:
         # add a new user
         if username in f.attrs:
-            print "user already exists"
+            print("user already exists")
             return -1
         # create userid 1 greater than previous used
         userid = len(f.attrs) + 1
@@ -116,7 +116,7 @@ def main():
         f.attrs.create(username, data, dtype=user_type)   
     elif args.replace:
         if username not in f.attrs:
-            print "user not found"
+            print("user not found")
             return -1
         data = f.attrs[username]
         if passwd:
@@ -127,21 +127,21 @@ def main():
         f.attrs.create(username, data, dtype=user_type)
     elif username and passwd:
         if username not in f.attrs:
-            print "user not found"
+            print("user not found")
             return -1
         data = f.attrs[username]
         if data['pwd'] == encrypt_pwd(passwd):
-            print "password is valid"
+            print("password is valid")
             return 0
         else:
-            print "password is not valid"
+            print("password is not valid")
              
     elif username:
         if username not in f.attrs:
-            print "user not found"
+            print("user not found")
             return -1
         data = f.attrs[username]
-        print "username:", username, "userid:", data['userid'], "email:", data['email'], "state:", data['state'], "ctime:", print_time(data['ctime']), "mtime:", print_time(data['mtime'])
+        print("username:", username, "userid:", data['userid'], "email:", data['email'], "state:", data['state'], "ctime:", print_time(data['ctime']), "mtime:", print_time(data['mtime']))
     else:
         # print all users
         sys.stdout.write("{:<25}{:<8}{:<8}{:<40}{:<20}{:<20}\n".format('username', 'userid', 'state', 'email', 'ctime', 'mtime'))

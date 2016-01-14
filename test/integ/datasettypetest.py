@@ -29,7 +29,7 @@ class DatasetTypeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + dset21_uuid + '/type'
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         typeItem = rspJson['type']
         self.assertEqual(typeItem['base'], 'H5T_IEEE_F32BE') 
@@ -44,7 +44,7 @@ class DatasetTypeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + dset_uuid + '/type'
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         typeItem = rspJson['type']
         self.assertEqual(typeItem['base'], 'H5T_STD_I32LE') 
@@ -58,7 +58,7 @@ class DatasetTypeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + dset_uuid + '/type'
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         typeItem = rspJson['type']
         self.assertEqual(typeItem['class'], 'H5T_COMPOUND')

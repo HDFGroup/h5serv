@@ -146,7 +146,7 @@ def makeGroup1k():
     file_path = SRC + "/group1k.h5"
     if os.path.exists(file_path):
         return # don't waste time re-creating
-    print 'makeGroup1k'
+    print('makeGroup1k')
     f = h5py.File(file_path, "w")
     for i in range(1000):
         name = 'g{:04d}'.format(i)
@@ -160,7 +160,7 @@ def makeAttr1k():
     file_path = SRC + "/attr1k.h5" 
     if os.path.exists(file_path):
         return # don't waste time re-creating  
-    print 'makeAttr1k()' 
+    print('makeAttr1k()')
     f = h5py.File(file_path, "w")
     for i in range(1000):
         name = 'a{:04d}'.format(i)
@@ -185,7 +185,6 @@ Make a testfile with 1000 datasets
 """
 def makeDataset1k():
     file_path = SRC + "/dset1k.h5" 
-    print file_path
     if os.path.exists(file_path):
         return # don't waste time re-creating  
     f = h5py.File(file_path, "w")
@@ -199,9 +198,9 @@ def makeDataset1k():
 Remove files from given directory
 """    
 def removeFilesFromDir(dir_name):
-    print 'remove files', dir_name
+    print('remove files', dir_name)
     if not os.path.isdir(dir_name):
-        print "expected", dir_name, "to be a directory"
+        print("expected", dir_name, "to be a directory")
         sys.exit()
     for file_name in os.listdir(dir_name):
         file_path = os.path.join(dir_name, file_name)
@@ -217,21 +216,21 @@ def removeFilesFromDir(dir_name):
                     # check for read-only
                     if (os.stat(file_path).st_mode & stat.S_IWUSR) == 0:
                         # make read-write
-                        os.chmod(file_path, 0666)
+                        os.chmod(file_path, 0O666)
                     os.unlink(file_path)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
     
 """
 main
 """
 # verify we are in the right place and the correct argument has been passed
 if len(sys.argv) > 1 and sys.argv[1] == '-h':
-    print "this script will remove all files from ../../data/test and repopulate using files from ../../testdata"
+    print("this script will remove all files from ../../data/test and repopulate using files from ../../testdata")
     sys.exit(); 
     
 if not os.path.exists(SRC):
-    print "run this from the integ test directory!"
+    print("run this from the integ test directory!")
     sys.exit()
     
 if not  os.path.exists(DES):
@@ -279,13 +278,13 @@ for file_name in testfiles:
                 des += '/'
                 des += file_name
             
-        print 'copyfile("'+file_name+'", "'+des+'")'    
+        print('copyfile("'+file_name+'", "'+des+'")')  
         copyfile(src, des) 
         
 for file_name in read_only_files:
     file_path = DES + '/' + file_name
-    print 'chmod', file_path
-    os.chmod(file_path, 0444)
+    print('chmod', file_path)
+    os.chmod(file_path, 0O444)
 
     
 

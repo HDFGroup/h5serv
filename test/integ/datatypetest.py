@@ -29,7 +29,7 @@ class DatatypeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datatypes/" + dtype_uuid
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertEqual(rspJson['id'], dtype_uuid)
         typeItem = rspJson['type']
@@ -44,7 +44,7 @@ class DatatypeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datatypes/" + dtype_uuid
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         typeItem = rspJson['type']
         self.assertEqual(typeItem['class'], 'H5T_COMPOUND')
@@ -67,12 +67,12 @@ class DatatypeTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        self.assertEqual(rsp.status_code, 201) # creates domain
         
         payload = {'type': 'H5T_IEEE_F32LE'}
         req = self.endpoint + "/datatypes"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  # create datatype
+        self.assertEqual(rsp.status_code, 201)  # create datatype
         rspJson = json.loads(rsp.text)
         dtype_uuid = rspJson['id']
         self.assertTrue(helper.validateId(dtype_uuid))
@@ -84,7 +84,7 @@ class DatatypeTest(unittest.TestCase):
         payload = {'id': dtype_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         
     def testPostWithLink(self):
         # test PUT_root
@@ -92,7 +92,7 @@ class DatatypeTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  
+        self.assertEqual(rsp.status_code, 201)  
         
         root_uuid = helper.getRootUUID(domain)
         
@@ -105,9 +105,9 @@ class DatatypeTest(unittest.TestCase):
         headers = {'host': domain}
         # create a new group
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) 
+        self.assertEqual(rsp.status_code, 201) 
         rspJson = json.loads(rsp.text)
-        self.failUnlessEqual(rspJson["attributeCount"], 0)
+        self.assertEqual(rspJson["attributeCount"], 0)
         self.assertTrue(helper.validateId(rspJson["id"]) ) 
         
         
@@ -116,7 +116,7 @@ class DatatypeTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        self.assertEqual(rsp.status_code, 201) # creates domain
         
         root_uuid = helper.getRootUUID(domain)
         
@@ -132,7 +132,7 @@ class DatatypeTest(unittest.TestCase):
             payload = {'type': datatype}
             req = self.endpoint + "/datatypes"
             rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-            self.failUnlessEqual(rsp.status_code, 201)  # create datatypes
+            self.assertEqual(rsp.status_code, 201)  # create datatypes
             rspJson = json.loads(rsp.text)
             dtype_uuid = rspJson['id']
             self.assertTrue(helper.validateId(dtype_uuid))
@@ -143,14 +143,14 @@ class DatatypeTest(unittest.TestCase):
             payload = {"id": dtype_uuid}
             headers = {'host': domain}
             rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-            self.failUnlessEqual(rsp.status_code, 201)
+            self.assertEqual(rsp.status_code, 201)
             
     def testPostCompoundType(self):
         domain = 'compound.datatypetest.' + config.get('domain')
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        self.assertEqual(rsp.status_code, 201) # creates domain
         
         root_uuid = helper.getRootUUID(domain)
         fields = ({'name': 'temp', 'type': 'H5T_STD_I32LE'}, 
@@ -159,7 +159,7 @@ class DatatypeTest(unittest.TestCase):
         payload = {'type': datatype}
         req = self.endpoint + "/datatypes"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  # create datatype
+        self.assertEqual(rsp.status_code, 201)  # create datatype
         rspJson = json.loads(rsp.text)
         dtype_uuid = rspJson['id']
         self.assertTrue(helper.validateId(dtype_uuid))
@@ -170,7 +170,7 @@ class DatatypeTest(unittest.TestCase):
         payload = {"id": dtype_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
     
     """
     This test fails due to h5py issue #540: https://github.com/h5py/h5py/issues/540
@@ -181,7 +181,7 @@ class DatatypeTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) # creates domain
+        self.assertEqual(rsp.status_code, 201) # creates domain
         
         root_uuid = helper.getRootUUID(domain)
         data_type = { 'charSet':   'H5T_CSET_ASCII', 
@@ -192,7 +192,7 @@ class DatatypeTest(unittest.TestCase):
         payload = {'type': data_type}
         req = self.endpoint + "/datatypes"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  # create datatype
+        self.assertEqual(rsp.status_code, 201)  # create datatype
         rspJson = json.loads(rsp.text)
         dtype_uuid = rspJson['id']
         self.assertTrue(helper.validateId(dtype_uuid))
@@ -203,7 +203,7 @@ class DatatypeTest(unittest.TestCase):
         payload = {"id": dtype_uuid}
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
     """
          
     def testPostInvalidType(self):
@@ -213,7 +213,7 @@ class DatatypeTest(unittest.TestCase):
         headers = {'host': domain}
         req = self.endpoint + "/datatypes"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)
+        self.assertEqual(rsp.status_code, 400)
         
     def testDelete(self):
         domain = 'namedtype_deleted.' + config.get('domain')  
@@ -224,24 +224,24 @@ class DatatypeTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datatypes/" + dtype_uuid
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         
         # verify that it's gone
         req = helper.getEndpoint() + "/datatypes/" + dtype_uuid
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 410)
+        self.assertEqual(rsp.status_code, 410)
         
     def testGetCollection(self):
         domain = 'namedtype.' + config.get('domain') 
         req = self.endpoint + "/datatypes"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         datatypeIds = rspJson["datatypes"]
             
-        self.failUnlessEqual(len(datatypeIds), 2)
+        self.assertEqual(len(datatypeIds), 2)
         for uuid in datatypeIds:
             self.assertTrue(helper.validateId(uuid))
             
@@ -257,18 +257,18 @@ class DatatypeTest(unittest.TestCase):
             if last_uuid:
                 params['Marker'] = last_uuid
             rsp = requests.get(req, headers=headers, params=params)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             if rsp.status_code != 200:
                 break
             rspJson = json.loads(rsp.text)
             typeIds = rspJson["datatypes"]
-            self.failUnlessEqual(len(typeIds) <= 50, True)
+            self.assertEqual(len(typeIds) <= 50, True)
             for typeId in typeIds:
                 uuids.add(typeId)
                 last_uuid = typeId
             if len(typeIds) == 0:
                 break
-        self.failUnlessEqual(len(uuids), 1000)  # should get 1000 unique uuid's 
+        self.assertEqual(len(uuids), 1000)  # should get 1000 unique uuid's 
         
     
      

@@ -33,7 +33,17 @@ def validateId(id):
         # id's returned by uuid.uuid1() are always 36 chars long
         return False
     return True
-    
+   
+"""
+Helper function - get auth string
+"""
+def getAuthString(user, password):   
+    auth_string = user + ':' + password
+    auth_string = auth_string.encode('utf-8')
+    auth_string = base64.b64encode(auth_string)
+    auth_string = b"Basic " + auth_string
+    return auth_string
+        
 
 """
 Helper function - get root uuid  
@@ -43,8 +53,7 @@ def getRootUUID(domain, user=None, password=None):
     headers = {'host': domain}
     if user is not None:
         # if user is supplied, add the auth header
-        auth_string = base64.b64encode(user + ':' + password)
-        headers['Authorization'] = "Basic " + auth_string
+        headers['Authorization'] = getAuthString(user, password)
     rsp = requests.get(req, headers=headers)
     rootUUID = None
     if rsp.status_code == 200:
@@ -86,8 +95,7 @@ def getUUIDByPath(domain, path, user=None, password=None):
     headers = {'host': domain}
     if user is not None:
         # if user is supplied, add the auth header
-        auth_string = base64.b64encode(user + ':' + password)
-        headers['Authorization'] = "Basic " + auth_string
+        headers['Authorization'] = getAuthString(user, password)
             
     # make a fake tgt_json to represent 'link' to root group
     tgt_json = {'collection': "groups", 'class': "H5L_TYPE_HARD", 'id': parent_uuid }

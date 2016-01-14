@@ -9,16 +9,20 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
+
+import six
+
+if six.PY3:
+    unicode = str
+
 import sys
 import requests
 import json
 import numpy as np
 import h5py
 
-sys.path.append('../hdf5-json/lib')
-from hdf5db import Hdf5db
-import hdf5dtype 
-
+from h5json import Hdf5db
+  
 
 """
 exporth5 - creates an HDF5 file based from h5serv domain  
@@ -29,8 +33,7 @@ class Dumph5:
         self.group_uuids = []
         self.dataset_uuids = []
         self.datatype_uuids = []
-        
-        
+               
     #
     # Make request to service, convert json response to python dictionary 
     # and return.
@@ -43,12 +46,12 @@ class Dumph5:
         endpoint += str(self.port)
         req = endpoint + uri
         if self.verbose:
-            print "REQ:", req
+            print("REQ:", req)
         #print "headers:", self.domain
         headers = {'host': self.domain}
         rsp = requests.get(req, headers=headers)
         if self.verbose:
-            print "RSP:", rsp.status_code
+            print("RSP:", rsp.status_code)
             
         if rsp.status_code != 200:
             raise Exception("got bad httpstatus: " + str(rsp.status_code) +
@@ -75,7 +78,7 @@ class Dumph5:
             link_file = link_obj["h5domain"]
             self.db.createExternalLink(parent_uuid, link_file, h5path, title)
         else:
-            print "Unable to create link with class:", link_class
+            print("Unable to create link with class:", link_class)
     
     #
     # Create HDF5 dataset object and write data values
@@ -259,7 +262,7 @@ class Dumph5:
         
         self.root_uuid = db.root_uuid
         
-        print "file root_uuid:", self.root_uuid
+        print("file root_uuid:", self.root_uuid)
         
         
         self.createObjects()    # create datasets, groups, committed datatypes
@@ -270,16 +273,16 @@ class Dumph5:
 # Print usage and exit
 #
 def printUsage():
-    print "usage: python exporth5.py [-v] [-endpoint=<server_ip>]  [-port=<port] <domain> <filename>"
-    print "  options -v: verbose, print request and response codes from server"
-    print "  options -endpoint: specify IP endpoint of server"
-    print "  options -port: port address of server [default 7253]"
-    print " ------------------------------------------------------------------------------"
-    print "  Example - get 'tall' collection from HDF Group server, save to tall.h5:"
-    print "       python exporth5.py tall.data.hdfgroup.org tall.h5"
-    print "  Example - get 'tall' collection from a local server instance "
-    print "        (assuming the server is using port 5000):"
-    print "        python exporth5.py -endpoint=127.0.0.1 -port=5000 tall.test.hdfgroup.org tall.h5"
+    print("usage: python exporth5.py [-v] [-endpoint=<server_ip>]  [-port=<port] <domain> <filename>")
+    print("  options -v: verbose, print request and response codes from server")
+    print("  options -endpoint: specify IP endpoint of server")
+    print("  options -port: port address of server [default 7253]")
+    print(" ------------------------------------------------------------------------------")
+    print("  Example - get 'tall' collection from HDF Group server, save to tall.h5:")
+    print("       python exporth5.py tall.data.hdfgroup.org tall.h5")
+    print("  Example - get 'tall' collection from a local server instance ")
+    print("        (assuming the server is using port 5000):")
+    print("        python exporth5.py -endpoint=127.0.0.1 -port=5000 tall.test.hdfgroup.org tall.h5")
     sys.exit(); 
                
 def main():
@@ -319,8 +322,8 @@ def main():
     domain = sys.argv[nargs-2]
     filename = sys.argv[nargs-1]
     
-    print "domain:", domain
-    print "filename:", filename
+    print("domain:", domain)
+    print("filename:", filename)
     
     dumper.domain = domain
     
@@ -345,7 +348,7 @@ def main():
     f.close()
     
            
-    print "done!"   
+    print("done!")  
     
 
 main()

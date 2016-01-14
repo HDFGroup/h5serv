@@ -42,6 +42,17 @@ import tocUtil
 from httpErrorUtil import errNoToHttpStatus
 from passwordUtil import getUserId, getUserName, validateUserPassword
 
+def to_bytes(a_string):
+    if type(a_string) is unicode:
+        return a_string.encode('utf-8')
+    else:
+        return a_string
+        
+def to_str(a_string):
+    if type(a_string) is bytes:
+        return a_string.decode('utf-8')
+    else:
+        return a_string
 
 class DefaultHandler(RequestHandler):
     def put(self):
@@ -89,16 +100,20 @@ class BaseHandler(tornado.web.RequestHandler):
     def get_current_user(self):
         user = None
         pswd = None
+        print(self.request.headers.get('Authorization', ''))
         scheme, _, token = auth_header = self.request.headers.get(
             'Authorization', '').partition(' ')
         if scheme and token and scheme.lower() == 'basic':
             try:
-                token_decoded = base64.decodestring(token)
+                if six.PY3:
+                    token_decoded = base64.decodebytes(to_bytes(token))
+                else:
+                    token_decoded = base64.decodestring(token)
             except binascii.Error:
                 raise HTTPError(400, "Malformed authorization header")
-            if token_decoded.index(':') < 0:
+            if token_decoded.index(b':') < 0:
                 raise HTTPError(400, "Malformed authorization header")
-            user, _, pswd = token_decoded.partition(':')
+            user, _, pswd = token_decoded.partition(b':')
         if user and pswd:
             validateUserPassword(user, pswd)  # throws exception if passwd is not valid
             self.userid = getUserId(user)
@@ -508,9 +523,8 @@ class LinkHandler(BaseHandler):
             # if h5domain is present, this will be an external link
             if "h5domain" in body:
                 h5domain = body["h5domain"]
-
         else:
-            msg = "Bad request: put syntax: [" + self.request.body + "]"
+            msg = "Bad request: missing required body keys"
             log.info(msg)
             raise HTTPError(400, reasoln=msg)
 
@@ -2024,7 +2038,12 @@ class AttributeHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            msg = "JSON Parser Error"
+            try:
+                msg += ": " + e.message
+            except AttributeError:
+                pass # no message property
+          
             log.info(msg)
             raise HTTPError(400, reason=msg)
 
@@ -2868,6 +2887,7 @@ class RootHandler(BaseHandler):
         try:
             with Hdf5db(tocFile, app_logger=log) as db:
                 group_uuid = db.getUUIDByPath('/')
+                log.info("group_uuid type: " + str(type(group_uuid)))
                 pathNames = filePath.split('/')
                 for linkName in pathNames:
                     if linkName.endswith(hdf5_ext):

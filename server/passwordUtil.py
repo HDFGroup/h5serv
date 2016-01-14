@@ -9,6 +9,12 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
+
+import six
+
+if six.PY3:
+    unicode = str
+    
 import os.path as op
 import hashlib
 import logging
@@ -18,13 +24,20 @@ from tornado.web import HTTPError
 
 import config
 
+def to_bytes(a_string):
+    if type(a_string) is unicode:
+        return a_string.encode('utf-8')
+    else:
+        return a_string
+    
 
 def encrypt_pwd(passwd):
     """
      One way password encryptyion
     """
     encrypted = hashlib.sha224(passwd).hexdigest()
-    return encrypted
+    
+    return to_bytes(encrypted)
 
 """
  Password util helper functions
@@ -35,13 +48,14 @@ def getUserInfo(user_name):
     """
       getUserInfo: return user data
     """
+     
     log = logging.getLogger("h5serv")
     userid = None
 
     if not user_name:
         return None
 
-    log.info("get info for user: [" + user_name + "]")
+    log.info("get info for user")
     filename = config.get('password_file')
     if not filename:
         log.error("no config for password_file")
@@ -121,13 +135,13 @@ def validateUserPassword(user_name, password):
     data = getUserInfo(user_name)
 
     if data is None:
-        log.info("user: [" + user_name + "] not found")
+        log.info("user not found")
         raise HTTPError(401, message="provide user and password")
 
     if data['pwd'] == encrypt_pwd(password):
-        log.info("user: [" + user_name + "] password validated")
+        log.info("user  password validated")
     else:
-        log.info("user: [" + user_name + "] password is not valid")
+        log.info("user password is not valid")
         raise HTTPError(401, message="invalid user name/password")
 
     return

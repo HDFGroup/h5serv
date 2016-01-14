@@ -26,36 +26,36 @@ class GroupTest(unittest.TestCase):
             req = self.endpoint + "/"
             headers = {'host': domain}
             rsp = requests.get(req, headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             rootUUID = rspJson["root"]
             self.assertTrue(helper.validateId(rootUUID))
         
             req = self.endpoint + "/groups/" + rootUUID
             rsp = requests.get(req, headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
-            self.failUnlessEqual(rspJson["linkCount"], 2)
-            self.failUnlessEqual(rspJson["attributeCount"], 2)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rspJson["linkCount"], 2)
+            self.assertEqual(rspJson["attributeCount"], 2)
+            self.assertEqual(rsp.status_code, 200)
             
     def testGetWithHostQuery(self):
         for domain_name in ('tall',):
             domain = domain_name + '.' + config.get('domain')    
             req = self.endpoint + "/?host=" + domain
             rsp = requests.get(req)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             rootUUID = rspJson["root"]
             self.assertTrue(helper.validateId(rootUUID))
         
             req = self.endpoint + "/groups/" + rootUUID + "?host=" + domain
             rsp = requests.get(req)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
-            self.failUnlessEqual(rspJson["linkCount"], 2)
-            self.failUnlessEqual(rspJson["attributeCount"], 2)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rspJson["linkCount"], 2)
+            self.assertEqual(rspJson["attributeCount"], 2)
+            self.assertEqual(rsp.status_code, 200)
           
     def testPost(self):
         # test PUT_root
@@ -63,15 +63,15 @@ class GroupTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)   
+        self.assertEqual(rsp.status_code, 201)   
         req = self.endpoint + "/groups"
         headers = {'host': domain}
         # create a new group
         rsp = requests.post(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) 
+        self.assertEqual(rsp.status_code, 201) 
         rspJson = json.loads(rsp.text)
-        self.failUnlessEqual(rspJson["linkCount"], 0)
-        self.failUnlessEqual(rspJson["attributeCount"], 0)
+        self.assertEqual(rspJson["linkCount"], 0)
+        self.assertEqual(rspJson["attributeCount"], 0)
         self.assertTrue(helper.validateId(rspJson["id"]) ) 
        
         
@@ -81,7 +81,7 @@ class GroupTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)  
+        self.assertEqual(rsp.status_code, 201)  
         
         root_uuid = helper.getRootUUID(domain)
         
@@ -91,10 +91,10 @@ class GroupTest(unittest.TestCase):
         headers = {'host': domain}
         # create a new group
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) 
+        self.assertEqual(rsp.status_code, 201) 
         rspJson = json.loads(rsp.text)
-        self.failUnlessEqual(rspJson["linkCount"], 0)
-        self.failUnlessEqual(rspJson["attributeCount"], 0)
+        self.assertEqual(rspJson["linkCount"], 0)
+        self.assertEqual(rspJson["attributeCount"], 0)
         self.assertTrue(helper.validateId(rspJson["id"]) ) 
        
     def testBadPost(self):
@@ -103,7 +103,7 @@ class GroupTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.post(req, headers=headers)
         # post is not allowed to provide uri, so should fail
-        self.failUnlessEqual(rsp.status_code, 405) 
+        self.assertEqual(rsp.status_code, 405) 
         
     def testDelete(self):
         domain = 'tall_g2_deleted.' + config.get('domain')  
@@ -114,13 +114,13 @@ class GroupTest(unittest.TestCase):
         req = self.endpoint + "/groups/" + g2UUID
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue("hrefs" in rspJson)
         # do a GET, should return 410 (GONE)
         req = self.endpoint + "/groups/" + g2UUID
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 410)
+        self.assertEqual(rsp.status_code, 410)
         
     def testDeleteAnonymous(self):
         # Test deleting anonymous (not linked) group
@@ -128,12 +128,12 @@ class GroupTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)   
+        self.assertEqual(rsp.status_code, 201)   
         req = self.endpoint + "/groups"
         headers = {'host': domain}
         # create a new group
         rsp = requests.post(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201) 
+        self.assertEqual(rsp.status_code, 201) 
         rspJson = json.loads(rsp.text)
         uuid = rspJson["id"]
         self.assertTrue(helper.validateId(uuid))   
@@ -141,11 +141,11 @@ class GroupTest(unittest.TestCase):
         req = self.endpoint + "/groups/" + uuid
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         # do a GET, should return 410 (GONE)
         req = self.endpoint + "/groups/" + uuid
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 410)
+        self.assertEqual(rsp.status_code, 410)
             
         
     def testDeleteBadUUID(self):
@@ -153,19 +153,19 @@ class GroupTest(unittest.TestCase):
         req = self.endpoint + "/groups/dff53814-2906-11e4-9f76-3c15c2da029e"
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)
+        self.assertEqual(rsp.status_code, 404)
         
     def testDeleteRoot(self):
         domain = 'tall.' + config.get('domain')    
         headers = {'host': domain}
         req = self.endpoint + "/"
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         rootUUID = rspJson["root"]
         req = self.endpoint + "/groups/" + rootUUID
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)
+        self.assertEqual(rsp.status_code, 403)
         
     def testGetCollection(self):
         for domain_name in ('tall', 'tall_ro'):
@@ -173,11 +173,11 @@ class GroupTest(unittest.TestCase):
             req = self.endpoint + "/groups"
             headers = {'host': domain}
             rsp = requests.get(req, headers=headers)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             groupIds = rspJson["groups"]
             
-            self.failUnlessEqual(len(groupIds), 5)
+            self.assertEqual(len(groupIds), 5)
             for uuid in groupIds:
                 self.assertTrue(helper.validateId(uuid))
                 
@@ -193,18 +193,18 @@ class GroupTest(unittest.TestCase):
             if last_uuid:
                 params['Marker'] = last_uuid
             rsp = requests.get(req, headers=headers, params=params)
-            self.failUnlessEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.status_code, 200)
             if rsp.status_code != 200:
                 break
             rspJson = json.loads(rsp.text)
             groupIds = rspJson['groups']
-            self.failUnlessEqual(len(groupIds) <= 50, True)
+            self.assertEqual(len(groupIds) <= 50, True)
             for groupId in groupIds:
                 uuids.add(groupId)
                 last_uuid = groupId
             if len(groupIds) == 0:
                 break
-        self.failUnlessEqual(len(uuids), 1000)  # should get 1000 unique uuid's    
+        self.assertEqual(len(uuids), 1000)  # should get 1000 unique uuid's    
     
        
 if __name__ == '__main__':

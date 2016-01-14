@@ -21,17 +21,17 @@ integ_tests = ('roottest', 'grouptest', 'dirtest', 'linktest', 'datasettest', 'v
 #
 os.chdir('unit')
 for file_name in unit_tests:
-    print file_name
+    print(file_name)
     os.system('python ' + file_name + '.py')
   
 os.chdir('../integ')
 
 os.system("python ./setupdata.py -f")  # initialize data files
 for file_name in integ_tests:
-    print file_name
+    print(file_name)
     os.system('python ' + file_name + '.py')
 os.chdir('..') 
-print "Done!"
+print("Done!")
  
 
 

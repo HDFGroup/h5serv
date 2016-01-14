@@ -50,36 +50,36 @@ def main():
          
     username = args.user
     if username.find(':') != -1:
-        print "invalid username (':' is not allowed)"
+        print("invalid username (':' is not allowed)")
         return -1
     if username.find('/') != -1:
-        print "invalid username ('/' is not allowed)"
+        print("invalid username ('/' is not allowed)")
         return -1
     
     if args.passwd:
         passwd = args.passwd
         if len(passwd) < 4:
-            print "password must be at least 4 characters long"
+            print("password must be at least 4 characters long")
             return -1
     else:
         passwd = generate_temp_password()
         
     # verify file exists and is writable
     if not op.isfile(filename):
-        print "password file:", filename, " does not exist"
+        print("password file:", filename, " does not exist")
         return -1
         
     if not h5py.is_hdf5(filename):
-        print "invalid password file"
+        print("invalid password file")
         return -1
         
     if not os.access(filename, os.W_OK):
-        print "password file is not writable"
+        print("password file is not writable")
         return -1
     
     f = h5py.File(filename, 'r+')
     if 'user_type' not in f:
-        print "invalid password file"
+        print("invalid password file")
         return -1
         
     user_type = f['user_type']
@@ -89,7 +89,7 @@ def main():
     
     # add a new user
     if username in f.attrs:
-        print "user already exists"
+        print("user already exists")
         return -1
         
     # create userid 1 greater than previous used
@@ -124,7 +124,7 @@ def main():
     # create symlink to public directory
     os.symlink("../../public", link_name)
     
-    print passwd
+    print(passwd)
     return 
      
     

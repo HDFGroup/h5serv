@@ -25,8 +25,8 @@ class RootTest(unittest.TestCase):
     
         req = self.endpoint + "/info"
         rsp = requests.get(req)
-        self.failUnlessEqual(rsp.status_code, 200)
-        self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
         self.assertTrue('h5serv_version' in rspJson)
             
@@ -35,8 +35,8 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
         helper.validateId(rspJson["root"])
         
@@ -45,7 +45,7 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         helper.validateId(rspJson["root"])
         
@@ -56,8 +56,8 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
-        self.failUnlessEqual(rsp.headers['content-type'], 'application/json')
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
         self.assertTrue('root' in rspJson)
         
@@ -66,14 +66,14 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)
+        self.assertEqual(rsp.status_code, 404)
         
     def testWrongTopLevelDomain(self):
         domain = "www.baddomain.org"    
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)  # 403 == Forbidden
+        self.assertEqual(rsp.status_code, 403)  # 403 == Forbidden
         
     def testInvalidDomain(self):
         # can't be just a bare top-level domain
@@ -86,33 +86,33 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)  # 400 == bad syntax
+        self.assertEqual(rsp.status_code, 400)  # 400 == bad syntax
         
         domain = 'missingenddot' + topdomain   
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)  # 400 == bad syntax
+        self.assertEqual(rsp.status_code, 400)  # 400 == bad syntax
         
         # just a dot is no good
         domain = '.' + topdomain  
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)  # 400 == bad syntax
+        self.assertEqual(rsp.status_code, 400)  # 400 == bad syntax
         
         domain =  '.dot.in.front.is.bad.' + config.get('domain')   
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 400)  # 400 == bad syntax
+        self.assertEqual(rsp.status_code, 400)  # 400 == bad syntax
         
     def testDomainWithSpaces(self):
         domain = 'filename with space.' + config.get('domain')    
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         
     def testGetSubdomain(self): 
@@ -120,7 +120,7 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         
     def testPutSubdomain(self): 
@@ -128,7 +128,7 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         
     def testPutSubSubdomain(self): 
@@ -136,10 +136,10 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         href = (rspJson["hrefs"][0])[u"href"]
-        self.failUnlessEqual(href, "http://" + domain + "/")
+        self.assertEqual(href, "http://" + domain + "/")
                
     def testDelete(self):
         #test DELETE_root
@@ -147,7 +147,7 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
         
     def testDeleteReadonly(self):
         #test DELETE_root
@@ -155,21 +155,21 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 403)
+        self.assertEqual(rsp.status_code, 403)
         
     def testDeleteNotFound(self):
         domain = 'doesnotexist.' + config.get('domain')    
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 404)
+        self.assertEqual(rsp.status_code, 404)
         
     def testDeleteSubSubdomain(self): 
         domain = 'deleteme.subdir.' + config.get('domain')
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.delete(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.status_code, 200)
 
     def testPut(self):
         # test PUT_root
@@ -177,7 +177,7 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         
     def testPutNameWithDot(self):
@@ -186,7 +186,7 @@ class RootTest(unittest.TestCase):
         req = self.endpoint + "/"
         headers = {'host': domain}
         rsp = requests.put(req, headers=headers)
-        self.failUnlessEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
         
 if __name__ == '__main__':
