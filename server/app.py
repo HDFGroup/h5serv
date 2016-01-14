@@ -100,7 +100,7 @@ class BaseHandler(tornado.web.RequestHandler):
     def get_current_user(self):
         user = None
         pswd = None
-        print(self.request.headers.get('Authorization', ''))
+        #print(self.request.headers.get('Authorization', ''))
         scheme, _, token = auth_header = self.request.headers.get(
             'Authorization', '').partition(' ')
         if scheme and token and scheme.lower() == 'basic':
