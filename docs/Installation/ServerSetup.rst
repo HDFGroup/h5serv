@@ -177,21 +177,7 @@ a request such as:
 Translates to: "Get the file tall.h5 in the directory given by datapath".
 
 Default: ``.h5``
-
-local_ip
-^^^^^^^^
-
-This option is used by the local_dns service.  Should be the IP address of the server
-hosting the h5serv service, or ``127.0.0.1`` if both local_dns and h5serv are running
-on the same host.
-
-Default: ``127.0.0.1``
-
-default_dns
-^^^^^^^^^^^
-
-This option is used by the local_dns service.  Should be the IP address of the normal DNS
-server for the local network.  
+ 
 
 Data files
 ----------
@@ -204,7 +190,3 @@ files read-only.
 inventories new files on first access, but won't see some changes (e.g. new group is created)
 made to the file outside the REST api.
      
-     
- 
-
-  
