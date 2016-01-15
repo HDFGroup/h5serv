@@ -659,6 +659,30 @@ class ValueTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.assertEqual(rsp.status_code, 201) # creates domain
         
+        #create scalar dataset
+        payload = {'type': 'H5T_STD_I32LE'}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset0UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset0UUID))
+        
+        # link new dataset as 'dset0'
+        ok = helper.linkObject(domain, dset0UUID, 'dset0')
+        self.assertTrue(ok)
+        
+        # write to dset0
+        req = self.endpoint + "/datasets/" + dset0UUID + "/value" 
+        data = 42
+        payload = { 'value': data }
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        # read back the data
+        readData = helper.readDataset(domain, dset0UUID)
+        self.assertEqual(readData, data)  # verify we got back what we started with
+        
         #create 1d dataset
         payload = {'type': 'H5T_STD_I32LE', 'shape': 10}
         req = self.endpoint + "/datasets"
@@ -672,6 +696,7 @@ class ValueTest(unittest.TestCase):
         ok = helper.linkObject(domain, dset1UUID, 'dset1')
         self.assertTrue(ok)
         
+        # write to dset1
         req = self.endpoint + "/datasets/" + dset1UUID + "/value" 
         data = [2,3,5,7,11,13,17,19,23,29]
         # payload = {'type': 'H5T_STD_I32LE', 'shape': 10, 'value': data }
