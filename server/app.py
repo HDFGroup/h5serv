@@ -1737,6 +1737,11 @@ class ValueHandler(BaseHandler):
                     msg = "Bad Request: point selection is not supported on scalar datasets"
                     log.info(msg)
                     raise HTTPError(400, reason=msg)
+                if shape['class'] == 'H5S_NULL':
+                    msg = "Bad Request: point selection is not supported on Null Space datasets"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
+                
                 rank = len(shape['dims'])
 
                 for point in points:
@@ -1840,14 +1845,38 @@ class ValueHandler(BaseHandler):
                 acl = db.getAcl(reqUuid, self.userid)
                 self.verifyAcl(acl, 'update')  # throws exception is unauthorized
                 item = db.getDatasetItemByUuid(reqUuid)
-                dsetshape = item['shape']
-                dims = dsetshape['dims']
-                if points:
+               
+                dims = None
+                if 'shape' not in item:
+                    msg = "Unexpected error, shape information not found"
+                    log.info(msg)
+                    raise HTTPError(500, reason=msg)
+                datashape = item['shape']
+                if datashape['class'] == 'H5S_NULL':
+                    msg = "Bad Request: PUT value can't be used with Null Space datasets"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)  # missing data
+            
+                if datashape['class'] == 'H5S_SIMPLE':
+                    dims = datashape['dims']
+                elif datashape['class'] == 'H5S_SCALAR':
+                    if start is not None or stop is not None or step is not None:
+                        msg = "Bad Request: start/stop/step option can't be used with Scalar Space datasets"
+                        log.info(msg)
+                        raise HTTPError(400, reason=msg)  # missing data
+                        
+                    elif points:
+                        msg = "Bad Request: Point selection can't be used with scalar datasets"
+                        log.info(msg)
+                        raise HTTPError(400, reason=msg)  # missing data
+                if points is not None:
                     # write point selection
                     db.setDatasetValuesByPointSelection(reqUuid, data, points)
                 else:
-                    slices = self.getHyperslabSelection(
-                        dims, start, stop, step)
+                    slices = None
+                    if dims is not None:          
+                        slices = self.getHyperslabSelection(
+                            dims, start, stop, step)
                     # todo - check that the types are compatible
                     db.setDatasetValuesByUuid(reqUuid, data, slices)
         except IOError as e:
