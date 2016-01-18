@@ -3236,6 +3236,9 @@ def make_app():
 
 def main():
     # os.chdir(config.get('datapath'))
+    
+    app_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    os.chdir(app_dir)
 
     # create logger
     log = logging.getLogger("h5serv")

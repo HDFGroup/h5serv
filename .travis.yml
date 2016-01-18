@@ -20,4 +20,7 @@ install:
     - pip install tornado 
 
 script:
-    - python test/testall.py --no-server
+    - python test/testall.py --unit
+    - python server/app.py &
+    - sleep 5
+    - python test/testall.py --integ

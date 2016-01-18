@@ -13,22 +13,26 @@
 import os
 import sys
 
+
+unit_tests = ('timeUtilTest', 'fileUtilTest')
+integ_tests = ('roottest', 'grouptest', 'dirtest', 'linktest', 'datasettest', 'valuetest',
+    'attributetest', 'datatypetest', 'shapetest', 'datasettypetest', 'spidertest', 'acltest')
+
 cwd = os.getcwd()
 no_server = False
 print(len(sys.argv))
 if len(sys.argv) > 1:
-    if sys.argv[1] == '--no-server':
-        no_server = True
+    if sys.argv[1] == '--unit':
+        integ_tests = () # skip integ tests
+    elif sys.argv[1] == '--integ':
+        unit_tests = () # skip unit tests
+    
         
 
 test_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 os.chdir(test_dir)
 
-unit_tests = ('timeUtilTest', 'fileUtilTest')
-integ_tests = ('roottest', 'grouptest', 'dirtest', 'linktest', 'datasettest', 'valuetest',
-    'attributetest', 'datatypetest', 'shapetest', 'datasettypetest', 'spidertest', 'acltest')
-#
 # Run all h5serv tests
 # Run this script before running any integ tests
 #
@@ -39,18 +43,19 @@ for file_name in unit_tests:
     if rc != 0:
         os.chdir(cwd)
         sys.exit("Failed")
+ 
+ 
+os.chdir('../integ')
 
-if not no_server:  
-    os.chdir('../integ')
-
+if integ_tests:
     os.system("python ./setupdata.py -f")  # initialize data files
-    for file_name in integ_tests:
-        print(file_name)
-        rc = os.system('python ' + file_name + '.py')
-        if rc != 0:
-            os.chdir(cwd)
-            sys.exit("Failed")
-    os.chdir('..') 
+    
+for file_name in integ_tests:
+    print(file_name)
+    rc = os.system('python ' + file_name + '.py')
+    if rc != 0:
+        os.chdir(cwd)
+        sys.exit("Failed")
     
 os.chdir(cwd)
 print("Done!")
