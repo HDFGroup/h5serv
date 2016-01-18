@@ -17,7 +17,11 @@ install:
     - pip install requests
     - pip install tables
     - pip install pytz
-    - pip install tornado 
+    - pip install tornado
+    - git clone https://github.com/HDFGroup/hdf5-json.git
+    - cd hdf5-json
+    - python setup.py install
+    - cd .. 
 
 script:
     - python test/testall.py --unit
