@@ -117,7 +117,7 @@ def createTocFile(datapath):
                 # todo - revamp to use os.readlink and do the proper thing with the link value
                 filedomain = config.get('domain')
                 link_target += filename
-                log.info("setting symbolic link domainpath to: " + filedomain, " target: /" + filename)
+                log.info("setting symbolic link domainpath to: " + filedomain + " target: /" + filename)
             else:
                 if len(filename) < 4 or filename[-3:] != hdf5_ext:
                     log.info("skip non-hdf5 extension")
