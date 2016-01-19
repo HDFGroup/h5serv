@@ -25,6 +25,6 @@ install:
 
 script:
     - python test/testall.py --unit
-    - python server/app.py &
+    - python server/app.py >app.out &
     - sleep 5
     - python test/testall.py --integ
