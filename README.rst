@@ -8,8 +8,8 @@ Introduction
 ------------
 h5serv is a web service that implements a REST-based web service for HDF5 data stores
 as described in the paper: http://hdfgroup.org/pubs/papers/RESTful_HDF5.pdf. 
-It is meant as "reference implementation" of the HDF5 Rest API, and may not be suitable
-for use in production systems.  For example, there is currently no support for 
+It is meant as "reference implementation" of the HDF5 Rest API, and 
+may not be suitable for use in production systems.  For example, there is currently no support for 
 authentication.  Also, performance has not been a focus of this release.
 
 Websites
