@@ -790,7 +790,7 @@ class DatasetTest(unittest.TestCase):
         rsp_type = rspJson['type']
         self.assertEqual(rsp_type['class'], 'H5T_STRING')
     
-    """    
+        
     def testPostNullSpace(self):
         domain = 'newnullspace.datasettest.' + config.get('domain')
         req = self.endpoint + "/"
@@ -824,7 +824,7 @@ class DatasetTest(unittest.TestCase):
         # verify type class is string
         type_json = rspJson['type']
         self.assertEqual(type_json['class'], 'H5T_FLOAT')
-    """ 
+    
          
     def testPostZeroDim(self):
         domain = 'new0d.datasettest.' + config.get('domain')
