@@ -99,7 +99,7 @@ def main():
     parser.add_argument('-s', "--src", help="source path for the file to be imported")
     parser.add_argument('-u', "--user", help="user name")
     parser.add_argument('-f', "--folder", help='folder path under user home dir (optional)')
-    parser.add_argument('-p', "--passwd", help='password file (optional)')
+    parser.add_argument('-p', "--passwd_file", help='password file (optional)')
      
       
     args = parser.parse_args()
@@ -126,8 +126,8 @@ def main():
         print("no user provided")
         return -1
                              
-    if args.passwd:
-        password_file = args.passwd
+    if args.passwd_file:
+        password_file = args.passwd_file
     else:
         password_file = config.get("password_file")
         
