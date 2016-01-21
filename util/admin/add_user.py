@@ -11,6 +11,7 @@ import config
 
 
 def encrypt_pwd(passwd):
+    passwd = passwd.encode('utf-8')
     encrypted = hashlib.sha224(passwd).hexdigest()
     return encrypted
     

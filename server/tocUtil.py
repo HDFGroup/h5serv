@@ -51,6 +51,7 @@ def isTocFilePath(filePath):
 def createTocFile(datapath):
     log = logging.getLogger("h5serv")
     log.info("createTocFile(" + datapath + ")")
+    data_dir = op.normpath(config.get('datapath'))
     
     if datapath.endswith(config.get('toc_name')):
         toc_dir = op.dirname(datapath)
@@ -58,7 +59,11 @@ def createTocFile(datapath):
     else:
         toc_dir = datapath
         toc_file = op.join(toc_dir, config.get("toc_name"))
-     
+    home_dir = op.join(data_dir, config.get("home_dir"))
+           
+    log.info("toc_dir:[" + toc_dir + "]")
+    log.info("data_dir:[" + data_dir + "]") 
+    log.info("home_dir:[" + home_dir + "]")
     log.info("check toc with path: " + toc_file)    
     if op.exists(toc_file):
         msg = "toc file already exists"
@@ -72,16 +77,19 @@ def createTocFile(datapath):
     #    toc_dir = toc_dir.replace('\\', '/')  # use unix style to map to HDF5 convention
     
     hdf5_ext = config.get('hdf5_ext')  
-    folder_regex = config.get('toc_folder_filter')
     
     f = h5py.File(toc_file, 'w')
      
     for root, subdirs, files in os.walk(toc_dir):
         #print("files: ", files)
         log.info( "root: " + root)
-        if folder_regex and re.match(folder_regex, op.basename(root)):
-            log.info("skipping director (filter match)")
-            continue
+        
+        if toc_dir == data_dir:
+            
+            if root.startswith(op.join(toc_dir, config.get('home_dir'))):
+                log.info("skipping home dir")
+                continue
+         
         grppath = root[len(toc_dir):]
         if not grppath:
             grppath = '/'
@@ -108,7 +116,7 @@ def createTocFile(datapath):
             filepath = op.join(root, filename)
             if os.name == 'nt':
                 filepath = filepath.replace('\\', '/')  # use unix style to map to HDF5 convention
-            log.info("createTocFile, path: " + filepath)
+            log.info("walk, filepath: " + filepath)
             link_target = '/'
             
             if op.islink(filepath):
@@ -134,7 +142,7 @@ def createTocFile(datapath):
                     
             # create the grp at grppath if it doesn't exist
             if not grp:
-                log.info("createTocFile - create_group: " + grppath)
+                log.info("tocfile - create_group: " + grppath)
                 grp = f.create_group(grppath)           
                 
             # verify that we can convert the domain back to a file path
@@ -142,7 +150,7 @@ def createTocFile(datapath):
             try:
                 fileUtil.getFilePath(filedomain)
                 # ok - add the external link
-                log.info("createTocFile - ExternalLink: " + domainpath)
+                log.info("tocFile - ExternalLink: " + domainpath)
                 grp[filename] = h5py.ExternalLink(filedomain, link_target)
             except HTTPError:
                 log.info("file path: [" + filepath + "] is not valid dns name, ignoring")

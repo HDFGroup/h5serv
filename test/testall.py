@@ -54,9 +54,9 @@ for file_name in integ_tests:
     print(file_name)
     rc = os.system('python ' + file_name + '.py')
     if rc != 0:
-        os.chdir(cwd)
         print("server log...")
-        os.system("tail -n 100 log/h5serv.log")
+        os.system("tail -n 100 ../../log/h5serv.log")
+        os.chdir(cwd)
         sys.exit("Failed")
     
 os.chdir(cwd)

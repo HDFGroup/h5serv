@@ -21,7 +21,6 @@ cfg = {
     'hdf5_ext': '.h5',
     'toc_name': '.toc.h5',
     'home_dir': 'home',
-    'toc_folder_filter': '[^@]+@[^@]+\.[^@]+',
     'ssl_port': 6050,
     'ssl_cert': '',  # certs/data.hdfgroup.org.crt',  # add relative path to cert for SSL
     'ssl_key':  '',  # certs/data.hdfgroup.org.key',  # add relative path to cert key for SSL

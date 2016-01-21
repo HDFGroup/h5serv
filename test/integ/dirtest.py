@@ -38,6 +38,17 @@ class DirTest(unittest.TestCase):
         req = self.endpoint + "/groups/" + root_uuid 
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
+        # get top-level links
+        req = self.endpoint + "/groups/" + root_uuid + "/links"
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("links" in rspJson)
+        links = rspJson["links"]
+        home_dir = config.get("home_dir")
+        for item in links:
+            if item['title'] == home_dir:
+                self.assertTrue(False)  # should not see home dir from root toc
         req = self.endpoint + "/groups/" + root_uuid + "/links/test" 
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
