@@ -3,10 +3,62 @@ import numpy as np
 import sys
 import argparse
 import os.path as op
+import os
 import shutil
 from h5json import Hdf5db
 import config
 
+"""
+Get domain for given file path
+"""
+def getDomain(file_path, base_domain=None):
+    # Get domain given a file path
+    
+    data_path = op.normpath(config.get('datapath'))  # base path for data directory
+    file_path = op.normpath(file_path)
+    hdf5_ext = config.get("hdf5_ext")
+    if op.isabs(file_path):
+        # compare with absolute path if we're given an absolute path
+        data_path = op.abspath(data_path)
+    
+    if file_path == data_path:
+        return config.get('domain')
+            
+    if file_path.endswith(hdf5_ext):
+        domain = op.basename(file_path)[:-(len(hdf5_ext))]
+    else:
+        domain = op.basename(file_path)
+
+    dirname = op.dirname(file_path)
+    
+    while len(dirname) > 1 and dirname != data_path:
+        domain += '.'
+        domain += op.basename(dirname)
+        dirname = op.dirname(dirname)
+     
+    domain += '.'
+    if base_domain:
+        domain += base_domain
+    else:
+        domain += config.get('domain')
+
+    return domain
+
+"""
+ Create directories as needed along the given path.
+"""
+def makeDirs(filePath):
+    print("makeDirs:", filePath)
+    # Make any directories along path as needed
+    if len(filePath) == 0 or op.isdir(filePath):
+        return
+    dirname = op.dirname(filePath)
+
+    if len(dirname) >= len(filePath):
+        return
+    makeDirs(dirname)  # recursive call
+    os.mkdir(filePath)  # should succeed since parent directory is created
+    
 """
  Get userid given username.
  If user_name is not found, return None
@@ -23,7 +75,7 @@ def getUserId(user_name, password_file):
 
     # verify file exists and is writable
     if not op.isfile(password_file):
-        log.error("password file not found")
+        print("password file not found")
         raise None
 
     with h5py.File(password_file, 'r') as f:
@@ -57,27 +109,26 @@ def getSubgroupId(db, group_uuid, link_name):
 Update toc with new filename
 """
 
-def addTocEntry(toc_file, filePath):
+def addTocEntry(toc_file, file_path, domain):
         """
         Helper method - update TOC when a domain is created
           If validateOnly is true, then the acl is checked to verify that create is
           enabled, but doesn't update the .toc
         """
          
-        print("addTocEntry, filePath", filePath) 
+        print("addTocEntry, filePath", file_path, "domain:", domain) 
         hdf5_ext = config.get('hdf5_ext')
 
         try:
             with Hdf5db(toc_file) as db:
                 group_uuid = db.getUUIDByPath('/')
-                pathNames = filePath.split('/')
+                pathNames = file_path.split('/')
                 for linkName in pathNames:
-                    print("linkName:", linkName)
                     if not linkName:
                         continue
                     if linkName.endswith(hdf5_ext):
                         linkName = linkName[:-(len(hdf5_ext))]
-                        db.createExternalLink(group_uuid, filePath, '/', linkName)
+                        db.createExternalLink(group_uuid, domain, '/', linkName)
                     else:
                         subgroup_uuid = getSubgroupId(db, group_uuid, linkName)
                         if subgroup_uuid is None:
@@ -133,23 +184,26 @@ def main():
         
     if args.folder:
         folder = args.folder
-        if not op.isabs(folder):
+        if op.isabs(folder):
             print("folder path must be relative")
             return -1
+        folder = op.normpath(folder)
     
             
     print(">source:", src_path)
     print(">username:", username)
     print(">password_file:", password_file)
-    print(">folder:", folder)
+    print(">folder:", folder)  
     
     userid = getUserId(username, password_file)
-    print("userid:", userid)
+    
     if not userid:
         print("user not found")
         return -1
+    print(">userid:", userid)
     
     tgt_dir = op.join(op.dirname(__file__), config.get("datapath"))
+    tgt_dir = op.normpath(tgt_dir)
     tgt_dir = op.join(tgt_dir, config.get("home_dir"))
     tgt_dir = op.join(tgt_dir, username)
     toc_file = op.join(tgt_dir, config.get("toc_name"))
@@ -160,8 +214,8 @@ def main():
         tgt_dir = op.join(tgt_dir, folder)
      
     if not op.isdir(tgt_dir):
-        print("directory:", tgt_dir, "not found")
-        return -1
+        print("directory:", tgt_dir, "not found, creating")
+        makeDirs(tgt_dir)
         
     tgt_file = op.join(tgt_dir, op.basename(src_path))
     
@@ -175,9 +229,13 @@ def main():
     if op.isfile(tgt_file):
         print("file already exists")
         return -1
-        
+    
+    base_domain = config.get("domain")
+    base_domain = username + '.' + config.get("home_dir") + '.' + config.get("domain")
+    domain = getDomain(tgt_path, base_domain=base_domain)
+   
     # add toc entry
-    addTocEntry(toc_file, tgt_path)    
+    addTocEntry(toc_file, tgt_path, domain)    
     # copy file
     shutil.copyfile(src_path, tgt_file) 
     
