@@ -290,8 +290,8 @@ array is a reference to another dataset, group or committed datatype.
 To specify a object reference type, use ``H5T_REFERENCE`` as the type class, and
 ``H5T_STD_REF_OBJ`` as the base type.
 
-The elements of the array consist of strings that have the prefix: "/groups/", 
-"/datasets/", or "/datatypes" followed by the UUID of the referenced object.
+The elements of the array consist of strings that have the prefix: "groups/", 
+"datasets/", or "datatypes/" followed by the UUID of the referenced object.
 
 
 Example 
@@ -314,9 +314,9 @@ third element points to a group.
         "base": "H5T_STD_REF_OBJ"
     }, 
     "value": [
-        "/groups/a09a9b99-7bf7-11e4-aa4b-3c15c2da029e", 
+        "groups/a09a9b99-7bf7-11e4-aa4b-3c15c2da029e", 
         "",
-        "/datasets/a09a8efa-7bf7-11e4-9fb6-3c15c2da029e"
+        "datasets/a09a8efa-7bf7-11e4-9fb6-3c15c2da029e"
       ]
     }
     
