@@ -13,13 +13,10 @@ import os
 import sys
 
 cfg = {
-    'debug':  True,
     'datapath': '../../data/',
-    'public_dir': ['public', 'test'],
     'domain':  'hdfgroup.org',
     'hdf5_ext': '.h5',
     'toc_name': '.toc.h5',
-    'toc_folder_filter': '[^@]+@[^@]+\.[^@]+',
     'password_file': 'passwd.h5',
     'home_dir': 'home'   
 }
