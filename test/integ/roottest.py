@@ -179,6 +179,13 @@ class RootTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.assertEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
+        for k in ("root", "hrefs", "created", "lastModified"):
+            self.assertTrue(k in rspJson)
+        # verify that putting the same domain again fails with a 409 error
+        rsp = requests.put(req, headers=headers)
+        self.assertEqual(rsp.status_code, 409)
+        
+        
         
     def testPutNameWithDot(self):
         # test PUT_root

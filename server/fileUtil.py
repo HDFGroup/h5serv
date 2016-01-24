@@ -216,7 +216,7 @@ def isFile(filePath):
         return False
     if not is_hdf5(filePath):
         # logging.warning('this is not a hdf5 file!')
-        raise False
+        return False
     return True
      
 
