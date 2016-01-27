@@ -388,6 +388,8 @@ class LinkHandler(BaseHandler):
         if npos >= 0:
             # trim off the query params
             linkName = linkName[:npos]
+        
+        linkName = url_unescape(linkName)
         return linkName
 
     def get(self):
@@ -402,6 +404,7 @@ class LinkHandler(BaseHandler):
         domain = self.getDomain()
         filePath = self.getFilePath(domain)
         linkName = self.getName(self.request.uri)
+        log.info("linkName:["+linkName+"]")
 
         response = {}
 
@@ -493,7 +496,7 @@ class LinkHandler(BaseHandler):
         # PUT /groups/<id>/links/<name> {h5path: <path>, h5domain: <href> }
         reqUuid = self.getRequestId()
 
-        linkName = url_unescape(self.getName(self.request.uri))
+        linkName = self.getName(self.request.uri)
 
         body = None
         try:

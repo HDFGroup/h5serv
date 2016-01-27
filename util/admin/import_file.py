@@ -160,6 +160,7 @@ def main():
     folder = None
     password_file = None
     
+    print("domain:", config.get("domain"))
     if args.src:
         src_path = args.src
     else:

@@ -123,7 +123,8 @@ class LinkTest(unittest.TestCase):
             for link in links:
                 self.assertTrue("title" in link)
                 self.assertTrue("class" in link)
-                            
+                
+    
     def testGetBatch(self):
         logging.info("LinkTest.testGetBatch")
         domain = 'group1k.' + config.get('domain')   
@@ -239,6 +240,17 @@ class LinkTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 201)
+        # verify we can read the link back
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("link" in rspJson)
+        link = rspJson["link"]
+        self.assertTrue("title" in link)
+        self.assertEqual(link["title"], name)
+        self.assertTrue("class" in link)
+        self.assertEqual(link["class"], "H5L_TYPE_HARD")
+            
         
     def testPutBadReqId(self):
         logging.info("LinkTest.testPutBadReqId")
