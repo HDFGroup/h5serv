@@ -41,6 +41,18 @@ class LinkTest(unittest.TestCase):
             self.assertEqual(target['title'], 'g1')
             self.assertEqual(target['collection'], 'groups')
             
+    def testGetMising(self):
+        logging.info("LinkTest.testGetMissing")
+        for domain_name in ('tall', 'tall_ro'):
+            g1_uuid = None
+            domain = domain_name + '.' + config.get('domain')   
+            root_uuid = helper.getRootUUID(domain)     
+            req = self.endpoint + "/groups/" + root_uuid + "/links/not_a_link"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.assertEqual(rsp.status_code, 404)
+             
+            
     def testGetSoft(self):
         logging.info("LinkTest.testGetSoft")
         for domain_name in ('tall', 'tall_ro'):

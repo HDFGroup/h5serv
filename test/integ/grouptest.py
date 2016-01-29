@@ -39,6 +39,20 @@ class GroupTest(unittest.TestCase):
             self.assertEqual(rspJson["attributeCount"], 2)
             self.assertEqual(rsp.status_code, 200)
             
+    def testGetInvalidUUID(self):
+        for domain_name in ('tall', 'tall_ro'):
+            domain = domain_name + '.' + config.get('domain')    
+            req = self.endpoint + "/"
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            self.assertEqual(rsp.status_code, 200)
+            import uuid
+            bad_uuid = str(uuid.uuid1())    
+            req = self.endpoint + "/groups/" + bad_uuid
+            rsp = requests.get(req, headers=headers)
+            self.assertEqual(rsp.status_code, 404)
+             
+            
     def testGetWithHostQuery(self):
         for domain_name in ('tall',):
             domain = domain_name + '.' + config.get('domain')    
