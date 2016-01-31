@@ -56,6 +56,7 @@ class ValueTest(unittest.TestCase):
             req = helper.getEndpoint() + "/datasets/" + dset111UUID
             headers = {'host': domain}
             rsp = requests.get(req, headers=headers)
+            
             self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             self.assertEqual(rspJson['id'], dset111UUID)
@@ -77,6 +78,72 @@ class ValueTest(unittest.TestCase):
                 self.assertEqual(len(arr), 10)
                 for j in range(10):
                     self.assertEqual(arr[j], i*j)
+                    
+    def testGetBinary(self):
+        for domain_name in ('tall', 'tall_ro'):
+            domain = domain_name + '.' + config.get('domain') 
+            rootUUID = helper.getRootUUID(domain)
+            g1UUID = helper.getUUID(domain, rootUUID, 'g1')
+            g11UUID = helper.getUUID(domain, g1UUID, 'g1.1')
+               
+            # rank 1 dataset
+            dset112UUID = helper.getUUID(domain, g11UUID, 'dset1.1.2') 
+            req = helper.getEndpoint() + "/datasets/" + dset112UUID
+            headers = {'host': domain}
+            headers_binary = {'host': domain, 'accept': "application/octet-stream"}
+            rsp = requests.get(req, headers=headers)
+            self.assertEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertEqual(rspJson['id'], dset112UUID)
+            typeItem = rspJson['type']  
+            self.assertEqual(typeItem['base'], 'H5T_STD_I32BE')
+            shape = rspJson['shape']
+            self.assertEqual(shape['class'], 'H5S_SIMPLE')
+            self.assertEqual(len(shape['dims']), 1)
+            self.assertEqual(shape['dims'][0], 20)  
+            req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value"
+             
+            rsp = requests.get(req, headers=headers_binary)
+            self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(len(rsp.content), 80)
+            for i in range(20):
+                # 4 byte integers, little indian
+                self.assertEqual(rsp.content[0+(i*4)], 0)
+                self.assertEqual(rsp.content[1+(i*4)], 0)
+                self.assertEqual(rsp.content[2+(i*4)], 0)
+                self.assertEqual(rsp.content[3+(i*4)], i)      
+        
+            # rank 2 dataset
+            dset111UUID = helper.getUUID(domain, g11UUID, 'dset1.1.1') 
+            req = helper.getEndpoint() + "/datasets/" + dset111UUID
+            headers = {'host': domain}
+            rsp = requests.get(req, headers=headers)
+            
+            self.assertEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertEqual(rspJson['id'], dset111UUID)
+            typeItem = rspJson['type']  
+            self.assertEqual(typeItem['base'], 'H5T_STD_I32BE')
+            shape = rspJson['shape']
+            self.assertEqual(shape['class'], 'H5S_SIMPLE')
+            self.assertEqual(len(shape['dims']), 2)
+            self.assertEqual(shape['dims'][0], 10) 
+            self.assertEqual(shape['dims'][1], 10)    
+            req = helper.getEndpoint() + "/datasets/" + dset111UUID + "/value"
+            rsp = requests.get(req, headers=headers_binary)
+            self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(len(rsp.content), 400)
+            row_offset = 0
+            for i in range(10):
+                col_offset = 0
+                for j in range(10):
+                    # 4 byte integers, little indian
+                    self.assertEqual(rsp.content[row_offset+col_offset+0], 0)
+                    self.assertEqual(rsp.content[row_offset+col_offset+1], 0)
+                    self.assertEqual(rsp.content[row_offset+col_offset+2], 0)
+                    self.assertEqual(rsp.content[row_offset+col_offset+3], i*j)
+                    col_offset += 4
+                row_offset += col_offset
                 
         
     def testGetSelection(self):
@@ -148,12 +215,117 @@ class ValueTest(unittest.TestCase):
             self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
             data = rspJson['value']   
+          
             self.assertEqual(len(data), 8)  
             for i in range(8):
                 arr = data[i]
                 self.assertEqual(len(arr), 4)
                 for j in range(4):
                     self.assertEqual(arr[j], (i+1)*(j*2+1))
+                    
+    def testGetSelectionBinary(self):
+        for domain_name in ('tall', ):
+            domain = domain_name + '.' + config.get('domain')  
+            headers = {'host': domain}
+            headers_binary = {'host': domain, 'accept': "application/octet-stream"}
+            rootUUID = helper.getRootUUID(domain)
+            g1UUID = helper.getUUID(domain, rootUUID, 'g1')
+            g11UUID = helper.getUUID(domain, g1UUID, 'g1.1')
+               
+            # rank 1 dataset
+            dset112UUID = helper.getUUID(domain, g11UUID, 'dset1.1.2') 
+         
+            # dataset has shape (20,) and type 'int32'
+        
+            # get values starting at index 2
+            req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
+             "?select=[2:]"
+            rsp = requests.get(req, headers=headers_binary)
+            self.assertEqual(rsp.status_code, 200)
+            
+            # content should be [2, 3, 4, ..., 19]
+            data = rsp.content
+            self.assertEqual(len(data), 18*4)  # 18 elements with 4 bytes per element
+            for i in range(18):
+                offset = i*4
+                self.assertEqual(data[offset + 0], 0)
+                self.assertEqual(data[offset + 1], 0)
+                self.assertEqual(data[offset + 2], 0)
+                self.assertEqual(data[offset + 3], i+2)
+                     
+            # get values starting at index 2 with stop of 10
+            req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
+             "?select=[2:10]"
+            rsp = requests.get(req, headers=headers_binary)
+            self.assertEqual(rsp.status_code, 200)
+             
+            data = rsp.content  # should be [2, 3, 4, ..., 9]
+            self.assertEqual(len(data), 8*4)
+            for i in range(8):
+                offset = i*4
+                self.assertEqual(data[offset + 0], 0)
+                self.assertEqual(data[offset + 1], 0)
+                self.assertEqual(data[offset + 2], 0)
+                self.assertEqual(data[offset + 3], i+2)
+            
+            # get values starting at index 2 with stop of 10, and stride of 2
+            req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
+             "?select=[2:10:2]"
+            rsp = requests.get(req, headers=headers_binary)
+            self.assertEqual(rsp.status_code, 200)
+            data = rsp.content
+            # should be [2, 4, 6, 8]
+            self.assertEqual(len(data), 4*4)
+            for i in range(4):
+                offset = i*4
+                self.assertEqual(data[offset + 0], 0)
+                self.assertEqual(data[offset + 1], 0)
+                self.assertEqual(data[offset + 2], 0)
+                self.assertEqual(data[offset + 3], (i*2)+2)
+        
+            # rank 2 dataset
+            dset111UUID = helper.getUUID(domain, g11UUID, 'dset1.1.1') 
+         
+            # dataset has shape (10,10) and type 'int32'
+            # get rows 2, 3, 4, and 5
+            req = helper.getEndpoint() + "/datasets/" + dset111UUID + "/value" + \
+             "?select=[:,2:6]"
+            rsp = requests.get(req, headers=headers_binary)
+            self.assertEqual(rsp.status_code, 200)
+            data = rsp.content
+            self.assertEqual(len(data), 4*10*4)
+            row_offset = 0
+            for i in range(10):
+                col_offset = 0
+                for j in range(4):
+                    # 4 byte integers, little indian
+                    self.assertEqual(data[row_offset+col_offset+0], 0)
+                    self.assertEqual(data[row_offset+col_offset+1], 0)
+                    self.assertEqual(data[row_offset+col_offset+2], 0)
+                    self.assertEqual(data[row_offset+col_offset+3], i*(j+2)) 
+                    col_offset += 4
+                row_offset += col_offset
+                    
+            # get 2d subregion with stride
+            req = helper.getEndpoint() + "/datasets/" + dset111UUID + "/value" + \
+             "?select=[1:9,1:9:2]"
+            rsp = requests.get(req, headers=headers_binary)
+            self.assertEqual(rsp.status_code, 200)
+            data = rsp.content
+            self.assertEqual(len(data), 8*4*4)
+            row_offset = 0
+            for i in range(8):
+                col_offset = 0
+                for j in range(4):
+                    # 4 byte integers, little indian
+                    self.assertEqual(data[row_offset+col_offset+0], 0)
+                    self.assertEqual(data[row_offset+col_offset+1], 0)
+                    self.assertEqual(data[row_offset+col_offset+2], 0)
+                    #print(i, j, data[row_offset+col_offset+3], (i+1)*(j*2+1))
+                    self.assertEqual(data[row_offset+col_offset+3], (i+1)*(j*2+1)) 
+                    col_offset += 4
+                row_offset += col_offset
+            
                 
     def testGetSelectionBadQuery(self):
         domain = 'tall.' + config.get('domain')  

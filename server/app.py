@@ -260,6 +260,22 @@ class BaseHandler(tornado.web.RequestHandler):
         log.info('got uuid: [' + uuid + ']')
 
         return uuid
+        
+    """
+    Get requested content type.  Returns either "base64" if the accept header is 
+    octet stream, otherwise json.
+    Currently does not support q fields.
+    """
+    def getAcceptType(self):
+        log = logging.getLogger("h5serv")
+        content_type = self.request.headers.get('Accept')
+        if content_type:
+            log.info("CONTENT_TYPE:" + content_type)
+        if content_type == "application/octet-stream":
+            return "binary"
+        else:
+            return "json"
+            
 
 
 class LinkCollectionHandler(BaseHandler):
@@ -1539,6 +1555,8 @@ class ValueHandler(BaseHandler):
             'ValueHandler.get host=[' + self.request.host +
             '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        content_type = self.getAcceptType()
+        log.info("contenttype:" + content_type)
         self.get_current_user()
 
         reqUuid = self.getRequestId()
@@ -1588,7 +1606,8 @@ class ValueHandler(BaseHandler):
                         slices.append(slice)
                     if not query_selection:
                         values = db.getDatasetValuesByUuid(
-                            reqUuid, tuple(slices))
+                            reqUuid, tuple(slices), format=content_type)
+                         
                 else:
                     msg = "Internal Server Error: unexpected shape class: " + shape['class']
                     log.error(msg)
@@ -1652,6 +1671,14 @@ class ValueHandler(BaseHandler):
                 raise HTTPError(400, msg)
 
         # got everything we need, put together the response
+        
+        if type(values) is bytes:
+            # binary transfer, just write the bytes and return
+            log.info("writing binary stream")
+            self.set_header('Content-Type', 'application/octet-stream')
+            self.write(values)
+            return
+            
         href = self.request.protocol + '://' + self.request.host + '/'
         hostQuery = ''
         if self.get_query_argument("host", default=''):
