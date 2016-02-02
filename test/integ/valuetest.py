@@ -476,6 +476,7 @@ class ValueTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['Content-Type'], "application/json")
         rspJson = json.loads(rsp.text)
         data = rspJson['value'] 
         self.assertEqual(len(data), 72)
@@ -483,6 +484,48 @@ class ValueTest(unittest.TestCase):
         self.assertEqual(len(first), 5)
         self.assertEqual(first[0], 24) 
         self.assertEqual(first[1], "13:53")  
+        # get first element via selection query
+        # get values starting at index 2
+        req += "?select=[0:1]"
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['Content-Type'], "application/json")
+        rspJson = json.loads(rsp.text)
+        data = rspJson['value'] 
+        self.assertEqual(len(data), 1)
+        first = data[0]
+        self.assertEqual(len(first), 5)
+        self.assertEqual(first[0], 24) 
+        self.assertEqual(first[1], "13:53")
+        
+    def testGetCompoundBinary(self):
+        domain = 'compound.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        dset_uuid = helper.getUUID(domain, root_uuid, 'dset') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain}
+        headers_binary = {'host': domain, 'accept': "application/octet-stream"}
+        rsp = requests.get(req, headers=headers_binary)
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
+        data = rsp.content
+        self.assertEqual(len(data) // 36, 72 )
+        
+ 
+        # get first element via selection query
+        # get values starting at index 2
+        req += "?select=[0:1]"
+        rsp = requests.get(req, headers=headers_binary)
+        self.assertEqual(rsp.status_code, 200)
+        # just one element, so expect json response
+        self.assertEqual(rsp.headers['Content-Type'], "application/json")
+        rspJson = json.loads(rsp.text)
+        data = rspJson['value'] 
+        self.assertEqual(len(data), 1)
+        first = data[0]
+        self.assertEqual(len(first), 5)
+        self.assertEqual(first[0], 24) 
+        self.assertEqual(first[1], "13:53")
        
         
     def testGetCommitted(self):

@@ -1602,17 +1602,22 @@ class ValueHandler(BaseHandler):
                 elif item_shape['class'] == 'H5S_SIMPLE':
                     dims = item_shape['dims']
                     rank = len(dims)
+                    nelements = 1
                     for dim in range(rank):
-                        slice = self.getSliceQueryParam(dim, dims[dim])
-                        slices.append(slice)
+                        dim_slice = self.getSliceQueryParam(dim, dims[dim])
+                        nelements *= (dim_slice.stop - dim_slice.start)
+                        slices.append(dim_slice)
                     if not query_selection:
                         if request_content_type == "binary":
+                            log.info("nelements:" + str(nelements))
                             itemSize = h5json.getItemSize(item_type)
-                            if itemSize != "H5T_VARIABLE":
+                            if itemSize != "H5T_VARIABLE" and nelements > 1:
                                 response_content_type = "binary"
                        
+                        log.info("response_content_type: " + response_content_type)
                         values = db.getDatasetValuesByUuid(
-                            reqUuid, tuple(slices), format=response_content_type)        
+                            reqUuid, tuple(slices), format=response_content_type) 
+                        log.info("values type: " + str(type(values)))       
                          
                 else:
                     msg = "Internal Server Error: unexpected shape class: " + shape['class']
