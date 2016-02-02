@@ -3316,6 +3316,8 @@ def main():
     print("ssl_key:", ssl_key)
     ssl_port = config.get('ssl_port')
     print("ssl_port:", ssl_port)
+    domain = config.get("domain")
+    print("domain:", domain)
 
     if ssl_cert and op.isfile(ssl_cert) and ssl_key and op.isfile(ssl_key) and ssl_port:
         ssl_cert_pwd = config.get('ssl_cert_pwd')
