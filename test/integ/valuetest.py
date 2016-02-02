@@ -9,6 +9,8 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
+
+import six
 import requests
 import config
 import helper
@@ -19,7 +21,24 @@ import json
 class ValueTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(ValueTest, self).__init__(*args, **kwargs)
-        self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))    
+        self.endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))  
+    
+    """
+     Test 32-bit memory word at given offset from value against expected.
+     Expected must be less than 256.
+    """  
+    def compareWord32(self, value, offset, expected):
+        if six.PY3:
+            self.assertEqual(value[offset+0], 0)
+            self.assertEqual(value[offset+1], 0)
+            self.assertEqual(value[offset+2], 0)
+            self.assertEqual(value[offset+3], expected)
+        else:
+            self.assertEqual(ord(value[offset+0]), 0)
+            self.assertEqual(ord(value[offset+1]), 0)
+            self.assertEqual(ord(value[offset+2]), 0)
+            self.assertEqual(ord(value[offset+3]), expected)
+              
        
     def testGet(self):
         for domain_name in ('tall', 'tall_ro'):
@@ -45,6 +64,7 @@ class ValueTest(unittest.TestCase):
             req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value"
             rsp = requests.get(req, headers=headers)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/json")
             rspJson = json.loads(rsp.text)
             data = rspJson['value'] 
             self.assertEqual(len(data), 20)
@@ -70,6 +90,7 @@ class ValueTest(unittest.TestCase):
             req = helper.getEndpoint() + "/datasets/" + dset111UUID + "/value"
             rsp = requests.get(req, headers=headers)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/json")
             rspJson = json.loads(rsp.text)
             data = rspJson['value'] 
             self.assertEqual(len(data), 10)  
@@ -105,14 +126,13 @@ class ValueTest(unittest.TestCase):
              
             rsp = requests.get(req, headers=headers_binary)
             self.assertEqual(rsp.status_code, 200)
-            self.assertEqual(len(rsp.content), 80)
+            self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
+            
+            data = rsp.content
+            self.assertEqual(len(data), 80)
             for i in range(20):
-                # 4 byte integers, little indian
-                self.assertEqual(rsp.content[0+(i*4)], 0)
-                self.assertEqual(rsp.content[1+(i*4)], 0)
-                self.assertEqual(rsp.content[2+(i*4)], 0)
-                self.assertEqual(rsp.content[3+(i*4)], i)      
-        
+                self.compareWord32(data, i*4, i)
+                   
             # rank 2 dataset
             dset111UUID = helper.getUUID(domain, g11UUID, 'dset1.1.1') 
             req = helper.getEndpoint() + "/datasets/" + dset111UUID
@@ -132,16 +152,16 @@ class ValueTest(unittest.TestCase):
             req = helper.getEndpoint() + "/datasets/" + dset111UUID + "/value"
             rsp = requests.get(req, headers=headers_binary)
             self.assertEqual(rsp.status_code, 200)
-            self.assertEqual(len(rsp.content), 400)
+            self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
+            data = rsp.content
+            self.assertEqual(len(data), 400)
             row_offset = 0
+           
             for i in range(10):
                 col_offset = 0
                 for j in range(10):
                     # 4 byte integers, little indian
-                    self.assertEqual(rsp.content[row_offset+col_offset+0], 0)
-                    self.assertEqual(rsp.content[row_offset+col_offset+1], 0)
-                    self.assertEqual(rsp.content[row_offset+col_offset+2], 0)
-                    self.assertEqual(rsp.content[row_offset+col_offset+3], i*j)
+                    self.compareWord32(data, row_offset+col_offset, i*j)
                     col_offset += 4
                 row_offset += col_offset
                 
@@ -164,6 +184,7 @@ class ValueTest(unittest.TestCase):
              "?select=[2:]"
             rsp = requests.get(req, headers=headers)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/json")
             rspJson = json.loads(rsp.text)
             data = rspJson['value']  # should be [2, 3, 4, ..., 19]
             self.assertEqual(len(data), 18)
@@ -184,6 +205,7 @@ class ValueTest(unittest.TestCase):
              "?select=[2:10:2]"
             rsp = requests.get(req, headers=headers)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/json")
             rspJson = json.loads(rsp.text)
             data = rspJson['value']  # should be [2, 4, 6, 8]
             self.assertEqual(len(data), 4)
@@ -199,6 +221,7 @@ class ValueTest(unittest.TestCase):
              "?select=[:,2:6]"
             rsp = requests.get(req, headers=headers)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/json")
             rspJson = json.loads(rsp.text)
             data = rspJson['value']   
             self.assertEqual(len(data), 10)  
@@ -213,6 +236,7 @@ class ValueTest(unittest.TestCase):
              "?select=[1:9,1:9:2]"
             rsp = requests.get(req, headers=headers)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/json")
             rspJson = json.loads(rsp.text)
             data = rspJson['value']   
           
@@ -242,46 +266,40 @@ class ValueTest(unittest.TestCase):
              "?select=[2:]"
             rsp = requests.get(req, headers=headers_binary)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
             
             # content should be [2, 3, 4, ..., 19]
             data = rsp.content
             self.assertEqual(len(data), 18*4)  # 18 elements with 4 bytes per element
             for i in range(18):
-                offset = i*4
-                self.assertEqual(data[offset + 0], 0)
-                self.assertEqual(data[offset + 1], 0)
-                self.assertEqual(data[offset + 2], 0)
-                self.assertEqual(data[offset + 3], i+2)
+                self.compareWord32(data, i*4, i+2)
                      
             # get values starting at index 2 with stop of 10
             req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
              "?select=[2:10]"
             rsp = requests.get(req, headers=headers_binary)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
              
             data = rsp.content  # should be [2, 3, 4, ..., 9]
             self.assertEqual(len(data), 8*4)
             for i in range(8):
-                offset = i*4
-                self.assertEqual(data[offset + 0], 0)
-                self.assertEqual(data[offset + 1], 0)
-                self.assertEqual(data[offset + 2], 0)
-                self.assertEqual(data[offset + 3], i+2)
+                self.compareWord32(data, i*4, i+2)
+                 
             
             # get values starting at index 2 with stop of 10, and stride of 2
             req = helper.getEndpoint() + "/datasets/" + dset112UUID + "/value" + \
              "?select=[2:10:2]"
             rsp = requests.get(req, headers=headers_binary)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
             data = rsp.content
             # should be [2, 4, 6, 8]
             self.assertEqual(len(data), 4*4)
             for i in range(4):
                 offset = i*4
-                self.assertEqual(data[offset + 0], 0)
-                self.assertEqual(data[offset + 1], 0)
-                self.assertEqual(data[offset + 2], 0)
-                self.assertEqual(data[offset + 3], (i*2)+2)
+                self.compareWord32(data, offset, (i*2)+2)
+                 
         
             # rank 2 dataset
             dset111UUID = helper.getUUID(domain, g11UUID, 'dset1.1.1') 
@@ -292,6 +310,7 @@ class ValueTest(unittest.TestCase):
              "?select=[:,2:6]"
             rsp = requests.get(req, headers=headers_binary)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
             data = rsp.content
             self.assertEqual(len(data), 4*10*4)
             row_offset = 0
@@ -299,10 +318,8 @@ class ValueTest(unittest.TestCase):
                 col_offset = 0
                 for j in range(4):
                     # 4 byte integers, little indian
-                    self.assertEqual(data[row_offset+col_offset+0], 0)
-                    self.assertEqual(data[row_offset+col_offset+1], 0)
-                    self.assertEqual(data[row_offset+col_offset+2], 0)
-                    self.assertEqual(data[row_offset+col_offset+3], i*(j+2)) 
+                    self.compareWord32(data, row_offset+col_offset, i*(j+2))
+                     
                     col_offset += 4
                 row_offset += col_offset
                     
@@ -311,6 +328,7 @@ class ValueTest(unittest.TestCase):
              "?select=[1:9,1:9:2]"
             rsp = requests.get(req, headers=headers_binary)
             self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
             data = rsp.content
             self.assertEqual(len(data), 8*4*4)
             row_offset = 0
@@ -318,11 +336,7 @@ class ValueTest(unittest.TestCase):
                 col_offset = 0
                 for j in range(4):
                     # 4 byte integers, little indian
-                    self.assertEqual(data[row_offset+col_offset+0], 0)
-                    self.assertEqual(data[row_offset+col_offset+1], 0)
-                    self.assertEqual(data[row_offset+col_offset+2], 0)
-                    #print(i, j, data[row_offset+col_offset+3], (i+1)*(j*2+1))
-                    self.assertEqual(data[row_offset+col_offset+3], (i+1)*(j*2+1)) 
+                    self.compareWord32(data, row_offset+col_offset, (i+1)*(j*2+1))
                     col_offset += 4
                 row_offset += col_offset
             
@@ -376,6 +390,7 @@ class ValueTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['Content-Type'], "application/json")
         rspJson = json.loads(rsp.text)
         data = rspJson['value'] 
         self.assertEqual(data, 42)
@@ -404,6 +419,23 @@ class ValueTest(unittest.TestCase):
         req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['Content-Type'], "application/json")
+        rspJson = json.loads(rsp.text)
+        data = rspJson['value'] 
+        self.assertEqual(data, "hello")
+        
+    def testGetScalarStringBinary(self):
+        domain = 'scalar.' + config.get('domain')  
+        headers = {'host': domain}
+        headers_binary = {'host': domain, 'accept': "application/octet-stream"}
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, '0ds') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        rsp = requests.get(req, headers=headers_binary)
+        self.assertEqual(rsp.status_code, 200)
+        # requested binary, but got json (because it's a variable length string)
+        self.assertEqual(rsp.headers['Content-Type'], "application/json")
         rspJson = json.loads(rsp.text)
         data = rspJson['value'] 
         self.assertEqual(data, "hello")

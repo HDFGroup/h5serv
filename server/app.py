@@ -1555,8 +1555,9 @@ class ValueHandler(BaseHandler):
             'ValueHandler.get host=[' + self.request.host +
             '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
-        content_type = self.getAcceptType()
-        log.info("contenttype:" + content_type)
+        request_content_type = self.getAcceptType()
+        response_content_type = "json"
+        log.info("contenttype:" + request_content_type)
         self.get_current_user()
 
         reqUuid = self.getRequestId()
@@ -1583,7 +1584,7 @@ class ValueHandler(BaseHandler):
                 self.verifyAcl(acl, 'read')  # throws exception is unauthorized
                 item = db.getDatasetItemByUuid(reqUuid)
                 item_type = item['type']
-
+                
                 if item_type['class'] == 'H5T_OPAQUE':
                     # TODO - support for returning OPAQUE data...
                     msg = "Not Implemented: GET OPAQUE data not supported"
@@ -1605,8 +1606,13 @@ class ValueHandler(BaseHandler):
                         slice = self.getSliceQueryParam(dim, dims[dim])
                         slices.append(slice)
                     if not query_selection:
+                        if request_content_type == "binary":
+                            itemSize = h5json.getItemSize(item_type)
+                            if itemSize != "H5T_VARIABLE":
+                                response_content_type = "binary"
+                       
                         values = db.getDatasetValuesByUuid(
-                            reqUuid, tuple(slices), format=content_type)
+                            reqUuid, tuple(slices), format=response_content_type)        
                          
                 else:
                     msg = "Internal Server Error: unexpected shape class: " + shape['class']
@@ -1672,12 +1678,16 @@ class ValueHandler(BaseHandler):
 
         # got everything we need, put together the response
         
-        if type(values) is bytes:
+        if response_content_type == "binary":
             # binary transfer, just write the bytes and return
             log.info("writing binary stream")
             self.set_header('Content-Type', 'application/octet-stream')
             self.write(values)
             return
+            
+        if request_content_type == "binary":
+            #unable to return binary data
+            log.info("requested binary response, but returning JSON instead")
             
         href = self.request.protocol + '://' + self.request.host + '/'
         hostQuery = ''
