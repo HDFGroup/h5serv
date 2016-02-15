@@ -31,6 +31,8 @@ def getFileModCreateTimes(filePath):
 def isIPAddress(s):
     """Return True if the string looks like an IP address:
         n.n.n.n where n is between 0 and 255 """
+    if s == "localhost":
+        return True
     parts = s.split('.')
     if len(parts) != 4:
         return False
@@ -54,7 +56,7 @@ def getFilePath(host_value):
         host = host_value
 
     topdomain = config.get('domain')
-
+    
     # check to see if this is an ip address
     if isIPAddress(host):
         host = topdomain  # use topdomain
