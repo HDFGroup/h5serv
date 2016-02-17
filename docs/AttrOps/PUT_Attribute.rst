@@ -18,7 +18,7 @@ To create a group attribute:
 
 .. code-block:: http
 
-    PUT /groups/<id>/<name> HTTP/1.1
+    PUT /groups/<id>/attributes/<name> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -26,7 +26,7 @@ To create a dataset attribute:
 
 .. code-block:: http
 
-    PUT /datasets/<id>/<name> HTTP/1.1
+    PUT /datasets/<id>/attributes/<name> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
@@ -34,7 +34,7 @@ To create a committed datatype attribute:
 
 .. code-block:: http
 
-    PUT /datatypes/<id>/<name> HTTP/1.1
+    PUT /datatypes/<id>/attributes/<name> HTTP/1.1
     Host: DOMAIN
     Authorization: <authorization_string>
     
