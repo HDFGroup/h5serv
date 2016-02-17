@@ -939,6 +939,38 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 201)
         
+    def testPostCompoundArrayVLenStringType(self):
+        domain = 'compound_array_vlen_string.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.assertEqual(rsp.status_code, 201) # creates domain
+        
+        root_uuid = helper.getRootUUID(domain)
+        
+        fields = [ {"type": {"class": "H5T_INTEGER", "base": "H5T_STD_U64BE"}, "name": "VALUE1"}, 
+                   {"type": {"class": "H5T_FLOAT", "base": "H5T_IEEE_F64BE"}, "name": "VALUE2"}, 
+                   {"type": {"class": "H5T_ARRAY", "dims": [8], "base": 
+                         {"class": "H5T_STRING", "charSet": "H5T_CSET_ASCII",
+                          "strPad": "H5T_STR_NULLTERM", "length": "H5T_VARIABLE"}}, "name": "VALUE3"}]
+                           
+        datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
+        payload = {'type': datatype, 'shape': 5}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link the new dataset 
+        name = "dset"
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)
+        
     def testPostCompoundFillValue(self):
         domain = 'compound_fillvalue.datasettest.' + config.get('domain')
         req = self.endpoint + "/"
