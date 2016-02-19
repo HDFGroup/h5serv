@@ -17,7 +17,7 @@ from tornado.web import HTTPError
  
 
 sys.path.append('../../server')
-from fileUtil import getFilePath, getDomain
+from fileUtil import getFilePath, getDomain, posixpath, join
 import config
 
 
@@ -25,7 +25,24 @@ class FileUtilTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(FileUtilTest, self).__init__(*args, **kwargs)
         # main
-        
+    
+    def testPosixPath(self):
+        path1 = "dir1\\dir2"
+        pp = posixpath(path1)
+        if os.name == 'nt':
+            self.assertEqual(pp, "dir1/dir2")
+        else:
+            self.assertEqual(pp, path1)  # no conversion on unix
+            
+    def testJoin(self):
+        path1 = "dir1\\dir2"
+        path2 = "myfile.h5"
+        pp = join(path1, path2)
+        if os.name == 'nt':
+            self.assertEqual(pp, "dir1/dir2/myfile.h5")
+        else:
+            self.assertEqual(pp, "dir1\\dir2/myfile.h5")  # no conversion on unix
+           
     def testDomaintoFilePath(self):
         domain = 'tall.' + config.get('domain')  
         filePath = getFilePath(domain)
@@ -53,6 +70,7 @@ class FileUtilTest(unittest.TestCase):
         self.assertEqual(domain, 'tall.subdir.' + config.get('domain'))
         
         filePath = os.path.join(config.get('datapath'), 'subdir/tall.h5')
+        
         domain = getDomain(filePath)
         self.assertEqual(domain, 'tall.subdir.' + config.get('domain'))
         

@@ -1663,6 +1663,7 @@ class ValueHandler(BaseHandler):
                 stop = slices[0].stop
                 step = slices[0].step
             try:
+                #from querydb import Querydb
                 with Querydb(filePath, app_logger=log) as db:
                     path = item['alias'][0]
                     rsp = db.doQuery(

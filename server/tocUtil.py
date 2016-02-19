@@ -29,18 +29,18 @@ def getTocFilePath(user=None):
     datapath = config.get('datapath')
     if user is None:
         #print("get default toc")
-        toc_file_path = op.join(datapath, config.get('toc_name'))
+        toc_file_path = fileUtil.join(datapath, config.get('toc_name'))
     else:
         #print("get user toc")
-        toc_file_path = op.join(datapath, config.get('home_dir'))
-        toc_file_path = op.join(toc_file_path, config.get('toc_name'))
+        toc_file_path = fileUtil.join(datapath, config.get('home_dir'))
+        toc_file_path = fileUtil.join(toc_file_path, config.get('toc_name'))
  
     return toc_file_path
 
 
 def isTocFilePath(filePath):
     datapath = config.get('datapath')
-    toc_file_path = op.join(datapath, config.get('toc_name'))
+    toc_file_path = fileUtil.join(datapath, config.get('toc_name'))
     if filePath == toc_file_path:
         isTocFilePath = True
     else:
@@ -51,15 +51,15 @@ def isTocFilePath(filePath):
 def createTocFile(datapath):
     log = logging.getLogger("h5serv")
     log.info("createTocFile(" + datapath + ")")
-    data_dir = op.normpath(config.get('datapath'))
+    data_dir = fileUtil.posixpath(op.normpath(config.get('datapath')))
     
     if datapath.endswith(config.get('toc_name')):
-        toc_dir = op.dirname(datapath)
+        toc_dir = fileUtil.posixpath(op.normpath(op.dirname(datapath)))
         toc_file = datapath
     else:
-        toc_dir = datapath
-        toc_file = op.join(toc_dir, config.get("toc_name"))
-    home_dir = op.join(data_dir, config.get("home_dir"))
+        toc_dir = fileUtil.posixpath(op.normpath(datapath))
+        toc_file = fileUtil.join(toc_dir, config.get("toc_name"))
+    home_dir = fileUtil.join(data_dir, config.get("home_dir"))
            
     log.info("toc_dir:[" + toc_dir + "]")
     log.info("data_dir:[" + data_dir + "]") 
@@ -82,11 +82,16 @@ def createTocFile(datapath):
      
     for root, subdirs, files in os.walk(toc_dir):
         #print("files: ", files)
+        root = fileUtil.posixpath(root)
         log.info( "root: " + root)
+        log.info("toc_dir: [" + toc_dir + "]")
+        log.info(str(type(toc_dir)))
+        log.info("data_dir: [" + data_dir + "]")
+        log.info(str(type(toc_dir)))
         
         if toc_dir == data_dir:
-            
-            if root.startswith(op.join(toc_dir, config.get('home_dir'))):
+            log.info(fileUtil.join(toc_dir, home_dir))
+            if root.startswith(home_dir):
                 log.info("skipping home dir")
                 continue
          
@@ -113,9 +118,7 @@ def createTocFile(datapath):
                 log.info("skip hidden")
                 continue  # skip 'hidden' files
             
-            filepath = op.join(root, filename)
-            if os.name == 'nt':
-                filepath = filepath.replace('\\', '/')  # use unix style to map to HDF5 convention
+            filepath = fileUtil.join(root, filename)
             log.info("walk, filepath: " + filepath)
             link_target = '/'
             

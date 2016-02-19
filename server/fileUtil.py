@@ -44,7 +44,27 @@ def isIPAddress(s):
         except ValueError:
             return False
     return True
-
+    
+# Convert windows style path names to posxipaths
+#
+# todo: any edge cases this doesn't handle?
+def posixpath(filepath):
+     
+     if os.name == 'nt':
+        pp = filepath.replace('\\', '/')
+     else:
+        pp = filepath
+     return pp
+     
+# Join to pathnames and convert to posix style
+#
+# todo: any edge cases this doesn't handle?
+def join(path, paths):
+     pp = op.join(path, paths)
+     if os.name == 'nt':
+        pp = posixpath(pp)
+      
+     return pp
 
 def getFilePath(host_value):
     # logging.info('getFilePath[' + host_value + ']')
@@ -65,7 +85,7 @@ def getFilePath(host_value):
         # if host is the same as topdomain, return toc path
         # filePath = getTocFilePath()
         filePath = config.get('datapath')
-        filePath = op.join(filePath, config.get('toc_name') )
+        filePath = join(filePath, config.get('toc_name') )
         return filePath
 
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
@@ -89,7 +109,7 @@ def getFilePath(host_value):
         if len(field) == 0:   
             raise HTTPError(400)  # Bad syntax
         
-        filePath = op.join(filePath, field)
+        filePath = join(filePath, field)
         num_parts += 1
 
     # check to see if this is the user's home domain
@@ -98,7 +118,7 @@ def getFilePath(host_value):
         if user_info is None:
             raise HTTPError(404)  # not found
         makeDirs(filePath)  # add user directory if it doesn't exist
-        filePath = op.join(filePath, config.get('toc_name') )
+        filePath = join(filePath, config.get('toc_name') )
     else:    
         filePath += config.get('hdf5_ext')   # add extension
      
@@ -129,7 +149,7 @@ def getTocFilePathForDomain(host_value):
         # if host is the same as topdomain, return toc path
         # filePath = getTocFilePath()
         filePath = config.get('datapath')
-        filePath = op.join(filePath, config.get('toc_name') )
+        filePath = join(filePath, config.get('toc_name') )
         return filePath
 
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
@@ -150,17 +170,17 @@ def getTocFilePathForDomain(host_value):
     filePath = config.get('datapath')
     
     if dns_path[0] == config.get('home_dir'):
-        filePath = op.join(filePath, config.get('home_dir'))
-        filePath = op.join(filePath, dns_path[1])
+        filePath = join(filePath, config.get('home_dir'))
+        filePath = join(filePath, dns_path[1])
         user_info = getUserInfo(dns_path[1])
         if user_info is None:
             raise HTTPError(404)  # not found
         makeDirs(filePath)  # add user directory if it doesn't exist
-        filePath = op.join(filePath, config.get('toc_name'))
+        filePath = join(filePath, config.get('toc_name'))
         #print("return user toc filepath")
     else:
         # not home dir, just return top-level toc
-        filePath = op.join(filePath, config.get('toc_name'))
+        filePath = join(filePath, config.get('toc_name'))
         #print("return default toc filepath")
 
     return filePath
@@ -170,11 +190,12 @@ def getDomain(file_path, base_domain=None):
     # Get domain given a file path
     
     data_path = op.normpath(config.get('datapath'))  # base path for data directory
-    file_path = op.normpath(file_path)
+    data_path = posixpath(data_path)
+    file_path = posixpath(file_path)
     hdf5_ext = config.get("hdf5_ext")
     if op.isabs(file_path):
         # compare with absolute path if we're given an absolute path
-        data_path = op.abspath(data_path)
+        data_path = posixpath(op.abspath(data_path))
     
     if file_path == data_path:
         return config.get('domain')
@@ -189,6 +210,8 @@ def getDomain(file_path, base_domain=None):
     while len(dirname) > 1 and dirname != data_path:
         domain += '.'
         domain += op.basename(dirname)
+        if len(op.dirname(dirname)) >= len(dirname):
+            break
         dirname = op.dirname(dirname)
      
     domain += '.'

@@ -45,6 +45,7 @@ class DirTest(unittest.TestCase):
         rspJson = json.loads(rsp.text)
         self.assertTrue("links" in rspJson)
         links = rspJson["links"]
+         
         home_dir = config.get("home_dir")
         for item in links:
             if item['title'] == home_dir:
@@ -212,6 +213,7 @@ class DirTest(unittest.TestCase):
         link = rspJson['link']
         test_group_uuid = link['id']
         
+                
         # verify that the domain name is not present
         req = self.endpoint + "/groups/" + test_group_uuid + "/links/" + domain_name 
         rsp = requests.get(req)
