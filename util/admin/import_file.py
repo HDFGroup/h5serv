@@ -148,7 +148,7 @@ main method
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', "--src", help="source path for the file to be imported")
-    parser.add_argument('-u', "--user", help="user name")
+    parser.add_argument('-u', "--user", help="user name (optional)")
     parser.add_argument('-f', "--folder", help='folder path under user home dir (optional)')
     parser.add_argument('-p', "--passwd_file", help='password file (optional)')
      
@@ -175,8 +175,7 @@ def main():
     if args.user:
         username = args.user
     else:
-        print("no user provided")
-        return -1
+        print("Importing into public")
                              
     if args.passwd_file:
         password_file = args.passwd_file
@@ -196,17 +195,19 @@ def main():
     print(">password_file:", password_file)
     print(">folder:", folder)  
     
-    userid = getUserId(username, password_file)
+    if username:
+        userid = getUserId(username, password_file)
     
-    if not userid:
-        print("user not found")
-        return -1
-    print(">userid:", userid)
+        if not userid:
+            print("user not found")
+            return -1
+        print(">userid:", userid)
     
     tgt_dir = op.join(op.dirname(__file__), config.get("datapath"))
     tgt_dir = op.normpath(tgt_dir)
-    tgt_dir = op.join(tgt_dir, config.get("home_dir"))
-    tgt_dir = op.join(tgt_dir, username)
+    if username:
+        tgt_dir = op.join(tgt_dir, config.get("home_dir"))
+        tgt_dir = op.join(tgt_dir, username)
     toc_file = op.join(tgt_dir, config.get("toc_name"))
     if not op.isfile(toc_file):
         print("toc_file:", toc_file, "not found")
@@ -232,7 +233,8 @@ def main():
         return -1
     
     base_domain = config.get("domain")
-    base_domain = username + '.' + config.get("home_dir") + '.' + config.get("domain")
+    if username:
+        base_domain = username + '.' + config.get("home_dir") + '.' + config.get("domain")
     domain = getDomain(tgt_path, base_domain=base_domain)
    
     # add toc entry
