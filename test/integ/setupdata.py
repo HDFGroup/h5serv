@@ -22,7 +22,8 @@ DES = "../../data/test"
 # files to be copied into test directory
 testfiles = {
     'tall.h5': ('.',  'tall_updated.h5', 'tall_ro.h5', 'tall_g2_deleted.h5', 
-            'tall_dset112_deleted.h5', 'tall_dset22_deleted.h5', 'tall_acl.h5', 'tall_acl_delete.h5'),
+            'tall_dset112_deleted.h5', 'tall_dset22_deleted.h5', 'tall_acl.h5', 
+            'tall_acl_delete.h5', 'tall.dots.need.to.be.encoded.h5'),
     'tall_with_udlink.h5': ('.',),
     'scalar.h5': ('.', 'scalar_1d_deleted.h5',),
     'namedtype.h5': ('.', 'namedtype_deleted.h5'),

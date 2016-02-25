@@ -107,6 +107,13 @@ class RootTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 400)  # 400 == bad syntax
         
+        domain = 'tall.dots.need.to.be.encoded.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 404)  # 404 == not found were expected
+         
+        
     def testDomainWithSpaces(self):
         domain = 'filename with space.' + config.get('domain')    
         req = self.endpoint + "/"
