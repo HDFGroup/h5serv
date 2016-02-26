@@ -93,6 +93,14 @@ class BaseHandler(tornado.web.RequestHandler):
         cors_domain = config.get('cors_domain')
         if cors_domain:
             self.set_header('Access-Control-Allow-Origin', cors_domain)
+     
+    """
+    Set allows heards per CORS policy
+    """        
+    def options(self):
+        cors_domain = config.get('cors_domain')
+        if cors_domain:
+            self.set_header('Access-Control-Allow-Headers', 'Content-type,')
 
     """
     Override of Tornado get_current_user
@@ -276,8 +284,6 @@ class BaseHandler(tornado.web.RequestHandler):
         else:
             return "json"
             
-    def options(self):
-        self.set_header('Access-Control-Allow-Headers', 'Content-type,')
 
 class LinkCollectionHandler(BaseHandler):
     def get(self):
