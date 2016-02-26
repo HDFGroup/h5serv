@@ -276,7 +276,8 @@ class BaseHandler(tornado.web.RequestHandler):
         else:
             return "json"
             
-
+    def options(self):
+        self.set_header('Access-Control-Allow-Headers', 'Content-type,')
 
 class LinkCollectionHandler(BaseHandler):
     def get(self):
