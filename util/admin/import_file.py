@@ -75,12 +75,11 @@ def getSubgroupId(db, group_uuid, link_name):
 Update toc with new filename
 """
 
-def addTocEntry(toc_file, domain):
+def addTocEntry(toc_file, domain, base_domain):
         """
         Helper method - update TOC when a domain is created
         """
          
-        base_domain = config.get("domain")
         if not domain.endswith(base_domain):
             sys.exit("unexpected domain value: " + domain)
         # trim domain by base domain
@@ -211,10 +210,16 @@ def main():
         domain += '.' + username + '.' + config.get("home_dir")
     domain += "." + config.get("domain") 
     
+    # determine the base so that the toc update can be done relative to the base.
+    if username:
+        base_domain = username + '.' + config.get("home_dir") + '.' + config.get("domain")
+    else:
+        base_domain = config.get("domain")
+    
      
     print("domain:", domain)
     # add toc entry
-    addTocEntry(toc_file, domain)    
+    addTocEntry(toc_file, domain, base_domain)    
     # copy file
     tgt_path += hdf5_ext
     shutil.copyfile(src_path, tgt_path) 
