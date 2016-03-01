@@ -5,50 +5,16 @@ import argparse
 import os.path as op
 import os
 import shutil
+from tornado.escape import url_escape
 from h5json import Hdf5db
 import config
-
-"""
-Get domain for given file path
-"""
-def getDomain(file_path, base_domain=None):
-    # Get domain given a file path
-    
-    data_path = op.normpath(config.get('datapath'))  # base path for data directory
-    file_path = op.normpath(file_path)
-    hdf5_ext = config.get("hdf5_ext")
-    if op.isabs(file_path):
-        # compare with absolute path if we're given an absolute path
-        data_path = op.abspath(data_path)
-    
-    if file_path == data_path:
-        return config.get('domain')
-            
-    if file_path.endswith(hdf5_ext):
-        domain = op.basename(file_path)[:-(len(hdf5_ext))]
-    else:
-        domain = op.basename(file_path)
-
-    dirname = op.dirname(file_path)
-    
-    while len(dirname) > 1 and dirname != data_path:
-        domain += '.'
-        domain += op.basename(dirname)
-        dirname = op.dirname(dirname)
-     
-    domain += '.'
-    if base_domain:
-        domain += base_domain
-    else:
-        domain += config.get('domain')
-
-    return domain
+ 
 
 """
  Create directories as needed along the given path.
 """
 def makeDirs(filePath):
-    print("makeDirs:", filePath)
+    #print("makeDirs:", filePath)
     # Make any directories along path as needed
     if len(filePath) == 0 or op.isdir(filePath):
         return
@@ -90,7 +56,7 @@ def getUserId(user_name, password_file):
 get group uuid of hardlink, or None if no link
 """
 def getSubgroupId(db, group_uuid, link_name):
-    print("link_name:", link_name)    
+    #print("link_name:", link_name)    
     subgroup_uuid = None
     try:
         item = db.getLinkItemByUuid(group_uuid, link_name)
@@ -109,25 +75,30 @@ def getSubgroupId(db, group_uuid, link_name):
 Update toc with new filename
 """
 
-def addTocEntry(toc_file, file_path, domain):
+def addTocEntry(toc_file, domain):
         """
         Helper method - update TOC when a domain is created
-          If validateOnly is true, then the acl is checked to verify that create is
-          enabled, but doesn't update the .toc
         """
          
-        print("addTocEntry, filePath", file_path, "domain:", domain) 
-        hdf5_ext = config.get('hdf5_ext')
+        base_domain = config.get("domain")
+        if not domain.endswith(base_domain):
+            sys.exit("unexpected domain value: " + domain)
+        # trim domain by base domain
 
         try:
             with Hdf5db(toc_file) as db:
                 group_uuid = db.getUUIDByPath('/')
-                pathNames = file_path.split('/')
-                for linkName in pathNames:
+                names = domain.split('.')
+                base_names = base_domain.split('.')
+                indexes = list(range(len(names)))
+                indexes = indexes[::-1] # reverse
+                for i in indexes:
+                    if i >= len(names) - len(base_names):
+                        continue # still in the base domain
+                    linkName = names[i]
                     if not linkName:
                         continue
-                    if linkName.endswith(hdf5_ext):
-                        linkName = linkName[:-(len(hdf5_ext))]
+                    if i == 0:
                         db.createExternalLink(group_uuid, domain, '/', linkName)
                     else:
                         subgroup_uuid = getSubgroupId(db, group_uuid, linkName)
@@ -160,7 +131,6 @@ def main():
     folder = None
     password_file = None
     
-    print("domain:", config.get("domain"))
     if args.src:
         src_path = args.src
     else:
@@ -195,16 +165,18 @@ def main():
     print(">password_file:", password_file)
     print(">folder:", folder)  
     
+    hdf5_ext = config.get("hdf5_ext")
+    
     if username:
         userid = getUserId(username, password_file)
     
         if not userid:
             print("user not found")
             return -1
-        print(">userid:", userid)
     
     tgt_dir = op.join(op.dirname(__file__), config.get("datapath"))
     tgt_dir = op.normpath(tgt_dir)
+    
     if username:
         tgt_dir = op.join(tgt_dir, config.get("home_dir"))
         tgt_dir = op.join(tgt_dir, username)
@@ -218,29 +190,34 @@ def main():
     if not op.isdir(tgt_dir):
         print("directory:", tgt_dir, "not found, creating")
         makeDirs(tgt_dir)
-        
-    tgt_file = op.join(tgt_dir, op.basename(src_path))
     
-    if folder:
-        tgt_path = folder
-    else:    
-        tgt_path = "/"
+    tgt_file = op.basename(src_path)
+    tgt_file = op.splitext(tgt_file)[0] # ignore the extension
+    tgt_file = url_escape(tgt_file)  # make the filename url compatible
+    tgt_file = tgt_file.replace('.', '_')  # replace dots with underscores
+       
+    tgt_path = op.join(tgt_dir, tgt_file)
+    tgt_path = op.normpath(tgt_path)
         
-    tgt_path = op.join(tgt_path, op.basename(src_path))
-     
-    if op.isfile(tgt_file):
+    if op.isfile(tgt_path + hdf5_ext):
         print("file already exists")
         return -1
     
-    base_domain = config.get("domain")
+    # determine target domain
+    domain = tgt_file
+    if folder:
+        domain += '.' + folder
     if username:
-        base_domain = username + '.' + config.get("home_dir") + '.' + config.get("domain")
-    domain = getDomain(tgt_path, base_domain=base_domain)
-   
+        domain += '.' + username + '.' + config.get("home_dir")
+    domain += "." + config.get("domain") 
+    
+     
+    print("domain:", domain)
     # add toc entry
-    addTocEntry(toc_file, tgt_path, domain)    
+    addTocEntry(toc_file, domain)    
     # copy file
-    shutil.copyfile(src_path, tgt_file) 
+    tgt_path += hdf5_ext
+    shutil.copyfile(src_path, tgt_path) 
     
     return 0
         

@@ -112,7 +112,7 @@ class RootTest(unittest.TestCase):
         headers = {'host': domain}
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 404)  # 404 == not found were expected
-         
+        
         
     def testDomainWithSpaces(self):
         domain = 'filename with space.' + config.get('domain')    
