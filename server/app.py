@@ -3295,26 +3295,64 @@ def main():
 
     # create logger
     log = logging.getLogger("h5serv")
-    log.setLevel(logging.INFO)
-    # set daily rotating log
-    handler = logging.handlers.TimedRotatingFileHandler(
-        '../log/h5serv.log',
-        when="midnight",
-        interval=1,
-        backupCount=0,
-        utc=True)
-
+    log_file = config.get("log_file")
+    log_level = config.get("log_level")
     # create formatter
     formatter = logging.Formatter(
         "%(asctime)s:%(levelname)s:%(filename)s:%(lineno)d::%(message)s")
-    # add formatter to handler
+     
+     
+    # add file handler if given in config
+    if log_file:
+        print("Using logfile: ", log_file)
+        # set daily rotating log
+        
+        handler = logging.handlers.TimedRotatingFileHandler(
+            log_file,
+            when="midnight",
+            interval=1,
+            backupCount=0,
+            utc=True)
+  
+        # add formatter to handler
+        handler.setFormatter(formatter)
+        # add handler to logger
+        log.addHandler(handler)
+    else:
+        print("No logfile")
+        
+    # add default logger (to stdout)
+    handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
-    # add handler to logger
     log.addHandler(handler)
-    port = int(config.get('port'))
+    log.propagate = False  # otherwise, we'll get repeated lines
+    
+    # log levels: ERROR, WARNING, INFO, DEBUG, or NOTSET
+    if not log_level or log_level == "NOTSET":
+        log.setLevel(logging.NOTSET)
+    if log_level == "ERROR":
+        print("Setting log level to: ERROR")
+        log.setLevel(logging.ERROR)
+    elif log_level == "WARNING":
+        print("Setting log level to: WARNING")
+        log.setLevel(logging.WARNING)
+    elif log_level == "INFO":
+        print("Setting log level to: INFO")
+        log.setLevel(logging.INFO)
+    elif log_level == "DEBUG":
+        print("Setting log level to: DEBUG")
+        log.setLevel(logging.DEBUG)
+    else:
+        print("No logging!")
+        log.setLevel(logging.NOTSET)  
+    
+    log.info("log test")
+    
+
     global server
     app = make_app()
     server = tornado.httpserver.HTTPServer(app)
+    port = int(config.get('port'))
     server.listen(port)
     msg = "Starting event loop on port: " + str(port)
 
