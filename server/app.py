@@ -1268,7 +1268,7 @@ class DatasetHandler(BaseHandler):
         if nrows > 100:
             nrows = 100
         if nrows*ncols > 1000:
-            nrows /= 10
+            nrows //= 10
 
         for i in range(rank):
             if i == rank-1:
