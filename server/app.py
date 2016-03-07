@@ -3297,9 +3297,7 @@ def main():
     log = logging.getLogger("h5serv")
     log_file = config.get("log_file")
     log_level = config.get("log_level")
-    # create formatter
-    formatter = logging.Formatter(
-        "%(asctime)s:%(levelname)s:%(filename)s:%(lineno)d::%(message)s")
+    
      
      
     # add file handler if given in config
@@ -3315,6 +3313,9 @@ def main():
             utc=True)
   
         # add formatter to handler
+        # create formatter
+        formatter = logging.Formatter(
+            "%(asctime)s:%(levelname)s:%(filename)s:%(lineno)d::%(message)s")
         handler.setFormatter(formatter)
         # add handler to logger
         log.addHandler(handler)
@@ -3323,6 +3324,9 @@ def main():
         
     # add default logger (to stdout)
     handler = logging.StreamHandler(sys.stdout)
+    # create formatter
+    formatter = logging.Formatter(
+        "%(levelname)s:%(filename)s:%(lineno)d::%(message)s")
     handler.setFormatter(formatter)
     log.addHandler(handler)
     log.propagate = False  # otherwise, we'll get repeated lines
