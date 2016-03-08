@@ -3121,7 +3121,8 @@ class RootHandler(BaseHandler):
             log.info(msg)
             raise HTTPError(404, reason=msg)  # Not found
 
-        if not os.access(filePath, os.W_OK):
+        # don't use os.access since it will always return OK if uid is root
+        if not os.stat(filePath).st_mode & 0o200:
             # file is read-only
             msg = "Forbidden: Resource is read-only"
             log.info(msg)
