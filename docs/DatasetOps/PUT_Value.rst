@@ -63,7 +63,7 @@ points:
 
 An optional key that contains a list of array elements to be updated.  Each element of the list should be an 
 an integer if the dataset is of rank 1 or an n-element list (which n is the dataset rank) is the dataset
-rank is greater than 1.  If points is provided (indicating a point selection update, then start, stop, 
+rank is greater than 1.  If points is provided (indicating a point selection update), then start, stop, 
 and step (used for hyperslab selection) should not be provied.
 
 value:
