@@ -58,6 +58,14 @@ an array of integers where the length of the array is equal to the number of dim
 the dataset.  Each value must be greater than equal to start (or zero if start is not 
 provided) and less than the extent of the corresponding dimension.
 
+points:
+^^^^^^^
+
+An optional key that contains a list of array elements to be updated.  Each element of the list should be an 
+an integer if the dataset is of rank 1 or an n-element list (which n is the dataset rank) is the dataset
+rank is greater than 1.  If points is provided (indicating a point selection update, then start, stop, 
+and step (used for hyperslab selection) should not be provied.
+
 value:
 ^^^^^^
 A JSON array containing the data values to be written.
