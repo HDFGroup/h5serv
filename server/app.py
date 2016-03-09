@@ -270,7 +270,7 @@ class BaseHandler(tornado.web.RequestHandler):
         return uuid
         
     """
-    Get requested content type.  Returns either "base64" if the accept header is 
+    Get requested content type.  Returns either "binary" if the accept header is 
     octet stream, otherwise json.
     Currently does not support q fields.
     """
@@ -1844,6 +1844,7 @@ class ValueHandler(BaseHandler):
             'ValueHandler.put host=[' + self.request.host +
             '] uri=[' + self.request.uri + ']')
         log.info('remote_ip: ' + self.request.remote_ip)
+        
         self.get_current_user()
 
         reqUuid = self.getRequestId()
@@ -1853,21 +1854,34 @@ class ValueHandler(BaseHandler):
         start = None
         stop = None
         step = None
-
         body = None
+        format = "json"
+        data = None
+        print("body: ", self.request.body)
+        
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            try:
+                msg = "JSON Parser Error: " + e.message
+            except AttributeError:
+                msg = "JSON Parser Error"
             log.info(msg)
             raise HTTPError(400, reason=msg)
 
-        if "value" not in body:
+        if "value" in body:
+            data = body["value"]
+            format = "json"
+        elif "value_base64" in body:
+            base64_data = body["value_base64"]
+            base64_data = base64_data.encode("ascii")
+            data = base64.b64decode(base64_data)
+            format = "binary"
+            
+        else:
             msg = "Bad Request: Value not specified"
             log.info(msg)
-            raise HTTPError(400, reason=msg)  # missing data
-
-        data = body["value"]
+            raise HTTPError(400, reason=msg)  # missing data     
 
         if "points" in body:
             points = body['points']
@@ -1891,6 +1905,7 @@ class ValueHandler(BaseHandler):
                 stop = body['stop']
             if 'step' in body:
                 step = body['step']
+         
 
         try:
             with Hdf5db(filePath, app_logger=log) as db:
@@ -1898,6 +1913,7 @@ class ValueHandler(BaseHandler):
                 acl = db.getAcl(reqUuid, self.userid)
                 self.verifyAcl(acl, 'update')  # throws exception is unauthorized
                 item = db.getDatasetItemByUuid(reqUuid)
+                item_type = item['type']
                
                 dims = None
                 if 'shape' not in item:
@@ -1909,35 +1925,48 @@ class ValueHandler(BaseHandler):
                     msg = "Bad Request: PUT value can't be used with Null Space datasets"
                     log.info(msg)
                     raise HTTPError(400, reason=msg)  # missing data
-            
+                    
+                if format == "binary":
+                    item_size = h5json.getItemSize(item_type)
+                    if item_size == "H5T_VARIABLE":
+                        msg = "binary data cannot be used with variable length types"
+                        log.info(msg)
+                        raise HTTPError(400, reason=msg)  # need to use json
+                         
                 if datashape['class'] == 'H5S_SIMPLE':
                     dims = datashape['dims']
                 elif datashape['class'] == 'H5S_SCALAR':
                     if start is not None or stop is not None or step is not None:
                         msg = "Bad Request: start/stop/step option can't be used with Scalar Space datasets"
                         log.info(msg)
-                        raise HTTPError(400, reason=msg)  # missing data
-                        
+                        raise HTTPError(400, reason=msg)  # missing data           
                     elif points:
                         msg = "Bad Request: Point selection can't be used with scalar datasets"
                         log.info(msg)
                         raise HTTPError(400, reason=msg)  # missing data
+                log.info("points:" + str(points))
+                
+                 
                 if points is not None:
                     # write point selection
-                    db.setDatasetValuesByPointSelection(reqUuid, data, points)
+                    #db.setDatasetValuesByPointSelection(reqUuid, data, points, format=request_content_type)
+                    db.setDatasetValuesByPointSelection(reqUuid, data, points, format=format)
+                     
                 else:
                     slices = None
                     if dims is not None:          
                         slices = self.getHyperslabSelection(
                             dims, start, stop, step)
                     # todo - check that the types are compatible
-                    db.setDatasetValuesByUuid(reqUuid, data, slices)
+                    db.setDatasetValuesByUuid(reqUuid, data, slices, format=format)
+                     
+                    
         except IOError as e:
             log.info("IOError: " + str(e.errno) + " " + e.strerror)
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror)
 
-        log.info("value post succeeded")
+        log.info("value put succeeded")
 
 
 class AttributeHandler(BaseHandler):
