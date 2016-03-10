@@ -1943,12 +1943,9 @@ class ValueHandler(BaseHandler):
                         msg = "Bad Request: Point selection can't be used with scalar datasets"
                         log.info(msg)
                         raise HTTPError(400, reason=msg)  # missing data
-                log.info("points:" + str(points))
-                
-                 
+                  
                 if points is not None:
                     # write point selection
-                    #db.setDatasetValuesByPointSelection(reqUuid, data, points, format=request_content_type)
                     db.setDatasetValuesByPointSelection(reqUuid, data, points, format=format)
                      
                 else:

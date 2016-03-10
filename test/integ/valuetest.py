@@ -955,6 +955,12 @@ class ValueTest(unittest.TestCase):
         readData = helper.readDataset(domain, dset1UUID)
         self.assertEqual(readData, data)  # verify we got back what we started with
         
+        # verify attempting the wrong number of elements fails
+        data = [9, 99, 999, 999]
+        payload = { 'value': data }
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 400)  # Bad Request
+        
         #create 2d dataset
         payload = {'type': 'H5T_STD_I32LE', 'shape': (10,10)}
         req = self.endpoint + "/datasets"
@@ -1258,7 +1264,8 @@ class ValueTest(unittest.TestCase):
         datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
         
         #create 1d dataset
-        payload = {'type': datatype, 'shape': 2}
+        num_elements = 10
+        payload = {'type': datatype, 'shape': num_elements}
         req = self.endpoint + "/datasets"
         rsp = requests.post(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 201)  # create dataset
@@ -1271,17 +1278,27 @@ class ValueTest(unittest.TestCase):
         ok = helper.linkObject(domain, dset1UUID, 'dset_compound')
         self.assertTrue(ok)
         
-        value = ((55, 32.34), (59, 29.34)) 
+        # write entire array
+        value = [] 
+        for i in range(num_elements):
+            item = (i*10, i*10+i/10.0) 
+            value.append(item)
         payload = {'value': value}
         req = self.endpoint + "/datasets/" + dset1UUID + "/value"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 200)  # write value
         
         # selection write
-        payload = { 'start': 0, 'stop': 1, 'value': (11.1, 12.2) }
+        payload = { 'start': 0, 'stop': 1, 'value': (42, .42) }
         req = self.endpoint + "/datasets/" + dset1UUID + "/value"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 200)  # write value
+        
+        # read back the data
+        readData = helper.readDataset(domain, dset1UUID)
+        
+        self.assertEqual(readData[0][0], 42)   
+        self.assertEqual(readData[1][0], 10)   
 
    
     def testPutObjectReference(self):
