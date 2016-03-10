@@ -976,7 +976,6 @@ class ValueTest(unittest.TestCase):
                 row.append(i*10 + j)
             data.append(row)
         payload = { 'value': data }
-        headers = {'host': domain}
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 200)
         # read back the data
@@ -1034,10 +1033,10 @@ class ValueTest(unittest.TestCase):
         # write to dset1
         req = self.endpoint + "/datasets/" + dset1UUID + "/value" 
         primes = [2,3,5,7,11,13,17,19,23,29]
-        byte_array = bytearray(4 * 10)
+        data = bytearray(4 * 10)
         for i in range(10):
-            byte_array[i*4] = primes[i]
-        data = base64.b64encode(bytes(byte_array))
+            data[i*4] = primes[i]
+        data = base64.b64encode(bytes(data))
         data = data.decode("ascii")
         
         payload = { 'value_base64': data }
@@ -1062,19 +1061,24 @@ class ValueTest(unittest.TestCase):
         self.assertTrue(ok)
         
         req = self.endpoint + "/datasets/" + dset2UUID + "/value" 
-        data = []
+        data = bytearray(10*10*4)
         for i in range(10):
-            row = []
             for j in range(10):
-                row.append(i*10 + j)
-            data.append(row)
-        payload = { 'value': data }
-        headers = {'host': domain}
+                data[i*10*4 + j*4] = i*j         
+        data = base64.b64encode(bytes(data))
+        data = data.decode("ascii")
+             
+        payload = { 'value_base64': data }
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 200)
         # read back the data
-        readData = helper.readDataset(domain, dset2UUID)
-        self.assertEqual(readData, data)  # verify we got back what we started with
+        read_data = helper.readDataset(domain, dset2UUID)
+        self.assertEqual(len(read_data), 10)  # verify we got back what we started with
+        for i in range(10):
+            row = read_data[i]
+            self.assertEqual(len(row), 10)
+            for j in range(10):
+                self.assertEqual(row[j], i*j)
         
         
     def testPutSelection(self):
@@ -1104,19 +1108,64 @@ class ValueTest(unittest.TestCase):
         data_part2 = data[5:10]
         # write part 1
         payload = { 'start': 0, 'stop': 5, 'value': data_part1 }
-        headers = {'host': domain}
      
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 200)
         # write part 2
         payload = { 'start': 5, 'stop': 10, 'value': data_part2 }
-        headers = {'host': domain}
+
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 200)  
         
         # read back the data
         readData = helper.readDataset(domain, dset1UUID)
         self.assertEqual(readData, data)  # verify we got back what we started with
+    
+    def testPutSelectionBinary(self):
+        # create domain
+        domain = 'valueputsel_binary.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.assertEqual(rsp.status_code, 201) # creates domain
+        
+        #create 1d dataset
+        payload = {'type': 'H5T_STD_I32LE', 'shape': 10}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset1UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset1UUID))
+         
+        # link new dataset as 'dset1'
+        ok = helper.linkObject(domain, dset1UUID, 'dset1')
+        self.assertTrue(ok)
+        
+        req = self.endpoint + "/datasets/" + dset1UUID + "/value" 
+        primes = [2,3,5,7,11,13,17,19,23,29]
+        data_part1 = bytearray(4 * 5)  # write 4*10 byte data in two parts of 20 bytes
+        data_part2 = bytearray(4 * 5)  # 2nd part
+        for i in range(5):
+            data_part1[i*4] = primes[i]
+            data_part2[i*4] = primes[i+5]
+        data_part1 = base64.b64encode(bytes(data_part1))
+        data_part2 = base64.b64encode(bytes(data_part2))
+        data_part1 = data_part1.decode("ascii")
+        data_part2 = data_part2.decode("ascii")
+        # write part 1
+        payload = { 'start': 0, 'stop': 5, 'value_base64': data_part1 }
+     
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        # write part 2
+        payload = { 'start': 5, 'stop': 10, 'value_base64': data_part2 }
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 200)  
+        
+        # read back the data
+        readData = helper.readDataset(domain, dset1UUID)
+        self.assertEqual(readData, primes)  # verify we got back what we started with
         
     def testPutPointSelection(self):
         # create domain
@@ -1145,6 +1194,46 @@ class ValueTest(unittest.TestCase):
         # write 1's to all the prime indexes
         payload = { 'points': primes, 'value': value }
         headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+         
+        # read back the data
+        readData = helper.readDataset(domain, dset1UUID)
+        self.assertEqual(readData[37], 1)  # prime
+        self.assertEqual(readData[38], 0)  # not prime
+        
+    def testPutPointSelectionBinary(self):
+        # create domain
+        domain = 'valueputpointsel_binary.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.assertEqual(rsp.status_code, 201) # creates domain
+        
+        #create 1d dataset
+        payload = {'type': 'H5T_STD_I32LE', 'shape': 100}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset1UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset1UUID))
+         
+        # link new dataset as 'dset1'
+        ok = helper.linkObject(domain, dset1UUID, 'dset1')
+        self.assertTrue(ok)
+        
+        req = self.endpoint + "/datasets/" + dset1UUID + "/value" 
+        primes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97]
+        value = [1,] * len(primes)  # write 1's at indexes that are prime
+        data = bytearray(4 * len(primes))   
+        for i in range(len(primes)):
+            data[i*4] = 1
+        data = base64.b64encode(bytes(data))
+        data = data.decode("ascii")
+        
+        # write 1's to all the prime indexes
+        payload = { 'points': primes, 'value_base64': data }
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 200)
          
