@@ -52,12 +52,13 @@ if integ_tests:
     
 for file_name in integ_tests:
     print(file_name)
+    log_file = "../../log/h5serv.log"
     rc = os.system('python ' + file_name + '.py')
-    if rc != 0:
-        print("server log...")
-        if os.name != 'nt':
+    if rc != 0:    
+        if os.name != 'nt' and os.path.isfile(log_file):
             # tail not available on windows
-            os.system("tail -n 100 ../../log/h5serv.log")
+            print("server log...")
+            os.system("tail -n 100 " + log_file)
         os.chdir(cwd)
         sys.exit("Failed")
     

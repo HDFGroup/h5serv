@@ -930,6 +930,31 @@ class ValueTest(unittest.TestCase):
         readData = helper.readDataset(domain, dset0UUID)
         self.assertEqual(readData, data)  # verify we got back what we started with
         
+        #create 1d/one element dataset
+        payload = {'type': 'H5T_STD_I32LE', 'shape': 1}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset1UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset1UUID))
+         
+        # link new dataset as 'dset1_0'
+        ok = helper.linkObject(domain, dset1UUID, 'dset1_0')
+        self.assertTrue(ok)
+        
+        # write to dset1
+        req = self.endpoint + "/datasets/" + dset1UUID + "/value" 
+        data = [42,]
+        payload = { 'value': data }
+      
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        # read back the data
+        readData = helper.readDataset(domain, dset1UUID)
+        self.assertEqual(readData, data)  # verify we got back what we started with
+        
+        
         #create 1d dataset
         payload = {'type': 'H5T_STD_I32LE', 'shape': 10}
         req = self.endpoint + "/datasets"
@@ -1126,6 +1151,112 @@ class ValueTest(unittest.TestCase):
         # read back the data
         readData = helper.readDataset(domain, dset1UUID)
         self.assertEqual(readData, data)  # verify we got back what we started with
+        
+    def testPutSelectionValueMismatch(self):
+        # test that putting the wrong number of items in the value body key is handled correctly.
+        # create domain
+        domain = 'valueputselvaluemismatch.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.assertEqual(rsp.status_code, 201) # creates domain
+        
+        #create 1d dataset
+        payload = {'type': 'H5T_STD_I32LE', 'shape': 10}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset1UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset1UUID))
+         
+        # link new dataset as 'dset1'
+        ok = helper.linkObject(domain, dset1UUID, 'dset1')
+        self.assertTrue(ok)
+        
+        req = self.endpoint + "/datasets/" + dset1UUID + "/value" 
+        data_9 = [2,3,5,7,11,13,17,19,23]
+        data_10 = [2,3,5,7,11,13,17,19,23,29]
+        data_11 = [2,3,5,7,11,13,17,19,23,29,31]
+        
+        # try writing 9 elements when the selection has 10 slots
+        payload = { 'start': 0, 'stop': 10, 'value': data_9 }
+     
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 400)  # should fail
+        
+        # try writing 11 elements when the selection has 10 slots
+        payload = { 'start': 0, 'stop': 10, 'value': data_11 }
+     
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 400)  # should fail
+        
+        # try writing 10 elements when the selection has 10 slots
+        payload = { 'start': 0, 'stop': 10, 'value': data_10 }
+     
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 200)  # just right!
+        
+    def testPutSelectionBinaryValueMismatch(self):
+        # test that putting the wrong number of items in the value body key is handled correctly.
+        # create domain
+        domain = 'valueputselbinaryvaluemismatch.datasettest.' + config.get('domain')
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.put(req, headers=headers)
+        self.assertEqual(rsp.status_code, 201) # creates domain
+        
+        #create 1d dataset
+        payload = {'type': 'H5T_STD_I32LE', 'shape': 10}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset1UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset1UUID))
+         
+        # link new dataset as 'dset1'
+        ok = helper.linkObject(domain, dset1UUID, 'dset1')
+        self.assertTrue(ok)
+        
+        req = self.endpoint + "/datasets/" + dset1UUID + "/value" 
+        primes = [2,3,5,7,11,13,17,19,23,29,31]
+        data_9 = bytearray(4 * 9)    # write 4*9 byte data 
+        data_10 = bytearray(4 * 10)  # write 4*10 byte data 
+        data_11 = bytearray(4 * 11)  # write 4*11 byte data 
+        for i in range(9):
+            data_9[i*4] = primes[i]
+        for i in range(10):
+            data_10[i*4] = primes[i]
+        for i in range(11):
+            data_11[i*4] = primes[i]
+       
+        data_9 = base64.b64encode(bytes(data_9))
+        data_10 = base64.b64encode(bytes(data_10))
+        data_11 = base64.b64encode(bytes(data_11))
+        
+        data_9 = data_9.decode("ascii")
+        data_10 = data_10.decode("ascii")
+        data_11 = data_11.decode("ascii")
+         
+        # try writing 9 elements when the selection has 10 slots
+        payload = { 'start': 0, 'stop': 10, 'value_base64': data_9 }
+     
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 400)  # should fail
+        
+        # try writing 11 elements when the selection has 10 slots
+        payload = { 'start': 0, 'stop': 10, 'value_base64': data_11 }
+     
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 400)  # should fail
+        
+        # try writing 10 elements when the selection has 10 slots
+        payload = { 'start': 0, 'stop': 10, 'value_base64': data_10 }
+     
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 200)  # just right!
+         
     
     def testPutSelectionBinary(self):
         # create domain
@@ -1263,7 +1394,37 @@ class ValueTest(unittest.TestCase):
                     {'name': 'pressure', 'type': 'H5T_IEEE_F32LE'}) 
         datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
         
+        #
+        #create scalar dataset
+        #
+        payload = {'type': datatype}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)  # create dataset
+        
+        rspJson = json.loads(rsp.text)
+        dset0UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset0UUID))
+         
+        # link new dataset as 'dset0_compound'
+        ok = helper.linkObject(domain, dset0UUID, 'dset0_compound')
+        self.assertTrue(ok)
+        
+        # write entire array
+        value = (42, 0.42)
+        payload = {'value': value}
+        req = self.endpoint + "/datasets/" + dset0UUID + "/value"
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 200)  # write value
+        
+         
+        # read back the data
+        readData = helper.readDataset(domain, dset0UUID)
+        self.assertEqual(readData[0], 42)   
+        
+        #    
         #create 1d dataset
+        #
         num_elements = 10
         payload = {'type': datatype, 'shape': num_elements}
         req = self.endpoint + "/datasets"
