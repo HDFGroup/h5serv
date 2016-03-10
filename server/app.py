@@ -1857,7 +1857,6 @@ class ValueHandler(BaseHandler):
         body = None
         format = "json"
         data = None
-        print("body: ", self.request.body)
         
         try:
             body = json_decode(self.request.body)
