@@ -76,41 +76,41 @@ Update toc with new filename
 """
 
 def addTocEntry(toc_file, domain, base_domain):
-        """
-        Helper method - update TOC when a domain is created
-        """
+    """
+    Helper method - update TOC when a domain is created
+    """
          
-        if not domain.endswith(base_domain):
-            sys.exit("unexpected domain value: " + domain)
-        # trim domain by base domain
+    if not domain.endswith(base_domain):
+        sys.exit("unexpected domain value: " + domain)
+    # trim domain by base domain
 
-        try:
-            with Hdf5db(toc_file) as db:
-                group_uuid = db.getUUIDByPath('/')
-                names = domain.split('.')
-                base_names = base_domain.split('.')
-                indexes = list(range(len(names)))
-                indexes = indexes[::-1] # reverse
-                for i in indexes:
-                    if i >= len(names) - len(base_names):
-                        continue # still in the base domain
-                    linkName = names[i]
-                    if not linkName:
-                        continue
-                    if i == 0:
-                        db.createExternalLink(group_uuid, domain, '/', linkName)
-                    else:
-                        subgroup_uuid = getSubgroupId(db, group_uuid, linkName)
-                        if subgroup_uuid is None:
-                            # create subgroup and link to parent group
-                            subgroup_uuid = db.createGroup()
-                            # link the new group
-                            db.linkObject(group_uuid, subgroup_uuid, linkName)
-                        group_uuid = subgroup_uuid
+    try:
+        with Hdf5db(toc_file) as db:
+            group_uuid = db.getUUIDByPath('/')
+            names = domain.split('.')
+            base_names = base_domain.split('.')
+            indexes = list(range(len(names)))
+            indexes = indexes[::-1] # reverse
+            for i in indexes:
+                if i >= len(names) - len(base_names):
+                    continue # still in the base domain
+                linkName = names[i]
+                if not linkName:
+                    continue
+                if i == 0:
+                    db.createExternalLink(group_uuid, domain, '/', linkName)
+                else:
+                    subgroup_uuid = getSubgroupId(db, group_uuid, linkName)
+                    if subgroup_uuid is None:
+                        # create subgroup and link to parent group
+                        subgroup_uuid = db.createGroup()
+                        # link the new group
+                        db.linkObject(group_uuid, subgroup_uuid, linkName)
+                    group_uuid = subgroup_uuid
 
-        except IOError as e:
-            print("IOError: " + str(e.errno) + " " + e.strerror)
-            sys.exit(-1)
+    except IOError as e:
+        print("IOError: " + str(e.errno) + " " + e.strerror)
+        sys.exit(-1)
             
 """
 main method
