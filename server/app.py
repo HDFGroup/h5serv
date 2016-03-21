@@ -2955,6 +2955,9 @@ class RootHandler(BaseHandler):
                 group_uuid = db.getUUIDByPath('/')
                 pathNames = filePath.split('/')
                 for linkName in pathNames:
+                    if not linkName:
+                        continue
+                    log.info("linkName: " + linkName)
                     if linkName.endswith(hdf5_ext):
                         linkName = linkName[:-(len(hdf5_ext))]
                         acl = db.getAcl(group_uuid, self.userid)
