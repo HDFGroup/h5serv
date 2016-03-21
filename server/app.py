@@ -2990,13 +2990,18 @@ class RootHandler(BaseHandler):
         tocFile = fileUtil.getTocFilePathForDomain(domain)
         log.info(
             "removeTocEntry - domain: " + domain + " filePath: " + filePath)
+        pathNames = filePath.split('/')
+        log.info("pathNames: " + str(pathNames))
 
         try:
             with Hdf5db(tocFile, app_logger=log) as db:
                 group_uuid = db.getUUIDByPath('/')
-                log.info("group_uuid type: " + str(type(group_uuid)))
-                pathNames = filePath.split('/')
+                log.info("group_uuid:" + group_uuid)
+                           
                 for linkName in pathNames:
+                    if not linkName:
+                        continue
+                    log.info("linkName:" + linkName)
                     if linkName.endswith(hdf5_ext):
                         linkName = linkName[:-(len(hdf5_ext))]
                         log.info("unklink " + group_uuid + ", " + linkName)
