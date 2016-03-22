@@ -63,8 +63,19 @@ Only has an effect if used in conjunction with the query parameter.
 
 Request Headers
 ---------------
-This implementation of the operation uses only the request headers that are common
-to most requests.  See :doc:`../CommonRequestHeaders`
+This implementation of the operation supports the common headers in addition to the "Accept" header value
+of "application/octet-stream".  Use this accept value if a binary response is desired.  Binary data will be
+more efficient for large data requests.  If a binary response can be returned, the "Content-Type" response
+header will be "application/octet-stream".  Otherwise the response header will be "json".
+
+Note: Binary responses are only supported for dataset that have a fixed-length type
+(i.e. either a fixed length primitive type or compound type that in turn consists of fixed=length types).  Namely
+variable length strings and variable length data types will always be returned as JSON.
+
+Note: if a binary response is returned, it will consist of the equivalent binary data of the "data" item in the JSON
+response.  No data representing "hrefs" is returned.
+
+For other request headers, see :doc:`../CommonRequestHeaders`
 
 Responses
 =========
