@@ -127,9 +127,14 @@ def addTestAccount(user_id):
     print("cwd:", os.getcwd())
     # link to "public" directory
     # create symlink to public directory
+    public_dir = "../../public"
     if os.name != 'nt':
-        print("create symlink")
-        os.symlink("../../public", "public")
+        if not os.path.isdir(public_dir):
+            print("create public dir")
+            os.mkdir(public_dir)
+        if not os.path.islink('public'):
+            print("create symlink")
+            os.symlink(public_dir, "public")
     copyfile(src_dir + '/tall.h5', 'tall.h5') 
     
     os.chdir(cwd)
