@@ -18,17 +18,59 @@ Websites
 * Documentation: http://h5serv.readthedocs.org
 
 
-Installation
+Quick Install
 -------------
 
-Setting up the server should take just a few minutes.  See h5serv/docs/Installation.rst 
-for step by step instructions.
+Install Python (2.7 or later) and the following packages:
+
+* NumPy 1.10.4 or later
+* h5py 2.5 or later
+* PyTables 3.1.1 or later
+* tornado 4.0.2 or later
+* requests 2.3 or later (for client tests)
+
+Clone the hdf5-json project: ``git clone https://github.com/HDFGroup/hdf5-json.git`` .
+Next, cd to the hdf5-json folder and run: ``python setup.py install``.
+
+Clone this project: ``git clone https://github.com/HDFGroup/h5serv.git``.
+
+Running the Server
+------------------
+
+Start the server:  ``cd h5serv/server; python app.py``.
+
+By default the server will listen to port 5000.  The port and and several other defaults can be modified
+with command line options.  For example to use port 8888 run:  ``python app.py --port=8888``.
+
+See test cases for examples of interacting with the server.  Run: ``python testall.py`` from the test directory 
+to run through the test suite.
+
+Also, the interface (at least as far as read requests) can be explored in a browser. Go to: http://127.0.0.1:5000/.  
+A JSON browser plugin will be helpful for formatting responses from the server.
+
+See h5serv/docs/Installation.rst for step by step install instructions.
+
+Running with Docker
+-------------------
+
+To run h5serv as a docker container you just need to install Docker (no Python, h5py, etc. needed).
+
+* Install docker: https://docs.docker.com/installation/#installation.
+* Run the h5serv image: ``docker run -p 5000:5000 -d -v &lt;mydata&gt;:/data hdfgroup/h5serv`` where &lt;mydata&gt; is 
+the folder that contains any HDF5 files you want to made available through the h5serv REST API.
+* Go to http://192.168.99.100:5000/ in your browser to verify the server is up and running (replace 192.168.99.100 with the 
+IP address of the system or VM that is running the container).
 
 Writing Client Applications
 ----------------------------
 As a REST service, clients be developed using almost any programming language.  The 
 test programs under: h5serv/test/integ illustrate some of the methods for peforming
 different operations using Python. 
+
+The related project: https://github.com/HDFGroup/h5pyd provides a (mostly) h5py-compatible 
+interface to the server for Python clients.
+
+Run
 
 Uninstalling
 ------------
