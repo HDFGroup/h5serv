@@ -71,7 +71,6 @@ different operations using Python.
 The related project: https://github.com/HDFGroup/h5pyd provides a (mostly) h5py-compatible 
 interface to the server for Python clients.
 
-Run
 
 Uninstalling
 ------------
