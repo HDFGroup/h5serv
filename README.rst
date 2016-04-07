@@ -39,14 +39,14 @@ Running the Server
 
 Start the server:  ``cd h5serv/server; python app.py``.
 
-By default the server will listen to port 5000.  The port and and several other defaults can be modified
+By default the server will listen on port 5000.  The port and and several other defaults can be modified
 with command line options.  For example to use port 8888 run:  ``python app.py --port=8888``.
 
 See test cases for examples of interacting with the server.  Run: ``python testall.py`` from the test directory 
-to run through the test suite.
+to run through the entire test suite.
 
 Also, the interface (at least as far as read requests) can be explored in a browser. Go to: http://127.0.0.1:5000/.  
-A JSON browser plugin will be helpful for formatting responses from the server.
+A JSON browser plugin will be helpful for formatting responses from the server to be more human readable.
 
 See h5serv/docs/Installation.rst for step by step install instructions.
 
@@ -56,8 +56,9 @@ Running with Docker
 To run h5serv as a docker container you just need to install Docker (no Python, h5py, etc. needed).
 
 * Install docker: https://docs.docker.com/installation/#installation.
-* Run the h5serv image: ``docker run -p 5000:5000 -d -v &lt;mydata&gt;:/data hdfgroup/h5serv`` where &lt;mydata&gt; is 
-the folder that contains any HDF5 files you want to made available through the h5serv REST API.
+* Run the h5serv image: ``docker run -p 5000:5000 -d -v <mydata>:/data hdfgroup/h5serv`` where <mydata> is 
+the folder path that contains any HDF5 files you want to made available through the h5serv REST API.  Since requests to
+the server can modify (or delete!) content, you probably want to create a new folder and copy files to it.
 * Go to http://192.168.99.100:5000/ in your browser to verify the server is up and running (replace 192.168.99.100 with the 
 IP address of the system or VM that is running the container).
 
