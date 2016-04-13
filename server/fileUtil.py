@@ -198,7 +198,8 @@ def getTocFilePathForDomain(host_value):
 def getUserFilePath(file_path):
     data_path = config.get('datapath')
     file_path = file_path[len(data_path):]  # strip off base data path
-    
+    if len(file_path) > 1 and file_path[0] == '/':
+        file_path = file_path[1:]  # don't include first slash if preseent- messes up the split
     path_names = file_path.split('/')
      
     if path_names[0] == config.get('home_dir') and len(path_names) > 1:
