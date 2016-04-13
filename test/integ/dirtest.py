@@ -137,7 +137,6 @@ class DirTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
        
-        print("user_domain:", user_domain)
         # verify that "myfile" doesn't exist yet
         user_file = "myfile." + user_domain
         req = self.endpoint + "/"
