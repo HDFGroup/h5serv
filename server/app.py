@@ -2946,8 +2946,9 @@ class RootHandler(BaseHandler):
         if not filePath.startswith(dataPath):
             log.error("unexpected filepath: " + filePath)
             raise HTTPError(500)
-        filePath = filePath[len(dataPath):]
+        filePath = fileUtil.getUserFilePath(filePath)   
         tocFile = fileUtil.getTocFilePathForDomain(domain)
+        log.info("addTocEntry, filePath: " + filePath)
         acl = None
 
         try:
@@ -2989,10 +2990,10 @@ class RootHandler(BaseHandler):
         if not filePath.startswith(dataPath):
             log.error("unexpected filepath: " + filePath)
             raise HTTPError(500)
-        filePath = filePath[len(dataPath):]
+        filePath = fileUtil.getUserFilePath(filePath)   
         tocFile = fileUtil.getTocFilePathForDomain(domain)
         log.info(
-            "removeTocEntry - domain: " + domain + " filePath: " + filePath)
+            "removeTocEntry - domain: " + domain + " filePath: " + filePath + " tocfile: " + tocFile)
         pathNames = filePath.split('/')
         log.info("pathNames: " + str(pathNames))
 

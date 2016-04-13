@@ -125,7 +125,12 @@ def getFilePath(host_value):
     #print('getFilePath[' + host + '] -> "' + filePath + '"')
 
     return filePath
-    
+
+# 
+# Return filepath to TOC file - either the public toc file or the per
+# user TOC file (if the dns path includes the "home" directory).
+# For the later, method will throw 404 if the user is not registered.
+#    
 def getTocFilePathForDomain(host_value):
     """ Return toc file path for given domain value.
         Will return path "../data/.toc.h5" for public domains or
@@ -185,7 +190,26 @@ def getTocFilePathForDomain(host_value):
 
     return filePath
 
-
+#
+# If the filePath passed references the user's home directory, return a path relative 
+# to the base location of the user's toc file.  Otherwise returns the path relative to
+# the base data directory
+#
+def getUserFilePath(file_path):
+    data_path = config.get('datapath')
+    file_path = file_path[len(data_path):]  # strip off base data path
+    
+    path_names = file_path.split('/')
+     
+    if path_names[0] == config.get('home_dir') and len(path_names) > 1:
+        # return a path relative to user's base dir
+        file_path = '/'  
+        path_names = path_names[2:]  # skip home, userid
+        for path_name in path_names:
+            file_path = op.join(file_path, path_name)
+        
+    return file_path
+ 
 def getDomain(file_path, base_domain=None):
     # Get domain given a file path
     

@@ -137,7 +137,7 @@ class DirTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
        
-        
+        print("user_domain:", user_domain)
         # verify that "myfile" doesn't exist yet
         user_file = "myfile." + user_domain
         req = self.endpoint + "/"
@@ -154,32 +154,67 @@ class DirTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
         
-        # go back to users toc and get "/home" group
+        # go back to users toc and get "/myfile" link
         headers = {'host': user_domain }
-        req = self.endpoint + "/groups/" + toc_root_uuid + "/links/home"
+        req = self.endpoint + "/groups/" + toc_root_uuid + "/links/myfile"
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         link = rspJson['link']
-        self.assertTrue('id' in link)
-        toc_home_uuid = link['id']
+         
+        self.assertTrue('class' in link)
+        self.assertEqual(link['class'], "H5L_TYPE_EXTERNAL")
+        self.assertTrue('h5path' in link)
+        self.assertEqual(link['h5path'], "/")
+        self.assertTrue('h5domain' in link)
+        self.assertEqual(link['h5domain'], "myfile." + user_domain)
+                
         
-        # get the user_id group
-        req = self.endpoint + "/groups/" + toc_home_uuid + "/links/" + self.user1['username']
-        rsp = requests.get(req, headers=headers)
-        self.assertEqual(rsp.status_code, 200)
-        rspJson = json.loads(rsp.text)
-        link = rspJson['link']
-        self.assertTrue('id' in link)
-        toc_user_uuid = link['id']
-        
-        # check that the link exists in the user toc
-        headers = {'host': user_domain }
-        req = self.endpoint + "/groups/" + toc_user_uuid + "/links/myfile"
-        rsp = requests.get(req, headers=headers)
-        self.assertEqual(rsp.status_code, 200)
-        rspJson = json.loads(rsp.text)
+    def testDeleteUserDomain(self):  
+        domain = config.get('domain')
+        home_dir = config.get("home_dir")
+        if domain.startswith('test.'):
+            domain = domain[5:]  # backup over the test part
       
+        user_domain = self.user1['username'] + '.' + home_dir + '.' + domain
+        
+        # this should get the users .toc file
+        headers = {'host': user_domain }
+        req = self.endpoint + '/'
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('root' in rspJson)
+        toc_root_uuid = rspJson['root']
+        req = self.endpoint + "/groups/" + toc_root_uuid 
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        
+        # "tall_deleteme" should be a link
+        req = req + "/link/tall_deleteme"
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        
+        # And we should be able to query directly
+        user_file = "tall_deleteme." + user_domain
+        req = self.endpoint + "/"
+        headers = {'host': user_file}
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        
+        # Delete "tall_deleteme"  
+        user_file = "tall_deleteme." + user_domain
+        req = self.endpoint + "/"
+        headers = {'host': user_file}
+        rsp = requests.delete(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        
+        # link in user TOC should be removed
+        req = self.endpoint + "/groups/" + toc_root_uuid +  "/link/tall_deleteme"
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 404)
+        
+         
         
     def testNoHostHeader(self):
         req = self.endpoint + "/"

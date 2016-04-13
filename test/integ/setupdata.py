@@ -135,7 +135,8 @@ def addTestAccount(user_id):
         if not os.path.islink('public'):
             print("create symlink")
             os.symlink(public_dir, "public")
-    copyfile(src_dir + '/tall.h5', 'tall.h5') 
+    copyfile(src_dir + '/tall.h5', 'tall.h5')
+    copyfile(src_dir + '/tall.h5', 'tall_deleteme.h5') 
     
     os.chdir(cwd)
     

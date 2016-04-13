@@ -52,6 +52,14 @@ def createTocFile(datapath):
     log = logging.getLogger("h5serv")
     log.info("createTocFile(" + datapath + ")")
     data_dir = fileUtil.posixpath(op.normpath(config.get('datapath')))
+    home_dir = fileUtil.join(data_dir, config.get("home_dir"))
+    log.info("home dir: " + home_dir)
+    if datapath.startswith(home_dir):
+        log.info("user toc")
+        user_toc = True
+    else:
+        log.info("system toc")
+        user_toc = False
     
     if datapath.endswith(config.get('toc_name')):
         toc_dir = fileUtil.posixpath(op.normpath(op.dirname(datapath)))
@@ -59,7 +67,7 @@ def createTocFile(datapath):
     else:
         toc_dir = fileUtil.posixpath(op.normpath(datapath))
         toc_file = fileUtil.join(toc_dir, config.get("toc_name"))
-    home_dir = fileUtil.join(data_dir, config.get("home_dir"))
+   
            
     log.info("toc_dir:[" + toc_dir + "]")
     log.info("data_dir:[" + data_dir + "]") 
