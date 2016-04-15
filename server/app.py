@@ -3411,7 +3411,7 @@ def main():
         ssl_ctx.load_cert_chain(ssl_cert, keyfile=ssl_key, password=ssl_cert_pwd)
         ssl_server = tornado.httpserver.HTTPServer(app, ssl_options=ssl_ctx)
         ssl_server.listen(ssl_port)
-        msg += " and port: " + str(ssl_port) + " (SSL)"
+        msg = "Running SSL on port: " + str(ssl_port) + " (SSL)"
     else:
         server = tornado.httpserver.HTTPServer(app)
         port = int(config.get('port'))
