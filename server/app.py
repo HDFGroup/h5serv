@@ -3390,19 +3390,20 @@ def main():
 
     global server
     app = make_app()
-    server = tornado.httpserver.HTTPServer(app)
-    port = int(config.get('port'))
-    server.listen(port)
-    msg = "Starting event loop on port: " + str(port)
-
-    ssl_cert = config.get('ssl_cert')
-    print("ssl_cert:", ssl_cert)
-    ssl_key = config.get('ssl_key')
-    print("ssl_key:", ssl_key)
-    ssl_port = config.get('ssl_port')
-    print("ssl_port:", ssl_port)
     domain = config.get("domain")
     print("domain:", domain)
+    
+    
+    ssl_cert = config.get('ssl_cert')
+    if ssl_cert:
+        print("ssl_cert:", ssl_cert)
+    ssl_key = config.get('ssl_key')
+    if ssl_key:
+        print("ssl_key:", ssl_key)
+    ssl_port = config.get('ssl_port')
+    if ssl_port:
+        print("ssl_port:", ssl_port)
+    
 
     if ssl_cert and op.isfile(ssl_cert) and ssl_key and op.isfile(ssl_key) and ssl_port:
         ssl_cert_pwd = config.get('ssl_cert_pwd')
@@ -3411,6 +3412,11 @@ def main():
         ssl_server = tornado.httpserver.HTTPServer(app, ssl_options=ssl_ctx)
         ssl_server.listen(ssl_port)
         msg += " and port: " + str(ssl_port) + " (SSL)"
+    else:
+        server = tornado.httpserver.HTTPServer(app)
+        port = int(config.get('port'))
+        server.listen(port)
+        msg = "Starting event loop on port: " + str(port)
 
     signal.signal(signal.SIGTERM, sig_handler)
     signal.signal(signal.SIGINT, sig_handler)
