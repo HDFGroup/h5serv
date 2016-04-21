@@ -35,7 +35,6 @@ from h5json import Hdf5db
 import h5json
 
 import config
-from querydb import Querydb
 from timeUtil import unixTimeToUTC
 import fileUtil  
 import tocUtil  
@@ -1579,8 +1578,18 @@ class ValueHandler(BaseHandler):
         rank = None
         item_type = None
         values = None
+        indexes = None
         slices = []
         query_selection = self.get_query_argument("query", default=None)
+        limit = self.get_query_argument("Limit", default=None)
+        if limit:
+            try:
+                limit = int(limit)  # convert to int
+            except ValueError as e:
+                msg = "invalid Limit: " + e.message
+                log.info(msg)
+                raise HTTPError(400, msg)
+                
         if query_selection:
             log.info("query: " + query_selection)
 
@@ -1597,6 +1606,12 @@ class ValueHandler(BaseHandler):
                     msg = "Not Implemented: GET OPAQUE data not supported"
                     log.info(msg)
                     raise HTTPError(501, reason=msg)  # Not implemented
+                elif item_type['class'] != 'H5T_COMPOUND' and query_selection:
+                    msg = "Bad Request: query selection is only supported for compound types"
+                    log.info(msg)
+                    raise HTTPError(400, reason=msg)
+            
+                
                 item_shape = item['shape']
                 if item_shape['class'] == 'H5S_NULL':
                     pass   # don't return a value
@@ -1609,12 +1624,22 @@ class ValueHandler(BaseHandler):
                 elif item_shape['class'] == 'H5S_SIMPLE':
                     dims = item_shape['dims']
                     rank = len(dims)
+                    if query_selection and rank != 1:
+                        msg = "Bad Request: query selection is only supported for "
+                        msg += "one dimensional datasets"
+                        log.info(msg)
+                        raise HTTPError(400, reason=msg)
                     nelements = 1
                     for dim in range(rank):
                         dim_slice = self.getSliceQueryParam(dim, dims[dim])
                         nelements *= (dim_slice.stop - dim_slice.start)
                         slices.append(dim_slice)
-                    if not query_selection:
+                    if query_selection:
+                        start = slices[0].start
+                        stop = slices[0].stop
+                        step = slices[0].step
+                        (indexes, values) = db.doDatasetQueryByUuid(reqUuid, query_selection, start=start, stop=stop, step=step, limit=limit)
+                    else:
                         if request_content_type == "binary":
                             log.info("nelements:" + str(nelements))
                             itemSize = h5json.getItemSize(item_type)
@@ -1637,58 +1662,7 @@ class ValueHandler(BaseHandler):
             status = errNoToHttpStatus(e.errno)
             raise HTTPError(status, reason=e.strerror)
 
-        if query_selection:
-            if item_type['class'] != 'H5T_COMPOUND':
-                msg = "Bad Request: query selection is only supported for compound types"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-            if rank != 1:
-                msg = "Bad Request: query selection is only supported for "
-                msg += "one dimensional datasets"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-            if 'alias' not in item or len(item['alias']) == 0:
-                msg = "Bad Request: query selection is not valid for "
-                msg += "anonymous datasets"
-                log.info(msg)
-                raise HTTPError(400, reason=msg)
-
-            dims = item_shape['dims']
-            start = 0
-            stop = dims[0]
-            step = 1
-            limit = self.get_query_argument("Limit", default=None)
-            if limit:
-                try:
-                    limit = int(limit)  # convert to int
-                except ValueError as e:
-                    msg = "Query error, invalid Limit: " + e.message
-                    log.info(msg)
-                    raise HTTPError(400, msg)
-            if slices:
-                start = slices[0].start
-                stop = slices[0].stop
-                step = slices[0].step
-            try:
-                #from querydb import Querydb
-                with Querydb(filePath, app_logger=log) as db:
-                    path = item['alias'][0]
-                    rsp = db.doQuery(
-                        item_type, path, query_selection,
-                        start=start, stop=stop, step=step, limit=limit)
-                    values = rsp['values']
-                
-                    response['index'] = rsp['indexes']
-            except NameError as e:
-                
-                msg = "Query error"
-                try: 
-                    msg += ": " + e.message
-                except AttributeError:
-                    pass  # no message attribute
-                log.info(msg)
-                raise HTTPError(400, msg)
-
+         
         # got everything we need, put together the response
         
         if response_content_type == "binary":
@@ -1727,6 +1701,9 @@ class ValueHandler(BaseHandler):
             response['value'] = values
         else:
             response['value'] = None
+            
+        if indexes is not None:
+            response['index'] = indexes
 
         hrefs.append({
             'rel': 'self',
