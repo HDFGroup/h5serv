@@ -25,7 +25,6 @@ Install Python (2.7 or later) and the following packages:
 
 * NumPy 1.10.4 or later
 * h5py 2.5 or later
-* PyTables 3.1.1 or later
 * tornado 4.0.2 or later
 * requests 2.3 or later (for client tests)
 
