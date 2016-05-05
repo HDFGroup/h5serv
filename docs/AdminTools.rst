@@ -2,7 +2,7 @@
 Admin Tools
 ###################
 
-The scripts described here are intended to be run on the server by "privliged" users.  These are all
+The scripts described here are intended to be run on the server by "privileged" users.  These are all
 located in the ``util\admin`` directory.
 
 makepwd_file.py
