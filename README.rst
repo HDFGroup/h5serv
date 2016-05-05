@@ -26,6 +26,7 @@ Install Python (2.7 or later) and the following packages:
 * NumPy 1.10.4 or later
 * h5py 2.5 or later
 * tornado 4.0.2 or later
+* watchdog 0.8.3 or later
 * requests 2.3 or later (for client tests)
 
 Clone the hdf5-json project: ``git clone https://github.com/HDFGroup/hdf5-json.git`` .

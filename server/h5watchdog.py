@@ -1,6 +1,5 @@
 import sys
 import time
-import queue
 import os.path as op
 import logging
 

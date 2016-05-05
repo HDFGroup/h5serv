@@ -27,7 +27,10 @@ import sys
 import ssl
 import base64
 import binascii
-import queue
+if six.PY3:
+    from queue import Queue
+else:
+    from Queue import Queue
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, json_decode, url_escape, url_unescape
@@ -3329,7 +3332,7 @@ def main():
     #
     data_path = config.get('datapath')
     global event_queue
-    event_queue = queue.Queue()
+    event_queue = Queue()
     # implemented in h5watchdog.py
     background_timeout = int(config.get("background_timeout"))
     if background_timeout:

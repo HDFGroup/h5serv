@@ -19,6 +19,7 @@ install:
     - pip install tables
     - pip install pytz
     - pip install tornado
+    - pip install watchdog
     - git clone https://github.com/HDFGroup/hdf5-json.git
     - cd hdf5-json
     - python setup.py install
