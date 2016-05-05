@@ -32,7 +32,8 @@ cfg = {
     'static_path': r'../static',
     'cors_domain': '*',  # set to None to disallow CORS (cross-origin resource sharing)
     'log_file': r'../log/h5serv.log',
-    'log_level': 'INFO' # ERROR, WARNING, INFO, DEBUG, or NOTSET
+    'log_level': 'INFO', # ERROR, WARNING, INFO, DEBUG, or NOTSET,
+    'background_timeout': 1000  # (ms) set to 0 to disable background processing
 }
 
 

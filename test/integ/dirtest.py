@@ -15,6 +15,8 @@ import helper
 import unittest
 import json
 import os
+import time
+from shutil import copyfile
 
 class DirTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -247,7 +249,7 @@ class DirTest(unittest.TestCase):
         link = rspJson['link']
         test_group_uuid = link['id']
         
-                
+                 
         # verify that the domain name is not present
         req = self.endpoint + "/groups/" + test_group_uuid + "/links/" + domain_name 
         rsp = requests.get(req)
@@ -260,12 +262,14 @@ class DirTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.assertEqual(rsp.status_code, 201)
         rspJson = json.loads(rsp.text)
-        
+         
         # external link should exist now
         req = self.endpoint + "/groups/" + test_group_uuid + "/links/" + domain_name 
+         
         rsp = requests.get(req)
+       
         self.assertEqual(rsp.status_code, 200)
-        
+         
         # delete the domain
         req = self.endpoint + "/"
         headers = {'host': domain}
@@ -275,8 +279,61 @@ class DirTest(unittest.TestCase):
         # external link should be gone
         req = self.endpoint + "/groups/" + test_group_uuid + "/links/" + domain_name 
         rsp = requests.get(req)
-        self.assertEqual(rsp.status_code, 410)      
+        self.assertEqual(rsp.status_code, 410)  
         
+    def testWatchdog(self):
+        domain_name = "dirtest_watchdogadd"
+        
+        # get toc root uuid
+        req = self.endpoint + "/"
+        rsp = requests.get(req)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue('root' in rspJson)
+        toc_root_uuid = rspJson['root']
+        
+        # get toc 'test' group uuid
+        req = self.endpoint + "/groups/" + toc_root_uuid 
+        rsp = requests.get(req)
+        self.assertEqual(rsp.status_code, 200)
+        req = self.endpoint + "/groups/" + toc_root_uuid + "/links/test" 
+        rsp = requests.get(req)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("link" in rspJson)
+        link = rspJson['link']
+        test_group_uuid = link['id']
+                  
+        # verify that the domain name is not present
+        req = self.endpoint + "/groups/" + test_group_uuid + "/links/" + domain_name 
+        rsp = requests.get(req)
+        self.assertTrue(rsp.status_code in (404, 410))
+        
+        # copy file to target domain
+        src_file = "../test_files/tall.h5"
+        des_file = "../../data/test/" + domain_name + ".h5"
+        copyfile(src_file, des_file)
+        
+        # sleep to give the watchdog time to update the toc
+        time.sleep(2) 
+         
+        # external link should exist now
+        req = self.endpoint + "/groups/" + test_group_uuid + "/links/" + domain_name 
+         
+        rsp = requests.get(req)
+       
+        self.assertEqual(rsp.status_code, 200)
+              
+        # delete the file
+        os.remove(des_file)
+        # sleep to give the watchdog time to update the toc
+        time.sleep(2)
+          
+        # external link should be gone
+        req = self.endpoint + "/groups/" + test_group_uuid + "/links/" + domain_name 
+        rsp = requests.get(req)
+        self.assertEqual(rsp.status_code, 410)    
+          
     def testDeleteToc(self):
         #test DELETE toc
         req = self.endpoint + "/"

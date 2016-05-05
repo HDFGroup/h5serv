@@ -27,6 +27,7 @@ import sys
 import ssl
 import base64
 import binascii
+import queue
 from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url, HTTPError
 from tornado.escape import json_encode, json_decode, url_escape, url_unescape
@@ -40,6 +41,7 @@ import fileUtil
 import tocUtil  
 from httpErrorUtil import errNoToHttpStatus
 from passwordUtil import getUserId, getUserName, validateUserPassword
+from h5watchdog import h5observe  
 
 def to_bytes(a_string):
     if type(a_string) is unicode:
@@ -2892,114 +2894,7 @@ class TypeCollectionHandler(BaseHandler):
 
 
 class RootHandler(BaseHandler):
-    def getSubgroupId(self, db, group_uuid, link_name):
-        """
-        Helper method - get group uuid of hardlink, or None if no link
-        """
-        subgroup_uuid = None
-        try:
-            item = db.getLinkItemByUuid(group_uuid, link_name)
-            if item['class'] != 'H5L_TYPE_HARD':
-                return None
-            if item['collection'] != 'groups':
-                return None
-            subgroup_uuid = item['id']
-        except IOError:
-            # link_name doesn't exist, return None
-            pass
-
-        return subgroup_uuid
-
-    def addTocEntry(self, domain, filePath, validateOnly=False):
-        """
-        Helper method - update TOC when a domain is created
-          If validateOnly is true, then the acl is checked to verify that create is
-          enabled, but doesn't update the .toc
-        """
-        log = logging.getLogger("h5serv")
-        hdf5_ext = config.get('hdf5_ext')
-        dataPath = config.get('datapath')
-        log.info("addTocEntry - domain: " + domain + " filePath: " + filePath)
-        if not filePath.startswith(dataPath):
-            log.error("unexpected filepath: " + filePath)
-            raise HTTPError(500)
-        filePath = fileUtil.getUserFilePath(filePath)   
-        tocFile = fileUtil.getTocFilePathForDomain(domain)
-        log.info("addTocEntry, filePath: " + filePath)
-        acl = None
-
-        try:
-            with Hdf5db(tocFile, app_logger=log) as db:
-                group_uuid = db.getUUIDByPath('/')
-                pathNames = filePath.split('/')
-                for linkName in pathNames:
-                    if not linkName:
-                        continue
-                    log.info("linkName: " + linkName)
-                    if linkName.endswith(hdf5_ext):
-                        linkName = linkName[:-(len(hdf5_ext))]
-                        acl = db.getAcl(group_uuid, self.userid)
-                        self.verifyAcl(acl, 'create')  # throws exception is unauthorized
-                        db.createExternalLink(group_uuid, domain, '/', linkName)
-                    else:
-                        subgroup_uuid = self.getSubgroupId(db, group_uuid, linkName)
-                        if subgroup_uuid is None:
-                            acl = db.getAcl(group_uuid, self.userid)
-                            self.verifyAcl(acl, 'create')  # throws exception is unauthorized
-                            # create subgroup and link to parent group
-                            subgroup_uuid = db.createGroup()
-                            # link the new group
-                            db.linkObject(group_uuid, subgroup_uuid, linkName)
-                        group_uuid = subgroup_uuid
-
-        except IOError as e:
-            log.info("IOError: " + str(e.errno) + " " + e.strerror)
-            raise e
-
-    """
-    Helper method - update TOC when a domain is deleted
-    """
-    def removeTocEntry(self, domain, filePath):
-        log = logging.getLogger("h5serv")
-        hdf5_ext = config.get('hdf5_ext')
-        dataPath = config.get('datapath')
-
-        if not filePath.startswith(dataPath):
-            log.error("unexpected filepath: " + filePath)
-            raise HTTPError(500)
-        filePath = fileUtil.getUserFilePath(filePath)   
-        tocFile = fileUtil.getTocFilePathForDomain(domain)
-        log.info(
-            "removeTocEntry - domain: " + domain + " filePath: " + filePath + " tocfile: " + tocFile)
-        pathNames = filePath.split('/')
-        log.info("pathNames: " + str(pathNames))
-
-        try:
-            with Hdf5db(tocFile, app_logger=log) as db:
-                group_uuid = db.getUUIDByPath('/')
-                log.info("group_uuid:" + group_uuid)
-                           
-                for linkName in pathNames:
-                    if not linkName:
-                        continue
-                    log.info("linkName:" + linkName)
-                    if linkName.endswith(hdf5_ext):
-                        linkName = linkName[:-(len(hdf5_ext))]
-                        log.info("unklink " + group_uuid + ", " + linkName)
-                        db.unlinkItem(group_uuid, linkName)
-                    else:
-                        subgroup_uuid = self.getSubgroupId(
-                            db, group_uuid, linkName)
-                        if subgroup_uuid is None:
-                            msg = "Didn't find expected subgroup: " + group_uuid
-                            log.error(msg)
-                            raise HTTPError(500, reason=msg)
-                        group_uuid = subgroup_uuid
-
-        except IOError as e:
-            log.info("IOError: " + str(e.errno) + " " + e.strerror)
-            raise e
-
+     
     def getRootResponse(self, filePath):
         log = logging.getLogger("h5serv")
         acl = None
@@ -3108,8 +3003,13 @@ class RootHandler(BaseHandler):
                 500, "Unexpected error: unable to create collection")
 
         response = self.getRootResponse(filePath)
-
-        self.addTocEntry(domain, filePath)
+        
+        try:
+            tocUtil.addTocEntry(domain, filePath, userid=self.userid)        
+        except IOError as e:
+            log.info("IOError: " + str(e.errno) + " " + e.strerror)
+            status = errNoToHttpStatus(e.errno)
+            raise HTTPError(status, reason=e.strerror)
 
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))
@@ -3155,7 +3055,7 @@ class RootHandler(BaseHandler):
             raise HTTPError(status, reason=e.strerror)
 
         try:
-            self.removeTocEntry(domain, filePath)
+            tocUtil.removeTocEntry(domain, filePath, userid=self.userid)
         except IOError as ioe:
             # This exception may happen if the file has been imported directly
             # after toc creation
@@ -3298,7 +3198,51 @@ def make_app():
     ],  **settings)
     return app
 
-
+# 
+# update TOC when files are added via some out of process method 
+# (e.g. scp to the server)
+#
+def updateToc(filepath):
+    log = logging.getLogger("h5serv")
+    log.info("updateToc(%s)", filepath)
+    if os.name == 'nt':
+        filepath = filepath.replace('\\', '/')  # match HDF5 convention
+    hdf5_ext = config.get('hdf5_ext')  
+    if not filepath.endswith(hdf5_ext):
+        log.info("ignoring non-HDF5 file added to data directory")
+        return
+    
+    if filepath.endswith(config.get('toc_name')):
+        log.info("ignore toc file creation")
+        return 
+     
+    base_domain = fileUtil.getDomain(filepath)
+    log.info("base domain: " + base_domain)
+    
+    try:
+        if fileUtil.isFile(filepath): 
+            tocUtil.addTocEntry(base_domain, filepath) 
+        else:
+            tocUtil.removeTocEntry(base_domain, filepath)
+    except IOError as e:
+        log.info("unable to update toc")
+        
+    
+        
+#
+# Background processing callback
+#
+def periodicCallback():
+    # callback for background processing
+    log = logging.getLogger("h5serv")
+    #log.info("periodicCallback")
+    # check event queue
+    while not event_queue.empty():
+        item = event_queue.get()
+        log.info("process_queue, got: %s", item)
+        # just add file events for now
+        updateToc(item)
+    
 def main():
     # os.chdir(config.get('datapath'))
     
@@ -3309,8 +3253,7 @@ def main():
     log = logging.getLogger("h5serv")
     log_file = config.get("log_file")
     log_level = config.get("log_level")
-    
-     
+       
      
     # add file handler if given in config
     if log_file:
@@ -3381,7 +3324,19 @@ def main():
     if ssl_port:
         print("ssl_port:", ssl_port)
     
-
+    #
+    # Setup listener for changes in the file system
+    #
+    data_path = config.get('datapath')
+    global event_queue
+    event_queue = queue.Queue()
+    # implemented in h5watchdog.py
+    background_timeout = int(config.get("background_timeout"))
+    if background_timeout:
+        print("Setting watchdog on: ", data_path)
+        h5observe(data_path, event_queue)
+        tornado.ioloop.PeriodicCallback(periodicCallback, 1000).start()
+     
     if ssl_cert and op.isfile(ssl_cert) and ssl_key and op.isfile(ssl_key) and ssl_port:
         ssl_cert_pwd = config.get('ssl_cert_pwd')
         ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
@@ -3394,6 +3349,7 @@ def main():
         port = int(config.get('port'))
         server.listen(port)
         msg = "Starting event loop on port: " + str(port)
+
 
     signal.signal(signal.SIGTERM, sig_handler)
     signal.signal(signal.SIGINT, sig_handler)

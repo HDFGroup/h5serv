@@ -18,6 +18,7 @@ import logging
 import h5py
 import config
 import fileUtil
+from h5json import Hdf5db
 
 """
  TOC (Table of contents) util helper functions
@@ -46,8 +47,129 @@ def isTocFilePath(filePath):
     else:
         isTocFilePath = False
     return isTocFilePath
+    
+    
 
+"""
+helper - get group uuid of hardlink, or None if no link
+"""
+def getSubgroupId(db, group_uuid, link_name):
+    #print("link_name:", link_name)    
+    subgroup_uuid = None
+    try:
+        item = db.getLinkItemByUuid(group_uuid, link_name)
+        if item['class'] != 'H5L_TYPE_HARD':
+            return None
+        if item['collection'] != 'groups':
+            return None
+        subgroup_uuid = item['id']
+    except IOError:
+        # link_name doesn't exist, return None
+        pass
 
+    return subgroup_uuid
+        
+"""
+Update toc with new filename
+"""
+def addTocEntry(domain, filePath,  userid=None):
+    """
+    Helper method - update TOC when a domain is created
+    If userid is provide, the acl will be checked to ensure userid has permissions
+    to modify the object.
+    """
+    log = logging.getLogger("h5serv")
+    hdf5_ext = config.get('hdf5_ext')
+    dataPath = config.get('datapath')
+    log.info("addTocEntry - domain: " + domain + " filePath: " + filePath)
+    if not filePath.startswith(dataPath):
+        log.error("unexpected filepath: " + filePath)
+        raise HTTPError(500)
+    filePath = fileUtil.getUserFilePath(filePath)   
+    tocFile = fileUtil.getTocFilePathForDomain(domain)
+    log.info("tocFile: " + tocFile)
+    acl = None
+
+    try:         
+        with Hdf5db(tocFile, app_logger=log) as db:
+            group_uuid = db.getUUIDByPath('/')
+            pathNames = filePath.split('/')
+            for linkName in pathNames:
+                if not linkName:
+                    continue
+                if linkName.endswith(hdf5_ext):
+                    linkName = linkName[:-(len(hdf5_ext))]
+                    if userid is not None:
+                        acl = db.getAcl(group_uuid, userid)
+                        if not acl['create']:
+                            self.log.info("unauthorized access to group:" + group_uuid)
+                            raise IOError(errno.EACCES)  # unauthorized
+                    log.info("createExternalLink -- uuid %s, domain: %s, linkName: %s", group_uuid, domain, linkName)
+                    db.createExternalLink(group_uuid, domain, '/', linkName)
+                else:
+                    subgroup_uuid = getSubgroupId(db, group_uuid, linkName)
+                    if subgroup_uuid is None:
+                        if userid is not None:
+                            acl = db.getAcl(group_uuid, userid)
+                            if not acl['create']:
+                                self.log.info("unauthorized access to group:" + group_uuid)
+                                raise IOError(errno.EACCES)  # unauthorized
+                        # create subgroup and link to parent group
+                        subgroup_uuid = db.createGroup()
+                        # link the new group
+                        log.info("linkObject -- uuid: %s, subgroup_uuid: %s, linkName: %s", group_uuid, subgroup_uuid, linkName)
+                        db.linkObject(group_uuid, subgroup_uuid, linkName)
+                    group_uuid = subgroup_uuid 
+
+    except IOError as e:
+        log.info("IOError: " + str(e.errno) + " " + e.strerror)
+        raise e
+
+"""
+Helper method - update TOC when a domain is deleted
+"""
+def removeTocEntry(domain, filePath, userid=None):
+    log = logging.getLogger("h5serv")
+    hdf5_ext = config.get('hdf5_ext')
+    dataPath = config.get('datapath')
+
+    if not filePath.startswith(dataPath):
+        log.error("unexpected filepath: " + filePath)
+        raise HTTPError(500)
+    filePath = fileUtil.getUserFilePath(filePath)   
+    tocFile = fileUtil.getTocFilePathForDomain(domain)
+    log.info("removeTocEntry - domain: " + domain + " filePath: " + filePath + " tocfile: " + tocFile)
+    pathNames = filePath.split('/')
+    log.info("pathNames: " + str(pathNames))
+
+    try:
+        with Hdf5db(tocFile, app_logger=log) as db:
+            group_uuid = db.getUUIDByPath('/')
+            log.info("group_uuid:" + group_uuid)
+                           
+            for linkName in pathNames:
+                if not linkName:
+                    continue
+                log.info("linkName:" + linkName)
+                if linkName.endswith(hdf5_ext):
+                    linkName = linkName[:-(len(hdf5_ext))]
+                    log.info("unklink " + group_uuid + ", " + linkName)
+                    db.unlinkItem(group_uuid, linkName)
+                else:
+                    subgroup_uuid = getSubgroupId(db, group_uuid, linkName)
+                    if subgroup_uuid is None:
+                        msg = "Didn't find expected subgroup: " + group_uuid
+                        log.error(msg)
+                        raise HTTPError(500, reason=msg)
+                    group_uuid = subgroup_uuid
+
+    except IOError as e:
+        log.info("IOError: " + str(e.errno) + " " + e.strerror)
+        raise e
+
+"""
+Create a populate TOC file if not present
+"""            
 def createTocFile(datapath):
     log = logging.getLogger("h5serv")
     log.info("createTocFile(" + datapath + ")")
