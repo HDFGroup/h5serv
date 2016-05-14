@@ -3146,15 +3146,16 @@ def shutdown():
 def make_app():
     static_url = config.get('static_url')
     static_path = config.get('static_path')
-    settings = {
-        # "static_path": os.path.join(os.path.dirname(__file__), 'static'),
-        "static_path": 'static',
-        # "cookie_secret": "__TODO:_GENERATE_YOUR_OWN_RANDOM_VALUE_HERE__",
-        # "login_url": "/login",
-        # "xsrf_cookies": True,
-        "debug": config.get('debug')
-    }
-
+    settings = {} 
+    config_debug = config.get('debug')
+    if type(config_debug) is str:
+        if config_debug[0] in ('T', 't'):
+            settings["debug"] = True
+        else:
+            settings["debug"] = False
+    else:
+        settings["debug"] = config_debug
+     
     favicon_path = "favicon.ico"
     print("dirname path:", os.path.dirname(__file__))
     print("favicon_path:", favicon_path)
@@ -3228,7 +3229,7 @@ def updateToc(filepath):
         else:
             tocUtil.removeTocEntry(base_domain, filepath)
     except IOError as e:
-        log.info("unable to update toc")
+        log.info("periodic callback: unable to update toc")
         
     
         

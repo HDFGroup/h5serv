@@ -25,7 +25,6 @@ cfg = {
     'ssl_cert': '',  # certs/data.hdfgroup.org.crt',  # add relative path to cert for SSL
     'ssl_key':  '',  # certs/data.hdfgroup.org.key',  # add relative path to cert key for SSL
     'ssl_cert_pwd': '',
-    'root_userid': 'root',
     'default_acl': 'r',  # default permissions - any subset of 'crud'
     'password_file': '../util/admin/passwd.h5',
     'static_url': r'/views/(.*)',
