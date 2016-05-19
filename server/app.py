@@ -198,7 +198,7 @@ class BaseHandler(tornado.web.RequestHandler):
          
         log = logging.getLogger("h5serv")
         log.info("getFilePath: " + domain)
-        tocFilePath = fileUtil.getTocFilePathForDomain(domain)
+        tocFilePath = fileUtil.getTocFilePathForDomain(domain, auth)
         log.info("tocFilePath: " + tocFilePath)
         if not fileUtil.isFile(tocFilePath):
             tocUtil.createTocFile(tocFilePath)
@@ -207,7 +207,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 # and public read for everyone
                 self.setDefaultAcl()
             
-        filePath = fileUtil.getFilePath(domain)
+        filePath = fileUtil.getFilePath(domain, auth)
         if checkExists:
             fileUtil.verifyFile(filePath)  # throws exception if not found  
         
@@ -3359,9 +3359,6 @@ def main():
         server.listen(port)
         msg = "Starting event loop on port: " + str(port)
         
-    
-    
-
 
     signal.signal(signal.SIGTERM, sig_handler)
     signal.signal(signal.SIGINT, sig_handler)

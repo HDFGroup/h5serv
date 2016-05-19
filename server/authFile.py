@@ -23,7 +23,9 @@ import h5py
 
 from tornado.web import HTTPError
 
+
 import config
+from passwordUtil import encrypt_pwd, to_string
 
 cache_expire_time = 10.0  # ten seconds
 
@@ -35,33 +37,7 @@ class AuthFile(object):
         self.filepath = filepath
         self.username_cache = {}
         self.userid_cache = {}
-        
-    def to_bytes(self, data):
-        if six.PY3:
-            if type(data) is unicode:
-                return data.encode('utf-8')
-            else:
-                return data
-        else:
-            return data
-            
-    def to_string(self, data):
-        if six.PY3:           
-            if type(data) is bytes:
-                return data.decode('utf-8')
-            else:
-                return data
-        else:
-            return data
-    
-
-    def encrypt_pwd(self, passwd):
-        """
-         One way password encryptyion
-        """
-        encrypted = hashlib.sha224(passwd).hexdigest()
-    
-        return self.to_bytes(encrypted)
+         
 
     """
     Password util helper functions
@@ -78,7 +54,7 @@ class AuthFile(object):
         if not user_name:
             return None
             
-        self.log.info("Auth.getUserInfo: [" + self.to_string(user_name) + "]")
+        self.log.info("Auth.getUserInfo: [" + to_string(user_name) + "]")
         
         if user_name in self.username_cache:
             item = self.username_cache[user_name]
@@ -151,7 +127,7 @@ class AuthFile(object):
             else:
                 self.log.info("Auth-got cache value")
                 username = item['username']
-                return self.to_string(username)
+                return to_string(username)
          
         # verify file exists and is writable
         if not op.isfile(self.filepath):
@@ -167,7 +143,7 @@ class AuthFile(object):
             for attr_name in f.attrs:
                 attr = f.attrs[attr_name]
                 if attr['userid'] == userid:
-                    user_name = self.to_string(attr_name)
+                    user_name = to_string(attr_name)
         
         self.log.info("Auth-add to cachecache")
         item = {}
@@ -197,7 +173,7 @@ class AuthFile(object):
             raise HTTPError(401, message="provide user and password")
 
         userid = None
-        if data['pwd'] == self.encrypt_pwd(password):
+        if data['pwd'] == encrypt_pwd(password):
             self.log.info("user  password validated")
             userid = data['userid']
         else:

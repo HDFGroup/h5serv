@@ -20,8 +20,7 @@ from tornado.web import HTTPError
 
 from h5py import is_hdf5
 import config
-from passwordUtil import getUserInfo
-
+from authFile import AuthFile
 
 def getFileModCreateTimes(filePath):
     (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(filePath)
@@ -66,7 +65,7 @@ def join(path, paths):
       
      return pp
 
-def getFilePath(host_value):
+def getFilePath(host_value, auth=None):
     # logging.info('getFilePath[' + host_value + ']')
     # strip off port specifier (if present)
     npos = host_value.rfind(':')
@@ -114,7 +113,9 @@ def getFilePath(host_value):
 
     # check to see if this is the user's home domain
     if num_parts == 2 and dns_path[0] == config.get('home_dir'):
-        user_info = getUserInfo(dns_path[1])
+        if auth is None:
+            auth = AuthFile(config.get("password_file")) 
+        user_info = auth.getUserInfo(dns_path[1])
         if user_info is None:
             raise HTTPError(404)  # not found
         makeDirs(filePath)  # add user directory if it doesn't exist
@@ -131,7 +132,7 @@ def getFilePath(host_value):
 # user TOC file (if the dns path includes the "home" directory).
 # For the later, method will throw 404 if the user is not registered.
 #    
-def getTocFilePathForDomain(host_value):
+def getTocFilePathForDomain(host_value, auth=None):
     """ Return toc file path for given domain value.
         Will return path "../data/.toc.h5" for public domains or
         "../data/home/<user>/.toc.h5" for user domains.
@@ -177,7 +178,9 @@ def getTocFilePathForDomain(host_value):
     if dns_path[0] == config.get('home_dir'):
         filePath = join(filePath, config.get('home_dir'))
         filePath = join(filePath, dns_path[1])
-        user_info = getUserInfo(dns_path[1])
+        if auth is None:
+            auth = AuthFile(config.get("password_file")) 
+        user_info = auth.getUserInfo(dns_path[1])
         if user_info is None:
             raise HTTPError(404)  # not found
         makeDirs(filePath)  # add user directory if it doesn't exist
