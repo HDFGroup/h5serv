@@ -9,11 +9,17 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
+import six
+if six.PY3:
+    unicode = str
+    
 import requests
 import config
 import unittest
 import json
 import base64
+
+
 
 """
     Helper function - get endpoint we'll send http requests to 

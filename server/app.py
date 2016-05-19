@@ -43,8 +43,8 @@ from timeUtil import unixTimeToUTC
 import fileUtil  
 import tocUtil  
 from httpErrorUtil import errNoToHttpStatus
-from passwordUtil import getUserId, getUserName, validateUserPassword
 from h5watchdog import h5observe  
+from authFile import AuthFile
 
 def to_bytes(a_string):
     if type(a_string) is unicode:
@@ -127,8 +127,8 @@ class BaseHandler(tornado.web.RequestHandler):
                 raise HTTPError(400, "Malformed authorization header")
             user, _, pswd = token_decoded.partition(b':')
         if user and pswd:
-            validateUserPassword(user, pswd)  # throws exception if passwd is not valid
-            self.userid = getUserId(user)
+            # throws exception if passwd is not valid
+            self.userid = auth.validateUserPassword(user, pswd)  
             return self.userid
         else:
             self.userid = -1
@@ -746,10 +746,9 @@ class AclHandler(BaseHandler):
                     if userid == 0:
                         user_name = 'default'
                     else:
-                        user_name = getUserName(userid)
+                        user_name = auth.getUserName(userid)
                         if user_name is None:
-                            log.warning(
-                                "user not found for userid: " + str(userid))
+                            log.warning("user not found for userid: " + str(userid))
                     acl_out['userName'] = user_name
                 else:
                     value = acl_in[key]
@@ -782,7 +781,7 @@ class AclHandler(BaseHandler):
             if userName == 'default':
                 req_userid = 0
             else:
-                req_userid = getUserId(userName)
+                req_userid = auth.getUserId(userName)
                 if req_userid is None:
                     # username not found
                     msg = "username does not exist"
@@ -878,7 +877,7 @@ class AclHandler(BaseHandler):
         if userName == 'default':
             req_userid = 0
         else:
-            req_userid = getUserId(userName)
+            req_userid = auth.getUserId(userName)
 
         if req_userid is None:
             msg = "Bad Request: username not found"
@@ -3340,6 +3339,12 @@ def main():
         print("Setting watchdog on: ", data_path)
         h5observe(data_path, event_queue)
         tornado.ioloop.PeriodicCallback(periodicCallback, 1000).start()
+        
+    # 
+    # Insantiate auth class
+    #
+    global auth
+    auth = AuthFile(config.get("password_file"))
      
     if ssl_cert and op.isfile(ssl_cert) and ssl_key and op.isfile(ssl_key) and ssl_port:
         ssl_cert_pwd = config.get('ssl_cert_pwd')
@@ -3353,6 +3358,9 @@ def main():
         port = int(config.get('port'))
         server.listen(port)
         msg = "Starting event loop on port: " + str(port)
+        
+    
+    
 
 
     signal.signal(signal.SIGTERM, sig_handler)
