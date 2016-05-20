@@ -44,7 +44,8 @@ import fileUtil
 import tocUtil  
 from httpErrorUtil import errNoToHttpStatus
 from h5watchdog import h5observe  
-from authFile import AuthFile
+from passwordUtil import getAuthClient
+
 
 def to_bytes(a_string):
     if type(a_string) is unicode:
@@ -3344,7 +3345,7 @@ def main():
     # Insantiate auth class
     #
     global auth
-    auth = AuthFile(config.get("password_file"))
+    auth = getAuthClient()
      
     if ssl_cert and op.isfile(ssl_cert) and ssl_key and op.isfile(ssl_key) and ssl_port:
         ssl_cert_pwd = config.get('ssl_cert_pwd')

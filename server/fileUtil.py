@@ -16,11 +16,12 @@ and vice-versa).
 
 import os
 import os.path as op
+
 from tornado.web import HTTPError
 
 from h5py import is_hdf5
 import config
-from authFile import AuthFile
+from passwordUtil import getAuthClient
 
 def getFileModCreateTimes(filePath):
     (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(filePath)
@@ -114,7 +115,7 @@ def getFilePath(host_value, auth=None):
     # check to see if this is the user's home domain
     if num_parts == 2 and dns_path[0] == config.get('home_dir'):
         if auth is None:
-            auth = AuthFile(config.get("password_file")) 
+            auth = getAuthClient
         user_info = auth.getUserInfo(dns_path[1])
         if user_info is None:
             raise HTTPError(404)  # not found
@@ -179,7 +180,7 @@ def getTocFilePathForDomain(host_value, auth=None):
         filePath = join(filePath, config.get('home_dir'))
         filePath = join(filePath, dns_path[1])
         if auth is None:
-            auth = AuthFile(config.get("password_file")) 
+            auth = getAuthClient()
         user_info = auth.getUserInfo(dns_path[1])
         if user_info is None:
             raise HTTPError(404)  # not found

@@ -26,7 +26,8 @@ cfg = {
     'ssl_key':  '',  # certs/data.hdfgroup.org.key',  # add relative path to cert key for SSL
     'ssl_cert_pwd': '',
     'default_acl': 'r',  # default permissions - any subset of 'crud'
-    'password_file': '../util/admin/passwd.h5',
+    'password_uri': '../util/admin/passwd.h5',     
+    #'password_uri': 'mongodb://192.168.1.100:27017',
     'static_url': r'/views/(.*)',
     'static_path': r'../static',
     'cors_domain': '*',  # set to None to disallow CORS (cross-origin resource sharing)
@@ -49,4 +50,7 @@ def get(x):
     if x.upper() in os.environ:
         return os.environ[x.upper()]
     # no command line override, just return the cfg value
-    return cfg[x]
+    if x in cfg:
+        return cfg[x]
+    else:
+        return None
