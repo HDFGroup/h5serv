@@ -27,7 +27,7 @@ cfg = {
     'ssl_cert_pwd': '',
     'default_acl': 'r',  # default permissions - any subset of 'crud'
     'password_uri': '../util/admin/passwd.h5',     
-    #'password_uri': 'mongodb://192.168.1.100:27017',
+    #'password_uri': 'mongodb://mongo:27017',
     'static_url': r'/views/(.*)',
     'static_path': r'../static',
     'cors_domain': '*',  # set to None to disallow CORS (cross-origin resource sharing)
