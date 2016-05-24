@@ -71,7 +71,7 @@ class AuthClient(object):
         self.log.info("mongo query")
         users = self.db["users"]
         print("users count:", users.count())
-        data = users.find_one({"_id": to_string(user_name)})
+        data = users.find_one({"username": to_string(user_name)})
         print("data:", data)
         if data is None:
             return None
@@ -129,7 +129,7 @@ class AuthClient(object):
         data = users.find_one({"userid": userid})
         if data is None:
             return None
-        user_name = data["_id"]
+        user_name = data["username"]
              
         self.log.info("Auth-add to cachecache")
         item = {}
