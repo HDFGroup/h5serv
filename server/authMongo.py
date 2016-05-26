@@ -34,8 +34,8 @@ class AuthClient(object):
         self.log = logging.getLogger("h5serv")
         self.log.info("AuthMongo class init(" + mongouri + ")")
         self.client = MongoClient(mongouri)
-        self.db_name = config.get('mondo_dbname')
-        self.db = self.client[self.db_name]
+        db_name = config.get('mongo_dbname')
+        self.db = self.client[db_name]
         self.username_cache = {}
         self.userid_cache = {}
          
@@ -70,10 +70,9 @@ class AuthClient(object):
                     
         # mongodb lookup
         self.log.info("mongo query")
-        users = self.db[self.db_name]
-        print("users count:", users.count())
+        users = self.db["users"]
         data = users.find_one({"username": to_string(user_name)})
-        print("data:", data)
+         
         if data is None:
             return None
             
@@ -126,7 +125,7 @@ class AuthClient(object):
         
         
         # mongodb lookup
-        users = self.db[self.db_name]
+        users = self.db["users"]
         data = users.find_one({"userid": userid})
         if data is None:
             return None

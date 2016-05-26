@@ -28,7 +28,7 @@ cfg = {
     'default_acl': 'r',  # default permissions - any subset of 'crud'
     'password_uri': '../util/admin/passwd.h5',     
     #'password_uri': 'mongodb://mongo:27017',
-    'mondo_dbname': 'hdfdevtest',
+    'mongo_dbname': 'hdfdevtest',
     'static_url': r'/views/(.*)',
     'static_path': r'../static',
     'cors_domain': '*',  # set to None to disallow CORS (cross-origin resource sharing)
