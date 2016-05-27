@@ -4,34 +4,31 @@ Domains
 
 In h5serv, domains are containers for related collection of resources, similar to a
 file in the traditional HDF5 library.  In the h5serv implementation of the HDF5 REST API,
-domains *are* files, but in general the REST API supports alternative implementations 
+domains *are* files, but in general the HDF REST API supports alternative implementations 
 (e.g. data that is stored in a database).
-Most operations of the service are specific to a domain resource that is provided in 
+Most operations of the service act on a domain resource that is provided in 
 the *Host* http header or (alternatively) the Host query parameter.
-
-If the included DNS server is set up (see :doc:`../Installation/DNSSetup`), the domain
-name can also be used as the endpoint of the request.
 
 Mapping of file paths to domain names
 -------------------------------------
 
 To convert a file path to a domain name:
 
-# Remove the extension
-# Determine the path relative to the data directory
-# Replace '/' with '.'
-# Reverse the path
-# Add the domain suffix (using the domain config value)
+#. Remove the extension
+#. Determine the path relative to the data directory
+#. Replace '/' with '.'
+#. Reverse the path
+#. Add the domain suffix (using the domain config value)
 
 As an example consider a server installation where that data directory is '/data'
 and an HDF5 is located at ``/data/myfolder/an_hdf_file.h5`` and ``hdfgroup.org``
 is the base domain.  The above sequence of steps would look like the following:
 
-# /data/myfolder/an_hdf_file
-# myfolder/an_hdf_file
-# myfolder.an_hdf_file
-# an_hdf_file.myfolder
-# an_hdf_file.myfolder.hdfgroup.org
+#. /data/myfolder/an_hdf_file
+#. myfolder/an_hdf_file
+#. myfolder.an_hdf_file
+#. an_hdf_file.myfolder
+#. an_hdf_file.myfolder.hdfgroup.org
 
 The final expression is what should be used in the Host field for any request that access
 that file.  
