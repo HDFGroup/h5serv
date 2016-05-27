@@ -132,7 +132,7 @@ All tests should report OK.
 Server Configuration
 --------------------
 
-The file h5serv/server/config.py provides several configuration options that can be
+The file ``h5serv/server/config.py`` provides several configuration options that can be
 used to customize h5serv.  Each of the options can be changed by:
 
  * Changing the value in the config.py file and re-starting the service.
@@ -306,16 +306,20 @@ that is added through some external process).  Set to 0 to disable background pr
 default: 1000
 
 
-
-
 Data files
 ----------
 
 Copy any HDF5 files you would like exposed by the service to the datapath directory
-(h5serv/data).  If you do not wich to have the files updatable by the service make the 
+(h5serv/data).  If you do not wish to have the files updatable by the service make the 
 files read-only.
+
+On the first request to the service, a Table of Contents (TOC) file will be generated which
+will contain links to all HDF5 files in the data folder (and sub-folders).
 
 *Note:* Do not modify files once they have been placed in the datapath directory.  h5serv
 inventories new files on first access, but won't see some changes (e.g. new group is created)
 made to the file outside the REST api.
+
+*Note: HDF5 that are newly created (copied into) the datapath directory will be "noticed"
+by the service and added into the TOC.
      
