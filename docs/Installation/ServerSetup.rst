@@ -96,7 +96,7 @@ Alternatively, in a browser go to: https://github.com/HDFGroup/hdf5-json and cli
 "Download ZIP" button (right side of page).   Download the zip file and extract to
 the destination directory of your choice.  
 
-Next, cd to the hdf5-json folder and run: ``python setup.py install``.
+Next, cd to the hdf5-json folder and run: ``sudo python setup.py install``.
 
 Download the h5serv project: ``git clone https://github.com/HDFGroup/h5serv.git`` .
 Alternatively, download the source zip as described above. 
@@ -166,7 +166,7 @@ Default: ``../data/``
 hdf5_ext
 ^^^^^^^^
 
-The extension to assume for HDF5 files.  The rest requests don't assume an extension, so
+The extension to assume for HDF5 files.  The REST requests don't assume an extension, so
 a request such as:
 
 .. code-block:: http
@@ -183,7 +183,7 @@ Data files
 ----------
 
 Copy any HDF5 files you would like exposed by the service to the datapath directory
-(h5serv/data).  If you do not wich to have the files updatable by the service make the 
+(h5serv/data).  If you do not wish to have the files updatable by the service make the 
 files read-only.
 
 *Note:* Do not modify files once they have been placed in the datapath directory.  h5serv
