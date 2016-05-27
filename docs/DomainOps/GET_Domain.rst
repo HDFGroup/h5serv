@@ -16,7 +16,9 @@ If the DNS Server is not setup, specify the desired domain in the Host line of t
 header.
 
 Alternatively, the domain can be specified as a 'Host' query parameter.  Example:
-http://127.0.0.1:7253?host=tall.data.hdfgroup.org
+http://127.0.0.1:7253?host=tall.data.hdfgroup.org.
+
+If no Host value is supplied, the default Table of Contents (TOC) domain is returned.
 
 Requests
 ========

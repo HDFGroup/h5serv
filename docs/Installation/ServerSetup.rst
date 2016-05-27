@@ -156,12 +156,26 @@ Default: ``True``
 
 datapath
 ^^^^^^^^
-A path indicating the directory where HDF5 will be be stored.
+A path indicating the directory where HDF5 files will be be stored.
 
 *Note*: Any HDF5 file content that you put in this directory will be exposed via the
-server REST api.
+server REST api (unless the domain's ACL is configured to prevent public access, see: 
+:doc:`../AclOps`).
 
 Default: ``../data/``
+
+public_dir
+^^^^^^^^^^
+A list of directories under datapath which will be visible to any autenticated user's 
+request.
+
+Default: ``['public', 'test']``
+
+domain
+^^^^^^
+The base DNS path for domain access  (see comment to hdf5_ext config option).
+
+Default. ``hdfgroup.org``
 
 hdf5_ext
 ^^^^^^^^
@@ -178,6 +192,121 @@ Translates to: "Get the file tall.h5 in the directory given by datapath".
 
 Default: ``.h5``
  
+toc_name
+^^^^^^^^
+
+Name of the auto-generated HDF5 that provides a "Table Of Contents" list of all HDF5
+files in the datapath directory and sub-directories.
+
+Default: ``.toc.h5``
+
+home_dir
+^^^^^^^^
+
+A directory under data_path that will be the parent directory of user home directores.
+For example if ``datapath`` is ``../data``, ``home_dir`` is ``home``, the authenticated request
+of ``GET /`` for userid ``knuth`` would return a list of files in the directory: 
+``../data/home/knuth``.
+
+Default: ``home``
+
+ssl_port
+^^^^^^^^
+
+The SSL port the server will listen on for HTTPS requests.
+
+Default: 6050
+
+ssl_cert
+^^^^^^^^
+
+Location of the SSL cert.
+
+default: 
+
+ssl_key
+^^^^^^^
+
+The SSL key.
+
+default:
+
+ssl_cert_pwd
+^^^^^^^^^^^^
+
+The SSL cert password
+
+default:
+
+password_uri
+^^^^^^^^^^^^
+
+Resource path to be used for user authentication.
+Currently two methods are supported:
+
+HDF5 Password file: An HDF5 that contains userids and (encrypted) passwords.
+See: :doc:`../AdminTools`.  In this case the password_uri config is a path
+to the password file.
+
+MongoDB: A MongoDB database that contains a "users" collection of userids and 
+passwords.  In this case the password_uri would be of the form: 
+``mongodb://&lt;mongo_ip&gt;:&lt;port&gt;`` where &lt;mongo_ip&gt is the IP 
+address of the host running the mongo database and &lt;port&gt; is the port of 
+the mongo database (typically 27017).
+
+default: ``../util/admin/passwd.h5``
+
+mongo_dbname
+^^^^^^^^^^^^
+
+Mongo database named used for MongoDB-based authentication as described above.
+
+default: ``hdfdevtest``
+
+static_url
+^^^^^^^^^^
+
+URI path that will be used to map any static HTML content to be displayed by the server.
+
+default: ``/views/(.*)``
+
+static_path
+^^^^^^^^^^^
+
+File path for files (i.e. regular HTML files) to be hosted statically.
+
+default: ``../static``
+
+cors_domain
+^^^^^^^^^^^
+
+Domains to allow for CORS (cross-origin resource sharing).  Use ``*`` to allow
+any domain, None to disallow.
+
+default: ``*``
+
+log_file
+^^^^^^^^
+
+File path for server log files.  Set to None to have logout go to standard out.
+
+log_level
+^^^^^^^^^
+
+Verbosity level for logging.  One of: ``ERROR, WARNING, INFO, DEBUG, NOTSET``.
+
+default: ``INFO``
+
+background_timeout
+^^^^^^^^^^^^^^^^^^
+
+Time interval in milliseconds to check for updates in the datapath folder (e.g. a file
+that is added through some external process).  Set to 0 to disable background processsing.
+
+default: 1000
+
+
+
 
 Data files
 ----------
