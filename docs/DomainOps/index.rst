@@ -40,7 +40,7 @@ the string '%XX' where XX is the hexidecimal value of the character.  For exampl
 
 becomes:
 
-``this%2Efile%2Ehase%2E``
+``this%2Efile%2Ehase%2Edots``
 
 
 Creating Domains
