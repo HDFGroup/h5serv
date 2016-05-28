@@ -180,7 +180,7 @@ Default. ``hdfgroup.org``
 hdf5_ext
 ^^^^^^^^
 
-The extension to assume for HDF5 files.  The rest requests don't assume an extension, so
+The extension to assume for HDF5 files.  The REST requests don't assume an extension, so
 a request such as:
 
 .. code-block:: http
