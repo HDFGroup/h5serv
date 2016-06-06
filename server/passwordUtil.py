@@ -16,6 +16,7 @@ if six.PY3:
     unicode = str    
  
 import hashlib
+import logging
 import config
  
 
@@ -51,7 +52,10 @@ def encrypt_pwd(passwd):
     return to_bytes(encrypted)
     
 def getAuthClient():
+    log = logging.getLogger("h5serv")
+    log.info("getAuthClient")
     password_uri = config.get("password_uri")
+    log.info("password_uri:" + password_uri)
      
     auth = None
     if password_uri.startswith("mongo"):

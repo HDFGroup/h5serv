@@ -3290,6 +3290,13 @@ def main():
     log.addHandler(handler)
     log.propagate = False  # otherwise, we'll get repeated lines
     
+    password_uri = "none"
+    x = "password_uri"
+    if x.upper() in os.environ:
+        password_uri = os.environ[x.upper()]
+    password_uri = config.get("password_uri")
+    print("password_uri config:", password_uri)   
+    
     # log levels: ERROR, WARNING, INFO, DEBUG, or NOTSET
     if not log_level or log_level == "NOTSET":
         log.setLevel(logging.NOTSET)

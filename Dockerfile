@@ -5,7 +5,8 @@ RUN cd /usr/local/src                                    ; \
     pip install tornado                                  ; \
     pip install requests                                 ; \
     pip install pytz                                     ; \
-    pip install watchdog                                 
+    pip install watchdog                                 ; \
+    pip install pymongo       
 WORKDIR /usr/local/src         
 RUN git clone https://github.com/HDFGroup/hdf5-json.git  ; \
     cd hdf5-json                                         ; \
