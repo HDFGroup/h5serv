@@ -160,17 +160,17 @@ def getTocFilePathForDomain(host_value, auth=None):
         return filePath
 
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
-        raise HTTPError(403, message='top-level domain is not valid')
+        host = topdomain  # use topdomain
+    else:
+        if host[-(len(topdomain) + 1)] != '.':
+            # there needs to be a dot separator
+            raise HTTPError(400, message='domain name is not valid')
 
-    if host[-(len(topdomain) + 1)] != '.':
-        # there needs to be a dot separator
-        raise HTTPError(400, message='domain name is not valid')
+        host = host[:-(len(topdomain)+1)]   # strip off top domain part
 
-    host = host[:-(len(topdomain)+1)]   # strip off top domain part
-
-    if len(host) == 0 or host[0] == '.' or host[-1] == '.':
-        # needs a least one character (which can't be '.', or have '.' as first or last char)
-        raise HTTPError(400, message='domain name is not valid')
+        if len(host) == 0 or host[0] == '.' or host[-1] == '.':
+            # needs a least one character (which can't be '.', or have '.' as first or last char)
+            raise HTTPError(400, message='domain name is not valid')
 
     dns_path = host.split('.')
     dns_path.reverse()  # flip to filesystem ordering
