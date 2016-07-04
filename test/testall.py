@@ -16,8 +16,9 @@ import sys
 
 unit_tests = ('timeUtilTest', 'fileUtilTest')
 integ_tests = ('roottest', 'grouptest', 'dirtest', 'linktest', 'datasettest', 'valuetest',
-    'attributetest', 'datatypetest', 'shapetest', 'datasettypetest', 'spidertest', 'acltest')
+    'attributetest', 'datatypetest', 'shapetest', 'datasettypetest', 'acltest')
 
+#todo - add spidertest back
 cwd = os.getcwd()
 no_server = False
 print(len(sys.argv))

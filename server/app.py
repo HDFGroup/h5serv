@@ -554,7 +554,7 @@ class LinkHandler(BaseHandler):
             target = self.getHref('/#h5path(' + item['h5path'] + ')')
         elif item['class'] == 'H5L_TYPE_EXTERNAL':
             if item['h5domain'].endswith(config.get('domain')):
-                target = self.getExternalHref(link_item['h5domain'], item['h5path'])
+                target = self.getExternalHref(item['h5domain'], item['h5path'])
 
         if target:
             hrefs.append({'rel': 'target', 'href': target})
@@ -646,7 +646,7 @@ class LinkHandler(BaseHandler):
         })
         hrefs.append({
             'rel': 'home',
-            'href': self.getHref()
+            'href': self.getHref('')
         })
         hrefs.append({
             'rel': 'owner', 'href': self.getHref('groups/' + self.reqUuid) })
@@ -686,7 +686,7 @@ class LinkHandler(BaseHandler):
             'rel': 'root',
             'href': self.getHref('groups/' + rootUUID)
         })
-        hrefs.append({'rel': 'home', 'href': self.getHref()})
+        hrefs.append({'rel': 'home', 'href': self.getHref('')})
         hrefs.append({
             'rel': 'owner', 'href': self.getHref('groups/' + self.reqUuid)})
 
@@ -957,7 +957,7 @@ class AclHandler(BaseHandler):
         hrefs.append({'rel': 'home', 'href': self.getHref('') })
         hrefs.append({
             'rel': 'owner',
-            'href': href + col_name + '/' + obj_uuid + hostQuery
+            'href': self.getHref(col_name + '/' + obj_uuid)
         })
 
         response['hrefs'] = hrefs
@@ -2119,11 +2119,12 @@ class AttributeHandler(BaseHandler):
         root_href = self.getHref('groups/' + rootUUID)
         owner_href = self.getHref(col_name + '/' + self.reqUuid)
         self_href = self.getHref(col_name + '/' + self.reqUuid + '/attributes')
+        home_href = self.getHref('')
 
         hrefs.append({'rel': 'self', 'href': self_href})
         hrefs.append({'rel': 'owner', 'href': owner_href})
         hrefs.append({'rel': 'root', 'href': root_href})
-        hrefs.append({'rel': 'home', 'href': href})
+        hrefs.append({'rel': 'home', 'href': home_href})
         response['hrefs'] = hrefs
 
         self.set_header('Content-Type', 'application/json')
