@@ -16,7 +16,6 @@ install:
     - pip install numpy>=1.10.4
     - pip install h5py
     - pip install requests
-    - pip install tables
     - pip install pytz
     - pip install tornado
     - pip install watchdog
