@@ -31,9 +31,13 @@ def getFileModCreateTimes(filePath):
 def isIPAddress(s):
     """Return True if the string looks like an IP address:
         n.n.n.n where n is between 0 and 255 """
-    if s == "localhost":
-        return True
+    
     parts = s.split('.')
+    
+    if len(parts) == 1:
+        # treat as IP address for names like "localhost" or other one-word names
+        # that may get mapped to IP address via /etc/hosts entries
+        return True
     if len(parts) != 4:
         return False
     for part in parts:
