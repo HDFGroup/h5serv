@@ -161,12 +161,10 @@ class BaseHandler(tornado.web.RequestHandler):
          
         # Output request URI to log
         self.log = logging.getLogger("h5serv")
-        self.log.info("request header keys:" + str(self.request.headers.keys()))
         
         protocol = self.request.protocol
         if "X-Forwarded-Proto" in self.request.headers:
             protocol = self.request.headers["X-Forwarded-Proto"]
-            self.log.info("using protocol: " + protocol)
         
         host = self.request.host
         if "X-Forwarded-Host" in self.request.headers:
@@ -184,7 +182,6 @@ class BaseHandler(tornado.web.RequestHandler):
         self.reqUuid = self.getRequestId()
         self.filePath = self.getFilePath(self.domain, checkExists)
          
-
         self.href = protocol + '://' + host 
         self.log.info("baseHandler, href: " + self.href)
         msg = "REQ " + self.request.method + " " + self.href + self.request.uri
@@ -223,21 +220,6 @@ class BaseHandler(tornado.web.RequestHandler):
         target += targetHostQuery
         
         return target
-        """
-                    target = self.request.protocol + '://'
-                    targetHostQuery = ''
-                    if hostQuery or self.isTocFilePath(self.filePath):
-                        target += self.request.host
-                        targetHostQuery = '?host=' + link_item['h5domain']
-                    else:
-                        target += link_item['h5domain']
-                    if item['h5path'] == '/':
-                        target += '/'
-                    else:
-                        target += '/#h5path(' + link_item['h5path'] + ')'
-                    target += targetHostQuery
-                    link_item['target'] = target
-        """
 
     """
     Convience method to compute href links
