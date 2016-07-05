@@ -161,10 +161,12 @@ class BaseHandler(tornado.web.RequestHandler):
          
         # Output request URI to log
         self.log = logging.getLogger("h5serv")
+        self.log.info("request header keys:" + str(self.request.headers.keys()))
         
         protocol = self.request.protocol
         if "X-Forwarded-Proto" in self.request.headers:
             protocol = self.request.headers["X-Forwarded-Proto"]
+            self.log.info("using protocol: " + protocol)
         
         host = self.request.host
         if "X-Forwarded-Host" in self.request.headers:
@@ -185,8 +187,8 @@ class BaseHandler(tornado.web.RequestHandler):
 
         self.href = protocol + '://' + host 
         self.log.info("baseHandler, href: " + self.href)
-        msg = "REQUEST " + self.request.method + " " + self.href + self.request.uri
-        msg += "{ remote_ip: " + remote_ip
+        msg = "REQ " + self.request.method + " " + self.href + self.request.uri
+        msg += " {remote_ip: " + remote_ip
         if self.username is not None:
             msg += ", username: " + to_str(self.username)
         msg += "}"
@@ -209,7 +211,7 @@ class BaseHandler(tornado.web.RequestHandler):
         
         targetHostQuery = ''
         if hostQuery or self.isTocFilePath(self.filePath):
-            target += self.request.host
+            target += host
             targetHostQuery = '?host=' + domain
         else:
             target += domain
