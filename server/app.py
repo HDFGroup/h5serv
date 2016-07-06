@@ -1584,7 +1584,7 @@ class ValueHandler(BaseHandler):
                         self.log.info("values type: " + str(type(values)))       
                          
                 else:
-                    msg = "Internal Server Error: unexpected shape class: " + shape['class']
+                    msg = "Internal Server Error: unexpected shape class: " + item_shape['class']
                     self.log.error(msg)
                     raise HTTPError(500, reason=msg)
 
