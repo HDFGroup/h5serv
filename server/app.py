@@ -2233,7 +2233,7 @@ class GroupCollectionHandler(BaseHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                log.info("expected int type for limit")
+                self.log.info("expected int type for limit")
                 raise HTTPError(400)
         marker = self.get_query_argument("Marker", None)
 
@@ -2563,7 +2563,7 @@ class TypeCollectionHandler(BaseHandler):
                 limit = int(limit)
             except ValueError:
                 msg = "Bad Request: expected int type for Limit"
-                log.info(msg)
+                self.log.info(msg)
                 raise HTTPError(400, reason=msg)
         marker = self.get_query_argument("Marker", None)
 
