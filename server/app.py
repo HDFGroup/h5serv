@@ -2463,7 +2463,7 @@ class DatasetCollectionHandler(BaseHandler):
                 pass  # can use as is
             else:
                 msg = "Bad Request: maxdims is invalid"
-                log.info(msg)
+                self.log.info(msg)
                 raise HTTPError(400, reason=msg)
 
         # validate shape
