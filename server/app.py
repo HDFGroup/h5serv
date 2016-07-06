@@ -1693,10 +1693,10 @@ class ValueHandler(BaseHandler):
                         msg = "Bad Request: elements of points should be list type for datasets of rank >1"
                         self.log.info(msg)
                         raise HTTPError(400, reason=msg)
-                        if len(point) != rank:
-                            msg = "Bad Request: one or more points have a missing coordinate value"
-                            self.log.info(msg)
-                            raise HTTPError(400, reason=msg)
+                    if len(point) != rank:
+                        msg = "Bad Request: one or more points have a missing coordinate value"
+                        self.log.info(msg)
+                        raise HTTPError(400, reason=msg)
 
                 values = db.getDatasetPointSelectionByUuid(self.reqUuid, points)
 
