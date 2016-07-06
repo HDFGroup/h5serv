@@ -581,7 +581,7 @@ class LinkHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            msg = "JSON Parser Error: " + str(e)
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
@@ -908,7 +908,7 @@ class AclHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            msg = "JSON Parser Error: " + str(e)
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
@@ -1136,7 +1136,7 @@ class ShapeHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            msg = "JSON Parser Error: " + str(e)
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
@@ -1518,7 +1518,7 @@ class ValueHandler(BaseHandler):
             try:
                 limit = int(limit)  # convert to int
             except ValueError as e:
-                msg = "invalid Limit: " + e.message
+                msg = "invalid Limit: " + str(e)
                 self.log.info(msg)
                 raise HTTPError(400, msg)
                 
@@ -1646,7 +1646,7 @@ class ValueHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            msg = "JSON Parser Error: " + str(e)
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
@@ -1737,7 +1737,7 @@ class ValueHandler(BaseHandler):
             body = json_decode(self.request.body)
         except ValueError as e:
             try:
-                msg = "JSON Parser Error: " + e.message
+                msg = "JSON Parser Error: " + str(e)
             except AttributeError:
                 msg = "JSON Parser Error"
             self.log.info(msg)
@@ -2003,7 +2003,7 @@ class AttributeHandler(BaseHandler):
         except ValueError as e:
             msg = "JSON Parser Error"
             try:
-                msg += ": " + e.message
+                msg += ": " + str(e)
             except AttributeError:
                 pass # no message property
           
@@ -2283,7 +2283,7 @@ class GroupCollectionHandler(BaseHandler):
             try:
                 body = json_decode(self.request.body)
             except ValueError as e:
-                msg = "JSON Parser Error: " + e.message
+                msg = "JSON Parser Error: " + str(e)
                 self.log.info(msg)
                 raise HTTPError(400, reason=msg)
 
@@ -2415,7 +2415,7 @@ class DatasetCollectionHandler(BaseHandler):
             try:
                 body = json_decode(self.request.body)
             except ValueError as e:
-                msg = "JSON Parser Error: " + e.message
+                msg = "JSON Parser Error: " + str(e)
                 self.log.info(msg)
                 raise HTTPError(400, reason=msg)
                 
@@ -2613,7 +2613,7 @@ class TypeCollectionHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            msg = "JSON Parser Error: " + str(e)
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
