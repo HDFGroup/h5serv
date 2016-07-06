@@ -581,7 +581,7 @@ class LinkHandler(BaseHandler):
             body = json_decode(self.request.body)
         except ValueError as e:
             msg = "JSON Parser Error: " + e.message
-            log.info(msg)
+            self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
         childUuid = None
@@ -1395,7 +1395,7 @@ class ValueHandler(BaseHandler):
             fields = dim_query.split(":")
             if len(fields) > 3:
                 msg = "Bad Request: Too many ':' seperators for dimension: " + str(dim)
-                log.info(msg)
+                self.log.info(msg)
                 raise HTTPError(400, reason=msg)
             try:
                 if fields[0]:
@@ -1518,7 +1518,7 @@ class ValueHandler(BaseHandler):
                 limit = int(limit)  # convert to int
             except ValueError as e:
                 msg = "invalid Limit: " + e.message
-                log.info(msg)
+                self.log.info(msg)
                 raise HTTPError(400, msg)
                 
         if query_selection:
@@ -1739,7 +1739,7 @@ class ValueHandler(BaseHandler):
                 msg = "JSON Parser Error: " + e.message
             except AttributeError:
                 msg = "JSON Parser Error"
-            log.info(msg)
+            self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
         if "value" in body:
@@ -1882,7 +1882,7 @@ class AttributeHandler(BaseHandler):
 
         npos = uri.find('/')
         if npos < 0:
-            log.info("bad uri")
+            self.log.info("bad uri")
             raise HTTPError(400)
         uri = uri[(npos+1):]
         npos = uri.find('/')  # second '/'
@@ -1912,7 +1912,7 @@ class AttributeHandler(BaseHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                log.info("expected int type for limit")
+                self.log.info("expected int type for limit")
                 raise HTTPError(400)
         marker = self.get_query_argument("Marker", None)
 
@@ -1975,7 +1975,7 @@ class AttributeHandler(BaseHandler):
         else:
             if len(responseItems) == 0:
                 # should have raised exception earlier
-                log.error("attribute not found: " + attr_name)
+                self.log.error("attribute not found: " + attr_name)
                 raise HTTPError(404)
             responseItem = responseItems[0]
             for k in responseItem:
@@ -1993,7 +1993,7 @@ class AttributeHandler(BaseHandler):
         attr_name = self.getRequestName()
         if attr_name is None:
             msg = "Bad Request: attribute name not supplied"
-            log.info(msg)
+            self.log.info(msg)
             raise HTTPError(400, reason=msg)
         
         body = None
@@ -2401,7 +2401,7 @@ class DatasetCollectionHandler(BaseHandler):
 
         if self.request.uri != '/datasets':
             msg = "Method not Allowed: invalid datasets post request"
-            log.info(msg)
+            self.log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
 
         self.isWritable(self.filePath)
@@ -2602,7 +2602,7 @@ class TypeCollectionHandler(BaseHandler):
 
         if self.request.uri != '/datatypes':
             msg = "Method not Allowed: invalid URI"
-            log.info(msg)
+            self.log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
 
         
