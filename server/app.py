@@ -1183,7 +1183,7 @@ class DatasetHandler(BaseHandler):
         if shape_item['class'] == 'H5S_SCALAR':
             return 1
         elif shape_item['class'] != 'H5S_SIMPLE':
-            return None
+            return 0
         
         dims = shape_item['dims']
         rank = len(dims)
@@ -1256,7 +1256,7 @@ class DatasetHandler(BaseHandler):
 
         # got everything we need, put together the response
         count = self.getDatasetNumElements(item['shape'])
-        print("count: ", count)
+         
         if count <= 100:
             # small number of values, provide link to entire dataset
             hrefs.append({
