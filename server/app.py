@@ -1178,27 +1178,35 @@ class ShapeHandler(BaseHandler):
 
 class DatasetHandler(BaseHandler):
 
+    def getDatasetNumElements(self, shape_item):
+        
+        if shape_item['class'] == 'H5S_SCALAR':
+            return 1
+        elif shape_item['class'] != 'H5S_SIMPLE':
+            return None
+        
+        dims = shape_item['dims']
+        rank = len(dims)
+        if rank == 0:
+            return 1
+
+        count = 1
+        for i in range(rank):
+            count *= dims[i]
+        return count
+
+
     def getPreviewQuery(self, shape_item):
         """Helper method - return query options for a "reasonable" size
         data preview selection. Return None if the dataset is small
         enough that a preview is not needed.
 
         """
-        if shape_item['class'] != 'H5S_SIMPLE':
-            return None
+
+        select = "select=["
+
         dims = shape_item['dims']
         rank = len(dims)
-        if rank == 0:
-            return None
-
-        count = 1
-        for i in range(rank):
-            count *= dims[i]
-
-        if count <= 100:
-            return None
-
-        select = "?select=["
 
         ncols = dims[rank-1]
         if rank > 1:
@@ -1207,12 +1215,16 @@ class DatasetHandler(BaseHandler):
             nrows = 1
 
         # use some rough heuristics to define the selection
+        # aim to return no more than 100 elements
         if ncols > 100:
             ncols = 100
         if nrows > 100:
             nrows = 100
         if nrows*ncols > 1000:
+            nrows //= 100
+        elif nrows*ncols > 100:
             nrows //= 10
+        
 
         for i in range(rank):
             if i == rank-1:
@@ -1243,8 +1255,22 @@ class DatasetHandler(BaseHandler):
             raise HTTPError(status, reason=e.strerror)
 
         # got everything we need, put together the response
-         
-        previewQuery = self.getPreviewQuery(item['shape'])
+        count = self.getDatasetNumElements(item['shape'])
+        print("count: ", count)
+        if count <= 100:
+            # small number of values, provide link to entire dataset
+            hrefs.append({
+                'rel': 'data',
+                'href': self.getHref('datasets/' + self.reqUuid + '/value')
+            })
+        else:
+            # large number of values, create preview link
+            previewQuery = self.getPreviewQuery(item['shape'])
+            hrefs.append({
+                'rel': 'preview',
+                'href': self.getHref('datasets/' + self.reqUuid + '/value', query=previewQuery)
+            })
+        
 
         hrefs.append({
             'rel': 'self', 'href': self.getHref('datasets/' + self.reqUuid)})
@@ -1254,15 +1280,7 @@ class DatasetHandler(BaseHandler):
             'rel': 'attributes',
             'href': self.getHref('datasets/' + self.reqUuid + '/attributes')
         })
-        hrefs.append({
-            'rel': 'data',
-            'href': self.getHref('datasets/' + self.reqUuid + '/value')
-        })
-        if previewQuery:
-            hrefs.append({
-                'rel': 'preview',
-                'href': self.getHref('datasets/' + self.reqUuid + '/value', query=previewQuery)
-            })
+        
         hrefs.append({'rel': 'home', 'href': self.getHref('')})
         response['id'] = self.reqUuid
         typeItem = item['type']
@@ -1562,8 +1580,7 @@ class ValueHandler(BaseHandler):
                        
                         self.log.info("response_content_type: " + response_content_type)
                         values = db.getDatasetValuesByUuid(
-                            self.reqUuid, tuple(slices), format=response_content_type) 
-                        self.log.info("values type: " + str(type(values)))       
+                            self.reqUuid, tuple(slices), format=response_content_type)      
                          
                 else:
                     msg = "Internal Server Error: unexpected shape class: " + shape['class']
