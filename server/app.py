@@ -1220,11 +1220,11 @@ class DatasetHandler(BaseHandler):
             ncols = 100
         if nrows > 100:
             nrows = 100
-        if nrows*ncols > 1000:
-            nrows //= 100
-        elif nrows*ncols > 100:
-            nrows //= 10
-        
+        if nrows*ncols > 100:
+            if nrows > ncols:
+                nrows = 100 // ncols
+            else:
+                ncols = 100 // nrows
 
         for i in range(rank):
             if i == rank-1:
