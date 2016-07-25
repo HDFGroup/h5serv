@@ -16,6 +16,7 @@ and vice-versa).
 
 import os
 import os.path as op
+import logging
 
 from tornado.web import HTTPError
 
@@ -258,13 +259,16 @@ def getDomain(file_path, base_domain=None):
 def verifyFile(filePath, writable=False):
     """ verify given file exists and is an HDF5 file
     """
+    log = logging.getLogger("h5serv")
+    log.info("verifyFile('" + filePath + "', " + str(writable) + ")")
     if not op.isfile(filePath):
+        log.info("not a file")
         raise HTTPError(404)  # not found
     if not is_hdf5(filePath):
-        # logging.warning('this is not a hdf5 file!')
+        log.info('this is not a hdf5 file!')
         raise HTTPError(404)
     if writable and not os.access(filePath, os.W_OK):
-        # logging.warning('attempting update of read-only file')
+        log.warning('attempting update of read-only file')
         raise HTTPError(403)
         
 def isFile(filePath):
