@@ -250,8 +250,8 @@ to the password file.
 
 MongoDB: A MongoDB database that contains a "users" collection of userids and 
 passwords.  In this case the password_uri would be of the form: 
-``mongodb://&lt;mongo_ip&gt;:&lt;port&gt;`` where &lt;mongo_ip&gt is the IP 
-address of the host running the mongo database and &lt;port&gt; is the port of 
+``mongodb://<mongo_ip>:<port>`` where ``<mongo_ip>`` is the IP 
+address of the host running the mongo database and ``<port>`` is the port of 
 the mongo database (typically 27017).
 
 default: ``../util/admin/passwd.h5``
