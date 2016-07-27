@@ -17,6 +17,7 @@ import json
 import os
 import time
 from shutil import copyfile
+from tornado.escape import url_escape
 
 class DirTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -52,6 +53,8 @@ class DirTest(unittest.TestCase):
         for item in links:
             if item['title'] == home_dir:
                 self.assertTrue(False)  # should not see home dir from root toc
+
+        # get group uuid that maps to "test" sub-directory
         req = self.endpoint + "/groups/" + root_uuid + "/links/test" 
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
@@ -59,16 +62,88 @@ class DirTest(unittest.TestCase):
         self.assertTrue("link" in rspJson)
         link = rspJson['link']
         group_uuid = link['id']
-        req = self.endpoint + "/groups/" + group_uuid + "/links/tall" 
+
+        # verify we see "tall" under links
+        name = "tall"
+        req = self.endpoint + "/groups/" + group_uuid + "/links/" + name 
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
         rspJson = json.loads(rsp.text)
         self.assertTrue("link" in rspJson)
         link = rspJson['link']
         self.assertEqual(link['class'], 'H5L_TYPE_EXTERNAL')
-        self.assertEqual(link['title'], 'tall')
+        self.assertEqual(link['title'], name)
         self.assertEqual(link['h5path'], '/')
-        self.assertEqual(link['h5domain'], 'tall.test.' + domain)
+        self.assertEqual(link['h5domain'], name + '.test.' + domain)
+
+        # verify that "filename with space" shows up properly url encoded
+        name = "filename with space"
+        name_escaped = url_escape(name)
+        req = self.endpoint + "/groups/" + group_uuid + "/links/" + name 
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("link" in rspJson)
+        link = rspJson['link']
+        self.assertEqual(link['class'], 'H5L_TYPE_EXTERNAL')
+        self.assertEqual(link['title'], name)
+        self.assertEqual(link['h5path'], '/')
+        self.assertEqual(link['h5domain'], name_escaped + '.test.' + domain)
+         
+        # get all the links in the test group
+        req = self.endpoint + "/groups/" + group_uuid + "/links"
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("links" in rspJson)
+        links = rspJson["links"]
+        tall_link = None         # normal link
+        file_space_link = None   # link that contains a space  
+        file_dot_link = None     # link that contains a dot
+        for link in links:
+            self.assertTrue("title" in link)
+            self.assertTrue("class" in link)
+            if link['title'] == "tall":
+                tall_link = link
+            elif link['title'] == "filename with space":
+                file_space_link = link
+            elif link['title'] == "tall.dots.need.to.be.encoded":
+                file_dot_link = link
+
+        self.assertTrue(tall_link is not None)
+        name = "tall"
+        link = tall_link
+        self.assertEqual(link['class'], 'H5L_TYPE_EXTERNAL')
+        self.assertEqual(link['title'], name)
+        self.assertEqual(link['h5path'], '/')
+        self.assertEqual(link['h5domain'], name + '.test.' + domain)
+        href = "groups/" + group_uuid + "/links/" + name
+        self.assertTrue(link['href'].endswith(href))
+
+        self.assertTrue(file_space_link is not None)
+        name = "filename with space"
+        link = file_space_link
+        self.assertEqual(link['class'], 'H5L_TYPE_EXTERNAL')
+        self.assertEqual(link['title'], name)
+        self.assertEqual(link['h5path'], '/')
+        self.assertEqual(link['h5domain'], url_escape(name) + '.test.' + domain)
+        href = "groups/" + group_uuid + "/links/" + url_escape(name)
+        self.assertTrue(link['href'].endswith(href))
+
+        self.assertTrue(file_dot_link is not None)
+        name = "tall.dots.need.to.be.encoded"
+        name_encoded = name.replace('.', '%2E')
+    
+        link = file_dot_link
+        self.assertEqual(link['class'], 'H5L_TYPE_EXTERNAL')
+        self.assertEqual(link['title'], name)
+        self.assertEqual(link['h5path'], '/')
+        self.assertEqual(link['h5domain'], name + '.test.' + domain)
+        href = "groups/" + group_uuid + "/links/" + name
+        self.assertTrue(link['href'].endswith(href))
+
+         
+
         
     def testGetUserToc(self):  
         domain = config.get('domain')

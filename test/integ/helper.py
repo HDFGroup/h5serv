@@ -186,6 +186,8 @@ def nameEncode(name):
     for ch in name:
         if ch.isalnum():
             out.append(ch)
+        elif ch == ' ':
+            out.append('+')
         else:
             hex = format(ord(ch), '02X')
             out.append('%' + hex)

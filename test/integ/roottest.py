@@ -38,7 +38,17 @@ class RootTest(unittest.TestCase):
         self.assertEqual(rsp.status_code, 200)
         self.assertEqual(rsp.headers['content-type'], 'application/json')
         rspJson = json.loads(rsp.text)
+        root_uuid = rspJson["root"]
+        helper.validateId(root_uuid)
+         
+        # try again with query arg
+        req = self.endpoint + "/?host=" + domain
+        rsp = requests.get(req)
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['content-type'], 'application/json')
+        rspJson = json.loads(rsp.text)
         helper.validateId(rspJson["root"])
+        self.assertEqual(root_uuid, rspJson["root"])
         
     def testGetReadOnly(self):
         domain = 'tall_ro.' + config.get('domain')    
@@ -192,6 +202,24 @@ class RootTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.assertEqual(rsp.status_code, 409)
         
+    def testGetDomainWithDot(self):
+        domain = helper.nameEncode('tall.dots.need.to.be.encoded') + '.'  + config.get('domain') 
+        
+        req = self.endpoint + "/"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['content-type'], 'application/json')
+        rspJson = json.loads(rsp.text)
+        helper.validateId(rspJson["root"])    
+        
+        # try using host as query argument
+        req = self.endpoint + "/?host=" + domain
+        rsp = requests.get(req)
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['content-type'], 'application/json')
+        rspJson = json.loads(rsp.text)
+        helper.validateId(rspJson["root"]) 
         
         
     def testPutNameWithDot(self):

@@ -267,6 +267,8 @@ def createTocFile(datapath):
                     log.info("skip non-hdf5 file")
                     continue
                 filename = filename[:-(len(hdf5_ext))]
+                # replace any dots with '%2E' to disambiguate from domain seperators
+                #filename = filename.replace('.', '%2E')
                 log.info("filename (noext): " + filename)
                 if domainpath[0] == '.':        
                     filedomain = filename + domainpath

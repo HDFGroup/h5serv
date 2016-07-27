@@ -113,7 +113,6 @@ class BaseHandler(tornado.web.RequestHandler):
     def get_current_user(self):
         user = None
         pswd = None
-        #print(self.request.headers.get('Authorization', ''))
         scheme, _, token = auth_header = self.request.headers.get(
             'Authorization', '').partition(' ')
         if scheme and token and scheme.lower() == 'basic':
@@ -169,10 +168,13 @@ class BaseHandler(tornado.web.RequestHandler):
         host = self.request.host
         if "X-Forwarded-Host" in self.request.headers:
             host = self.request.headers["X-Forwarded-Host"]
+        
+        #domain_encoded = self.get_argument("host")
+        #print("domain_encoded: ", domain_encoded)
         self.domain = self.get_query_argument("host", default=None)
+         
         if not self.domain:
             self.domain = host
-
         remote_ip = self.request.remote_ip
         if "X-Real-Ip" in self.request.headers:
             remote_ip = self.request.headers["X-Real-Ip"]
@@ -207,6 +209,9 @@ class BaseHandler(tornado.web.RequestHandler):
         hostQuery = self.get_query_argument("host", default=None)
         
         targetHostQuery = ''
+
+        # url encode the domain
+        domain = self.nameEncode(domain)
         if hostQuery or self.isTocFilePath(self.filePath):
             target += host
             targetHostQuery = '?host=' + domain
@@ -228,7 +233,7 @@ class BaseHandler(tornado.web.RequestHandler):
         href = self.href + '/' + uri  
         delimiter = '?'
         if self.get_query_argument("host", default=None):
-            href  += "?host=" + self.get_query_argument("host")
+            href  += "?host=" + self.nameEncode(self.get_query_argument("host"))
             delimiter = '&'
             
         if query is not None:
@@ -276,7 +281,6 @@ class BaseHandler(tornado.web.RequestHandler):
     def getFilePath(self, domain, checkExists=True):
         """ Helper method - return file path for given domain.
         """
-         
         self.log.info("getFilePath: " + domain)
         tocFilePath = fileUtil.getTocFilePathForDomain(domain, auth)
         self.log.info("tocFilePath: " + tocFilePath)
@@ -288,8 +292,33 @@ class BaseHandler(tornado.web.RequestHandler):
                 self.setDefaultAcl()
     
         filePath = fileUtil.getFilePath(domain, auth)
+
+        # convert any "%2E" substrings with "." (since dot isn't allowed for domain name)
+        filePath = self.nameDecode(filePath)  
          
         if checkExists:
+            while True:
+                if fileUtil.isFile(filePath):
+                    break
+                # Unfortunately the host query parameter substitues '/' for "%2E",
+                # so check to see if any slashes should really be dots.
+                # clients should prefer using the hsot header if this is an issue
+                self.log.info("filePath: " + filePath + " not found")
+                host_query = self.get_query_argument("host", default=None)
+                if host_query is None:
+                    # If using host header, we don't need to guess about the %2E substitution
+                    break  
+                if domain.find('.') > -1:
+                    domain = domain.replace('.', '%2E', 1)
+                    try:
+                        filePath = fileUtil.getFilePath(domain, auth)
+                    except HTTPError:
+                        self.log.info("invalid domain, ignoring")
+                        break
+                    filePath = self.nameDecode(filePath)
+                else:
+                    break
+            self.log.info("verifyFile: " + filePath)    
             fileUtil.verifyFile(filePath)  # throws exception if not found  
         
         return filePath
@@ -306,6 +335,40 @@ class BaseHandler(tornado.web.RequestHandler):
             return True
         else:
             return False
+
+  
+    def nameDecode(self, name):
+        """
+        Helper function - convert url-encoded name to orignal format
+        """
+        name =  name.replace('%2E', '.')
+        return name
+
+    def nameEncode(self, name):
+      
+        """
+        Helper function - convert name to url-friendly format
+        Replaces all non-alphanumeric characters with '%<ascii_hex>'
+        """
+         
+        valid_chars = ['-', '.', '_', '~', ':', '/', '?', '#', '[', ']', '@', '!', '$', '&', "'", '(', ')', '*', '+', ',', ';', '=']
+        out = []
+        for ch in name:
+            if ch.isalnum():
+                out.append(ch)
+            elif ch == ' ':
+                out.append('+')
+            elif ch == '%':
+                # pass through encoded chars ('%xx' where xx are hexidecimal values)
+                out.append(ch)
+            elif ch in valid_chars:
+                # other valid url chars
+                out.append(ch)
+            else:
+                hex = format(ord(ch), '02X')
+                out.append('%' + hex)
+         
+        return ''.join(out)
             
 
     def getRequestId(self):
@@ -415,7 +478,8 @@ class LinkCollectionHandler(BaseHandler):
             link_item = {}
             link_item['class'] = item['class']
             link_item['title'] = item['title']
-            link_item['href'] = item['href'] = self.href + '/groups/' + self.reqUuid + '/links/' + item['title'] + hostQuery
+            print("title:", item['title'])
+            link_item['href'] = item['href'] = self.href + '/groups/' + self.reqUuid + '/links/' + self.nameEncode(item['title']) + hostQuery
             if item['class'] == 'H5L_TYPE_HARD':
                 link_item['id'] = item['id']
                 link_item['collection'] = item['collection']
@@ -424,10 +488,10 @@ class LinkCollectionHandler(BaseHandler):
                 link_item['h5path'] = item['h5path']
             elif item['class'] == 'H5L_TYPE_EXTERNAL':
                 link_item['h5path'] = item['h5path']
-                link_item['h5domain'] = item['file']
-                
+                h5domain = self.nameEncode(item['file'])
+                link_item['h5domain'] = h5domain
                 if link_item['h5domain'].endswith(config.get('domain')):
-                    link_item['target'] = self.getExternalHref(link_item['h5domain'], link_item['h5path'])
+                    link_item['target'] = self.getExternalHref(h5domain, link_item['h5path'])
                     
 
             links.append(link_item)
@@ -484,6 +548,7 @@ class LinkHandler(BaseHandler):
         self.baseHandler()
          
         linkName = self.getName(self.request.uri)
+       
         self.log.info("linkName:["+linkName+"]")
 
         response = {}
@@ -510,7 +575,7 @@ class LinkHandler(BaseHandler):
         if 'file' in item:
             h5domain = item['file']
             del item['file']
-            item['h5domain'] = h5domain
+            item['h5domain'] = url_escape(h5domain)
 
         response['link'] = item
 
@@ -538,7 +603,7 @@ class LinkHandler(BaseHandler):
             target = self.getHref('/#h5path(' + item['h5path'] + ')')
         elif item['class'] == 'H5L_TYPE_EXTERNAL':
             if item['h5domain'].endswith(config.get('domain')):
-                target = self.getExternalHref(item['h5domain'], item['h5path'])
+                target = self.getExternalHref(h5domain, item['h5path'])
 
         if target:
             hrefs.append({'rel': 'target', 'href': target})
@@ -2723,13 +2788,13 @@ class RootHandler(BaseHandler):
 
     def get(self):
          
-        self.baseHandler()
-         
+        self.baseHandler()  
+        """
         self.log.info("header keys...")
         for k in self.request.headers.keys():
             self.log.info("header[" + k + "]: " + self.request.headers[k])
         self.log.info('remote_ip: ' + self.request.remote_ip)
-         
+        """
         try:
             response = self.getRootResponse(self.filePath)
         except HTTPError as e:
