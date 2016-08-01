@@ -17,8 +17,9 @@ WORKDIR /usr/local/src/h5serv
 COPY server server                                       
 COPY util util                                         
 COPY test test                                        
-COPY data /data                                         
-RUN  ln -s /data 
+COPY data /data 
+RUN  cp /usr/local/src/hdf5-json/data/hdf5/tall.h5 /data ; \                                      
+     ln -s /data 
                               
 EXPOSE 5000 
 
