@@ -3149,8 +3149,6 @@ def main():
     
     log.info("log test")
     
-
-    global server
     app = make_app()
     domain = config.get("domain")
     print("domain:", domain)
