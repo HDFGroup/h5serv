@@ -478,7 +478,6 @@ class LinkCollectionHandler(BaseHandler):
             link_item = {}
             link_item['class'] = item['class']
             link_item['title'] = item['title']
-            print("title:", item['title'])
             link_item['href'] = item['href'] = self.href + '/groups/' + self.reqUuid + '/links/' + self.nameEncode(item['title']) + hostQuery
             if item['class'] == 'H5L_TYPE_HARD':
                 link_item['id'] = item['id']
