@@ -99,6 +99,7 @@ def addTocEntry(domain, filePath,  userid=None):
                     continue
                 if linkName.endswith(hdf5_ext):
                     linkName = linkName[:-(len(hdf5_ext))]
+                    print("linkName:", linkName)
                     if userid is not None:
                         acl = db.getAcl(group_uuid, userid)
                         if not acl['create']:
@@ -268,12 +269,12 @@ def createTocFile(datapath):
                     continue
                 filename = filename[:-(len(hdf5_ext))]
                 # replace any dots with '%2E' to disambiguate from domain seperators
-                #filename = filename.replace('.', '%2E')
+                filename_encoded = filename.replace('.', '%2E')
                 log.info("filename (noext): " + filename)
                 if domainpath[0] == '.':        
-                    filedomain = filename + domainpath
+                    filedomain = filename_encoded + domainpath
                 else:
-                    filedomain = filename + '.' + domainpath
+                    filedomain = filename_encoded + '.' + domainpath
                     
             # create the grp at grppath if it doesn't exist
             if not grp:

@@ -239,6 +239,9 @@ def getDomain(file_path, base_domain=None):
     else:
         domain = op.basename(file_path)
 
+    # replace dots with %2E in basename
+    domain = domain.replace('.', '%2E')
+
     dirname = op.dirname(file_path)
     
     while len(dirname) > 1 and dirname != data_path:

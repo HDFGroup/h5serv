@@ -106,7 +106,7 @@ class DirTest(unittest.TestCase):
             if link['title'] == "tall":
                 tall_link = link
             elif link['title'] == "filename with space":
-                file_space_link = link
+                file_space_link = link              
             elif link['title'] == "tall.dots.need.to.be.encoded":
                 file_dot_link = link
 
@@ -138,7 +138,7 @@ class DirTest(unittest.TestCase):
         self.assertEqual(link['class'], 'H5L_TYPE_EXTERNAL')
         self.assertEqual(link['title'], name)
         self.assertEqual(link['h5path'], '/')
-        self.assertEqual(link['h5domain'], name + '.test.' + domain)
+        self.assertEqual(link['h5domain'], name_encoded + '.test.' + domain)
         href = "groups/" + group_uuid + "/links/" + name
         self.assertTrue(link['href'].endswith(href))
 
@@ -390,7 +390,7 @@ class DirTest(unittest.TestCase):
         copyfile(src_file, des_file)
         
         # sleep to give the watchdog time to update the toc
-        time.sleep(2) 
+        time.sleep(2)  
          
         # external link should exist now
         req = self.endpoint + "/groups/" + test_group_uuid + "/links/" + domain_name 

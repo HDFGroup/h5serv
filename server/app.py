@@ -302,7 +302,7 @@ class BaseHandler(tornado.web.RequestHandler):
                     break
                 # Unfortunately the host query parameter substitues '/' for "%2E",
                 # so check to see if any slashes should really be dots.
-                # clients should prefer using the hsot header if this is an issue
+                # clients should prefer using the host header if this is an issue
                 self.log.info("filePath: " + filePath + " not found")
                 host_query = self.get_query_argument("host", default=None)
                 if host_query is None:
