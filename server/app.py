@@ -281,7 +281,7 @@ class BaseHandler(tornado.web.RequestHandler):
     def getFilePath(self, domain, checkExists=True):
         """ Helper method - return file path for given domain.
         """
-        self.log.info("getFilePath: " + domain)
+        self.log.info("getFilePath: " + domain + " checkExists: " + str(checkExists))
         tocFilePath = fileUtil.getTocFilePathForDomain(domain, auth)
         self.log.info("tocFilePath: " + tocFilePath)
         if not fileUtil.isFile(tocFilePath):
@@ -574,7 +574,7 @@ class LinkHandler(BaseHandler):
         if 'file' in item:
             h5domain = item['file']
             del item['file']
-            item['h5domain'] = url_escape(h5domain)
+            item['h5domain'] = self.nameEncode(h5domain)
 
         response['link'] = item
 
