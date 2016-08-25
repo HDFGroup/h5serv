@@ -28,7 +28,8 @@ class TimeUtilTest(unittest.TestCase):
         # get test file
         now = time.time()
         utcTime = unixTimeToUTC(now)
-        self.assertEqual(len(utcTime), 27)
+        print(utcTime)
+        self.assertEqual(len(utcTime), 20)
         self.assertTrue(utcTime.startswith('20'))
         self.assertTrue(utcTime.endswith('Z'))
         

@@ -23,7 +23,7 @@ import base64
 
 """
     Helper function - get endpoint we'll send http requests to 
-    """ 
+""" 
 def getEndpoint():
     endpoint = 'http://' + config.get('server') + ':' + str(config.get('port'))
     return endpoint

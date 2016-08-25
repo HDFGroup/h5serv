@@ -8,7 +8,7 @@ def unixTimeToUTC(timestamp):
 
     """
     utc = pytz.utc
-    dtTime = datetime.fromtimestamp(timestamp, utc)
+    dtTime = datetime.fromtimestamp(int(timestamp), utc)
     iso_str = dtTime.isoformat()
     # isoformat returns a string like this:
     # '2014-10-30T04:25:21+00:00'
