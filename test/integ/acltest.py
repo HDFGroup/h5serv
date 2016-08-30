@@ -148,8 +148,7 @@ class AclTest(unittest.TestCase):
         rsp = requests.put(req, headers=headers)
         self.assertEqual(rsp.status_code, 201)  
         # todo - above should fail with 401 - need authorization
-        
-         
+                
         
     def testAttributes(self):
         self.domain = 'tall_acl.' + config.get('domain')  
@@ -231,6 +230,18 @@ class AclTest(unittest.TestCase):
         headers = self.getHeaders(user=self.user1)
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)  # OK
+
+        # read dataset acls
+        req += "/acls"
+        rsp = requests.get(req, headers=headers)  
+        self.assertEqual(rsp.status_code, 403)  # test_user1 doesn't have readACL permission
+        headers = self.getHeaders(user=self.user2)
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text) 
+        self.assertTrue("acls" in rspJson)
+        acls = rspJson["acls"]
+        self.assertEqual(len(acls), 0)  # empty list of acls
         
         # delete dataset
         headers = self.getHeaders()
@@ -327,9 +338,22 @@ class AclTest(unittest.TestCase):
         headers = self.getHeaders(user=self.user1)
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)  # OK
+
+        # read dataset acls
+        req += "/acls"
+        rsp = requests.get(req, headers=headers)  
+        self.assertEqual(rsp.status_code, 403)  # test_user1 doesn't have readACL permission
+        headers = self.getHeaders(user=self.user2)
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text) 
+        self.assertTrue("acls" in rspJson)
+        acls = rspJson["acls"]
+        self.assertEqual(len(acls), 0)  # empty list of acls
            
         # test delete
         headers = self.getHeaders()
+        req = self.endpoint + "/datatypes/" + type_uuid 
         rsp = requests.delete(req, headers=headers)
         self.assertEqual(rsp.status_code, 401)  # auth needed
         
@@ -357,7 +381,19 @@ class AclTest(unittest.TestCase):
         headers = self.getHeaders(user=self.user1)
         rsp = requests.get(req, headers=headers)
         self.assertEqual(rsp.status_code, 200)
-                  
+
+        # read group acls
+        req += "/acls"
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 403)  # test_user1 doesn't have readACL permission
+        headers = self.getHeaders(user=self.user2)
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text) 
+        self.assertTrue("acls" in rspJson)
+        acls = rspJson["acls"]
+        self.assertEqual(len(acls), 0)  # empty list of acls
+         
         # read links
         headers = self.getHeaders()
         req = self.endpoint + "/groups/" + g1_uuid + '/links'
@@ -463,24 +499,7 @@ class AclTest(unittest.TestCase):
         
         headers = self.getHeaders(user=self.user2)
         rsp = requests.delete(req, headers=headers)
-        self.assertEqual(rsp.status_code, 200)  # OK 
-        
-        
-        
-        
-        
-        
-        
-         
-        
-        
-        
-         
-        
-        
-        
-         
-        
+        self.assertEqual(rsp.status_code, 200)  # OK        
      
         
 if __name__ == '__main__':

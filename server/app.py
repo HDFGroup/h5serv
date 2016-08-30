@@ -777,7 +777,7 @@ class AclHandler(BaseHandler):
     def getName(self):
         uri = self.request.uri
 
-        if uri == '/acls':
+        if uri.endswith('/acls'):
             return None  # default domain acl
         # helper method
         # uri should be in the form: /group/<uuid>/acl/<username>
@@ -2334,7 +2334,7 @@ class GroupCollectionHandler(BaseHandler):
         self.baseHandler()
          
         if self.request.uri != '/groups':
-            msg = "Method Not Allowed: bad group post request"
+            msg = "Method Not Allowed: bad group post request: " + self.request.uri
             self.log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
 
@@ -2998,13 +2998,16 @@ def make_app():
         url(r"/datasets/.*/shape", ShapeHandler),
         url(r"/datasets/.*/attributes/.*", AttributeHandler),
         url(r"/datasets/.*/acls/.*", AclHandler),
+        url(r"/datasets/.*/acls", AclHandler),
         url(r"/groups/.*/attributes/.*", AttributeHandler),
         url(r"/groups/.*/acls/.*", AclHandler),
+        url(r"/groups/.*/acls", AclHandler),
         url(r"/datatypes/.*/attributes/.*", AttributeHandler),
         url(r"/datasets/.*/attributes", AttributeHandler),
         url(r"/groups/.*/attributes", AttributeHandler),
         url(r"/datatypes/.*/attributes", AttributeHandler),
         url(r"/datatypes/.*/acls/.*", AclHandler),
+        url(r"/datatypes/.*/acls", AclHandler),
         url(r"/datatypes/.*", TypeHandler),
         url(r"/datatypes/", TypeHandler),
         url(r"/datatypes\?.*", TypeCollectionHandler),
