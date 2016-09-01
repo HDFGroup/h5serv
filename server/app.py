@@ -959,7 +959,7 @@ class AclHandler(BaseHandler):
             raise HTTPError(400, reason=msg)
 
         if 'perm' not in body:
-            msg = "Bad Request: acl not found in request body"
+            msg = "Bad Request: 'perm' not found in request body"
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
@@ -2881,6 +2881,7 @@ class RootHandler(BaseHandler):
             with Hdf5db(self.filePath, app_logger=self.log) as db:
                 rootUUID = db.getUUIDByPath('/')
                 acl = db.getAcl(rootUUID, self.userid)
+                print("verify delete, ", acl, self.userid)
                 self.verifyAcl(acl, 'delete')  # throws exception is unauthorized
         except IOError as e:
             self.log.info("IOError: " + str(e.errno) + " " + e.strerror)
