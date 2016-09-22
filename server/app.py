@@ -441,7 +441,7 @@ class LinkCollectionHandler(BaseHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                msg = "Bad Request: Expected into type for limit"
+                msg = "Bad Request: Expected int type for limit"
                 self.log.info(msg)
                 raise HTTPError(400, reason=msg)
         marker = self.get_query_argument("Marker", None)

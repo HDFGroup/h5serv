@@ -273,7 +273,7 @@ class Dumph5:
 # Print usage and exit
 #
 def printUsage():
-    print("usage: python exporth5.py [-v] [-endpoint=<server_ip>]  [-port=<port] <domain> <filename>")
+    print("usage: python exporth5.py [-v] [-endpoint=<server_ip>]  [-port=<port>] <domain> <filename>")
     print("  options -v: verbose, print request and response codes from server")
     print("  options -endpoint: specify IP endpoint of server")
     print("  options -port: port address of server [default 7253]")
