@@ -124,7 +124,7 @@ class DatatypeTest(unittest.TestCase):
         datatypes = ( 'H5T_STD_I8LE',   'H5T_STD_U8LE',  
                       'H5T_STD_I16LE',  'H5T_STD_U16LE',    
                       'H5T_STD_I32LE',  'H5T_STD_U32LE',   
-                      'H5T_STD_I64LE',  'H5T_STD_I64LE',  
+                      'H5T_STD_I64LE',  'H5T_STD_U64LE',  
                       'H5T_IEEE_F32LE', 'H5T_IEEE_F64LE' )
                      
                #todo: check on  'vlen_bytes', 'vlen_unicode'

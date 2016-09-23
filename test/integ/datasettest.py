@@ -877,7 +877,7 @@ class DatasetTest(unittest.TestCase):
         
         datatypes = ( 'H5T_STD_I16',  'H5T_STD_U16',    
                       'H5T_STD_I32',  'H5T_STD_U32',   
-                      'H5T_STD_I64',  'H5T_STD_I64',  
+                      'H5T_STD_I64',  'H5T_STD_U64',  
                       'H5T_IEEE_F32', 'H5T_IEEE_F64' )
                       
         endianess = ('LE', 'BE')

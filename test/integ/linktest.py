@@ -233,12 +233,12 @@ class LinkTest(unittest.TestCase):
         self.assertEqual(rsp.status_code, 200)  # it's there now!
         # make a request second time (verify idempotent)
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.assertEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 409)  # status - conflict, already exists
         # now try with a different payload
         grpId2 = helper.createGroup(domain)
         payload["id"] = grpId2
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.assertEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 409)
         
         
     def testPutNameWithSpaces(self):
@@ -282,7 +282,7 @@ class LinkTest(unittest.TestCase):
         grpId = helper.createGroup(domain)
         rootId = helper.getRootUUID(domain)  
         badLinkId  = 'b2771194-347f-11e4-bb67-3c15c2da029e' # doesn't exist in tall.h5
-        name = 'g3'
+        name = 'badid'
         req = helper.getEndpoint() + "/groups/" + rootId + "/links/" + name 
         payload = {"id": badLinkId}
         headers = {'host': domain}
@@ -332,7 +332,7 @@ class LinkTest(unittest.TestCase):
         self.assertEqual(rsp.status_code, 200)
         # verify idempotent
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
-        self.assertEqual(rsp.status_code, 201)
+        self.assertEqual(rsp.status_code, 409)
         
     def testPutExternalLink(self):
         logging.info("LinkTest.testPutExternalLink")

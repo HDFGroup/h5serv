@@ -670,6 +670,17 @@ class LinkHandler(BaseHandler):
                 rootUUID = db.getUUIDByPath('/')
                 acl = db.getAcl(self.reqUuid, self.userid)
                 self.verifyAcl(acl, 'create')  # throws exception is unauthorized
+                try:
+                    existingItem = db.getLinkItemByUuid(self.reqUuid, linkName)
+                    if existingItem:
+                        # link alread exist
+                        msg = "Unable to create link (Name already exists)"
+                        self.log.info(msg)
+                        raise HTTPError(409, reason=msg)
+                except IOError as e:
+                    # link not found, so we can add one with this name
+                    pass
+
                 if childUuid:
                     db.linkObject(self.reqUuid, childUuid, linkName)
                 elif h5domain:
