@@ -43,11 +43,14 @@ Install Anaconda using the default options.
 Once Anaconda is installed select "Anaconda Command Prompt" from the start menu.
 
 In the command window that appears, create a new anaconda environment using the following command:
-``conda create -n h5serv python=2.7 h5py tornado watchdog requests pytz``
+``conda create -n h5serv python=2.7 h5py tornado requests pytz``
 
 Answer 'y' to the prompt, and the packages will be fetched.
 
 In the same command window, run: ``activate h5serv``
+
+Install the watchdog package (this is currently not available through Anaconda):
+``pip install watchdog``
 
 Download the hdf5-json project: ``git clone https://github.com/HDFGroup/hdf5-json.git`` .
 Alternatively, in a browser go to: https://github.com/HDFGroup/hdf5-json and click the 
@@ -85,9 +88,12 @@ Install Anaconda using the default options.
 
 Once Anaconda is installed, open a new shell and run the following on the command line:
 
-``conda create -n h5serv python=2.7 h5py tornado watchdog requests pytz``
+``conda create -n h5serv python=2.7 h5py tornado requests pytz``
 
 Answer 'y' to the prompt, and the packages will be fetched.
+
+Install the watchdog package (this is currently not available through Anaconda):
+``pip install watchdog``
 
 In the same shell, run: ``source activate h5serv``
 
