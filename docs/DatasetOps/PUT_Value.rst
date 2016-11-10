@@ -73,7 +73,7 @@ A JSON array containing the data values to be written.
 value_base64:
 ^^^^^^^^^^^^^
 
-Use this key instead of "value" to use bas64-encoded binary data rather than JSON ascii.  This will be more
+Use this key instead of "value" to use base64-encoded binary data rather than JSON ascii.  This will be more
 efficient for large data transfers than using a JSON array.
 
 Note: "value_base64" is only supported for fixed length datatypes.

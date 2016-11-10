@@ -1471,7 +1471,7 @@ class ValueHandler(BaseHandler):
             fields = dim_query.split(":")
             if len(fields) > 3:
                 msg = "Bad Request: Too many ':' seperators for dimension: " + str(dim)
-                log.info(msg)
+                self.log.info(msg)
                 raise HTTPError(400, reason=msg)
             try:
                 if fields[0]:

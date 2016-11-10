@@ -1395,7 +1395,7 @@ class ValueTest(unittest.TestCase):
         datatype = {'class': 'H5T_COMPOUND', 'fields': fields }
         
         #
-        #create scalar dataset
+        #create compound dataset
         #
         payload = {'type': datatype}
         req = self.endpoint + "/datasets"
