@@ -13,6 +13,14 @@ Requests
 Syntax
 ------
 
+To get the ACL for a domain:
+
+.. code-block:: http
+
+    GET /acls HTTP/1.1
+    Host: DOMAIN
+    Authorization: <authorization_string>
+
 To get the ACL for a group:
 
 .. code-block:: http

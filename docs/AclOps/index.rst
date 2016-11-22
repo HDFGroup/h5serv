@@ -78,6 +78,10 @@ In many cases it will be desired to have a default ACL that applies to each reso
 This can be accomplished by defining an ACL for the root group.  This will control the access 
 rights for any resource unless of ACL is present in that resource for the requesting user.
 
+The default ACL can be read or updated by forming a request with a uri that includes the root group id, 
+i.e.: "/groups/<root_id>/acls", or by using the uri path for the domain, i.e. "/acls".
+
+
 For a given user then, the permissions for a resource are found in the following way:
 
 #. If the user is present in the resources ACL, those permissions are used

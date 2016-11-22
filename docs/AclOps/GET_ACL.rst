@@ -12,14 +12,21 @@ Requests
 Syntax
 ------
 
+To get a user's default access for a domain:
+
+.. code-block:: http
+
+    GET /acls/<userid> HTTP/1.1
+    Host: DOMAIN
+    Authorization: <authorization_string>
+
 To get a user's access information for a group:
 
 .. code-block:: http
 
     GET /groups/<id>/acls/<userid> HTTP/1.1
     Host: DOMAIN
-    Authorization: <authorization_string>
-    
+    Authorization: <authorization_string>   
 
 To get a user's access information for a dataset:
 

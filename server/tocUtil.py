@@ -212,13 +212,8 @@ def createTocFile(datapath):
     f = h5py.File(toc_file, 'w')
      
     for root, subdirs, files in os.walk(toc_dir):
-        #print("files: ", files)
         root = fileUtil.posixpath(root)
-        log.info( "root: " + root)
-        log.info("toc_dir: [" + toc_dir + "]")
-        log.info(str(type(toc_dir)))
-        log.info("data_dir: [" + data_dir + "]")
-        log.info(str(type(toc_dir)))
+        log.info( "toc walk: " + root)
         
         if toc_dir == data_dir:
             log.info(fileUtil.join(toc_dir, home_dir))

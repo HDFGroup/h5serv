@@ -12,6 +12,14 @@ Requests
 Syntax
 ------
 
+To update a user's access information for a domain:
+
+.. code-block:: http
+
+    PUT /acls/<userid> HTTP/1.1
+    Host: DOMAIN
+    Authorization: <authorization_string>
+
 To update a user's access information for a group:
 
 .. code-block:: http
