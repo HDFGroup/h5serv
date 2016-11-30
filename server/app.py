@@ -907,10 +907,17 @@ class AclHandler(BaseHandler):
         hrefs = []
          
         if current_user_acl:
-            hrefs.append({
-                'rel': 'self',
-                'href': self.getHref(col_name + '/' + obj_uuid + '/acls/' + url_escape(userName))
-            })
+            if userName:
+                hrefs.append({
+                    'rel': 'self',
+                    'href': self.getHref(col_name + '/' + obj_uuid + '/acls/' + url_escape(userName))
+                })
+            else:
+                hrefs.append({
+                    'rel': 'self',
+                    'href': self.getHref(col_name + '/' + obj_uuid + '/acls')
+                })
+
         else:
             hrefs.append({
                 'rel': 'self',
