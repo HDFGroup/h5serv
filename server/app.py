@@ -2932,7 +2932,7 @@ class InfoHandler(RequestHandler):
         greeting = "Welcome to h5serv!"
         about = "h5serv is a webservice for HDF5 data"
         doc_href = "http://h5serv.readthedocs.org"
-        h5serv_version = "0.1"
+        h5serv_version = "0.2"
         response = Hdf5db.getVersionInfo()
         response['name'] = "h5serv"
         response['greeting'] = greeting
