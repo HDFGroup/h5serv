@@ -1461,6 +1461,38 @@ class ValueTest(unittest.TestCase):
         self.assertEqual(readData[0][0], 42)   
         self.assertEqual(readData[1][0], 10)   
 
+        #
+        # Create 2d dataset
+        #
+        dims = [2,2]
+        payload = {'type': datatype, 'shape': dims}
+        req = self.endpoint + "/datasets"
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)  # create dataset
+        
+        rspJson = json.loads(rsp.text)
+        dset2UUID = rspJson['id']
+        self.assertTrue(helper.validateId(dset2UUID))
+         
+        # link new dataset as 'dset2d_compound'
+        ok = helper.linkObject(domain, dset2UUID, 'dset2d_compound')
+        self.assertTrue(ok)
+
+        # write entire array
+        value = [] 
+        for i in range(dims[0]):
+            row = []
+            for j in range(dims[1]):
+                item = (i*10, i*10+j/2.0) 
+                row.append(item)
+            value.append(row)
+        payload = {'value': value}
+         
+        req = self.endpoint + "/datasets/" + dset2UUID + "/value"
+        data = json.dumps(payload)
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 200)  # write value
+
    
     def testPutObjectReference(self):
         domain = 'objref_dset_updated.' + config.get('domain')  
