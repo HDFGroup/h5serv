@@ -2139,6 +2139,14 @@ class AttributeHandler(BaseHandler):
                 rootUUID = db.getUUIDByPath('/')
                 acl = db.getAcl(self.reqUuid, self.userid)
                 self.verifyAcl(acl, 'create')  # throws exception is unauthorized
+                attribute_exist = True
+                try:
+                    db.getAttributeItem(col_name, self.reqUuid, attr_name)
+                except IOError:
+                    attribute_exist = False  
+                if attribute_exist:
+                    self.log.info("attribute {} already exist".format(attr_name))
+                    raise HTTPError(409, "Attribute already exist")
                 db.createAttribute(
                     col_name, self.reqUuid, attr_name, dims, datatype, data)
                 rootUUID = db.getUUIDByPath('/')

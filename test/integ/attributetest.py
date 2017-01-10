@@ -606,6 +606,13 @@ class AttributeTest(unittest.TestCase):
         dims = shape['dims']
         self.assertEqual(len(dims), 1)
         self.assertEqual(dims[0], 1)
+
+        # try creating the attribute again, should return 409
+        req = self.endpoint + "/groups/" + rootUUID + "/attributes/" + attr_name
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 409)  # conflict
+        
+
         
     def testPutScalar(self):
         domain = 'tall_updated.' + config.get('domain') 
