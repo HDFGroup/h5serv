@@ -110,6 +110,9 @@ class GroupTest(unittest.TestCase):
         self.assertEqual(rspJson["linkCount"], 0)
         self.assertEqual(rspJson["attributeCount"], 0)
         self.assertTrue(helper.validateId(rspJson["id"]) ) 
+        # try repeat post with same link - should return 409
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 409) 
        
     def testBadPost(self):
         domain = 'tall.' + config.get('domain')    

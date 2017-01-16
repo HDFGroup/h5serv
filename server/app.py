@@ -2396,6 +2396,19 @@ class GroupCollectionHandler(BaseHandler):
                 current_user_acl = db.getAcl(rootUUID, self.userid)
 
                 self.verifyAcl(current_user_acl, 'create')  # throws exception is unauthorized
+                if parent_group_uuid:
+                    # verify no link already exists before creating a new group
+                    link_exists = False
+                    try:
+                        item = db.getLinkItemByUuid(parent_group_uuid, link_name)
+                        if item:
+                            link_exists = True
+                    except IOError:
+                        pass # ok, link not found
+                    if link_exists:
+                        self.log.info("Link already exists")
+                        raise HTTPError(409, "Link already exists")
+
                 grpUUID = db.createGroup()
                 item = db.getGroupItemByUuid(grpUUID)
                 # if link info is provided, link the new group
