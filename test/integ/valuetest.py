@@ -709,6 +709,38 @@ class ValueTest(unittest.TestCase):
         self.assertEqual(hyperslabs[2][1], [3, 3])
         self.assertEqual(hyperslabs[3][0], [2, 11])
         self.assertEqual(hyperslabs[3][1], [3, 14])
+
+    def testGetFillValue(self):
+        domain = 'fillvalue.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+
+        # create a new dataset
+        payload = {'type': 'H5T_STD_I32LE', 'shape': 10}
+        payload['creationProperties'] = {'fillValue': 42 }
+        req = self.endpoint + "/datasets"
+        headers = {'host': domain}
+        rsp = requests.post(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)  # create dataset
+        rspJson = json.loads(rsp.text)
+        dset_uuid = rspJson['id']
+        self.assertTrue(helper.validateId(dset_uuid))
+         
+        # link the new dataset 
+        name = "dset_new"
+        req = self.endpoint + "/groups/" + root_uuid + "/links/" + name 
+        payload = {"id": dset_uuid}
+        headers = {'host': domain}
+        rsp = requests.put(req, data=json.dumps(payload), headers=headers)
+        self.assertEqual(rsp.status_code, 201)
+
+        # retrieve the values
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        data = rspJson['value'] 
+        self.assertEqual(data, [42,]*10)
+
         
         
     #
