@@ -2613,6 +2613,19 @@ class DatasetCollectionHandler(BaseHandler):
                 if group_uuid and group_uuid != rootUUID:
                     acl = db.getAcl(group_uuid, self.userid)
                     self.verifyAcl(acl, 'create')  # throws exception is unauthorized
+                # verify the link name doesn't already exists
+                if group_uuid:
+                    # verify no link already exists before creating a new group
+                    link_exists = False
+                    try:
+                        item = db.getLinkItemByUuid(group_uuid, link_name)
+                        if item:
+                            link_exists = True
+                    except IOError:
+                        pass # ok, link not found
+                    if link_exists:
+                        self.log.info("Link already exists")
+                        raise HTTPError(409, "Link already exists")
 
                 item = db.createDataset(datatype, dims, maxdims, creation_props=creationProps)
                 if group_uuid:
@@ -2748,6 +2761,18 @@ class TypeCollectionHandler(BaseHandler):
                 rootUUID = db.getUUIDByPath('/')
                 acl = db.getAcl(rootUUID, self.userid)
                 self.verifyAcl(acl, 'create')  # throws exception is unauthorized
+                if parent_group_uuid:
+                    # verify no link already exists before creating a new group
+                    link_exists = False
+                    try:
+                        item = db.getLinkItemByUuid(parent_group_uuid, link_name)
+                        if item:
+                            link_exists = True
+                    except IOError:
+                        pass # ok, link not found
+                    if link_exists:
+                        self.log.info("Link already exists")
+                        raise HTTPError(409, "Link already exists")
                 item = db.createCommittedType(datatype)
                 # if link info is provided, link the new group
                 if parent_group_uuid:
