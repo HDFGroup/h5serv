@@ -57,7 +57,7 @@ one-dimensional.
 
 Limit
 ^^^^^
-If provided, a positive integer value specifying the maximum number of elementts to return.
+If provided, a positive integer value specifying the maximum number of elements to return.
 Only has an effect if used in conjunction with the query parameter.
 
 
