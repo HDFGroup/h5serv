@@ -1073,6 +1073,17 @@ class DatasetTest(unittest.TestCase):
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 201)
 
+        # Verify the dataset type
+        req = self.endpoint + "/datasets/" + dset_uuid + "/type"
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("type" in rspJson)
+        rsp_type = rspJson["type"]
+        self.assertEqual(rsp_type["base"], 'H5T_IEEE_F32LE')
+        self.assertEqual(rsp_type["class"], 'H5T_FLOAT')
+
+
     def testPostObjReference(self):
         domain = 'objref.datasettest.' + config.get('domain')
         req = self.endpoint + "/"

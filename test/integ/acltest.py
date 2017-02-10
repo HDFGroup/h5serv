@@ -57,7 +57,7 @@ class AclTest(unittest.TestCase):
         headers = self.getHeaders()
            
         # set allaccess acl for test_user2
-        payload = { 'perm': allaccess_perm }
+        payload = allaccess_perm 
         req = self.endpoint + "/acls/test_user2"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         
@@ -68,13 +68,13 @@ class AclTest(unittest.TestCase):
         self.assertEqual(rsp.status_code, 201)      
         
         # set read-only acl for test_user1
-        payload = { 'perm': readonly_perm }
+        payload =  readonly_perm 
         req = self.endpoint + "/acls/test_user1"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 201)
         
         # set default acl for domain
-        payload = { 'perm': no_perm }
+        payload =  no_perm 
         req = self.endpoint + "/acls/default"
         rsp = requests.put(req, data=json.dumps(payload), headers=headers)
         self.assertEqual(rsp.status_code, 201) 

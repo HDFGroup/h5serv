@@ -976,18 +976,12 @@ class AclHandler(BaseHandler):
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
-        if 'perm' not in body:
-            msg = "Bad Request: 'perm' not found in request body"
-            self.log.info(msg)
-            raise HTTPError(400, reason=msg)
-
-        perm = body['perm']
         acl = {}
         acl['userid'] = req_userid
         for key in ('create', 'read', 'update',
                     'delete', 'readACL', 'updateACL'):
-            if key in perm:
-                acl[key] = 1 if perm[key] else 0
+            if key in body:
+                acl[key] = 1 if body[key] else 0
         if len(acl) == 1:
             msg = "Bad Request: no acl permissions found in request body"
             self.log.info(msg)
@@ -1730,14 +1724,20 @@ class ValueHandler(BaseHandler):
             msg = "JSON Parser Error: " + e.message
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
+        self.log.info("type body: {}".format(type(body)))
 
         if "points" not in body:
             msg = "Bad Request: value post request without points in body"
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
+        
+        #self.log.info("points type: {}".format(type(points)))
+        self.log.info("body type: {}".format(type(body)))
+        self.log.info("body keys: {}".format(list(body.keys())))
         points = body['points']
+        
         if type(points) != list:
-            msg = "Bad Request: expecting list of points"
+            msg = "Bad Request: expecting list of points, got: {}".format(type(points))
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
