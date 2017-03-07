@@ -440,6 +440,33 @@ class DatasetTest(unittest.TestCase):
         self.assertEqual(mapping['LIQUID'], 1)
         self.assertEqual(mapping['GAS'], 2)
         self.assertEqual(mapping['PLASMA'], 3)
+
+    def testGetBool(self):
+        domain = 'bool_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SIMPLE')
+        self.assertEqual(len(shape['dims']), 1)
+        self.assertEqual(shape['dims'][0], 4)  
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_ENUM')
+        typeBase = typeItem['base']
+        self.assertEqual(typeBase['class'], 'H5T_INTEGER')
+        self.assertEqual(typeBase['base'], 'H5T_STD_I8LE')
+        self.assertTrue('mapping' in typeItem)
+        mapping = typeItem['mapping']
+        self.assertEqual(len(mapping), 2)
+        self.assertEqual(mapping['FALSE'], 0)
+        self.assertEqual(mapping['TRUE'], 1)
+         
         
     def testGetVlen(self):
         domain = 'vlen_dset.' + config.get('domain')  

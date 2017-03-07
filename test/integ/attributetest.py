@@ -281,6 +281,31 @@ class AttributeTest(unittest.TestCase):
         elem = value[0] # elem should be a 3x5 array 
         self.assertEqual(len(elem), 3)
         self.assertEqual(elem[2], [0, -2, -4, -6, -8])
+
+    def testGetBool(self):
+        domain = 'bool_attr.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        req = helper.getEndpoint() + "/groups/" + root_uuid + "/attributes/attr1"
+        headers = {'host': domain}
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        shape = rspJson['shape']
+        self.assertEqual(shape['class'], 'H5S_SIMPLE')
+        self.assertEqual(len(shape['dims']), 1)
+        self.assertEqual(shape['dims'][0], 4)  
+        typeItem = rspJson['type']
+        
+        self.assertEqual(typeItem['class'], 'H5T_ENUM')
+        typeBase = typeItem['base']
+        self.assertEqual(typeBase['class'], 'H5T_INTEGER')
+        self.assertEqual(typeBase['base'], 'H5T_STD_I8LE')
+        self.assertTrue('mapping' in typeItem)
+        mapping = typeItem['mapping']
+        self.assertEqual(len(mapping), 2)
+        self.assertEqual(mapping['FALSE'], 0)
+        self.assertEqual(mapping['TRUE'], 1)
         
     def testGetVLenString(self):
         domain = 'vlen_string_attr.' + config.get('domain')  

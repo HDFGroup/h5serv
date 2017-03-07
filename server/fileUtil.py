@@ -92,9 +92,11 @@ def getFilePath(host_value, auth=None):
         filePath = config.get('datapath')
         filePath = join(filePath, config.get('toc_name') )
         return filePath
-
+    print("host:", host, "topdomain:", topdomain)
     if len(host) <= len(topdomain) or host[-len(topdomain):].lower() != topdomain:
-        raise HTTPError(403, message='top-level domain is not valid')
+        msg = "top-level domain is not valid"
+        print(msg)
+        raise HTTPError(403, message=msg)
 
     if host[-(len(topdomain) + 1)] != '.':
         # there needs to be a dot separator
