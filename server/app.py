@@ -543,6 +543,64 @@ class LinkHandler(BaseHandler):
         linkName = url_unescape(linkName)
         return linkName
 
+    def convertExternalPath(self, path_name):
+        """ convert external path returned by h5db to h5domain 
+        convention
+        Note:
+        The external path might be a unix posix path or a HDF Server domain name.  
+        Apply some heuristics to make a best guess at which it is.
+        """
+        server_domain = config.get("domain")
+        dns_suffixes = [".org", ".edu", ".com", ".gov", ".net", ".mil", server_domain]
+        hdf5_extension = config.get("hdf5_ext")
+        parent_domain = self.domain
+        n = parent_domain.find('.')
+        if n > 0:
+            parent_domain = self.domain[n:]
+        h5domain = None
+        if path_name.find('/') == -1:
+            if path_name.find('.') == -1:
+                # no slash or dot, tack on the dns path relative to the source domain
+                h5domain = path_name + parent_domain
+            else:
+                # has a dot, no slashes
+                if path_name.endswith(hdf5_extension):
+                    # strip off extension and prepend to front of domain
+                    h5domain = path_name[:-len(hdf5_extension)] + parent_domain
+                else:
+                    for dns_suffix in dns_suffixes:
+                        if path_name.endswith(dns_suffix):
+                            # looks like absoutle DNS path, return that
+                            h5domain = path_name
+                            break
+                    
+                    if h5domain is None:
+                        # if we get to here, assume it a relative DNS path
+                        if path_name.endswith(hdf5_extension):
+                            h5domain = path_name[:-len(hdf5_extension)] + parent_domain
+                        else:
+                            h5domain = path_name + parent_domain
+        else:
+            # assume relative or absolute Unix file path
+            if path_name.startswith('/'):
+                h5domain = fileUtil.getDomain(path_name)
+            else:
+                # relative posix file path
+                parts = path_name.split('/')
+                basename = parts[-1]
+                if basename.endswith(hdf5_extension):
+                    basename = basename[:-len(hdf5_extension)]
+                    parts[-1] = basename
+
+                h5domain = parent_domain[1:]  # don't include first dot
+                for part in parts:
+                    if part:
+                        h5domain = part + '.' + h5domain                    
+        
+        h5domain = self.nameEncode(h5domain)
+        return h5domain
+
+
     def get(self):
         self.baseHandler()
          
@@ -574,7 +632,7 @@ class LinkHandler(BaseHandler):
         if 'file' in item:
             h5domain = item['file']
             del item['file']
-            item['h5domain'] = self.nameEncode(h5domain)
+            item['h5domain'] = self.convertExternalPath(h5domain)
 
         response['link'] = item
 

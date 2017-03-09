@@ -23,7 +23,7 @@ DES = "../../data/test"
 testfiles = {
     'tall.h5': ('.',  'tall_updated.h5', 'tall_ro.h5', 'tall_g2_deleted.h5', 
             'tall_dset112_deleted.h5', 'tall_dset22_deleted.h5', 'tall_acl.h5', 
-            'tall_acl_delete.h5', 'tall.dots.need.to.be.encoded.h5'),
+            'tall_acl_delete.h5', 'tall.dots.need.to.be.encoded.h5', 'subdir/tall.h5'),
     'tall_with_udlink.h5': ('.',),
     'scalar.h5': ('.', 'scalar_1d_deleted.h5',),
     'namedtype.h5': ('.', 'namedtype_deleted.h5'),
@@ -71,6 +71,7 @@ testfiles = {
     'h5ex_d_unlimadd.h5': ('.',),
     'h5ex_d_unlimgzip.h5': ('.',),
     'h5ex_d_hyper.h5': ('.',),
+    'link_example.h5': ('.',),
     'objref_attr.h5': ('.',),
     'objref_dset.h5': ('.', 'objref_dset_updated.h5'),
     'null_objref_dset.h5': ('.',),
@@ -204,6 +205,29 @@ def makeDataset1k():
     f.close()
 
 """
+Make a testfile with external links
+"""
+def makeExternalLinks():
+    file_path = SRC + "/link_example.h5"
+    if os.path.exists(file_path):
+        return # don't waste time re-creating  
+    tgt_link_path = os.path.abspath(DES)  # for absolute paths in link
+    tgt_link_path += "/tall.h5"
+    f = h5py.File(file_path, 'w')
+    f.create_group('g1')
+    f.create_group('g1/g1.1')
+    f['soft_link'] = h5py.SoftLink('g1')
+    f['external_link1'] = h5py.ExternalLink('tall.h5', 'g1/g1.1')
+    f['external_link2'] = h5py.ExternalLink('tall', 'g1/g1.1')
+    f['external_link3'] = h5py.ExternalLink('tall.test.hdfgroup.org', 'g1/g1.1')
+    f['external_link4'] = h5py.ExternalLink(tgt_link_path, 'g1/g1.1')
+    f['external_link5'] = h5py.ExternalLink('tall.subdir.test.hdfgroup.org', 'g1/g1.1')
+    f['external_link6'] = h5py.ExternalLink('tall.subdir', 'g1/g1.1')
+    f['external_link7'] = h5py.ExternalLink('subdir/tall.h5', 'g1/g1.1')
+    f.close()
+
+
+"""
 Remove files from given directory
 """    
 def removeFilesFromDir(dir_name):
@@ -261,6 +285,9 @@ makeType1k()
 
 # create dset1k.h5 (if not created before)
 makeDataset1k()
+
+# create link_example.h5 (if not created before))
+makeExternalLinks()
 
 removeFilesFromDir(DES)
 

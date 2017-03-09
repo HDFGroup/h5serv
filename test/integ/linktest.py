@@ -90,14 +90,45 @@ class LinkTest(unittest.TestCase):
             rspJson = json.loads(rsp.text)
             self.assertTrue("created" in rspJson)
             self.assertTrue("lastModified" in rspJson)
-            target = rspJson['link']
+            target = rspJson['link'] 
             # self.assertEqual(target, "http://somefile/#h5path(somepath)")
-            
+            expected_h5domain = 'somefile' + '.' + config.get('domain') 
             self.assertEqual(target['class'], 'H5L_TYPE_EXTERNAL')
-            self.assertEqual(target['h5domain'], 'somefile')
+            self.assertEqual(target['h5domain'], expected_h5domain)
             self.assertEqual(target['h5path'], 'somepath')
             self.assertEqual(target['title'], 'extlink')
             self.assertTrue('collection' not in target)
+
+    def testGetExternalLinkDomain(self):
+        logging.info("LinkTest.testExternalLinkDomain")
+        domain = "link_example." + config.get('domain')   
+        root_uuid = helper.getRootUUID(domain)
+        headers = {'host': domain}
+        # test file has seven external links in the root group that should all
+        # map to the same external file in either the same directory or a
+        # a subdirectory "subdir"
+        expected_curdir = "tall." + config.get('domain') 
+        expected_subdir = "tall.subdir." + config.get('domain')  
+        for i in range(7):
+            external_link_name = "external_link" + str(i+1)
+            req = self.endpoint + "/groups/" + root_uuid + "/links/" + external_link_name
+            rsp = requests.get(req, headers=headers)
+            self.assertEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertTrue("created" in rspJson)
+            self.assertTrue("lastModified" in rspJson)
+            self.assertTrue("link" in rspJson)
+            target = rspJson['link'] 
+            self.assertTrue("h5domain" in target)
+            h5domain = target["h5domain"]
+            if i < 4:
+                # these links map to a file in the same directory
+                self.assertEqual(h5domain, expected_curdir)
+            else:
+                # these map to a file in "subdir"
+                self.assertEqual(h5domain, expected_subdir)
+
+
             
     def testGetUDLink(self):
         logging.info("LinkTest.testGetUDLink")
