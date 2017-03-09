@@ -109,6 +109,7 @@ class LinkTest(unittest.TestCase):
         # a subdirectory "subdir"
         expected_curdir = "tall." + config.get('domain') 
         expected_subdir = "tall.subdir." + config.get('domain')  
+        expected_h5path = "g1/g1.1"
         for i in range(7):
             external_link_name = "external_link" + str(i+1)
             req = self.endpoint + "/groups/" + root_uuid + "/links/" + external_link_name
@@ -119,6 +120,8 @@ class LinkTest(unittest.TestCase):
             self.assertTrue("lastModified" in rspJson)
             self.assertTrue("link" in rspJson)
             target = rspJson['link'] 
+            self.assertTrue("h5path" in target)
+            self.assertEqual(target["h5path"], expected_h5path)
             self.assertTrue("h5domain" in target)
             h5domain = target["h5domain"]
             if i < 4:
@@ -127,6 +130,33 @@ class LinkTest(unittest.TestCase):
             else:
                 # these map to a file in "subdir"
                 self.assertEqual(h5domain, expected_subdir)
+
+        # get all the links in one request and very the external filename
+        req = self.endpoint + "/groups/" + root_uuid + "/links"  
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        rspJson = json.loads(rsp.text)
+        self.assertTrue("links" in rspJson)
+        links = rspJson["links"]
+        external_link_count = 0
+        for link in links:
+            if link["class"] != 'H5L_TYPE_EXTERNAL':
+                continue
+            
+            self.assertTrue("title" in link)
+            title = link["title"]
+            if not title.startswith("external_link"):
+                continue
+            external_link_count += 1
+            link_no = int(title[-1])
+            self.assertTrue("h5path" in link)
+            self.assertEqual(link["h5path"], expected_h5path)
+            self.assertTrue("h5domain" in link)
+            if link_no < 5:
+                self.assertEqual(link["h5domain"], expected_curdir)
+            else:
+                self.assertEqual(link["h5domain"], expected_subdir)
+ 
 
 
             
