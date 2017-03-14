@@ -2295,7 +2295,6 @@ class GroupHandler(BaseHandler):
         rootUUID = None
         item = None
         include_links = self.get_query_argument("include_links", 0)
-        print("include_links", include_links)
 
         try:
             with Hdf5db(self.filePath, app_logger=self.log) as db:
