@@ -2291,8 +2291,11 @@ class GroupHandler(BaseHandler):
         response = {}
 
         hrefs = []
+        links = []
         rootUUID = None
         item = None
+        include_links = self.get_query_argument("include_links", 0)
+        print("include_links", include_links)
 
         try:
             with Hdf5db(self.filePath, app_logger=self.log) as db:
@@ -2300,6 +2303,9 @@ class GroupHandler(BaseHandler):
                 acl = db.getAcl(self.reqUuid, self.userid)
                 self.verifyAcl(acl, 'read')  # throws exception is unauthorized
                 item = db.getGroupItemByUuid(self.reqUuid)
+                if include_links:
+                    # TBD: add marker & limit options for pagination
+                    links = db.getLinkItems(self.reqUuid)
 
         except IOError as e:
             self.log.info("IOError: " + str(e.errno) + " " + e.strerror)
@@ -2334,6 +2340,29 @@ class GroupHandler(BaseHandler):
         response['attributeCount'] = item['attributeCount']
         response['linkCount'] = item['linkCount']
         response['hrefs'] = hrefs
+        if links:
+
+            hostQuery = ''
+            if self.get_query_argument("host", default=None):
+                hostQuery = "?host=" + self.get_query_argument("host")
+            response["links"] = []
+            for item in links:
+                link_item = {}
+                link_item['class'] = item['class']
+                link_item['title'] = item['title']
+                link_item['href'] = item['href'] = self.href + '/groups/' + self.reqUuid + '/links/' + self.nameEncode(item['title']) + hostQuery
+                if item['class'] == 'H5L_TYPE_HARD':
+                    link_item['id'] = item['id']
+                    link_item['collection'] = item['collection']
+                    link_item['target'] = self.href + '/' + item['collection'] + '/' + item['id'] + hostQuery
+                elif item['class'] == 'H5L_TYPE_SOFT':
+                    link_item['h5path'] = item['h5path']
+                elif item['class'] == 'H5L_TYPE_EXTERNAL':
+                    link_item['h5path'] = item['h5path']
+                    link_item['h5domain'] = self.convertExternalPath(item['file'])
+                    if link_item['h5domain'].endswith(config.get('domain')):
+                        link_item['target'] = self.getExternalHref(link_item['h5domain'], link_item['h5path'])
+                response["links"].append(link_item)
 
         self.set_header('Content-Type', 'application/json')
         self.write(json_encode(response))

@@ -21,7 +21,11 @@ Syntax
     
 Request Parameters
 ------------------
-This implementation of the operation does not use request parameters.
+
+include_links
+^^^^^^^^^^^^^
+
+If this request parameter is provided, the links of the group are included in the response.
 
 Request Headers
 ---------------

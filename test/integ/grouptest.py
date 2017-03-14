@@ -35,9 +35,11 @@ class GroupTest(unittest.TestCase):
             rsp = requests.get(req, headers=headers)
             self.assertEqual(rsp.status_code, 200)
             rspJson = json.loads(rsp.text)
+            self.assertEqual(rsp.status_code, 200)
             self.assertEqual(rspJson["linkCount"], 2)
             self.assertEqual(rspJson["attributeCount"], 2)
-            self.assertEqual(rsp.status_code, 200)
+            self.assertFalse("links" in rspJson)
+            
             
     def testGetInvalidUUID(self):
         for domain_name in ('tall', 'tall_ro'):
@@ -70,6 +72,40 @@ class GroupTest(unittest.TestCase):
             self.assertEqual(rspJson["linkCount"], 2)
             self.assertEqual(rspJson["attributeCount"], 2)
             self.assertEqual(rsp.status_code, 200)
+
+    def testGetWithLinks(self):
+        for domain_name in ('tall',):
+            domain = domain_name + '.' + config.get('domain')    
+            req = self.endpoint + "/"
+            headers = {'host': domain}
+            
+            rsp = requests.get(req, headers=headers)
+            self.assertEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            rootUUID = rspJson["root"]
+            self.assertTrue(helper.validateId(rootUUID))
+        
+            req = self.endpoint + "/groups/" + rootUUID
+            params = {'include_links': True }
+            rsp = requests.get(req, params=params, headers=headers)
+            self.assertEqual(rsp.status_code, 200)
+            rspJson = json.loads(rsp.text)
+            self.assertEqual(rsp.status_code, 200)
+            self.assertEqual(rspJson["linkCount"], 2)
+            self.assertEqual(rspJson["attributeCount"], 2)
+            self.assertTrue("links" in rspJson)
+            links = rspJson["links"]
+            self.assertEqual(len(links), 2)
+            for link in links:
+                self.assertTrue("collection" in link)
+                self.assertTrue(link["collection"], 'groups')
+                self.assertTrue("class" in link)
+                self.assertEqual(link["class"], 'H5L_TYPE_HARD')
+                self.assertTrue("id" in link)
+                self.assertTrue("title" in link)
+                self.assertTrue("href" in link)
+                print(link)
+            
           
     def testPost(self):
         # test PUT_root
