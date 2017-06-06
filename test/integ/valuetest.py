@@ -436,7 +436,7 @@ class ValueTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers_binary)
         self.assertEqual(rsp.status_code, 200)
         # requested binary, but got json (because it's a variable length string)
-        self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
+        self.assertEqual(rsp.headers['Content-Type'], "application/json")
         rspJson = json.loads(rsp.text)
         data = rspJson['value'] 
         self.assertEqual(data, "hello")
