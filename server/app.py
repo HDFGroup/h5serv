@@ -1699,6 +1699,7 @@ class ValueHandler(BaseHandler):
                     nelements = 1
                     for dim in range(rank):
                         dim_slice = self.getSliceQueryParam(dim, dims[dim])
+                        self.log.info("dim_size[{}]: {}".format(dim, dim_slice))
                         nelements *= (dim_slice.stop - dim_slice.start)
                         slices.append(dim_slice)
                     if query_selection:
@@ -1710,6 +1711,7 @@ class ValueHandler(BaseHandler):
                         if request_content_type == "binary":
                             self.log.info("nelements:" + str(nelements))
                             itemSize = h5json.getItemSize(item_type)
+                            self.log.info("itemSize: " + str(itemSize))
                             if itemSize != "H5T_VARIABLE" and nelements > 1:
                                 response_content_type = "binary"
                        

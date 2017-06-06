@@ -436,7 +436,7 @@ class ValueTest(unittest.TestCase):
         rsp = requests.get(req, headers=headers_binary)
         self.assertEqual(rsp.status_code, 200)
         # requested binary, but got json (because it's a variable length string)
-        self.assertEqual(rsp.headers['Content-Type'], "application/json")
+        self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
         rspJson = json.loads(rsp.text)
         data = rspJson['value'] 
         self.assertEqual(data, "hello")
@@ -595,6 +595,20 @@ class ValueTest(unittest.TestCase):
         self.assertEqual(value[1], "is such")
         self.assertEqual(value[2], "sweet")
         self.assertEqual(value[3], "sorrow.")
+
+    def testGetFixedStringBinary(self):
+        domain = 'fixed_string_dset.' + config.get('domain')  
+        root_uuid = helper.getRootUUID(domain)
+        self.assertTrue(helper.validateId(root_uuid))
+        dset_uuid = helper.getUUID(domain, root_uuid, 'DS1') 
+        req = helper.getEndpoint() + "/datasets/" + dset_uuid + "/value"
+        headers = {'host': domain, 'accept': "application/octet-stream"}
+        rsp = requests.get(req, headers=headers)
+        self.assertEqual(rsp.status_code, 200)
+        self.assertEqual(rsp.headers['Content-Type'], "application/octet-stream")
+        data = rsp.content
+        self.assertEqual(data, b"Partingis suchsweet\x00\x00sorrow.")
+         
         
     def testGetEnum(self):
         domain = 'enum_dset.' + config.get('domain')  
