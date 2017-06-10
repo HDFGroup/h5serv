@@ -256,13 +256,14 @@ def createTocFile(datapath):
                 link_target += filename
                 log.info("setting symbolic link domainpath to: " + filedomain + " target: /" + filename)
             else:
-                if len(filename) < 4 or filename[-3:] != hdf5_ext:
+                ext_len = len(hdf5_ext)
+                if len(filename) < ext_len or filename[-ext_len:] != hdf5_ext:
                     log.info("skip non-hdf5 extension")
                     continue
                 if not h5py.is_hdf5(filepath):
                     log.info("skip non-hdf5 file")
                     continue
-                filename = filename[:-(len(hdf5_ext))]
+                filename = filename[:-ext_len]
                 # replace any dots with '%2E' to disambiguate from domain seperators
                 filename_encoded = filename.replace('.', '%2E')
                 log.info("filename (noext): " + filename)
