@@ -2962,6 +2962,18 @@ class RootHandler(BaseHandler):
 
     def put(self):
         self.baseHandler(checkExists=False)     
+        new_domain_policy = config.get("new_domain_policy")    
+        if new_domain_policy:
+            # should be one of ANON, AUTH, NEVER
+            if new_domain_policy.upper() == "NEVER":
+                msg = "Forbidden: new domains not allowed"
+                self.log.info(msg)
+                raise HTTPError(403, reason=msg)
+            elif new_domain_policy.upper() == "AUTH" and self.userid <= 0:
+                msg = "Unauthorized"
+                self.log.info(msg)
+                raise HTTPError(401, reason=msg)
+             
 
         self.log.info("filePath: " + self.filePath)
         
