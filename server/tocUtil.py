@@ -13,6 +13,7 @@ import os
 import os.path as op
 import re
 from tornado.web import HTTPError
+import errno
 import logging
 
 import h5py
@@ -103,7 +104,7 @@ def addTocEntry(domain, filePath,  userid=None):
                     if userid is not None:
                         acl = db.getAcl(group_uuid, userid)
                         if not acl['create']:
-                            self.log.info("unauthorized access to group:" + group_uuid)
+                            log.info("unauthorized access to group:" + group_uuid)
                             raise IOError(errno.EACCES)  # unauthorized
                     log.info("createExternalLink -- uuid %s, domain: %s, linkName: %s", group_uuid, domain, linkName)
                     db.createExternalLink(group_uuid, domain, '/', linkName)
@@ -113,7 +114,7 @@ def addTocEntry(domain, filePath,  userid=None):
                         if userid is not None:
                             acl = db.getAcl(group_uuid, userid)
                             if not acl['create']:
-                                self.log.info("unauthorized access to group:" + group_uuid)
+                                log.info("unauthorized access to group:" + group_uuid)
                                 raise IOError(errno.EACCES)  # unauthorized
                         # create subgroup and link to parent group
                         subgroup_uuid = db.createGroup()
@@ -123,7 +124,7 @@ def addTocEntry(domain, filePath,  userid=None):
                     group_uuid = subgroup_uuid 
 
     except IOError as e:
-        log.info("IOError: " + str(e.errno) + " " + e.strerror)
+        log.info("IOError: " + str(e.errno) + " " + str(e.strerror))
         raise e
 
 """
