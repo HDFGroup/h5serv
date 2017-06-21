@@ -104,7 +104,6 @@ class GroupTest(unittest.TestCase):
                 self.assertTrue("id" in link)
                 self.assertTrue("title" in link)
                 self.assertTrue("href" in link)
-                print(link)
             
           
     def testPost(self):
