@@ -132,9 +132,13 @@ class BaseHandler(tornado.web.RequestHandler):
             self.userid = auth.validateUserPassword(user, pswd)  
             return self.userid
         else:
-            self.username = None
-            self.userid = -1
-            return None
+            if config.get("allow_noauth"):
+                self.username = None
+                self.userid = -1
+                return None
+            else:
+                self.log.info("Unauthenticated request")
+                raise HTTPError(401, "Unauthorized")
 
     def verifyAcl(self, acl, action):
         """Verify ACL for given action. Raise exception if not
@@ -3046,7 +3050,6 @@ class RootHandler(BaseHandler):
             with Hdf5db(self.filePath, app_logger=self.log) as db:
                 rootUUID = db.getUUIDByPath('/')
                 acl = db.getAcl(rootUUID, self.userid)
-                print("verify delete, ", acl, self.userid)
                 self.verifyAcl(acl, 'delete')  # throws exception is unauthorized
         except IOError as e:
             self.log.info("IOError: " + str(e.errno) + " " + e.strerror)

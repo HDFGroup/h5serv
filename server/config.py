@@ -34,24 +34,31 @@ cfg = {
     'log_file': r'../log/h5serv.log',
     'log_level': 'INFO', # ERROR, WARNING, INFO, DEBUG, or NOTSET,
     'background_timeout': 1000,  # (ms) set to 0 to disable background processing
-    'new_domain_policy': 'ANON'  # Ability to create domains (files) on serv: ANON - anonymous users ok, AUTH - only authenticated, NEVER - never allow 
+    'new_domain_policy': 'ANON',  # Ability to create domains (files) on serv: ANON - anonymous users ok, AUTH - only authenticated, NEVER - never allow 
+    'allow_noauth': True  # Allow anonymous requests (i.e. without auth header)
 }
 
 
 def get(x):
     # see if there is a command-line override
     option = '--'+x+'='
+    val = None
     for i in range(1, len(sys.argv)):
         #print i, sys.argv[i]
         if sys.argv[i].startswith(option):
             # found an override
             arg = sys.argv[i]
-            return arg[len(option):]  # return text after option string
+            val = arg[len(option):]  # return text after option string
     # see if there are an environment variable override
-    if x.upper() in os.environ:
-        return os.environ[x.upper()]
-    # no command line override, just return the cfg value
-    if x in cfg:
-        return cfg[x]
-    else:
-        return None
+    if val is None and x.upper() in os.environ:
+        val = os.environ[x.upper()]
+    # if no command line or env override, just get the cfg value
+    if val is None and x in cfg:
+        val = cfg[x]
+    if isinstance(val, str):
+        # convert True/False strings to booleans
+        if val.upper() in ("T", "TRUE"):
+            val = True 
+        elif val.upper() in ("F", "FALSE"):
+            val = False  
+    return val
