@@ -176,9 +176,13 @@ class BaseHandler(tornado.web.RequestHandler):
         #domain_encoded = self.get_argument("host")
         #print("domain_encoded: ", domain_encoded)
         self.domain = self.get_query_argument("host", default=None)
-         
+
+        if not self.domain:
+            self.domain = self.get_query_argument("domain", default=None) 
+
         if not self.domain:
             self.domain = host
+
         remote_ip = self.request.remote_ip
         if "X-Real-Ip" in self.request.headers:
             remote_ip = self.request.headers["X-Real-Ip"]
@@ -444,12 +448,7 @@ class BaseHandler(tornado.web.RequestHandler):
         """
     
 
-        uri = self.request.uri
-
-        # strip off any query params
-        npos = uri.find('?')
-        if npos > 0:
-            uri = uri[:npos]
+        uri = self.request.path
 
         if uri.startswith('/groups/'):
             uri = uri[len('/groups/'):]  # get stuff after /groups/
@@ -609,7 +608,7 @@ class LinkHandler(BaseHandler):
     def get(self):
         self.baseHandler()
          
-        linkName = self.getName(self.request.uri)
+        linkName = self.getName(self.request.path)
        
         self.log.info("linkName:["+linkName+"]")
 
@@ -684,7 +683,7 @@ class LinkHandler(BaseHandler):
         # PUT /groups/<id>/links/<name> {h5path: <path> }
         # PUT /groups/<id>/links/<name> {h5path: <path>, h5domain: <href> }
 
-        linkName = self.getName(self.request.uri)
+        linkName = self.getName(self.request.path)
 
         body = None
         try:
@@ -781,7 +780,7 @@ class LinkHandler(BaseHandler):
     def delete(self):
         self.baseHandler()
          
-        linkName = self.getName(self.request.uri)
+        linkName = self.getName(self.request.path)
 
         response = {}
         rootUUID = None
@@ -822,7 +821,7 @@ class AclHandler(BaseHandler):
         # request is in the form /(datasets|groups|datatypes)/<id>/acls(/<username>),
         # or /acls(/<username>) for domain acl
         # return datasets | groups | datatypes
-        uri = self.request.uri
+        uri = self.request.path
 
         npos = uri.find('/')
         if npos < 0:
@@ -849,7 +848,7 @@ class AclHandler(BaseHandler):
         return col_name
 
     def getName(self):
-        uri = self.request.uri
+        uri = self.request.path
 
         if uri.endswith('/acls'):
             return None  # default domain acl
@@ -913,7 +912,7 @@ class AclHandler(BaseHandler):
         self.baseHandler()
          
         req_uuid = None
-        if not self.request.uri.startswith("/acls"):
+        if not self.request.path.startswith("/acls"):
             # get UUID for object unless this is a get on domain acl
             req_uuid = self.getRequestId()
 
@@ -1009,7 +1008,7 @@ class AclHandler(BaseHandler):
         # PUT /acls/<name> {'read'... }
 
         req_uuid = None
-        if not self.request.uri.startswith("/acls/"):
+        if not self.request.path.startswith("/acls/"):
             req_uuid = self.getRequestId()
         col_name = self.getRequestCollectionName()
         userName = url_unescape(self.getName())
@@ -2002,7 +2001,7 @@ class AttributeHandler(BaseHandler):
         # request is in the form /(datasets|groups|datatypes)/<id>/attributes(/<name>),
         # return <name>
         # return None if the uri doesn't end with ".../<name>"
-        uri = self.request.uri
+        uri = self.request.path
         name = None
         npos = uri.rfind('/attributes')
         if npos <= 0:
@@ -2025,7 +2024,7 @@ class AttributeHandler(BaseHandler):
     def getRequestCollectionName(self):
         # request is in the form /(datasets|groups|datatypes)/<id>/attributes(/<name>),
         # return datasets | groups | datatypes
-        uri = self.request.uri
+        uri = self.request.path
 
         npos = uri.find('/')
         if npos < 0:
@@ -2452,8 +2451,8 @@ class GroupCollectionHandler(BaseHandler):
     def post(self):
         self.baseHandler()
          
-        if self.request.uri != '/groups':
-            msg = "Method Not Allowed: bad group post request: " + self.request.uri
+        if self.request.path != '/groups':
+            msg = "Method Not Allowed: bad group post request: " + self.request.path
             self.log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
 
@@ -2595,7 +2594,7 @@ class DatasetCollectionHandler(BaseHandler):
     def post(self):
         self.baseHandler()
 
-        if self.request.uri != '/datasets':
+        if self.request.path != '/datasets':
             msg = "Method not Allowed: invalid datasets post request"
             log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
@@ -2809,7 +2808,7 @@ class TypeCollectionHandler(BaseHandler):
     def post(self):
         self.baseHandler()
 
-        if self.request.uri != '/datatypes':
+        if self.request.path != '/datatypes':
             msg = "Method not Allowed: invalid URI"
             log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
