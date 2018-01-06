@@ -56,7 +56,7 @@ An optional key that gives the step value (i.e. the increment of the coordinate 
 each supplied value). The step value can either be an integer (for 1 dimensional arrays) or
 an array of integers where the length of the array is equal to the number of dimensions of
 the dataset.  Each value must be greater than equal to start (or zero if start is not 
-provided) and less than the extent of the corresponding dimension.
+provided) and less than or equal to the extent of the corresponding dimension.
 
 points:
 ^^^^^^^

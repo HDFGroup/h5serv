@@ -35,7 +35,7 @@ The number of tuples "start:stop:step" should equal the number of dimensions of 
 For each tuple:
 
 * start must be greater than equal to zero and less than the dimension extent
-* stop must be greater than or equal to start and less than the dimension extent
+* stop must be greater than or equal to start and less than or equal to the dimension extent
 * step is optional and if provided must be greater than 0.  If not provided, the step value for that dimension is assumed to be 1.
 
 query
