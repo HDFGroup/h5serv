@@ -49,7 +49,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'h5serv'
 if six.PY3:
-  copyright = datetime.now().year + ', The HDF Group'
+  copyright = str(datetime.now().year) + ', The HDF Group'
 else:
   copyright = unicode(datetime.now().year) + u', The HDF Group'
 
