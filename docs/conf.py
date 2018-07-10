@@ -12,6 +12,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import six
 import sys
 import os
 from datetime import datetime
@@ -47,7 +48,10 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'h5serv'
-copyright = unicode(datetime.now().year) + u', The HDF Group'
+if six.PY3:
+  copyright = datetime.now().year + ', The HDF Group'
+else:
+  copyright = unicode(datetime.now().year) + u', The HDF Group'
 
 rst_epilog = '.. |copyright| replace:: %s' % copyright
 
