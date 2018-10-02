@@ -17,7 +17,7 @@ if six.PY3:
  
 import hashlib
 import logging
-import server.config as config
+import h5serv.config as config
  
 
 """

@@ -19,23 +19,22 @@ import os.path as op
 import time
 import hashlib
 import logging
-from pymongo import MongoClient
+import h5py
 
 from tornado.web import HTTPError
 
-import server.config as config
-from server.passwordUtil import encrypt_pwd, to_string, to_bytes
+
+import h5serv.config as config
+from h5serv.passwordUtil import encrypt_pwd, to_string
 
 cache_expire_time = 10.0  # ten seconds
 
 class AuthClient(object):
 
-    def __init__(self, mongouri):
+    def __init__(self, filepath):
         self.log = logging.getLogger("h5serv")
-        self.log.info("AuthMongo class init(" + mongouri + ")")
-        self.client = MongoClient(mongouri)
-        db_name = config.get('mongo_dbname')
-        self.db = self.client[db_name]
+        self.log.info("AuthFile class init(" + filepath + ")")
+        self.filepath = filepath
         self.username_cache = {}
         self.userid_cache = {}
          
@@ -68,13 +67,20 @@ class AuthClient(object):
                 data = item['data']
                 return data
                     
-        # mongodb lookup
-        self.log.info("mongo query")
-        users = self.db["users"]
-        data = users.find_one({"username": to_string(user_name)})
-         
-        if data is None:
-            return None
+       
+        # verify file exists and is writable
+        if not op.isfile(self.filepath):
+            self.log.error("password file is missing")
+            raise HTTPError(500, message="bad configuration")
+
+        if not h5py.is_hdf5(self.filepath):
+            self.log.error("password file is invalid")
+            raise HTTPError(500, message="bad configuration")
+
+        with h5py.File(self.filepath, 'r') as f:
+            if user_name not in f.attrs:
+                return None
+            data = f.attrs[user_name]
             
         # add to cache 
         self.log.info("Auth - added to cache")
@@ -122,15 +128,23 @@ class AuthClient(object):
                 self.log.info("Auth-got cache value")
                 username = item['username']
                 return to_string(username)
+         
+        # verify file exists and is writable
+        if not op.isfile(self.filepath):
+            self.log.error("password file is missing")
+            raise HTTPError(500, message="bad configuration")
+
+        if not h5py.is_hdf5(self.filepath):
+            self.log.error("password file is invalid")
+            raise HTTPError(500, message="bad configuration")
+
+        user_name = None
+        with h5py.File(self.filepath, 'r') as f:
+            for attr_name in f.attrs:
+                attr = f.attrs[attr_name]
+                if attr['userid'] == userid:
+                    user_name = to_string(attr_name)
         
-        
-        # mongodb lookup
-        users = self.db["users"]
-        data = users.find_one({"userid": userid})
-        if data is None:
-            return None
-        user_name = data["username"]
-             
         self.log.info("Auth-add to cachecache")
         item = {}
         item['timestamp'] = time.time()
@@ -159,8 +173,7 @@ class AuthClient(object):
             raise HTTPError(401, message="provide user and password")
 
         userid = None
-        saved_password = to_bytes(data['password'])
-        if saved_password == encrypt_pwd(password):
+        if data['pwd'] == encrypt_pwd(password):
             self.log.info("user  password validated")
             userid = data['userid']
         else:

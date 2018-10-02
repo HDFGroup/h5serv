@@ -38,13 +38,13 @@ from tornado.escape import json_encode, json_decode, url_escape, url_unescape
 from h5json import Hdf5db
 import h5json
 
-import server.config as config
-from server.timeUtil import unixTimeToUTC
-import server.fileUtil as fileUtil
-import server.tocUtil as tocUtil
-from server.httpErrorUtil import errNoToHttpStatus
-from server.h5watchdog import h5observe
-from server.passwordUtil import getAuthClient
+import h5serv.config as config
+from h5serv.timeUtil import unixTimeToUTC
+import h5serv.fileUtil as fileUtil
+import h5serv.tocUtil as tocUtil
+from h5serv.httpErrorUtil import errNoToHttpStatus
+from h5serv.h5watchdog import h5observe
+from h5serv.passwordUtil import getAuthClient
 
 
 def to_bytes(a_string):

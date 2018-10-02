@@ -69,6 +69,8 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7'
     ],
 
     # What does your project relate to?
@@ -76,7 +78,7 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=('server',),
+    packages=('h5serv',),
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
@@ -117,7 +119,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'h5serv': [
-            'h5serv = server.__main__:main'
+            'h5serv = h5serv.__main__:main'
         ]
     },
     #scripts=['server/app.py', 'util/admin/import_file.py'],
