@@ -38,13 +38,13 @@ from tornado.escape import json_encode, json_decode, url_escape, url_unescape
 from h5json import Hdf5db
 import h5json
 
-import config
-from timeUtil import unixTimeToUTC
-import fileUtil  
-import tocUtil  
-from httpErrorUtil import errNoToHttpStatus
-from h5watchdog import h5observe  
-from passwordUtil import getAuthClient
+import server.config as config
+from server.timeUtil import unixTimeToUTC
+import server.fileUtil as fileUtil
+import server.tocUtil as tocUtil
+from server.httpErrorUtil import errNoToHttpStatus
+from server.h5watchdog import h5observe
+from server.passwordUtil import getAuthClient
 
 
 def to_bytes(a_string):
@@ -3376,4 +3376,8 @@ def main():
     IOLoop.current().start()
 
 if __name__ == "__main__":
+    # workaround to get absolute imports to work when h5serv is run as "python app.py"
+    app_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    sys.path.insert(0, app_dir)
+
     main()

@@ -21,8 +21,8 @@ import logging
 from tornado.web import HTTPError
 
 from h5py import is_hdf5
-import config
-from passwordUtil import getAuthClient
+import server.config as config
+from server.passwordUtil import getAuthClient
 
 def getFileModCreateTimes(filePath):
     (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(filePath)

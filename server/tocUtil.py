@@ -16,8 +16,8 @@ from tornado.web import HTTPError
 import logging
 
 import h5py
-import config
-import fileUtil
+import server.config as config
+import server.fileUtil as fileUtil
 from h5json import Hdf5db
 
 """

@@ -24,8 +24,8 @@ import h5py
 from tornado.web import HTTPError
 
 
-import config
-from passwordUtil import encrypt_pwd, to_string
+import server.config as config
+from server.passwordUtil import encrypt_pwd, to_string
 
 cache_expire_time = 10.0  # ten seconds
 
