@@ -9,6 +9,7 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
+import errno
 import os
 import os.path as op
 import re
@@ -103,7 +104,7 @@ def addTocEntry(domain, filePath,  userid=None):
                     if userid is not None:
                         acl = db.getAcl(group_uuid, userid)
                         if not acl['create']:
-                            self.log.info("unauthorized access to group:" + group_uuid)
+                            db.log.info("unauthorized access to group:" + group_uuid)
                             raise IOError(errno.EACCES)  # unauthorized
                     log.info("createExternalLink -- uuid %s, domain: %s, linkName: %s", group_uuid, domain, linkName)
                     db.createExternalLink(group_uuid, domain, '/', linkName)
@@ -113,7 +114,7 @@ def addTocEntry(domain, filePath,  userid=None):
                         if userid is not None:
                             acl = db.getAcl(group_uuid, userid)
                             if not acl['create']:
-                                self.log.info("unauthorized access to group:" + group_uuid)
+                                db.log.info("unauthorized access to group:" + group_uuid)
                                 raise IOError(errno.EACCES)  # unauthorized
                         # create subgroup and link to parent group
                         subgroup_uuid = db.createGroup()

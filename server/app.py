@@ -23,6 +23,8 @@ import os
 import os.path as op
 import json
 import tornado.httpserver
+import tornado.ioloop
+import tornado.web
 import sys
 import ssl
 import base64
@@ -689,8 +691,8 @@ class LinkHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
-            log.info(msg)
+            msg = "JSON Parser Error: " + str(e)
+            self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
         childUuid = None
@@ -1034,7 +1036,7 @@ class AclHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            msg = "JSON Parser Error: " + str(e)
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
@@ -1256,7 +1258,7 @@ class ShapeHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            msg = "JSON Parser Error: " + str(e)
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
@@ -1656,8 +1658,8 @@ class ValueHandler(BaseHandler):
             try:
                 limit = int(limit)  # convert to int
             except ValueError as e:
-                msg = "invalid Limit: " + e.message
-                log.info(msg)
+                msg = "invalid Limit: " + str(e)
+                self.log.info(msg)
                 raise HTTPError(400, msg)
                 
         if query_selection:
@@ -1723,7 +1725,7 @@ class ValueHandler(BaseHandler):
                             self.reqUuid, tuple(slices), format=response_content_type)      
                          
                 else:
-                    msg = "Internal Server Error: unexpected shape class: " + shape['class']
+                    msg = "Internal Server Error: unexpected shape class: " + item_shape['class']
                     self.log.error(msg)
                     raise HTTPError(500, reason=msg)
 
@@ -1785,7 +1787,7 @@ class ValueHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            msg = "JSON Parser Error: " + str(e)
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
         self.log.info("type body: {}".format(type(body)))
@@ -1838,10 +1840,10 @@ class ValueHandler(BaseHandler):
                         msg = "Bad Request: elements of points should be list type for datasets of rank >1"
                         self.log.info(msg)
                         raise HTTPError(400, reason=msg)
-                        if len(point) != rank:
-                            msg = "Bad Request: one or more points have a missing coordinate value"
-                            self.log.info(msg)
-                            raise HTTPError(400, reason=msg)
+                    if len(point) != rank:
+                        msg = "Bad Request: one or more points have a missing coordinate value"
+                        self.log.info(msg)
+                        raise HTTPError(400, reason=msg)
 
                 values = db.getDatasetPointSelectionByUuid(self.reqUuid, points)
 
@@ -1882,10 +1884,10 @@ class ValueHandler(BaseHandler):
             body = json_decode(self.request.body)
         except ValueError as e:
             try:
-                msg = "JSON Parser Error: " + e.message
+                msg = "JSON Parser Error: " + str(e)
             except AttributeError:
                 msg = "JSON Parser Error"
-            log.info(msg)
+            self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
         if "value" in body:
@@ -2028,7 +2030,7 @@ class AttributeHandler(BaseHandler):
 
         npos = uri.find('/')
         if npos < 0:
-            log.info("bad uri")
+            self.log.info("bad uri")
             raise HTTPError(400)
         uri = uri[(npos+1):]
         npos = uri.find('/')  # second '/'
@@ -2058,7 +2060,7 @@ class AttributeHandler(BaseHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                log.info("expected int type for limit")
+                self.log.info("expected int type for limit")
                 raise HTTPError(400)
         marker = self.get_query_argument("Marker", None)
 
@@ -2121,7 +2123,7 @@ class AttributeHandler(BaseHandler):
         else:
             if len(responseItems) == 0:
                 # should have raised exception earlier
-                log.error("attribute not found: " + attr_name)
+                self.log.error("attribute not found: " + attr_name)
                 raise HTTPError(404)
             responseItem = responseItems[0]
             for k in responseItem:
@@ -2139,7 +2141,7 @@ class AttributeHandler(BaseHandler):
         attr_name = self.getRequestName()
         if attr_name is None:
             msg = "Bad Request: attribute name not supplied"
-            log.info(msg)
+            self.log.info(msg)
             raise HTTPError(400, reason=msg)
         
         body = None
@@ -2148,7 +2150,7 @@ class AttributeHandler(BaseHandler):
         except ValueError as e:
             msg = "JSON Parser Error"
             try:
-                msg += ": " + e.message
+                msg += ": " + str(e)
             except AttributeError:
                 pass # no message property
           
@@ -2414,7 +2416,7 @@ class GroupCollectionHandler(BaseHandler):
             try:
                 limit = int(limit)
             except ValueError:
-                log.info("expected int type for limit")
+                self.log.info("expected int type for limit")
                 raise HTTPError(400)
         marker = self.get_query_argument("Marker", None)
 
@@ -2464,7 +2466,7 @@ class GroupCollectionHandler(BaseHandler):
             try:
                 body = json_decode(self.request.body)
             except ValueError as e:
-                msg = "JSON Parser Error: " + e.message
+                msg = "JSON Parser Error: " + str(e)
                 self.log.info(msg)
                 raise HTTPError(400, reason=msg)
 
@@ -2596,7 +2598,7 @@ class DatasetCollectionHandler(BaseHandler):
 
         if self.request.path != '/datasets':
             msg = "Method not Allowed: invalid datasets post request"
-            log.info(msg)
+            self.log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
 
         self.isWritable(self.filePath)
@@ -2609,7 +2611,7 @@ class DatasetCollectionHandler(BaseHandler):
             try:
                 body = json_decode(self.request.body)
             except ValueError as e:
-                msg = "JSON Parser Error: " + e.message
+                msg = "JSON Parser Error: " + str(e)
                 self.log.info(msg)
                 raise HTTPError(400, reason=msg)
                 
@@ -2657,7 +2659,7 @@ class DatasetCollectionHandler(BaseHandler):
                 pass  # can use as is
             else:
                 msg = "Bad Request: maxdims is invalid"
-                log.info(msg)
+                self.log.info(msg)
                 raise HTTPError(400, reason=msg)
 
         # validate shape
@@ -2770,7 +2772,7 @@ class TypeCollectionHandler(BaseHandler):
                 limit = int(limit)
             except ValueError:
                 msg = "Bad Request: expected int type for Limit"
-                log.info(msg)
+                self.log.info(msg)
                 raise HTTPError(400, reason=msg)
         marker = self.get_query_argument("Marker", None)
 
@@ -2810,7 +2812,7 @@ class TypeCollectionHandler(BaseHandler):
 
         if self.request.path != '/datatypes':
             msg = "Method not Allowed: invalid URI"
-            log.info(msg)
+            self.log.info(msg)
             raise HTTPError(405, reason=msg)  # Method not allowed
 
         
@@ -2820,7 +2822,7 @@ class TypeCollectionHandler(BaseHandler):
         try:
             body = json_decode(self.request.body)
         except ValueError as e:
-            msg = "JSON Parser Error: " + e.message
+            msg = "JSON Parser Error: " + str(e)
             self.log.info(msg)
             raise HTTPError(400, reason=msg)
 
