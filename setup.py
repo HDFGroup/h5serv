@@ -65,12 +65,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.2',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7'
     ],
 
     # What does your project relate to?
@@ -118,8 +112,8 @@ setup(
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
-        'h5serv': [
-            'h5serv = h5serv.__main__:main'
+        'console_scripts': [
+            'h5serv = h5serv.app:main'
         ]
     },
     #scripts=['server/app.py', 'util/admin/import_file.py'],
