@@ -1,3 +1,5 @@
+#!/usr/local/env python
+
 ##############################################################################
 # Copyright by The HDF Group.                                                #
 # All rights reserved.                                                       #
