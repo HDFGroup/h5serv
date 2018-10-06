@@ -3160,7 +3160,6 @@ def make_app():
         settings["debug"] = config_debug
      
     favicon_path = "favicon.ico"
-    print("dirname path:", os.path.dirname(__file__))
     print("favicon_path:", favicon_path)
     print('Static content in the path:' + static_path +
           " will be displayed via the url: " + static_url)
@@ -3253,18 +3252,15 @@ def periodicCallback():
         # just add file events for now
         updateToc(item)
     
-def main():
-    # os.chdir(config.get('datapath'))
-    
-    app_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    os.chdir(app_dir)
+def main(cwd=None):
+    if cwd:
+        os.chdir(cwd)
 
     # create logger
     log = logging.getLogger("h5serv")
     log_file = config.get("log_file")
     log_level = config.get("log_level")
-       
-     
+
     # add file handler if given in config
     if log_file:
         print("Using logfile: ", log_file)
@@ -3381,4 +3377,5 @@ def main():
     IOLoop.current().start()
 
 if __name__ == "__main__":
-    main()
+    config.initConfig(isMain=True)
+    main(cwd=os.path.dirname(os.path.realpath(sys.argv[0])))

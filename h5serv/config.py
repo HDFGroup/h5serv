@@ -12,10 +12,12 @@
 import os
 import sys
 
+defaultFlag = object()
+
 cfg = {
     'port':   5000,
     'debug':  True,
-    'datapath': '../data/',
+    'datapath': defaultFlag,
     'public_dir': ['public', 'test'],
     'domain':  'hdfgroup.org',
     'hdf5_ext': '.h5',
@@ -29,9 +31,9 @@ cfg = {
     #'password_uri': 'mongodb://mongo:27017',
     'mongo_dbname': 'hdfdevtest',
     'static_url': r'/views/(.*)',
-    'static_path': r'../static',
+    'static_path': defaultFlag,
     'cors_domain': '*',  # set to None to disallow CORS (cross-origin resource sharing)
-    'log_file': r'../log/h5serv.log',
+    'log_file': defaultFlag,
     'log_level': 'INFO', # ERROR, WARNING, INFO, DEBUG, or NOTSET,
     'background_timeout': 1000,  # (ms) set to 0 to disable background processing
     'new_domain_policy': 'ANON',  # Ability to create domains (files) on serv: ANON - anonymous users ok, AUTH - only authenticated, NEVER - never allow 
@@ -40,6 +42,10 @@ cfg = {
 
 
 def get(x):
+    # initialize config, if needed
+    if '_initedConfig' not in globals() or not globals()['_initedConfig']:
+        initConfig()
+
     # see if there is a command-line override
     option = '--'+x+'='
     val = None
@@ -62,3 +68,17 @@ def get(x):
         elif val.upper() in ("F", "FALSE"):
             val = False  
     return val
+
+def initConfig(isMain=False):
+    """Set up cfg defaults
+    """
+    if cfg['datapath'] is defaultFlag:
+        cfg['datapath'] = '../data' if isMain else '.'
+
+    if cfg['log_file'] is defaultFlag:
+        cfg['log_file'] = '../log/h5serv.log' if isMain else 'h5serv.log'
+
+    if cfg['static_path'] is defaultFlag:
+        cfg['static_path'] = '../static' if isMain else '.'
+
+    globals()['_initedConfig'] = True

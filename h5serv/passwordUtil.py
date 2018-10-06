@@ -60,19 +60,11 @@ def getAuthClient():
     auth = None
     if password_uri.startswith("mongo"):
         # use mongodb user db
-        from authMongo import AuthClient
+        from h5serv.authMongo import AuthClient
         auth = AuthClient(password_uri)
     else:
         # use HDF5 file-based user db
-        from authFile import AuthClient
+        from h5serv.authFile import AuthClient
         auth = AuthClient(password_uri)
         
     return auth
-    
-    
-
-            
-
-
-
- 

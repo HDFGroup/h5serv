@@ -10,16 +10,12 @@
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
 import unittest
-import time
-import sys
 import os
 from tornado.web import HTTPError
- 
 
-sys.path.append('../../server')
-from fileUtil import getFilePath, getDomain, posixpath, join
+from h5serv.fileUtil import getFilePath, getDomain, posixpath, join
+
 import config
-
 
 class FileUtilTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):
