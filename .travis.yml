@@ -28,6 +28,6 @@ install:
 
 script:
     - PYTHONPATH="test/unit" python test/testall.py --unit
-    - python server/app.py  >app.out &
+    - python h5serv/app.py  >app.out &
     - sleep 5
     - PYTHONPATH="test/integ" python test/testall.py --integ
