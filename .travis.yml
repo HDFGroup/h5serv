@@ -8,7 +8,7 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7"
+  - "3.7-dev"
 
 install:
     - sudo apt-get update -qq
@@ -28,6 +28,6 @@ install:
 
 script:
     - PYTHONPATH="test/unit" python test/testall.py --unit
-    - python h5serv/app.py  >app.out &
+    - python h5serv >h5serv.out &
     - sleep 5
     - PYTHONPATH="test/integ" python test/testall.py --integ

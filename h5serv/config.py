@@ -12,12 +12,12 @@
 import os
 import sys
 
-defaultFlag = object()
+__all__ = ['get', 'update']
 
-cfg = {
+_cfgDefault = {
     'port':   5000,
     'debug':  True,
-    'datapath': defaultFlag,
+    'datapath': 'data',
     'public_dir': ['public', 'test'],
     'domain':  'hdfgroup.org',
     'hdf5_ext': '.h5',
@@ -27,25 +27,20 @@ cfg = {
     'ssl_cert': '',  # certs/data.hdfgroup.org.crt',  # add relative path to cert for SSL
     'ssl_key':  '',  # certs/data.hdfgroup.org.key',  # add relative path to cert key for SSL
     'ssl_cert_pwd': '',
-    'password_uri': '../util/admin/passwd.h5',     
+    'password_uri': 'util/admin/passwd.h5',
     #'password_uri': 'mongodb://mongo:27017',
     'mongo_dbname': 'hdfdevtest',
     'static_url': r'/views/(.*)',
-    'static_path': defaultFlag,
+    'static_path': 'static',
     'cors_domain': '*',  # set to None to disallow CORS (cross-origin resource sharing)
-    'log_file': defaultFlag,
+    'log_file': 'h5serv.log',
     'log_level': 'INFO', # ERROR, WARNING, INFO, DEBUG, or NOTSET,
     'background_timeout': 1000,  # (ms) set to 0 to disable background processing
     'new_domain_policy': 'ANON',  # Ability to create domains (files) on serv: ANON - anonymous users ok, AUTH - only authenticated, NEVER - never allow 
     'allow_noauth': True  # Allow anonymous requests (i.e. without auth header)
 }
 
-
 def get(x):
-    # initialize config, if needed
-    if '_initedConfig' not in globals() or not globals()['_initedConfig']:
-        initConfig()
-
     # see if there is a command-line override
     option = '--'+x+'='
     val = None
@@ -59,8 +54,8 @@ def get(x):
     if val is None and x.upper() in os.environ:
         val = os.environ[x.upper()]
     # if no command line or env override, just get the cfg value
-    if val is None and x in cfg:
-        val = cfg[x]
+    if val is None and x in _cfgDefault:
+        val = _cfgDefault[x]
     if isinstance(val, str):
         # convert True/False strings to booleans
         if val.upper() in ("T", "TRUE"):
@@ -69,16 +64,5 @@ def get(x):
             val = False  
     return val
 
-def initConfig(isMain=False):
-    """Set up cfg defaults
-    """
-    if cfg['datapath'] is defaultFlag:
-        cfg['datapath'] = '../data' if isMain else '.'
-
-    if cfg['log_file'] is defaultFlag:
-        cfg['log_file'] = '../log/h5serv.log' if isMain else 'h5serv.log'
-
-    if cfg['static_path'] is defaultFlag:
-        cfg['static_path'] = '../static' if isMain else '.'
-
-    globals()['_initedConfig'] = True
+def update(d):
+    _cfgDefault.update(d)

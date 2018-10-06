@@ -9,8 +9,7 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
-import os
-import sys
+from h5serv.config import *
 
 cfg = {
     'server': 'data.hdfgroup.org',
@@ -18,13 +17,4 @@ cfg = {
     'domain':   'test.data.hdfgroup.org',
     'hdf5_ext': '.h5'
 }
-   
-def get(x):     
-    # see if there are an environment variable override
-    if x.upper() in os.environ:
-        return os.environ[x.upper()]
-    # no command line override, just return the cfg value        
-    return cfg[x]
-
-  
-  
+update(cfg)

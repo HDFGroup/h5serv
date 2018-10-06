@@ -9,6 +9,8 @@
 # distribution tree.  If you do not have access to this file, you may        #
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
+from h5serv.config import *
+
 cfg = {
     'testfiledir': '../../testfiles/',
     'domain':  'unit.hdf.io',
@@ -16,9 +18,4 @@ cfg = {
     'uuidlen':  36,
     'hdf5_ext': '.h5'
 }
-   
-def get(x):
-    return cfg[x]
-
-  
-  
+update(cfg)

@@ -21,7 +21,6 @@ import logging
 import logging.handlers
 import os
 import os.path as op
-import json
 import tornado.httpserver
 import sys
 import ssl
@@ -37,11 +36,6 @@ from tornado.escape import json_encode, json_decode, url_escape, url_unescape
 
 from h5json import Hdf5db
 import h5json
-
-if __name__ == "__main__":
-    # workaround to get absolute imports to work when h5serv is run as "python app.py"
-    pkg_dir = os.path.dirname(os.path.dirname(os.path.realpath(sys.argv[0])))
-    sys.path.insert(0, pkg_dir)
 
 import h5serv.config as config
 from h5serv.timeUtil import unixTimeToUTC
@@ -3252,10 +3246,7 @@ def periodicCallback():
         # just add file events for now
         updateToc(item)
     
-def main(cwd=None):
-    if cwd:
-        os.chdir(cwd)
-
+def main():
     # create logger
     log = logging.getLogger("h5serv")
     log_file = config.get("log_file")
@@ -3375,7 +3366,3 @@ def main(cwd=None):
     print(msg)
 
     IOLoop.current().start()
-
-if __name__ == "__main__":
-    config.initConfig(isMain=True)
-    main(cwd=os.path.dirname(os.path.realpath(sys.argv[0])))
