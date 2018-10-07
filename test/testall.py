@@ -44,7 +44,7 @@ os.chdir(test_dir)
 # Run all h5serv tests
 # Run this script before running any integ tests
 
-exit = None
+exit_code = None
 
 os.chdir('unit')
 for file_name in unit_tests:
@@ -52,7 +52,7 @@ for file_name in unit_tests:
     rc = os.system('python ' + file_name + '.py')
     if rc != 0:
         if args['failslow']:
-            exit = 'Failed'
+            exit_code = 'Failed'
         else:
             os.chdir(cwd)
             sys.exit("Failed")
@@ -68,19 +68,19 @@ for file_name in integ_tests:
     rc = os.system('python ' + file_name + '.py')
     if rc != 0:
         if args['failslow']:
-            exit = 'Failed'
+            exit_code = 'Failed'
         else:
             os.chdir(cwd)
             sys.exit("Failed")
 
 log_file = "../../h5serv.log"
-if exit:
+if exit_code:
     if os.name != 'nt' and os.path.isfile(log_file):
         # tail not available on windows
         print("server log...")
         os.system("tail -n 100 " + log_file)
     os.chdir(cwd)
-    sys.exit(exit)
+    sys.exit(exit_code)
 else:
     os.chdir(cwd)
     print("Done!")
