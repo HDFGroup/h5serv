@@ -37,10 +37,10 @@ Clone this project: ``git clone https://github.com/HDFGroup/h5serv.git``.
 Running the Server
 ------------------
 
-Start the server:  ``cd h5serv/server; python app.py``.
+Start the server:  ``cd h5serv; python h5serv``.
 
 By default the server will listen on port 5000.  The port and and several other defaults can be modified
-with command line options.  For example to use port 8888 run:  ``python app.py --port=8888``.
+with command line options.  For example to use port 8888 run:  ``python h5serv --port=8888``.
 
 See test cases for examples of interacting with the server.  Run: ``python testall.py`` from the test directory 
 to run through the entire test suite.

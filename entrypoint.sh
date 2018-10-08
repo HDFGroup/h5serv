@@ -1,4 +1,4 @@
 #!/bin/bash
 # entrypoint for Docker container
-cd /usr/local/src/h5serv/server
-python app.py --datapath=/data --log_file= 
+cd /usr/local/src/h5serv
+python h5serv --datapath=/data --log_file=

@@ -7,7 +7,7 @@ https://github.com/pypa/sampleproject
 
 # create universal wheel:  python setup.py bdist_wheel --universal
 # after install the wheel, run server with:
-#$ python app.py --log_file=<log_dir>/h5serv.log --datapath=<data_dir>
+#$ python h5serv --log_file=<log_dir>/h5serv.log --datapath=<data_dir>
 # where log_dir is the full path to the desired directory for log file output,
 # and datapath is full path to the desired data directory.
 #
