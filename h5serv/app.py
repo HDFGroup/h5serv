@@ -21,7 +21,6 @@ import logging
 import logging.handlers
 import os
 import os.path as op
-import json
 import tornado.httpserver
 import sys
 import ssl
@@ -38,13 +37,13 @@ from tornado.escape import json_encode, json_decode, url_escape, url_unescape
 from h5json import Hdf5db
 import h5json
 
-import config
-from timeUtil import unixTimeToUTC
-import fileUtil  
-import tocUtil  
-from httpErrorUtil import errNoToHttpStatus
-from h5watchdog import h5observe  
-from passwordUtil import getAuthClient
+import h5serv.config as config
+from h5serv.timeUtil import unixTimeToUTC
+import h5serv.fileUtil as fileUtil
+import h5serv.tocUtil as tocUtil
+from h5serv.httpErrorUtil import errNoToHttpStatus
+from h5serv.h5watchdog import h5observe
+from h5serv.passwordUtil import getAuthClient
 
 
 def to_bytes(a_string):
@@ -3155,7 +3154,6 @@ def make_app():
         settings["debug"] = config_debug
      
     favicon_path = "favicon.ico"
-    print("dirname path:", os.path.dirname(__file__))
     print("favicon_path:", favicon_path)
     print('Static content in the path:' + static_path +
           " will be displayed via the url: " + static_url)
@@ -3249,17 +3247,11 @@ def periodicCallback():
         updateToc(item)
     
 def main():
-    # os.chdir(config.get('datapath'))
-    
-    app_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-    os.chdir(app_dir)
-
     # create logger
     log = logging.getLogger("h5serv")
     log_file = config.get("log_file")
     log_level = config.get("log_level")
-       
-     
+
     # add file handler if given in config
     if log_file:
         print("Using logfile: ", log_file)
@@ -3374,6 +3366,3 @@ def main():
     print(msg)
 
     IOLoop.current().start()
-
-if __name__ == "__main__":
-    main()

@@ -64,9 +64,7 @@ Alternatively, download the source zip as described above.
 
 Next, in the command window, cd to the folder you extracted the source files to.
 
-From here cd to "h5serv-master/server" (or just server if you used git).
-
-Run: python app.py
+Run: ``python h5serv``
 You should see the output: "Starting event loop on port: 5000".
 
 You may then see a security alert: "Windows Firewall has blocked some features of this 
@@ -107,11 +105,9 @@ Next, cd to the hdf5-json folder and run: ``python setup.py install``.
 Download the h5serv project: ``git clone https://github.com/HDFGroup/h5serv.git`` .
 Alternatively, download the source zip as described above. 
 
-Next, cd to the h5serv folder.
+Next, cd to the h5serv folder (or the "h5serv-master" folder if you extracted from ZIP file).
 
-From here cd to "server" (or "h5serv-master/server" if you extracted from ZIP file).
-
-Run: ``python app.py``
+Run: ``python h5serv``
 You should see the output: "Starting event loop on port: 5000".
 
 At this point the server is running, waiting on any requests being sent to port 5000.
@@ -142,8 +138,8 @@ The file ``h5serv/server/config.py`` provides several configuration options that
 used to customize h5serv.  Each of the options can be changed by:
 
  * Changing the value in the config.py file and re-starting the service.
- * Passing a command line option to app.py on startup. E.g. ``python app.py --port=7253``
- * Setting an environment variable with the option name in upper case.  E.g. ``export PORT=5000; python app.py``
+ * Passing a command line option to ``h5serv`` on startup. E.g. ``python h5serv --port=7253``
+ * Setting an environment variable with the option name in upper case.  E.g. ``export PORT=5000; python h5serv``
 
 The config options are:
 

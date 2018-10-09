@@ -1,3 +1,5 @@
+#!/usr/local/env python
+
 ##############################################################################
 # Copyright by The HDF Group.                                                #
 # All rights reserved.                                                       #
@@ -10,6 +12,7 @@
 # request a copy from help@hdfgroup.org.                                     #
 ##############################################################################
 
+from argparse import ArgumentParser
 import os
 import sys
 
@@ -21,29 +24,38 @@ integ_tests = ('roottest', 'grouptest', 'dirtest', 'linktest', 'datasettest', 'v
 #todo - add spidertest back
 cwd = os.getcwd()
 no_server = False
-print(len(sys.argv))
-if len(sys.argv) > 1:
-    if sys.argv[1] == '--unit':
-        integ_tests = () # skip integ tests
-    elif sys.argv[1] == '--integ':
-        unit_tests = () # skip unit tests
-    
-        
 
-test_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+parser = ArgumentParser()
+testKind = parser.add_mutually_exclusive_group()
+testKind.add_argument('--unit', action='store_true', help='run only the unit tests')
+testKind.add_argument('--integ', action='store_true', help='run only the integrity tests')
+parser.add_argument('--failslow', action='store_true', help='keep running if a test fails, instead of terminating early')
 
+args = vars(parser.parse_args())
+
+if args['unit']:
+    integ_tests = ()
+elif args['integ']:
+    unit_tests = ()
+
+test_dir = os.path.dirname(os.path.realpath(__file__))
 os.chdir(test_dir)
 
 # Run all h5serv tests
 # Run this script before running any integ tests
-#
+
+exit_code = None
+
 os.chdir('unit')
 for file_name in unit_tests:
     print(file_name)
     rc = os.system('python ' + file_name + '.py')
     if rc != 0:
-        os.chdir(cwd)
-        sys.exit("Failed")
+        if args['failslow']:
+            exit_code = 'Failed'
+        else:
+            os.chdir(cwd)
+            sys.exit("Failed")
  
  
 os.chdir('../integ')
@@ -53,21 +65,22 @@ if integ_tests:
     
 for file_name in integ_tests:
     print(file_name)
-    log_file = "../../log/h5serv.log"
     rc = os.system('python ' + file_name + '.py')
-    if rc != 0:    
-        if os.name != 'nt' and os.path.isfile(log_file):
-            # tail not available on windows
-            print("server log...")
-            os.system("tail -n 100 " + log_file)
-        os.chdir(cwd)
-        sys.exit("Failed")
-    
-os.chdir(cwd)
-print("Done!")
- 
+    if rc != 0:
+        if args['failslow']:
+            exit_code = 'Failed'
+        else:
+            os.chdir(cwd)
+            sys.exit("Failed")
 
-
-
-
-
+log_file = "../../h5serv.log"
+if exit_code:
+    if os.name != 'nt' and os.path.isfile(log_file):
+        # tail not available on windows
+        print("server log...")
+        os.system("tail -n 100 " + log_file)
+    os.chdir(cwd)
+    sys.exit(exit_code)
+else:
+    os.chdir(cwd)
+    print("Done!")

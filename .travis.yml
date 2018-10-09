@@ -8,6 +8,7 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7-dev"
 
 install:
     - sudo apt-get update -qq
@@ -22,10 +23,11 @@ install:
     - git clone https://github.com/HDFGroup/hdf5-json.git
     - cd hdf5-json
     - python setup.py install
-    - cd .. 
+    - cd ..
+    - pip install .
 
 script:
-    - python test/testall.py --unit
-    - python server/app.py >app.out &
+    - PYTHONPATH="test/unit" python test/testall.py --unit --failslow
+    - python h5serv >h5serv.out &
     - sleep 5
-    - python test/testall.py --integ
+    - PYTHONPATH="test/integ" python test/testall.py --integ --failslow

@@ -12,10 +12,12 @@
 import os
 import sys
 
-cfg = {
+__all__ = ['get', 'update']
+
+_cfgDefault = {
     'port':   5000,
     'debug':  True,
-    'datapath': '../data/',
+    'datapath': 'data',
     'public_dir': ['public', 'test'],
     'domain':  'hdfgroup.org',
     'hdf5_ext': '.h5',
@@ -25,19 +27,18 @@ cfg = {
     'ssl_cert': '',  # certs/data.hdfgroup.org.crt',  # add relative path to cert for SSL
     'ssl_key':  '',  # certs/data.hdfgroup.org.key',  # add relative path to cert key for SSL
     'ssl_cert_pwd': '',
-    'password_uri': '../util/admin/passwd.h5',     
+    'password_uri': 'util/admin/passwd.h5',
     #'password_uri': 'mongodb://mongo:27017',
     'mongo_dbname': 'hdfdevtest',
     'static_url': r'/views/(.*)',
-    'static_path': r'../static',
+    'static_path': 'static',
     'cors_domain': '*',  # set to None to disallow CORS (cross-origin resource sharing)
-    'log_file': r'../log/h5serv.log',
+    'log_file': 'h5serv.log',
     'log_level': 'INFO', # ERROR, WARNING, INFO, DEBUG, or NOTSET,
     'background_timeout': 1000,  # (ms) set to 0 to disable background processing
     'new_domain_policy': 'ANON',  # Ability to create domains (files) on serv: ANON - anonymous users ok, AUTH - only authenticated, NEVER - never allow 
     'allow_noauth': True  # Allow anonymous requests (i.e. without auth header)
 }
-
 
 def get(x):
     # see if there is a command-line override
@@ -53,8 +54,8 @@ def get(x):
     if val is None and x.upper() in os.environ:
         val = os.environ[x.upper()]
     # if no command line or env override, just get the cfg value
-    if val is None and x in cfg:
-        val = cfg[x]
+    if val is None and x in _cfgDefault:
+        val = _cfgDefault[x]
     if isinstance(val, str):
         # convert True/False strings to booleans
         if val.upper() in ("T", "TRUE"):
@@ -62,3 +63,6 @@ def get(x):
         elif val.upper() in ("F", "FALSE"):
             val = False  
     return val
+
+def update(d):
+    _cfgDefault.update(d)

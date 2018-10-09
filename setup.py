@@ -7,7 +7,7 @@ https://github.com/pypa/sampleproject
 
 # create universal wheel:  python setup.py bdist_wheel --universal
 # after install the wheel, run server with:
-#$ python app.py --log_file=<log_dir>/h5serv.log --datapath=<data_dir>
+#$ python h5serv --log_file=<log_dir>/h5serv.log --datapath=<data_dir>
 # where log_dir is the full path to the desired directory for log file output,
 # and datapath is full path to the desired data directory.
 #
@@ -65,10 +65,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.2',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
     ],
 
     # What does your project relate to?
@@ -76,7 +72,7 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=('server',),
+    packages=('h5serv',),
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
@@ -116,8 +112,8 @@ setup(
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
-        'h5serv': [
-            'h5serv = server.__main__:main'
+        'console_scripts': [
+            'h5serv = h5serv.app:main'
         ]
     },
     #scripts=['server/app.py', 'util/admin/import_file.py'],

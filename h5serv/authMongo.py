@@ -23,8 +23,8 @@ from pymongo import MongoClient
 
 from tornado.web import HTTPError
 
-import config
-from passwordUtil import encrypt_pwd, to_string, to_bytes
+import h5serv.config as config
+from h5serv.passwordUtil import encrypt_pwd, to_string, to_bytes
 
 cache_expire_time = 10.0  # ten seconds
 

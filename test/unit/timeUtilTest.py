@@ -11,13 +11,10 @@
 ##############################################################################
 import unittest
 import time
-import sys
- 
 
-sys.path.append('../../server')
-from timeUtil import unixTimeToUTC
+from h5serv.timeUtil import unixTimeToUTC
+
 import config
-
 
 class TimeUtilTest(unittest.TestCase):
     def __init__(self, *args, **kwargs):

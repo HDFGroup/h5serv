@@ -17,15 +17,12 @@ if six.PY3:
     
 import os.path as op
 import time
-import hashlib
 import logging
 import h5py
 
 from tornado.web import HTTPError
 
-
-import config
-from passwordUtil import encrypt_pwd, to_string
+from h5serv.passwordUtil import encrypt_pwd, to_string
 
 cache_expire_time = 10.0  # ten seconds
 
