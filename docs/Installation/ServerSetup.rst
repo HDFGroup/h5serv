@@ -105,7 +105,7 @@ Next, cd to the hdf5-json folder and run: ``python setup.py install``.
 Download the h5serv project: ``git clone https://github.com/HDFGroup/h5serv.git`` .
 Alternatively, download the source zip as described above. 
 
-Next, cd to the h5serv folder (or the "h5serv-master" folder if you extracted from ZIP file).
+Next, in the command window, cd to the folder you extracted the source files to.
 
 Run: ``python h5serv``
 You should see the output: "Starting event loop on port: 5000".
@@ -324,4 +324,3 @@ made to the file outside the REST api.
 
 *Note: HDF5 that are newly created (copied into) the datapath directory will be "noticed"
 by the service and added into the TOC.
-     
