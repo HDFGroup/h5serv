@@ -1,7 +1,8 @@
-FROM hdfgroup/hdf5lib:1.8.16
+FROM python:3.6
 MAINTAINER John Readey <jreadey@hdfgroup.org>
 RUN cd /usr/local/src                                    ; \
     pip install --upgrade pip                            ; \
+    pip install h5py                                     ; \
     pip install tornado                                  ; \
     pip install requests                                 ; \
     pip install pytz                                     ; \
@@ -14,7 +15,7 @@ RUN git clone https://github.com/HDFGroup/hdf5-json.git  ; \
     cd ..                                                ; \
     mkdir h5serv       
 WORKDIR /usr/local/src/h5serv                                                          
-COPY server server                                       
+COPY h5serv h5serv                                       
 COPY util util                                         
 COPY test test                                        
 COPY data /data 
@@ -26,4 +27,3 @@ EXPOSE 5000
 COPY entrypoint.sh /
 
 ENTRYPOINT ["/entrypoint.sh"]
-
